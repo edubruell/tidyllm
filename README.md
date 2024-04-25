@@ -20,7 +20,7 @@ if (!requireNamespace("devtools", quietly = TRUE)) {
 }
 
 # Install TidyLLM from GitHub
-devtools::install_github("your_github/tidyllm")
+devtools::install_github("edubruell/tidyllm")
 ```
 ## Basic Usage Example
 
