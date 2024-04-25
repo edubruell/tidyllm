@@ -123,6 +123,7 @@ LLMMessage <- R6::R6Class(
     #' 
     #' Converts the message history to a format suitable for various API calls.
     #' @param api_type The type of API (e.g., "claude","groq","chatgpt").
+    #' @param cgpt_image_detail Specific option for ChatGPT API (imagedetail - set to auto)
     to_api_format = function(api_type,cgpt_image_detail="auto") {
       switch(api_type,
              "claude" = {
@@ -194,45 +195,48 @@ LLMMessage <- R6::R6Class(
                }) 
              },
              "chatgpt" = {
-               lapply(self$message_history, function(m){
-                 #The basic text content supplied with the prompt
+               lapply(self$message_history, function(m) {
+                 # The basic text content supplied with the prompt
                  base_content <- m$content
                  
-                 #Get the relevant media for the current message
+                 # Get the relevant media for the current message
                  media_list <- m$media
                  
-                 #Extract the text content in put it into tags that are put before 
-                 #the main text of the prompt
-                 text_media  <- extract_media(media_list,"text")
-                 image_media <- extract_media(media_list,"image")
+                 # Extract the text content and put it into tags that are put before 
+                 # the main text of the prompt
+                 text_media <- extract_media(media_list, "text")
+                 image_media <- extract_media(media_list, "image")
                  
+                 # Combine text content
+                 combined_text <- paste(base_content, text_media, sep=" ")
                  
-                 if(length(image_media)>0){
+                 if (length(image_media) > 0) {
+                   # Determine the MIME type based on file extension
+                   image_file_type <- paste("image", tools::file_ext(image_media[[1]]$filename), sep="/")
                    
-                   image_file_type <- paste("image",
-                                            tools::file_ext(image_media[[1]]$filename), 
-                                            sep = "/")
+                   # Use the pre-encoded base64 image content
+                   base64_image <- image_media[[1]]$content
                    
                    # Add image content to the user content
-                   output <- list(role = m$role,
-                                  content = list(
-                                    list(type = "text", text = paste(base_content,text_media)),
-                                    list(type = "image_url",
-                                         image_url = list(
-                                           url = glue::glue("data:image/{image_file_type};base64,{image_media[[1]]$content}")
-                                         ))
-                                  ))
-                   
+                   output <- list(
+                     role = m$role,
+                     content = list(
+                       list(type = "text", text = combined_text),
+                       list(type = "image_url", image_url = list(
+                         url = glue::glue("data:{image_file_type};base64,{base64_image}")
+                       ))
+                     )
+                   )
                  } else {
-                   # Text only content
-                   output <- list(role = m$role,
-                                  content = list(
-                                    type = "text", text = paste(base_content,text_media))
+                   # Text-only content
+                   output <- list(
+                     role = m$role,
+                     content = combined_text
                    )
                  }
                  
                  output
-               }) 
+               })
             
               }   
              # Additional cases as needed
@@ -540,20 +544,21 @@ claude <- function(.llm,
 #' @param .metadata Additional metadata for the request (optional).
 #' @param .stop_sequences Sequences that stop generation (optional).
 #' @param .tools Additional tools used by the model (optional).
-#' @param .api_url Base URL for the API (default: "https://api.anthropic.com/v1/messages").
+#' @param .api_url Base URL for the API (default: https://api.openai.com/v1/completions).
 #' @param .timeout Request timeout in seconds (default: 60).
 #'
 #' @return Returns an updated LLMMessage object.
 #' @export
 chatgpt <- function(.llm,
-                    .model = "gpt-4",
+                    .model = "gpt-4-turbo",
                     .max_tokens = 1024,
                     .temperature = NULL,
                     .top_p = NULL,
                     .frequency_penalty = NULL,
                     .presence_penalty = NULL,
-                    .api_url = "https://api.openai.com/v1/completions",
-                    .timeout = 60) {
+                    .api_url = "https://api.openai.com/v1/chat/completions",
+                    .timeout = 60,
+                    .image_detail = "auto") {
   
   # Validate inputs
   c(
@@ -568,7 +573,7 @@ chatgpt <- function(.llm,
     validate_inputs()
   
   # Get formatted message list for ChatGPT
-  messages <- .llm$to_api_format("chatgpt")
+  messages <- .llm$to_api_format("chatgpt",.image_detail)
   
   # Retrieve API key from environment variables
   api_key <- Sys.getenv("OPENAI_API_KEY")
@@ -577,7 +582,7 @@ chatgpt <- function(.llm,
   # Setup headers using httr package
   headers <- httr::add_headers(
     `Authorization` = sprintf("Bearer %s", api_key),
-    `Content-Type` = "application/json; charset=utf-8"
+    `Content-Type` = "application/json"
   )
   
   # Data payload
@@ -591,18 +596,19 @@ chatgpt <- function(.llm,
     presence_penalty = .presence_penalty
   )
   
+  
   # Filter out NULL values from the body
   body <- Filter(Negate(is.null), body)
   
   # Encode the body as JSON
   body_json <- jsonlite::toJSON(body, auto_unbox = TRUE)
-  
-  # Make the POST request using httr package
+
+    # Make the POST request using httr package
   response <- httr::POST(.api_url, headers, body = body_json, encode = "json", httr::timeout(.timeout))
   
   # Check for errors
   if (httr::http_status(response)$category != "Success") {
-    stop("API request failed: ", httr::http_status(response)$reason)
+    stop("API request failed: ", httr::http_status(response))
   }
   
   # Get the content of the response
@@ -612,7 +618,7 @@ chatgpt <- function(.llm,
   response_decoded <- jsonlite::fromJSON(response_content)
   
   # Add ChatGPT's message to the history of the LLMMessage object
-  .llm$add_message("assistant", response_decoded$choices[[1]]$text)
+  .llm$add_message("assistant", response_decoded$choices$message$content)
   
   return(.llm)
 }
@@ -659,6 +665,9 @@ groq <- function(.llm,
   
   # Get formatted message list for Groq models
   messages <- .llm$to_api_format("groq")
+  
+  if(.llm$has_image()){warning("The message history contains image data, but groq models only support texts.
+                               Only text data is sent to the groq API")}
   
   # Retrieve API key from environment variables
   api_key <- Sys.getenv("GROQ_API_KEY")
