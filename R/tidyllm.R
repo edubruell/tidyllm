@@ -104,6 +104,36 @@ LLMMessage <- R6::R6Class(
       self$add_message("system", self$system_prompt)
     },
     
+    
+    #' Deep Clone of LLMMessage Object
+    #'
+    #' This method creates a deep copy of the `LLMMessage` object. It ensures that 
+    #' all internal states, including message histories and settings, are copied 
+    #' so that the original object remains unchanged when mutations are applied 
+    #' to the copy. This is particularly useful for maintaining immutability in 
+    #' a tidyverse-like functional programming context where functions should 
+    #' not have side effects on their inputs.
+    #'
+    #' @return A new `LLMMessage` object that is a deep copy of the original.
+    #' @examples
+    #' llm_original <- LLMMessage$new("Your initial system prompt")
+    #' llm_original$add_message("user", "Hello, how are you?")
+    #'
+    #' llm_clone <- llm_original$clone_deep()
+    #' llm_clone$add_message("user", "Adding a new message to the clone.")
+    #'
+    #' # Now llm_original remains unchanged with its original messages
+    #' llm_original$print()
+    #' # While llm_clone has the new message added
+    #' llm_clone$print()
+    #' @export
+    clone_deep = function() {
+      new_copy <- LLMMessage$new(self$system_prompt)
+      new_copy$message_history <- rlang::duplicate(self$message_history, shallow = FALSE)
+      return(new_copy)
+    },
+    
+    
     #' Add a message
     #' 
     #' Adds a message to the history. Optionally includes media.
@@ -242,6 +272,7 @@ LLMMessage <- R6::R6Class(
              # Additional cases as needed
       )
     },
+    
     #' Simple helper function to determine whether the message history contains 
     #' an image
     #' We check this function whenever we call models that do not support images
@@ -261,6 +292,7 @@ LLMMessage <- R6::R6Class(
          } 
         }) |> max() |> as.logical()
     },
+    
     #' Print message history
     #' 
     #' Prints the current message history in a readable format.
@@ -318,6 +350,10 @@ llm_message <- function(.llm = NULL,
     stop("Input .llm must be an LLMMessage object or an initial text prompt.")
   }
   
+  #Early check whether an llm object exsisted before
+  pre_existing_obect <- TRUE
+  if(inherits(.llm, "LLMMessage")){pre_existing_obect <- TRUE}
+  
   # Handle images or captured plots
   if (!is.null(.imagefile) || .capture_plot) {
     if (.capture_plot) {
@@ -369,6 +405,7 @@ llm_message <- function(.llm = NULL,
     
     if (is.null(.prompt)) {
       .llm$add_message(.role, initial_prompt, media_list)
+      return(.llm)
     }
   }
   
@@ -377,16 +414,25 @@ llm_message <- function(.llm = NULL,
     .llm <- LLMMessage$new(.system_prompt)
   }
   
-
   #explicit prompts have precedent over ones supplied via .llm
-  if (!is.null(.prompt)) {
+  if (!is.null(.prompt) & !pre_existing_obect) {
     if ((length(.prompt) == 0) | !is.character(.prompt)){
       stop("Prompt must be a non-empty string.")
     }
     .llm$add_message(.role, .prompt, media_list)
+    return(.llm)
   }
   
-  return(.llm)
+  #Deep copy output so original object is never changed!
+  if (!is.null(.prompt) & pre_existing_obect) {
+    if ((length(.prompt) == 0) | !is.character(.prompt)){
+      stop("Prompt must be a non-empty string.")
+    }
+    llm_copy <- .llm$clone_deep()
+    llm_copy$add_message(.role, .prompt, media_list)
+    return(llm_copy)
+  }
+  
 }
 
 
@@ -526,10 +572,13 @@ claude <- function(.llm,
   # Decode the response from JSON
   response_decoded <- jsonlite::fromJSON(response)
   
-  #Add claudes message to the history of the llm message object
-  .llm$add_message("assistant",response_decoded$content$text)
+  # Create a deep copy of the LLMMessage object
+  llm_copy <- .llm$clone_deep()
   
-  return(.llm)
+  #Add claudes message to the history of the llm message object
+  llm_copy$add_message("assistant",response_decoded$content$text)
+  
+  return(llm_copy)
 }
 
 #' Call the OpenAI API to interact with ChatGPT models
@@ -617,10 +666,13 @@ chatgpt <- function(.llm,
   # Decode the response from JSON
   response_decoded <- jsonlite::fromJSON(response_content)
   
-  # Add ChatGPT's message to the history of the LLMMessage object
-  .llm$add_message("assistant", response_decoded$choices$message$content)
+  # Create a deep copy of the LLMMessage object
+  llm_copy <- .llm$clone_deep()
   
-  return(.llm)
+  # Add ChatGPT's message to the history of the LLMMessage object
+  llm_copy$add_message("assistant", response_decoded$choices$message$content)
+  
+  return(llm_copy)
 }
 
 
@@ -710,10 +762,13 @@ groq <- function(.llm,
   # Decode the response from JSON
   response_decoded <- jsonlite::fromJSON(response_content)
 
-  # Add model's message to the history of the LLMMessage object
-  .llm$add_message("assistant", response_decoded$choices$message$content)
+  # Create a deep copy of the LLMMessage object
+  llm_copy <- .llm$clone_deep()
   
-  return(.llm)
+  # Add model's message to the history of the LLMMessage object
+  llm_copy$add_message("assistant", response_decoded$choices$message$content)
+  
+  return(llm_copy)
 }
 
 
