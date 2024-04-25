@@ -6,14 +6,15 @@
 \usage{
 chatgpt(
   .llm,
-  .model = "gpt-4",
+  .model = "gpt-4-turbo",
   .max_tokens = 1024,
   .temperature = NULL,
   .top_p = NULL,
   .frequency_penalty = NULL,
   .presence_penalty = NULL,
-  .api_url = "https://api.openai.com/v1/completions",
-  .timeout = 60
+  .api_url = "https://api.openai.com/v1/chat/completions",
+  .timeout = 60,
+  .image_detail = "auto"
 )
 }
 \arguments{
@@ -27,7 +28,7 @@ chatgpt(
 
 \item{.top_p}{Nucleus sampling parameter (optional).}
 
-\item{.api_url}{Base URL for the API (default: "https://api.anthropic.com/v1/messages").}
+\item{.api_url}{Base URL for the API (default: https://api.openai.com/v1/completions).}
 
 \item{.timeout}{Request timeout in seconds (default: 60).}
 

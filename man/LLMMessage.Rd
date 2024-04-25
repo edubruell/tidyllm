@@ -7,6 +7,26 @@
 This class manages a history of messages and media interactions intended for use with large language  models.
 It allows for adding messages, converting messages for API usage, and printing the history in a structured format.
 }
+\examples{
+
+## ------------------------------------------------
+## Method `LLMMessage$clone_deep`
+## ------------------------------------------------
+
+llm_original <- LLMMessage$new("Your initial system prompt")
+llm_original$add_message("user", "Hello, how are you?")
+
+llm_clone <- llm_original$clone_deep()
+llm_clone$add_message("user", "Adding a new message to the clone.")
+
+# Now llm_original remains unchanged with its original messages
+llm_original$print()
+# While llm_clone has the new message added
+llm_clone$print()
+Add a message
+
+Adds a message to the history. Optionally includes media.
+}
 \section{Public fields}{
 \if{html}{\out{<div class="r6-fields">}}
 \describe{
@@ -20,6 +40,7 @@ It allows for adding messages, converting messages for API usage, and printing t
 \subsection{Public methods}{
 \itemize{
 \item \href{#method-LLMMessage-new}{\code{LLMMessage$new()}}
+\item \href{#method-LLMMessage-clone_deep}{\code{LLMMessage$clone_deep()}}
 \item \href{#method-LLMMessage-add_message}{\code{LLMMessage$add_message()}}
 \item \href{#method-LLMMessage-to_api_format}{\code{LLMMessage$to_api_format()}}
 \item \href{#method-LLMMessage-has_image}{\code{LLMMessage$has_image()}}
@@ -39,12 +60,49 @@ It allows for adding messages, converting messages for API usage, and printing t
 \if{html}{\out{<div class="arguments">}}
 \describe{
 \item{\code{system_prompt}}{Setting the default systen prompt for the LLM
-Add a message
+Deep Clone of LLMMessage Object
 
-Adds a message to the history. Optionally includes media.}
+This method creates a deep copy of the \code{LLMMessage} object. It ensures that
+all internal states, including message histories and settings, are copied
+so that the original object remains unchanged when mutations are applied
+to the copy. This is particularly useful for maintaining immutability in
+a tidyverse-like functional programming context where functions should
+not have side effects on their inputs.}
 }
 \if{html}{\out{</div>}}
 }
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-LLMMessage-clone_deep"></a>}}
+\if{latex}{\out{\hypertarget{method-LLMMessage-clone_deep}{}}}
+\subsection{Method \code{clone_deep()}}{
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{LLMMessage$clone_deep()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+A new \code{LLMMessage} object that is a deep copy of the original.
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{llm_original <- LLMMessage$new("Your initial system prompt")
+llm_original$add_message("user", "Hello, how are you?")
+
+llm_clone <- llm_original$clone_deep()
+llm_clone$add_message("user", "Adding a new message to the clone.")
+
+# Now llm_original remains unchanged with its original messages
+llm_original$print()
+# While llm_clone has the new message added
+llm_clone$print()
+Add a message
+
+Adds a message to the history. Optionally includes media.
+}
+\if{html}{\out{</div>}}
+
+}
+
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-LLMMessage-add_message"></a>}}
@@ -80,15 +138,14 @@ Converts the message history to a format suitable for various API calls.}
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{api_type}}{The type of API (e.g., "claude","groq","chatgpt").
+\item{\code{api_type}}{The type of API (e.g., "claude","groq","chatgpt").}
+
+\item{\code{cgpt_image_detail}}{Specific option for ChatGPT API (imagedetail - set to auto)
 Simple helper function to determine whether the message history contains
 an image
 We check this function whenever we call models that do not support images
 so we can post a warning to the user that images were found but not sent
-to the model
-Print message history
-
-Prints the current message history in a readable format.}
+to the model}
 }
 \if{html}{\out{</div>}}
 }
@@ -101,6 +158,12 @@ Prints the current message history in a readable format.}
 \if{html}{\out{<div class="r">}}\preformatted{LLMMessage$has_image()}\if{html}{\out{</div>}}
 }
 
+\subsection{Returns}{
+Returns TRUE if the message hisotry contains images
+Print message history
+
+Prints the current message history in a readable format.
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-LLMMessage-print"></a>}}

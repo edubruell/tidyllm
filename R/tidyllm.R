@@ -41,7 +41,7 @@ extract_media <- function(.media_list,.type){
 #'
 #' This internal function is a small helper used to validate inputs in functions
 #'
-#' @param .x
+#' @param .x An input that is checked to see whether it is an interger valued numeric
 #' @return A logical
 #' @noRd
 is_integer_valued <- function(.x) {
@@ -126,7 +126,6 @@ LLMMessage <- R6::R6Class(
     #' llm_original$print()
     #' # While llm_clone has the new message added
     #' llm_clone$print()
-    #' @export
     clone_deep = function() {
       new_copy <- LLMMessage$new(self$system_prompt)
       new_copy$message_history <- rlang::duplicate(self$message_history, shallow = FALSE)
@@ -278,6 +277,7 @@ LLMMessage <- R6::R6Class(
     #' We check this function whenever we call models that do not support images
     #' so we can post a warning to the user that images were found but not sent
     #' to the model
+    #' @return Returns TRUE if the message hisotry contains images
     has_image= function() {
     
       sapply(self$message_history, function(m){
@@ -497,7 +497,6 @@ last_reply <- function(.llm = NULL) {
 #'
 #' @return Returns an updated LLMMessage object.
 #' @export
-#' @examples
 claude <- function(.llm,
                   .model = "claude-3-sonnet-20240229",
                   .max_tokens = 1024,
