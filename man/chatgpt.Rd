@@ -14,7 +14,10 @@ chatgpt(
   .presence_penalty = NULL,
   .api_url = "https://api.openai.com/v1/chat/completions",
   .timeout = 60,
-  .image_detail = "auto"
+  .image_detail = "auto",
+  .verbose = FALSE,
+  .wait = TRUE,
+  .min_tokens_reset = 0L
 )
 }
 \arguments{
@@ -31,6 +34,12 @@ chatgpt(
 \item{.api_url}{Base URL for the API (default: https://api.openai.com/v1/completions).}
 
 \item{.timeout}{Request timeout in seconds (default: 60).}
+
+\item{.verbose}{Should additional information be shown after the API call}
+
+\item{.wait}{Should we wait for rate limits if necessary?}
+
+\item{.min_tokens_reset}{How many tokens should be remaining to wait until we wait for token reset?}
 
 \item{.top_k}{Top k sampling parameter (optional).}
 

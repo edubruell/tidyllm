@@ -1,11 +1,3 @@
-#' @export
-.onLoad <- function(libname, pkgname) {
-  # Initialize the parent environment for rate limits on package load
-  .tidyllm_rate_limit_env <<- new.env(parent = emptyenv())
-  
-  # Optionally, log a message or perform other initialization tasks
-  message("Package ", pkgname, " loaded. New rate limit reset time store for LLM APIs set up")
-}
 
 #' Initialize or Retrieve API-specific Environment
 #'

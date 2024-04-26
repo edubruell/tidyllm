@@ -42,7 +42,7 @@ claude(
 
 \item{.api_url}{Base URL for the API (default: "https://api.anthropic.com/v1/messages").}
 
-\item{.verbose}{Should rate-limits be shown after the API call?}
+\item{.verbose}{Should additional information be shown after the API call}
 
 \item{.wait}{Should we wait for rate limits if necessary?}
 

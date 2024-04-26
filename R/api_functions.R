@@ -14,7 +14,7 @@
 #' @param .tools Additional tools used by the model (optional).
 #' @param .api_url Base URL for the API (default: "https://api.anthropic.com/v1/messages").
 #' @param .timeout Request timeout in seconds (default: 60).
-#' @param .verbose Should rate-limits be shown after the API call?
+#' @param .verbose Should additional information be shown after the API call
 #' @param .wait Should we wait for rate limits if necessary?
 #' @param .min_tokens_reset How many tokens should be remaining to wait until we wait for token reset?
 #'
@@ -103,7 +103,7 @@ claude <- function(.llm,
   # Make the POST request using httr package
   response <- httr::POST(.api_url, headers, body = body_json, encode = "json", httr::timeout(.timeout))
   
-  # Retrieve and print the response headers
+  # Retrieve the response headers
   response_headers <- httr::headers(response)
   rl <- list(
     this_request_time             = response_headers["date"],
@@ -167,6 +167,9 @@ claude <- function(.llm,
 #' @param .tools Additional tools used by the model (optional).
 #' @param .api_url Base URL for the API (default: https://api.openai.com/v1/completions).
 #' @param .timeout Request timeout in seconds (default: 60).
+#' @param .verbose Should additional information be shown after the API call
+#' @param .wait Should we wait for rate limits if necessary?
+#' @param .min_tokens_reset How many tokens should be remaining to wait until we wait for token reset?
 #'
 #' @return Returns an updated LLMMessage object.
 #' @export
@@ -179,7 +182,10 @@ chatgpt <- function(.llm,
                     .presence_penalty = NULL,
                     .api_url = "https://api.openai.com/v1/chat/completions",
                     .timeout = 60,
-                    .image_detail = "auto") {
+                    .image_detail = "auto",
+                    .verbose = FALSE,
+                    .wait=TRUE,
+                    .min_tokens_reset = 0L) {
   
   # Validate inputs
   c(
@@ -189,7 +195,10 @@ chatgpt <- function(.llm,
     ".temperature must be numeric if provided" = is.null(.temperature) | is.numeric(.temperature),
     ".top_p must be numeric if provided" = is.null(.top_p) | is.numeric(.top_p),
     ".frequency_penalty must be numeric if provided" = is.null(.frequency_penalty) | is.numeric(.frequency_penalty),
-    ".presence_penalty must be numeric if provided" = is.null(.presence_penalty) | is.numeric(.presence_penalty)
+    ".presence_penalty must be numeric if provided" = is.null(.presence_penalty) | is.numeric(.presence_penalty),
+    ".verbose must be logical"                   = is.logical(.verbose),
+    ".wait must be logical"                      = is.logical(.wait),
+    ".min_tokens_reset must be an integer"       = is_integer_valued(.min_tokens_reset)
   ) |>
     validate_inputs()
   
@@ -226,6 +235,38 @@ chatgpt <- function(.llm,
   
   # Make the POST request using httr package
   response <- httr::POST(.api_url, headers, body = body_json, encode = "json", httr::timeout(.timeout))
+  
+  # Retrieve the response headers
+  response_headers <- httr::headers(response)
+  rl <- list(
+    this_request_time             = response_headers["date"]$date,
+    ratelimit_requests            = response_headers["x-ratelimit-limit-requests"],
+    ratelimit_requests_remaining  = response_headers["x-ratelimit-remaining-requests"],
+    ratelimit_requests_reset_dt   = response_headers["x-ratelimit-reset-requests"]$`x-ratelimit-reset-requests`,
+    ratelimit_tokens              = response_headers["x-ratelimit-limit-tokens"],
+    ratelimit_tokens_remaining    = response_headers["x-ratelimit-remaining-tokens"],
+    ratelimit_tokens_reset_dt   = response_headers["x-ratelimit-reset-tokens"]$`x-ratelimit-reset-tokens`
+  )
+  
+  #Initialize an environment to store rate-limit info
+  initialize_api_env("chatgpt")
+  .tidyllm_rate_limit_env[["chatgpt"]]$last_request        <- rl$this_request_time
+  .tidyllm_rate_limit_env[["chatgpt"]]$requests_remaining  <- as.integer(rl$ratelimit_requests_remaining)
+  .tidyllm_rate_limit_env[["chatgpt"]]$requests_reset_dt   <- rl$ratelimit_requests_reset_dt
+  .tidyllm_rate_limit_env[["chatgpt"]]$tokens_remaining    <- as.integer(rl$ratelimit_tokens_remaining)
+  .tidyllm_rate_limit_env[["chatgpt"]]$tokens_reset_dt     <- rl$ratelimit_tokens_reset_dt
+  
+  #Show Request rate limit info if we are verbose
+  if(.verbose==TRUE){
+    glue::glue("OpenAI API answer received at {rl$this_request_time}.
+              Remaining requests rate limit: {rl$ratelimit_requests_remaining}/{rl$ratelimit_requests}
+              Requests rate limit reset in: {rl$ratelimit_requests_reset_dt} 
+              Remaining tokens   rate limit: {rl$ratelimit_tokens_remaining}/{rl$ratelimit_tokens}
+              Tokens rate limit reset in: {rl$ratelimit_tokens_reset_dt} 
+              
+              ") |> cat()
+  }
+  
   
   # Check for errors
   if (httr::http_status(response)$category != "Success") {
