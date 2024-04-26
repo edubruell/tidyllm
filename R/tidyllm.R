@@ -507,9 +507,9 @@ claude <- function(.llm,
   
   #Validate inputes to the Claude function
   c(
-    "Input .llm must be an LLMMessage object"    = inherits(a, "LLMMessage"),
+    "Input .llm must be an LLMMessage object"    = inherits(.llm, "LLMMessage"),
     "Input .max_tokens must be an integer"       = is_integer_valued(.max_tokens),
-    ".timeout must be an integer-valued numeric (seconds till timeour)" = is_integer_valued(.timeout),
+    ".timeout must be an integer-valued numeric (seconds till timeout)" = is_integer_valued(.timeout),
     ".temperature must be numeric if provided"   = is.null(.temperature)  | is.numeric(.temperature),
     ".top_k must be numeric if provided"         = is.null(.top_k) | is.numeric(.top_k),
     ".top_p must be numeric if provided"         = is.null(.top_p) | is.numeric(.top_p),
