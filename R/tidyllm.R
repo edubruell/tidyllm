@@ -88,17 +88,13 @@ validate_inputs <- function(.predicates) {
 #'
 #' @field message_history List to store all message interactions.
 #' @field system_prompt The default prompt used by the system.
-#' @import R6
 LLMMessage <- R6::R6Class(
   "LLMMessage",
   public = list(
     message_history = list(),
     system_prompt = "You are a helpful assistant",
     
-    #' Constructor
-    #' 
-    #' Initializes the message history with a system prompt.
-    #' @param system_prompt Setting the default systen prompt for the LLM
+
     initialize = function(system_prompt = "You are a helpful assistant") {
       self$system_prompt <- system_prompt
       self$add_message("system", self$system_prompt)

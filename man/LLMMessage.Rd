@@ -32,7 +32,15 @@ Adds a message to the history. Optionally includes media.
 \describe{
 \item{\code{message_history}}{List to store all message interactions.}
 
-\item{\code{system_prompt}}{The default prompt used by the system.}
+\item{\code{system_prompt}}{The default prompt used by the system.
+Deep Clone of LLMMessage Object
+
+This method creates a deep copy of the \code{LLMMessage} object. It ensures that
+all internal states, including message histories and settings, are copied
+so that the original object remains unchanged when mutations are applied
+to the copy. This is particularly useful for maintaining immutability in
+a tidyverse-like functional programming context where functions should
+not have side effects on their inputs.}
 }
 \if{html}{\out{</div>}}
 }
@@ -56,21 +64,6 @@ Adds a message to the history. Optionally includes media.
 \if{html}{\out{<div class="r">}}\preformatted{LLMMessage$new(system_prompt = "You are a helpful assistant")}\if{html}{\out{</div>}}
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{system_prompt}}{Setting the default systen prompt for the LLM
-Deep Clone of LLMMessage Object
-
-This method creates a deep copy of the \code{LLMMessage} object. It ensures that
-all internal states, including message histories and settings, are copied
-so that the original object remains unchanged when mutations are applied
-to the copy. This is particularly useful for maintaining immutability in
-a tidyverse-like functional programming context where functions should
-not have side effects on their inputs.}
-}
-\if{html}{\out{</div>}}
-}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-LLMMessage-clone_deep"></a>}}
