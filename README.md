@@ -7,6 +7,7 @@
 - **Multiple Model Support**: Seamlessly switch between various model providers like Claude, ChatGPT, and Groq, using the best of what each has to offer.
 - **Media Handling**: Extract and process text from PDF files and capture console outputs for messaging. Upload imagefiles or the last plotpane to multimodal models.
 - **Interactive Messaging History**: Manage an ongoing conversation with models, maintaining a structured history of messages and media interactions, which are automatically formatted for each API
+- **Statefull handling of rate limits:** API rate limits are handled statefully within each R Session and API functions can wait automatically for rate limits to reset (At the moment this is only fully implemented for Anthropic Claude)
 - **Tidy Workflow**: Making use of R's functional programming features for a side-effect-free, pipeline-oriented operation style that feels natural to R users.
 
 ## Requirements
@@ -207,7 +208,7 @@ temp_example |> groq(.temperature=0)# Same answer
 
 ## Future Work
 
-- **Useful utility functions:** Utility functions like `count_tokens()` to estimate the cost of a message history and better functions to extract agent feedback
+- **Useful utility functions:** Utility functions like `estimate_tokens()` to estimate the cost of a message history and better functions to extract agent feedback
 - **Tool use and json-mode:** Add support for models ability to use tools and structured json-output to directly create R lists and objects
 - **Local models**: If possible support for local models via llama.cpp
 
