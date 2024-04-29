@@ -21,7 +21,7 @@ fast_gpt4_token_estimator <- function(.text){
   n_found_directly + n_compound_tokens
 }
 
-
+#gpt4_vocab <- load(file = here::here("data","gpt4_vocab.rda"))
 #fast_gpt4_token_estimator("We document a substantial decline in cognitive and social interactive abilities and in GPAs among entering teachers. Then, using matched student-teacher data, we find that teacher abilities have a negligible impact on average student achievement. This finding hides interesting heterogeneities. In particular, an increase in teachers' cognitive (social) abilities increases (reduces) the achievement gap between high- and low-aptitude students. Teacher cognitive and social abili")
 
 #save(gpt4_vocab, file = here::here("data","gpt4_vocab.rda"))

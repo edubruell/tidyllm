@@ -7,7 +7,7 @@
 - **Multiple Model Support**: Seamlessly switch between various model providers like Claude, ChatGPT, and Groq, using the best of what each has to offer.
 - **Media Handling**: Extract and process text from PDF files and capture console outputs for messaging. Upload imagefiles or the last plotpane to multimodal models.
 - **Interactive Messaging History**: Manage an ongoing conversation with models, maintaining a structured history of messages and media interactions, which are automatically formatted for each API
-- **Statefull handling of rate limits:** API rate limits are handled statefully within each R Session and API functions can wait automatically for rate limits to reset (At the moment this is only fully implemented for Anthropic Claude)
+- **Statefull handling of rate limits:** API rate limits are handled statefully within each R Session and API functions can wait automatically for rate limits to reset
 - **Tidy Workflow**: Making use of R's functional programming features for a side-effect-free, pipeline-oriented operation style that feels natural to R users.
 
 ## Requirements
