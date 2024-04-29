@@ -75,7 +75,7 @@ parse_duration_to_seconds <- function(.duration_str) {
     minutes <- as.numeric(sub("m.*", "", .duration_str))
     seconds <- as.numeric(sub(".*m", "", sub("s", "", .duration_str)))
     duration_sec <- minutes * 60 + seconds
-  } else if(grepl("s", duration_str)) {
+  } else if(grepl("s", .duration_str)) {
     # Format is just in seconds, e.g., "47s"
     duration_sec <- as.numeric(sub("s", "", .duration_str))
   } else {

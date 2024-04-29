@@ -307,6 +307,9 @@ chatgpt <- function(.llm,
 #' @param .tools Additional tools used by the model (optional).
 #' @param .api_url Base URL for the API (default: "https://api.anthropic.com/v1/messages").
 #' @param .timeout Request timeout in seconds (default: 60).
+#' @param .verbose Should additional information be shown after the API call
+#' @param .wait Should we wait for rate limits if necessary?
+#' @param .min_tokens_reset How many tokens should be remaining to wait until we wait for token reset?
 #'
 #' @return Returns an updated LLMMessage object.
 #' @export
@@ -318,7 +321,10 @@ groq <- function(.llm,
                  .frequency_penalty = NULL,
                  .presence_penalty = NULL,
                  .api_url = "https://api.groq.com/openai/v1/chat/completions",
-                 .timeout = 60) {
+                 .timeout = 60,
+                 .verbose = FALSE,
+                 .wait=TRUE,
+                 .min_tokens_reset = 0L) {
   
   # Validate inputs
   c(
@@ -328,7 +334,10 @@ groq <- function(.llm,
     ".temperature must be numeric if provided" = is.null(.temperature) | is.numeric(.temperature),
     ".top_p must be numeric if provided" = is.null(.top_p) | is.numeric(.top_p),
     ".frequency_penalty must be numeric if provided" = is.null(.frequency_penalty) | is.numeric(.frequency_penalty),
-    ".presence_penalty must be numeric if provided" = is.null(.presence_penalty) | is.numeric(.presence_penalty)
+    ".presence_penalty must be numeric if provided" = is.null(.presence_penalty) | is.numeric(.presence_penalty),
+    ".verbose must be logical"                   = is.logical(.verbose),
+    ".wait must be logical"                      = is.logical(.wait),
+    ".min_tokens_reset must be an integer"       = is_integer_valued(.min_tokens_reset)
   ) |>
     validate_inputs()
   
@@ -365,8 +374,54 @@ groq <- function(.llm,
   # Encode the body as JSON
   body_json <- jsonlite::toJSON(body, auto_unbox = TRUE)
   
+  #Wait for the rate-limit if neccesary 
+  if(.wait==TRUE & !is.null(.tidyllm_rate_limit_env[["groq"]])){
+    wait_rate_limit("groq",.min_tokens_reset)
+  }  
+  
   # Make the POST request using httr package
   response <- httr::POST(.api_url, headers, body = body_json, encode = "json", httr::timeout(.timeout))
+  
+  # Retrieve the response headers
+  response_headers <- httr::headers(response)
+
+  # Retrieve the response headers
+  response_headers <- httr::headers(response)
+  
+  #Do some parsing for the rl list 
+  request_time                  <- strptime(response_headers["date"]$date, format="%a, %d %b %Y %H:%M:%S", tz="GMT")
+  ratelimit_requests_reset_dt   <- parse_duration_to_seconds(response_headers["x-ratelimit-reset-requests"]$`x-ratelimit-reset-requests`)
+  ratelimit_requests_reset_time <- request_time + ratelimit_requests_reset_dt
+  ratelimit_tokens_reset_dt     <- parse_duration_to_seconds(response_headers["x-ratelimit-reset-tokens"]$`x-ratelimit-reset-tokens`)
+  ratelimit_tokens_reset_time   <- request_time + ratelimit_tokens_reset_dt
+  
+  #Ratelimit list
+  rl <- list(
+    this_request_time             = request_time ,
+    ratelimit_requests            = as.integer(response_headers["x-ratelimit-limit-requests"]),
+    ratelimit_requests_remaining  = as.integer(response_headers["x-ratelimit-remaining-requests"]),
+    ratelimit_requests_reset_time = ratelimit_requests_reset_time ,
+    ratelimit_tokens              = as.integer(response_headers["x-ratelimit-limit-tokens"]),
+    ratelimit_tokens_remaining    = as.integer(response_headers["x-ratelimit-remaining-tokens"]),
+    ratelimit_tokens_reset_time   = ratelimit_tokens_reset_time
+  )
+  
+  #Initialize an environment to store rate-limit info
+  initialize_api_env("groq")
+  
+  #Update the rate-limit environment with info from rl
+  update_rate_limit("groq",rl)
+  
+  #Show Request rate limit info if we are verbose
+  if(.verbose==TRUE){
+    glue::glue("Groq API answer received at {rl$this_request_time}.
+              Remaining requests rate limit: {rl$ratelimit_requests_remaining}/{rl$ratelimit_requests}
+              Requests rate limit reset at: {rl$ratelimit_requests_reset_time} 
+              Remaining tokens   rate limit: {rl$ratelimit_tokens_remaining}/{rl$ratelimit_tokens}
+              Tokens rate limit reset at: {rl$ratelimit_tokens_reset_time} 
+              
+              ") |> cat()
+  }
   
   # Check for errors
   if (httr::http_status(response)$category != "Success") {
