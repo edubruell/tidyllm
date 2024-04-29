@@ -86,41 +86,33 @@ claude <- function(.llm,
   # Encode the body as JSON
   body_json <- jsonlite::toJSON(body, auto_unbox = TRUE)
   
-  #Should we wait for the limits
   if(.wait==TRUE & !is.null(.tidyllm_rate_limit_env[["claude"]])){
-    if(.tidyllm_rate_limit_env$claude$requests_remaining == 1){
-      requests_reset_difftime <- as.numeric(difftime( .tidyllm_rate_limit_env$claude$requests_reset_time, Sys.time(), units = "secs"))
-      glue::glue("Waiting till requests rate limit is reset: {round(requests_reset_difftime},2)}")
-      Sys.sleep()
-    }
-    token_reset_difftime <- as.numeric(difftime(.tidyllm_rate_limit_env$claude$tokens_reset_time, Sys.time(), units = "secs"))
-    if(token_reset_difftime > 0 & .min_tokens_reset>0 & .tidyllm_rate_limit_env$claude$tokens_remaining<.min_tokens_reset){
-      glue::glue("Waiting till the token rate limit is reset: round({token_reset_difftime},2) seconds") |> cat()
-      Sys.sleep(token_reset_difftime)
-    }
-  }
+    wait_rate_limit("claude",.min_tokens_reset)
+  }  
   
   # Make the POST request using httr package
   response <- httr::POST(.api_url, headers, body = body_json, encode = "json", httr::timeout(.timeout))
   
-  # Retrieve the response headers
+  # Retrieve the response headers and parse them so they can be stored in the .tidyllm_rate_limit_env
   response_headers <- httr::headers(response)
   rl <- list(
-    this_request_time             = response_headers["date"],
-    ratelimit_requests            = response_headers["anthropic-ratelimit-requests-limit"],
-    ratelimit_requests_remaining  = response_headers["anthropic-ratelimit-requests-remaining"],
-    ratelimit_requests_reset_time = response_headers["anthropic-ratelimit-requests-reset"]$`anthropic-ratelimit-requests-reset`,
-    ratelimit_tokens              = response_headers["anthropic-ratelimit-tokens-limit"],
-    ratelimit_tokens_remaining    = response_headers["anthropic-ratelimit-tokens-remaining"],
-    ratelimit_tokens_reset_time   = response_headers["anthropic-ratelimit-tokens-reset"]$`anthropic-ratelimit-tokens-reset`
+    this_request_time             = strptime(response_headers["date"], format="%a, %d %b %Y %H:%M:%S", tz="GMT"),
+    ratelimit_requests            = as.integer(response_headers["anthropic-ratelimit-requests-limit"]),
+    ratelimit_requests_remaining  = as.integer(response_headers["anthropic-ratelimit-requests-remaining"]),
+    ratelimit_requests_reset_time = as.POSIXct(
+      response_headers["anthropic-ratelimit-requests-reset"]$`anthropic-ratelimit-requests-reset`,
+      format="%Y-%m-%dT%H:%M:%SZ", tz="UTC") ,
+    ratelimit_tokens              = as.integer(response_headers["anthropic-ratelimit-tokens-limit"]),
+    ratelimit_tokens_remaining    = as.integer(response_headers["anthropic-ratelimit-tokens-remaining"]),
+    ratelimit_tokens_reset_time   = as.POSIXct(response_headers["anthropic-ratelimit-tokens-reset"]$`anthropic-ratelimit-tokens-reset`,
+                                               format="%Y-%m-%dT%H:%M:%SZ", tz="UTC") 
   )
   
   #Initialize an environment to store rate-limit info
   initialize_api_env("claude")
-  .tidyllm_rate_limit_env[["claude"]]$requests_remaining  <- as.integer(rl$ratelimit_requests_remaining)
-  .tidyllm_rate_limit_env[["claude"]]$requests_reset_time <- as.POSIXct(rl$ratelimit_requests_reset_time, format="%Y-%m-%dT%H:%M:%SZ", tz="UTC") 
-  .tidyllm_rate_limit_env[["claude"]]$tokens_remaining    <- as.integer(rl$ratelimit_tokens_remaining)
-  .tidyllm_rate_limit_env[["claude"]]$tokens_reset_time   <- as.POSIXct(rl$ratelimit_tokens_reset_time, format="%Y-%m-%dT%H:%M:%SZ", tz="UTC") 
+  #Update the rate-limit environment with info from rl
+  update_rate_limit("claude",rl)
+
   
   # Check for errors
   if (httr::http_status(response)$category != "Success") {
@@ -233,36 +225,48 @@ chatgpt <- function(.llm,
   # Encode the body as JSON
   body_json <- jsonlite::toJSON(body, auto_unbox = TRUE)
   
+  #Wait for the rate-limit if neccesary 
+  if(.wait==TRUE & !is.null(.tidyllm_rate_limit_env[["chatgpt"]])){
+    wait_rate_limit("chatgpt",.min_tokens_reset)
+  }  
+  
   # Make the POST request using httr package
   response <- httr::POST(.api_url, headers, body = body_json, encode = "json", httr::timeout(.timeout))
   
   # Retrieve the response headers
   response_headers <- httr::headers(response)
+
+  #Do some parsing for the rl list 
+  request_time                  <- strptime(response_headers["date"]$date, format="%a, %d %b %Y %H:%M:%S", tz="GMT")
+  ratelimit_requests_reset_dt   <- parse_duration_to_seconds(response_headers["x-ratelimit-reset-requests"]$`x-ratelimit-reset-requests`)
+  ratelimit_requests_reset_time <- request_time + ratelimit_requests_reset_dt
+  ratelimit_tokens_reset_dt     <- parse_duration_to_seconds(response_headers["x-ratelimit-reset-tokens"]$`x-ratelimit-reset-tokens`)
+  ratelimit_tokens_reset_time   <- request_time + ratelimit_tokens_reset_dt
+  
+  #Ratelimit list
   rl <- list(
-    this_request_time             = response_headers["date"]$date,
-    ratelimit_requests            = response_headers["x-ratelimit-limit-requests"],
-    ratelimit_requests_remaining  = response_headers["x-ratelimit-remaining-requests"],
-    ratelimit_requests_reset_dt   = response_headers["x-ratelimit-reset-requests"]$`x-ratelimit-reset-requests`,
-    ratelimit_tokens              = response_headers["x-ratelimit-limit-tokens"],
-    ratelimit_tokens_remaining    = response_headers["x-ratelimit-remaining-tokens"],
-    ratelimit_tokens_reset_dt   = response_headers["x-ratelimit-reset-tokens"]$`x-ratelimit-reset-tokens`
+    this_request_time             = request_time ,
+    ratelimit_requests            = as.integer(response_headers["x-ratelimit-limit-requests"]),
+    ratelimit_requests_remaining  = as.integer(response_headers["x-ratelimit-remaining-requests"]),
+    ratelimit_requests_reset_time = ratelimit_requests_reset_time ,
+    ratelimit_tokens              = as.integer(response_headers["x-ratelimit-limit-tokens"]),
+    ratelimit_tokens_remaining    = as.integer(response_headers["x-ratelimit-remaining-tokens"]),
+    ratelimit_tokens_reset_time   = ratelimit_tokens_reset_time
   )
   
   #Initialize an environment to store rate-limit info
   initialize_api_env("chatgpt")
-  .tidyllm_rate_limit_env[["chatgpt"]]$last_request        <- rl$this_request_time
-  .tidyllm_rate_limit_env[["chatgpt"]]$requests_remaining  <- as.integer(rl$ratelimit_requests_remaining)
-  .tidyllm_rate_limit_env[["chatgpt"]]$requests_reset_dt   <- rl$ratelimit_requests_reset_dt
-  .tidyllm_rate_limit_env[["chatgpt"]]$tokens_remaining    <- as.integer(rl$ratelimit_tokens_remaining)
-  .tidyllm_rate_limit_env[["chatgpt"]]$tokens_reset_dt     <- rl$ratelimit_tokens_reset_dt
+  
+  #Update the rate-limit environment with info from rl
+  update_rate_limit("chatgpt",rl)
   
   #Show Request rate limit info if we are verbose
   if(.verbose==TRUE){
     glue::glue("OpenAI API answer received at {rl$this_request_time}.
               Remaining requests rate limit: {rl$ratelimit_requests_remaining}/{rl$ratelimit_requests}
-              Requests rate limit reset in: {rl$ratelimit_requests_reset_dt} 
+              Requests rate limit reset at: {rl$ratelimit_requests_reset_time} 
               Remaining tokens   rate limit: {rl$ratelimit_tokens_remaining}/{rl$ratelimit_tokens}
-              Tokens rate limit reset in: {rl$ratelimit_tokens_reset_dt} 
+              Tokens rate limit reset at: {rl$ratelimit_tokens_reset_time} 
               
               ") |> cat()
   }

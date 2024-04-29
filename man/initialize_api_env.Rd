@@ -4,15 +4,12 @@
 \alias{initialize_api_env}
 \title{Initialize or Retrieve API-specific Environment}
 \usage{
-initialize_api_env(api_name)
+initialize_api_env(.api_name)
 }
 \arguments{
 \item{api_name}{The name of the API for which to initialize or retrieve the environment.}
 }
-\value{
-An environment object for the specified API.
-}
 \description{
-This function initializes or retrieves a named environment for storing rate limit information
+This function initializes a named environment for storing rate limit information
 specific to an API. It ensures that each API's rate limit data is stored separately.
 }
