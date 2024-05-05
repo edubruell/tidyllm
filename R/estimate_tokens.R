@@ -1,4 +1,10 @@
-
+#' Fast GPT-4 Token Estimator
+#'
+#' Estimate the number of tokens in a given text using a fast tokenization algorithm.
+#'
+#' @param .text The input text to estimate tokens from.
+#' @return The estimated number of tokens in the input text.
+#' @export
 fast_gpt4_token_estimator <- function(.text){
   # Regex pattern for tokenization
   split_regexp <- "(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?\\p{L}+|\\p{N}{1,3}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+"
@@ -19,6 +25,21 @@ fast_gpt4_token_estimator <- function(.text){
   
   # Total estimated tokens
   n_found_directly + n_compound_tokens
+}
+
+#' Estimate Tokens
+#'
+#' Estimate the number of tokens for an .llm message history
+#'
+#' @param .llm A tidyllm object
+#' @return The estimated number of tokens in the input list of language model responses.
+#' @export
+estimate_tokens <- function(.llm){
+  #Very simnple estimator using the text only part of a message
+  tokens <- sapply(.llm$to_api_format("groq"), function(x){
+    fast_gpt4_token_estimator(x$content)}) |> sum()
+  
+  return(tokens)
 }
 
 #gpt4_vocab <- load(file = here::here("data","gpt4_vocab.rda"))
