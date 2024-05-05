@@ -442,3 +442,43 @@ groq <- function(.llm,
   
   return(llm_copy)
 }
+
+#' Call an ollama model
+#'
+#' @param .llm An existing LLMMessage object or an initial text prompt.
+#' @param .model The model identifier (default: "llama3").
+#' @param .temperature Control for randomness in response generation (optional).
+#' @param .top_k Top k sampling parameter (optional).
+#' @param .top_p Nucleus sampling parameter (optional).
+#'
+#' @return Returns an updated LLMMessage object.
+#' @export
+ollama <- function(.llm,
+                 .model = "mixtral-8x7b-32768",
+                 .max_tokens = 1024,
+                 .temperature = NULL,
+                 .top_p = NULL,
+                 .frequency_penalty = NULL,
+                 .presence_penalty = NULL,
+                 .ollama_server = "http://localhost:11434",
+                 .timeout = 60,
+                 .verbose = FALSE,
+                 .wait=TRUE,
+                 .min_tokens_reset = 0L) {
+  
+  #Ususally the default API is assumed
+  ollama_api <- glue::glue("{.ollama_server}/api/chat")
+  
+  # Validate inputs
+  c(
+    "Input .llm must be an LLMMessage object" = inherits(.llm, "LLMMessage"),
+    ".timeout must be an integer-valued numeric" = is_integer_valued(.timeout),
+    ".temperature must be numeric if provided" = is.null(.temperature) | is.numeric(.temperature),
+    ".top_p must be numeric if provided" = is.null(.top_p) | is.numeric(.top_p),
+  ) |>
+    validate_inputs()
+  
+  # Get formatted message list for Groq models
+  messages <- .llm$to_api_format("groq")
+  
+}

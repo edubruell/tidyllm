@@ -210,5 +210,4 @@ temp_example |> groq(.temperature=0)# Same answer
 
 - **Useful utility functions:** Utility functions like `estimate_tokens()` to estimate the cost of a message history and better functions to extract agent feedback
 - **Tool use and json-mode:** Add support for models ability to use tools and structured json-output to directly create R lists and objects
-- **Local models**: If possible support for local models via llama.cpp
 

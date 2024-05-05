@@ -13,7 +13,10 @@ groq(
   .frequency_penalty = NULL,
   .presence_penalty = NULL,
   .api_url = "https://api.groq.com/openai/v1/chat/completions",
-  .timeout = 60
+  .timeout = 60,
+  .verbose = FALSE,
+  .wait = TRUE,
+  .min_tokens_reset = 0L
 )
 }
 \arguments{
@@ -30,6 +33,12 @@ groq(
 \item{.api_url}{Base URL for the API (default: "https://api.anthropic.com/v1/messages").}
 
 \item{.timeout}{Request timeout in seconds (default: 60).}
+
+\item{.verbose}{Should additional information be shown after the API call}
+
+\item{.wait}{Should we wait for rate limits if necessary?}
+
+\item{.min_tokens_reset}{How many tokens should be remaining to wait until we wait for token reset?}
 
 \item{.top_k}{Top k sampling parameter (optional).}
 
