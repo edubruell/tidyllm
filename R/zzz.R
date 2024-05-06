@@ -4,8 +4,11 @@
   if (!exists(".tidyllm_rate_limit_env", envir = .GlobalEnv)) {
     .GlobalEnv$.tidyllm_rate_limit_env <- new.env(parent = emptyenv())
   }
-  
-  message("Package ", pkgname, " loaded. Rate limit environment initialized.")
+  #Initialize the parent environment for streaming backups on package load
+  if (!exists(".tidyllm_stream_env", envir = .GlobalEnv)) {
+    .GlobalEnv$.tidyllm_stream_env <- new.env(parent = emptyenv())
+  }
+  message("Package ", pkgname, " loaded.")
 }
 
 #' @export
@@ -14,6 +17,9 @@
   if (!exists(".tidyllm_rate_limit_env", envir = .GlobalEnv)) {
     .GlobalEnv$.tidyllm_rate_limit_env <- new.env(parent = emptyenv())
   }
-  
-  message("Package ", pkgname, " attached. Rate limit environment ready.")
+  #Initialize the parent environment for streaming backups on package load
+  if (!exists(".tidyllm_stream_env", envir = .GlobalEnv)) {
+    .GlobalEnv$.tidyllm_stream_env <- new.env(parent = emptyenv())
+  }
+  message("Package ", pkgname, " attached.")
 }

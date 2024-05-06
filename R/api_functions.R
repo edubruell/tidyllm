@@ -478,7 +478,7 @@ ollama <- function(.llm,
   ) |>
     validate_inputs()
   
-  # Get formatted message list for Groq models
-  messages <- .llm$to_api_format("groq")
+  # Get formatted message list for ollama models
+  messages <- .llm$to_api_format("ollama")
   
 }
