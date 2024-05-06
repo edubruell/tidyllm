@@ -7,5 +7,6 @@
 ollama_list_models(.ollama_server = "http://localhost:11434")
 }
 \description{
-This function connects to the Ollama API and retrieves information about available models.
+This function connects to the Ollama API and retrieves and print information
+about available models.
 }

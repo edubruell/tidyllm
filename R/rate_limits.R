@@ -43,10 +43,10 @@ wait_rate_limit <- function(.apiname,.min_tokens_reset){
   #Read info from .tidyllm_rate_limit_env
   requests_remaining  <- .tidyllm_rate_limit_env[[.apiname]]$requests_remaining
   requests_reset_time <- .tidyllm_rate_limit_env[[.apiname]]$requests_reset_time
-  requests_reset_difftime <- as.numeric(difftime(requests_reset_time, now(tzone = "UTC"), units = "secs"))
+  requests_reset_difftime <- as.numeric(difftime(requests_reset_time, lubridate::now(tzone = "UTC"), units = "secs"))
   tokens_reset_time    <- .tidyllm_rate_limit_env[[.apiname]]$tokens_reset_time
   tokens_remaining    <- .tidyllm_rate_limit_env[[.apiname]]$tokens_remaining
-  tokens_reset_difftime <- as.numeric(difftime(tokens_reset_time, now(tzone = "UTC"), units = "secs"))
+  tokens_reset_difftime <- as.numeric(difftime(tokens_reset_time, lubridate::now(tzone = "UTC"), units = "secs"))
   
   #Wait if rate limit is likely to be hit
   if(requests_remaining  == 1){

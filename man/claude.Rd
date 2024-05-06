@@ -14,7 +14,7 @@ claude(
   .metadata = NULL,
   .stop_sequences = NULL,
   .tools = NULL,
-  .api_url = "https://api.anthropic.com/v1/messages",
+  .api_url = "https://api.anthropic.com/",
   .verbose = FALSE,
   .wait = TRUE,
   .min_tokens_reset = 0L,

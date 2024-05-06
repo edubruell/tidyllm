@@ -29,12 +29,12 @@ claude <- function(.llm,
                    .metadata = NULL,
                    .stop_sequences = NULL,
                    .tools = NULL,
-                   .api_url = "https://api.anthropic.com/v1/messages",
+                   .api_url = "https://api.anthropic.com/",
                    .verbose = FALSE,
                    .wait=TRUE,
                    .min_tokens_reset = 0L,
                    .timeout = 60) {  # Default timeout set to 60 seconds
-  
+
   #Validate inputes to the Claude function
   c(
     ".llm must be an LLMMessage object"    = inherits(.llm, "LLMMessage"),
@@ -50,7 +50,6 @@ claude <- function(.llm,
   ) |>
     validate_inputs()
   
-  
   #Get the formated message list so we can send it to a claude model
   messages <- .llm$to_api_format("claude")
   
@@ -58,15 +57,13 @@ claude <- function(.llm,
   api_key <- base::Sys.getenv("ANTHROPIC_API_KEY")
   if (api_key == "") stop("API key is not set. Please set it with : Sys.setenv(ANTHROPIC_API_KEY = \"YOUR-KEY-GOES-HERE\").")
   
-  # Setup headers using httr package
-  headers <- httr::add_headers(
-    `x-api-key` = api_key,
-    `anthropic-version` = "2023-06-01",
-    `content-type` = "application/json; charset=utf-8"
-  )
+  #If the rate limit environment is set we wait for the rate limit
+  if(.wait==TRUE & !is.null(.tidyllm_rate_limit_env[["claude"]])){
+    wait_rate_limit("claude",.min_tokens_reset)
+  }  
   
   # Data payload
-  body <- list(
+  request_body <- list(
     model = .model,
     max_tokens = .max_tokens,
     messages = messages,
@@ -81,20 +78,26 @@ claude <- function(.llm,
   )
   
   # Filter out NULL values from the body
-  body <- base::Filter(base::Negate(base::is.null), body)
+  request_body <- base::Filter(Negate(is.null), request_body)
+  
+  
+  # Perform the request using httr2 package
+  response <- httr2::request(.api_url) |>
+    httr2::req_url_path("/v1/messages") |>
+    httr2::req_headers(
+      `x-api-key` = api_key,
+      `anthropic-version` = "2023-06-01",
+      `content-type` = "application/json; charset=utf-8") |>
+    httr2::req_body_json(data = request_body) |> 
+    httr2::req_timeout(.timeout) |>
+    httr2::req_perform() 
+
   
   # Encode the body as JSON
-  body_json <- jsonlite::toJSON(body, auto_unbox = TRUE)
-  
-  if(.wait==TRUE & !is.null(.tidyllm_rate_limit_env[["claude"]])){
-    wait_rate_limit("claude",.min_tokens_reset)
-  }  
-  
-  # Make the POST request using httr package
-  response <- httr::POST(.api_url, headers, body = body_json, encode = "json", httr::timeout(.timeout))
-  
+  body_json <- response |> httr2::resp_body_json()
+
   # Retrieve the response headers and parse them so they can be stored in the .tidyllm_rate_limit_env
-  response_headers <- httr::headers(response)
+  response_headers <- response |> httr2::resp_headers()
   rl <- list(
     this_request_time             = strptime(response_headers["date"], format="%a, %d %b %Y %H:%M:%S", tz="GMT"),
     ratelimit_requests            = as.integer(response_headers["anthropic-ratelimit-requests-limit"]),
@@ -115,8 +118,8 @@ claude <- function(.llm,
 
   
   # Check for errors
-  if (httr::http_status(response)$category != "Success") {
-    stop("API request failed: ", httr::http_status(response))
+  if (httr2::resp_status(response)!=200) {
+    stop("API request failed! Here is the raw reponse from the server", httr2::resp_raw(response))
   }
   
   #Show Request rate limit info if we are verbose
@@ -131,16 +134,13 @@ claude <- function(.llm,
   }
   
   # Get the content of the response
-  response_content <-  httr::content(response, "text", encoding = "UTF-8")
-  
-  # Decode the response from JSON
-  response_decoded <- jsonlite::fromJSON(response_content)
+  content_assistant_text <- body_json$content[[1]]$text
   
   # Create a deep copy of the LLMMessage object
   llm_copy <- .llm$clone_deep()
   
   #Add claudes message to the history of the llm message object
-  llm_copy$add_message("assistant",response_decoded$content$text)
+  llm_copy$add_message("assistant",content_assistant_text)
   
   return(llm_copy)
 }
@@ -172,13 +172,13 @@ chatgpt <- function(.llm,
                     .top_p = NULL,
                     .frequency_penalty = NULL,
                     .presence_penalty = NULL,
-                    .api_url = "https://api.openai.com/v1/chat/completions",
+                    .api_url = "https://api.openai.com/",
                     .timeout = 60,
                     .image_detail = "auto",
                     .verbose = FALSE,
                     .wait=TRUE,
                     .min_tokens_reset = 0L) {
-  
+
   # Validate inputs
   c(
     "Input .llm must be an LLMMessage object" = inherits(.llm, "LLMMessage"),
@@ -194,21 +194,15 @@ chatgpt <- function(.llm,
   ) |>
     validate_inputs()
   
-  # Get formatted message list for ChatGPT
-  messages <- .llm$to_api_format("chatgpt",.image_detail)
+  #Get messages from llm object
+  messages <- .llm$to_api_format("chatgpt")
   
-  # Retrieve API key from environment variables
+  #Get the OpenAI API key
   api_key <- Sys.getenv("OPENAI_API_KEY")
   if (api_key == "") stop("API key is not set. Please set it with: Sys.setenv(OPENAI_API_KEY = \"YOUR-KEY-GOES-HERE\")")
   
-  # Setup headers using httr package
-  headers <- httr::add_headers(
-    `Authorization` = sprintf("Bearer %s", api_key),
-    `Content-Type` = "application/json"
-  )
-  
-  # Data payload
-  body <- list(
+  #Fill the request body
+  request_body <- list(
     model = .model,
     max_tokens = .max_tokens,
     messages = messages,
@@ -217,25 +211,29 @@ chatgpt <- function(.llm,
     frequency_penalty = .frequency_penalty,
     presence_penalty = .presence_penalty
   )
-  
-  
-  # Filter out NULL values from the body
-  body <- Filter(Negate(is.null), body)
-  
-  # Encode the body as JSON
-  body_json <- jsonlite::toJSON(body, auto_unbox = TRUE)
+  request_body <- base::Filter(Negate(is.null), request_body)
   
   #Wait for the rate-limit if neccesary 
   if(.wait==TRUE & !is.null(.tidyllm_rate_limit_env[["chatgpt"]])){
     wait_rate_limit("chatgpt",.min_tokens_reset)
   }  
   
-  # Make the POST request using httr package
-  response <- httr::POST(.api_url, headers, body = body_json, encode = "json", httr::timeout(.timeout))
+  response <- httr2::request(.api_url) |>
+    httr2::req_url_path("/v1/chat/completions") |>
+    httr2::req_headers(
+      `Authorization` = sprintf("Bearer %s", api_key),
+      `Content-Type` = "application/json"
+    ) |>
+    httr2::req_body_json(data = request_body) |> 
+    httr2::req_timeout(.timeout) |>
+    httr2::req_perform()
   
-  # Retrieve the response headers
-  response_headers <- httr::headers(response)
-
+  #Get the response body
+  body_json <- response |> httr2::resp_body_json()
+  
+  # Retrieve the response headers and parse them so they can be stored in the .tidyllm_rate_limit_env
+  response_headers <- response |> httr2::resp_headers()
+  
   #Do some parsing for the rl list 
   request_time                  <- strptime(response_headers["date"]$date, format="%a, %d %b %Y %H:%M:%S", tz="GMT")
   ratelimit_requests_reset_dt   <- parse_duration_to_seconds(response_headers["x-ratelimit-reset-requests"]$`x-ratelimit-reset-requests`)
@@ -259,6 +257,7 @@ chatgpt <- function(.llm,
   
   #Update the rate-limit environment with info from rl
   update_rate_limit("chatgpt",rl)
+
   
   #Show Request rate limit info if we are verbose
   if(.verbose==TRUE){
@@ -273,21 +272,15 @@ chatgpt <- function(.llm,
   
   
   # Check for errors
-  if (httr::http_status(response)$category != "Success") {
-    stop("API request failed: ", httr::http_status(response))
+  if (httr2::resp_status(response) != 200) {
+    stop("API request failed! Here is the raw response from the server", httr2::resp_raw(response))
   }
-  
-  # Get the content of the response
-  response_content <- httr::content(response, "text", encoding = "UTF-8")
-  
-  # Decode the response from JSON
-  response_decoded <- jsonlite::fromJSON(response_content)
   
   # Create a deep copy of the LLMMessage object
   llm_copy <- .llm$clone_deep()
   
   # Add ChatGPT's message to the history of the LLMMessage object
-  llm_copy$add_message("assistant", response_decoded$choices$message$content)
+  llm_copy$add_message("assistant", body_json$choices[[1]]$message$content)
   
   return(llm_copy)
 }
@@ -320,7 +313,7 @@ groq <- function(.llm,
                  .top_p = NULL,
                  .frequency_penalty = NULL,
                  .presence_penalty = NULL,
-                 .api_url = "https://api.groq.com/openai/v1/chat/completions",
+                 .api_url = "https://api.groq.com/",
                  .timeout = 60,
                  .verbose = FALSE,
                  .wait=TRUE,
@@ -351,14 +344,8 @@ groq <- function(.llm,
   api_key <- Sys.getenv("GROQ_API_KEY")
   if (api_key == "") stop("API key is not set. Please set it with: Sys.setenv(GROQ_API_KEY = \"YOUR-KEY-GOES-HERE\")")
   
-  # Setup headers using httr package
-  headers <- httr::add_headers(
-    `Authorization` = sprintf("Bearer %s", api_key),
-    `Content-Type` = "application/json; charset=utf-8"
-  )
-  
-  # Data payload
-  body <- list(
+  #Fill the request body
+  request_body <- list(
     model = .model,
     max_tokens = .max_tokens,
     messages = messages,
@@ -367,26 +354,29 @@ groq <- function(.llm,
     frequency_penalty = .frequency_penalty,
     presence_penalty = .presence_penalty
   )
-  
-  # Filter out NULL values from the body
-  body <- Filter(Negate(is.null), body)
-  
-  # Encode the body as JSON
-  body_json <- jsonlite::toJSON(body, auto_unbox = TRUE)
+  request_body <- base::Filter(Negate(is.null), request_body)
   
   #Wait for the rate-limit if neccesary 
   if(.wait==TRUE & !is.null(.tidyllm_rate_limit_env[["groq"]])){
     wait_rate_limit("groq",.min_tokens_reset)
   }  
-  
-  # Make the POST request using httr package
-  response <- httr::POST(.api_url, headers, body = body_json, encode = "json", httr::timeout(.timeout))
-  
-  # Retrieve the response headers
-  response_headers <- httr::headers(response)
 
-  # Retrieve the response headers
-  response_headers <- httr::headers(response)
+  #Get the response via httr2
+  response <- httr2::request(.api_url) |>
+    httr2::req_url_path("/openai/v1/chat/completions") |>
+    httr2::req_headers(
+      `Authorization` = sprintf("Bearer %s", api_key),
+      `Content-Type` = "application/json"
+    ) |>
+    httr2::req_body_json(data = request_body) |> 
+    httr2::req_timeout(.timeout) |>
+    httr2::req_perform()
+  
+  #Get the response body
+  body_json <- response |> httr2::resp_body_json()
+  
+  # Retrieve the response headers and parse them so they can be stored in the .tidyllm_rate_limit_env
+  response_headers <- response |> httr2::resp_headers()
   
   #Do some parsing for the rl list 
   request_time                  <- strptime(response_headers["date"]$date, format="%a, %d %b %Y %H:%M:%S", tz="GMT")
@@ -424,21 +414,15 @@ groq <- function(.llm,
   }
   
   # Check for errors
-  if (httr::http_status(response)$category != "Success") {
-    stop("API request failed: ", httr::http_status(response))
+  if (httr2::resp_status(response) != 200) {
+    stop("API request failed! Here is the raw response from the server", httr2::resp_raw(response))
   }
-  
-  # Get the content of the response
-  response_content <- httr::content(response, "text", encoding = "UTF-8")
-  
-  # Decode the response from JSON
-  response_decoded <- jsonlite::fromJSON(response_content)
   
   # Create a deep copy of the LLMMessage object
   llm_copy <- .llm$clone_deep()
   
   # Add model's message to the history of the LLMMessage object
-  llm_copy$add_message("assistant", response_decoded$choices$message$content)
+  llm_copy$add_message("assistant", body_json$choices[[1]]$message$content)
   
   return(llm_copy)
 }

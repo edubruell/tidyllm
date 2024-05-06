@@ -12,7 +12,7 @@ chatgpt(
   .top_p = NULL,
   .frequency_penalty = NULL,
   .presence_penalty = NULL,
-  .api_url = "https://api.openai.com/v1/chat/completions",
+  .api_url = "https://api.openai.com/",
   .timeout = 60,
   .image_detail = "auto",
   .verbose = FALSE,

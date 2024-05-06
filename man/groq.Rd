@@ -12,7 +12,7 @@ groq(
   .top_p = NULL,
   .frequency_penalty = NULL,
   .presence_penalty = NULL,
-  .api_url = "https://api.groq.com/openai/v1/chat/completions",
+  .api_url = "https://api.groq.com/",
   .timeout = 60,
   .verbose = FALSE,
   .wait = TRUE,

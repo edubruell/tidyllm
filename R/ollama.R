@@ -1,7 +1,7 @@
 #' Retrieve and print model information from the Ollama API
 #' 
-#' This function connects to the Ollama API and retrieves information about available models.
-#' 
+#' This function connects to the Ollama API and retrieves and print information 
+#' about available models.
 #' @return NULL
 #' @export
 ollama_list_models <- function(.ollama_server = "http://localhost:11434") {
@@ -122,14 +122,4 @@ ollama_test_streaming <- function(.model,
 }
 
 
-ollama_download_model("gemma:2b")
 
-?cli::cli_progress_bar
-
-
-cli::cli_progress_bar()
-a <- cli::cli_progress_bar(auto_terminate = TRUE,type="download",name="ollama_model_download_pb")
-
-cli::cli_progress_update(set = 22,
-                         total = 121,
-                         id = a)
