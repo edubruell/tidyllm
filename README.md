@@ -1,10 +1,10 @@
 # TidyLLM: Tidy Large Language Model Integration for R
 
-**TidyLLM** is an R package designed to access various large language model APIs, including **Claude**, **ChatGPT**, and open-source models on **Groq** using their unique dedicated hardware accelerators. This package is built with simplicity and functionality in mind. Whether you're looking to generate text, analyze media, or integrate rich model feedback into your applications, **TidyLLM** provides a unified interface to get the job done.
+**TidyLLM** is an R package designed to access various large language model APIs, including **Claude**, **ChatGPT**, and **Groq** (using their unique dedicated hardware accelerators) or even local models via **Ollama**. This package is built with simplicity and functionality in mind. Whether you're looking to generate text, analyze media, or integrate rich model feedback into your RCode, **TidyLLM** provides a unified interface to get the job done.
 
 ## Features
 
-- **Multiple Model Support**: Seamlessly switch between various model providers like Claude, ChatGPT, and Groq, using the best of what each has to offer.
+- **Multiple Model Support**: Seamlessly switch between various model providers like Claude, ChatGPT, Groq or Ollama using the best of what each has to offer.
 - **Media Handling**: Extract and process text from PDF files and capture console outputs for messaging. Upload imagefiles or the last plotpane to multimodal models.
 - **Interactive Messaging History**: Manage an ongoing conversation with models, maintaining a structured history of messages and media interactions, which are automatically formatted for each API
 - **Statefull handling of rate limits:** API rate limits are handled statefully within each R Session and API functions can wait automatically for rate limits to reset
@@ -82,6 +82,7 @@ conversation |>
 - **`ollama()`**: Send and receive messages to the ollama API (to work with local models)
 - **`groq()`**: Interact with Groq's fast open-source models, taking advantage of their dedicated hardware accelerators for efficient processing.
 - **`last_reply()`**: Fetch the most recent assistant's response from a message history.
+- **`estimate_tokens()`**: Estimate the number of gpt-4 tokens in a message history.
 
 ### Examples for specific features
 
@@ -207,9 +208,7 @@ temp_example |> groq(.temperature=0)# Same answer
 
 ```
 
-
 ## Future Work
 
-- **Useful utility functions:** Utility functions like `estimate_tokens()` to estimate the cost of a message history and better functions to extract agent feedback
 - **Tool use and json-mode:** Add support for models ability to use tools and structured json-output to directly create R lists and objects
 
