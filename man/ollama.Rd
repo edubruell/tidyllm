@@ -9,6 +9,7 @@ ollama(
   .model = "llama3",
   .stream = FALSE,
   .seed = NULL,
+  .json = FALSE,
   .temperature = NULL,
   .num_ctx = 2048,
   .ollama_server = "http://localhost:11434"

@@ -4,7 +4,7 @@
 \alias{last_reply}
 \title{Retrieve Last Reply from an Assistant}
 \usage{
-last_reply(.llm = NULL)
+last_reply(.llm = NULL, .json = FALSE)
 }
 \arguments{
 \item{.llm}{An LLMMessage object containing the history of messages exchanged.

@@ -64,15 +64,15 @@ allow you to send message histories to different models.
 ```R
 library(tidyllm)
 
-# Describe an image with Claude
+# Describe an image with a llava model on ollama
 conversation <- llm_message("Describe this image",
                       .imagefile = here("image.png")) |>
-            claude()
+            ollama(.model="llava")
 
-# Use the description to query further with ollama
+# Use the description to query further with groq
 conversation |>
   llm_message("Based on the previous description, what could the research here be about?") |>
-  ollama(.model="llama3")
+  groq()
 ```
 ### Functions Overview
 
@@ -189,6 +189,27 @@ reply_pdf <- llm_message("Please summarize the key points from the provided PDF 
      last_reply()
 ```
 
+## Directly get structured data as reply
+Using the ability of large language models to output valid JSON, tidyllm can also directly get replies directly as structured data, which is easy to use in R. 
+```r
+de_books <- llm_message('Imagine a list of german books in JSON-format following this example:
+{
+  "books": [
+    {"title": "To Kill a Mockingbird", "author": "Harper Lee", "genre": "Fiction", "price": "$8.99"},
+    {"title": "1984", "author": "George Orwell", "genre": "Dystopian", "price": "$7.99"},
+    {"title": "The Great Gatsby", "author": "F. Scott Fitzgerald", "genre": "Fiction", "price": "$6.99"},
+    {"title": "Pride and Prejudice", "author": "Jane Austen", "genre": "Romance", "price": "$5.99"},
+    {"title": "Moby Dick", "author": "Herman Melville", "genre": "Adventure", "price": "$10.99"}
+  ]
+}
+') |>
+  ollama(.json=TRUE) |>
+  last_reply(.json=TRUE)
+  
+as.data.frame(de_books) 
+```
+At the moment this feature is limited to `ollama()`-models that support json-mode.
+
 ## API parameters
 
 Different API functions support different model parameters like  how deterministic the response should be via parameters like temperature. Please read API-documentation and the documentation of the model functions for specific examples.
@@ -207,8 +228,12 @@ temp_example |> groq(.temperature=0)
 temp_example |> groq(.temperature=0)# Same answer
 
 ```
+## Experimental features
+
+At the moment `ollama()` supports realtime streaming of reply tokens to the console while the model works. This is not super useful in the context of a data-analysis centered paper but might be added to other API-functions anyway. 
 
 ## Future Work
 
-- **Tool use and json-mode:** Add support for models ability to use tools and structured json-output to directly create R lists and objects
+- **Tool use:** Add support for models ability to use tools
+- **Basic agent workflows:** Add support for some simple agent workflows similar to what `langchain` does.
 

@@ -442,15 +442,17 @@ ollama <- function(.llm,
                    .model="llama3",
                    .stream=FALSE,
                    .seed = NULL,
+                   .json = FALSE,
                    .temperature = NULL,
                    .num_ctx = 2048,
                    .ollama_server= "http://localhost:11434"){
-  
+
   #Validate the inputs
   c(
     "Input .llm must be an LLMMessage object" = inherits(.llm, "LLMMessage"),
     "Input .model must be a string" = is.character(.model),
     "Input .stream must be logical if provided"      = is.logical(.stream),
+    "Input .json must be logical if provided"      = is.logical(.json),
     "Input .temperature must be numeric if provided" = is.null(.temperature) | is.numeric(.temperature),
     "Input .seed must be an integer-valued numeric if provided" = is.null(.seed) | is_integer_valued(.seed),
     "Input .num_ctx must be an integer-valued numeric if provided" = is.null(.num_ctx) | is_integer_valued(.num_ctx)
@@ -465,6 +467,14 @@ ollama <- function(.llm,
                          num_ctx =.num_ctx) 
   ollama_options <- base::Filter(Negate(is.null), ollama_options)
   
+  ollama_request_body <- list(model=.model, 
+       messages=ollama_messages, 
+       options = ollama_options,
+       stream=.stream)
+  
+  #Add format to request body if applicable
+  if(.json==TRUE){ollama_request_body$format <- "json"}
+  
   #Build the request
   ollama_api <- httr2::request("http://localhost:11434/") |>
     httr2::req_url_path("/api/chat") 
@@ -472,10 +482,7 @@ ollama <- function(.llm,
   assistant_reply <- NULL
   if(.stream==FALSE){
     resp <- ollama_api |>
-      httr2::req_body_json(list(model=.model, 
-                                messages=ollama_messages, 
-                                options = ollama_options,
-                                stream=FALSE)) |> 
+      httr2::req_body_json(ollama_request_body) |> 
       httr2::req_perform() |> 
       httr2::resp_body_json()
     
@@ -500,10 +507,7 @@ ollama <- function(.llm,
       TRUE
     }
     ollama_api |>
-      httr2::req_body_json(list(model=.model, 
-                                messages=ollama_messages, 
-                                options = ollama_options,
-                                stream=TRUE)) |> 
+      httr2::req_body_json(ollama_request_body) |> 
       httr2::req_perform_stream(callback_ollama_stream, buffer_kb = 0.05, round="line")
     
     cat("\n---------\nStream finished\n---------\n")

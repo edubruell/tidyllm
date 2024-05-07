@@ -397,6 +397,60 @@ llm_message <- function(.llm = NULL,
   
 }
 
+#' Convert a Data Frame to an LLMMessage Object
+#'
+#' This function takes a data frame and converts it into an LLMMessage object
+#' representing a conversation history. The data frame should contain specific
+#' columns (`role` and `content`) with each row representing a message in the
+#' conversation.
+#'
+#' @param .df A data frame with at least two rows and columns `role` and `content`.
+#'            The column `role` should contain values from "user", "assistant", or "system",
+#'            and `content` should be of type character.
+#'
+#' @return An LLMMessage object containing the structured messages as per the input data frame.
+#'
+#' @examples
+#' # Example data frame with role and content
+#'df_example <- data.frame(
+#'  role = c("system", "user", "assistant","user"),
+#'  content = c("You allways only answer with two words", "Why is the sky blue?", "Rayleigh scattering","Why is the sun yellow?"),
+#'  stringsAsFactors = FALSE
+#')
+#'df_llm_message(df_example)
+#'
+#' @export
+df_llm_message <- function(.df){
+  #Validate the inputs
+  c(
+    "Input .df must be a dataframe" = is.data.frame(.df),
+    "Input .df must contain the columns role and content" = (sum(c("role","content") %in% names(.df))==2),
+    "Input .df column content must be character" = is.character(.df$content),
+    "Input .df column role  must be character" = is.character(.df$role),
+    "Input .df must have at least two rows" = nrow(.df)>2,
+    "Only user, system and assistant are allowed as values of .df column role" =all(.df$role %in% c("user","assistant","system"))
+  ) |>
+    validate_inputs()
+  
+  # Splitting the dataframe into a list of single-row dataframes
+  single_rows <- split(.df, seq(nrow(.df)))
+  #Get the system prompt and the first message into a message history
+  initial_message <- llm_message(.llm = single_rows[[2]]$content,.system=single_rows[[1]]$content)
+  
+  #We are done if it is just a two-row data.frame
+  if(nrow(.df)<=2){final_message <- initial_message}
+  
+  #For more than 3 rows we iteratively apply the messages to a message history
+  if(nrow(.df)>2){
+    last_output <- initial_message
+    for (i in 3:nrow(.df)) {
+      current_row <- single_rows[[i]]
+      last_output$add_message(role = current_row$role,content=current_row$content)
+    }
+    final_message <- last_output
+  }
+  return(final_message)
+}
 
 #' Retrieve Last Reply from an Assistant
 #'
@@ -406,7 +460,7 @@ llm_message <- function(.llm = NULL,
 #'
 #' @param .llm An LLMMessage object containing the history of messages exchanged.
 #'             This must be a valid LLMMessage object; otherwise, the function will stop with an error.
-#'
+#' @param .json
 #' @return Returns the content of the last reply made by the assistant. If the assistant
 #'         has not replied yet, or if there are no assistant messages in the history, `NULL` is returned.
 #'
@@ -423,11 +477,14 @@ llm_message <- function(.llm = NULL,
 #'
 #'
 #' @rdname last_reply
-last_reply <- function(.llm = NULL) {
+last_reply <- function(.llm  = NULL,
+                       .json = FALSE) {
   # Check if .llm is provided and is a valid LLMMessage object
-  if (!inherits(.llm, "LLMMessage")) {
-    stop("Input .llm must be an LLMMessage object")
-  }
+  c(
+    "Input .llm must be an LLMMessage object" = inherits(.llm, "LLMMessage"),
+    "Input .json must be logical if provided" = is.logical(.json)
+  ) |>
+    validate_inputs()
   
   # Filter out all messages from the assistant
   assistant_replies <- Filter(function(x) x$role == "assistant", .llm$message_history)
@@ -435,7 +492,9 @@ last_reply <- function(.llm = NULL) {
   # Extract the last assistant reply, if available
   last_reply <- assistant_replies[length(assistant_replies)]
   if (length(last_reply) > 0) {
-    return(last_reply[[1]]$content)
+    if(.json==FALSE){ return(last_reply[[1]]$content)}
+    if(.json==TRUE){  return(jsonlite::fromJSON(last_reply[[1]]$content))}
+    
   } else {
     return(NULL)
   }
@@ -443,32 +502,4 @@ last_reply <- function(.llm = NULL) {
 
 
 
-#What works till now. using and mixing models! Yes:  
-#llm_message("Describe this image",
-#                 .imagefile = "/Users/ebr/data/test.png") |>
-#  claude() |>
-#  llm_message("Based on your previous description and knowing that WfH refers to the Working from Home potential 
-#              of occupations (classified based on a German survey on job tasks), what could the reserach here be about ") |>
-#  groq()
 
-#Todo: Make chatpgt() work 
-#Todo: Add a count_tokens() function
-
-#a <- llm_message("Here is a first R script for a package I am writing to communicate with varying llms
-#(claude, chatgpt, groq open-models on dedicated hardware and future ones i will add). The idea is to provide a tidy interface to
-#language model APIs that feels natural to an R user. My project should be named tidyllm. Can you write an engaging README.MD for my project? Use native pipes in the intro and show how do things like 
-#           llm_message(\"Describe this image\",
-#                 .imagefile = \"/Users/ebr/data/test.png\") |>
-#                  claude() |>
-#            llm_message(\"Based on your previous description and knowing that WfH refers to the Working from Home potential 
-#                          of occupations (classified based on a German survey on job tasks), what could the reserach here be about \") |>
-#              groq()
-#              
-#            Add llm_message() groq() chatgpt() claude()  and last_reply() in the section on functions. 
-#           ",.f=~{here("R","oop.R") |> readr::read_file()}) |>
-#  groq()
-#llm_message("What does this package do? Suggest some more functions that would be useful for a project like the Rpackage I show you the source from.",.f=~{here("R","oop.R") |> readr::read_file()}) |>
-#    groq()
-#
-#llm_message("Explain how i can use devtools to set up a new empty R package. Btw. I work with RStudio. I want to d") |>
-#  groq()
