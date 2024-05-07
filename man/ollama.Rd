@@ -2,21 +2,16 @@
 % Please edit documentation in R/api_functions.R
 \name{ollama}
 \alias{ollama}
-\title{Call an ollama model}
+\title{Send LLMMessage to ollama API}
 \usage{
 ollama(
   .llm,
-  .model = "mixtral-8x7b-32768",
-  .max_tokens = 1024,
+  .model = "llama3",
+  .stream = FALSE,
+  .seed = NULL,
   .temperature = NULL,
-  .top_p = NULL,
-  .frequency_penalty = NULL,
-  .presence_penalty = NULL,
-  .ollama_server = "http://localhost:11434",
-  .timeout = 60,
-  .verbose = FALSE,
-  .wait = TRUE,
-  .min_tokens_reset = 0L
+  .num_ctx = 2048,
+  .ollama_server = "http://localhost:11434"
 )
 }
 \arguments{
@@ -24,15 +19,19 @@ ollama(
 
 \item{.model}{The model identifier (default: "llama3").}
 
+\item{.stream}{Should the answer be streamed to console as it comes (optional)}
+
+\item{.seed}{Which seed should be used for random numbers  (optional).}
+
 \item{.temperature}{Control for randomness in response generation (optional).}
 
-\item{.top_p}{Nucleus sampling parameter (optional).}
+\item{.num_ctx}{The size of the context window in tokens (optional)}
 
-\item{.top_k}{Top k sampling parameter (optional).}
+\item{..ollama_server}{The URL of the ollama server to be used}
 }
 \value{
 Returns an updated LLMMessage object.
 }
 \description{
-Call an ollama model
+Send LLMMessage to ollama API
 }

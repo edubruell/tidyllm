@@ -182,7 +182,54 @@ LLMMessage <- R6::R6Class(
                  output
                })
             
-              }   
+              },
+             "ollama"={
+               ollama_history <- Filter(function(x){
+                 if ("role" %in% names(x)) {
+                   return(x$role %in% c("user","assistant"))
+                 } else {
+                   return(FALSE)
+                 }},self$message_history)
+               
+               lapply(ollama_history, function(m) {
+                 # The basic text content supplied with the prompt
+                 base_content <- m$content
+                 
+                 # Get the relevant media for the current message
+                 media_list <- m$media
+                 
+                 # Extract the text content and put it into tags that are put before 
+                 # the main text of the prompt
+                 text_media <- extract_media(media_list, "text")
+                 image_media <- extract_media(media_list, "image")
+                 
+                 # Combine text content
+                 combined_text <- paste(base_content, text_media, sep=" ")
+                 
+                 if (length(image_media) > 0) {
+                   # Determine the MIME type based on file extension
+                   image_file_type <- paste("image", tools::file_ext(image_media[[1]]$filename), sep="/")
+                   
+                   # Use the pre-encoded base64 image content
+                   base64_image <- image_media[[1]]$content
+                   
+                   # Add image content to the user content
+                   output <- list(
+                     role = m$role,
+                     content = combined_text,
+                     images  = list(glue::glue("{base64_image}"))
+                   )
+                 } else {
+                   # Text-only content
+                   output <- list(
+                     role = m$role,
+                     content = combined_text
+                   )
+                 }
+                 
+                 output
+               })
+             }
              # Additional cases as needed
       )
     },

@@ -77,49 +77,5 @@ ollama_download_model <- function(.model, .ollama_server = "http://localhost:114
   invisible(NULL)
 }
 
-#A minimal test function to test how streaming works with httr2::httr2::req_perform_stream()
-ollama_test_streaming <- function(.model,
-                   .prompt,
-                   .stream =TRUE){
-  
-  
-  #Build the request
-  ollama_api <- httr2::request("http://localhost:11434/") |>
-    httr2::req_url_path("/api/generate") 
-  
-  #Do we want to stream the response and show the message when single bits arrive?
-  if(.stream==TRUE){
-    #Initialize the streaming environment variable
-    .tidyllm_stream_env$stream <- ""
-    
-    #A callback function to stream responses from ollama 
-    callback_ollama_stream <- function(.stream){
-      stream_content <- rawToChar(.stream, multiple = FALSE) |> 
-        jsonlite::fromJSON()
-      
-      stream_response <- stream_content$response 
-      .tidyllm_stream_env$stream <- glue::glue("{.tidyllm_stream_env$stream}{stream_response}") |> as.character()
-      cat(stream_response)
-      flush.console()
-      TRUE
-    }
-    ollama_api |>
-      httr2::req_body_json(list(model = .model, prompt = .prompt)) |> 
-      httr2::req_perform_stream(callback_ollama_stream, buffer_kb = 0.05, round="line")
-    
-    resp <- .tidyllm_stream_env$stream
-    return(resp)
-  }
-  
-  if(.stream==FALSE){
-    resp <- ollama_api |>
-      httr2::req_body_json(list(model = .model, prompt = .prompt, stream=FALSE)) |> 
-      httr2::req_perform() |> 
-      httr2::resp_body_json()
-    
-    return(resp$response)
-  }
-}
-
 
 

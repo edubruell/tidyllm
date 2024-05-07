@@ -427,42 +427,96 @@ groq <- function(.llm,
   return(llm_copy)
 }
 
-#' Call an ollama model
+#' Send LLMMessage to ollama API
 #'
 #' @param .llm An existing LLMMessage object or an initial text prompt.
 #' @param .model The model identifier (default: "llama3").
 #' @param .temperature Control for randomness in response generation (optional).
-#' @param .top_k Top k sampling parameter (optional).
-#' @param .top_p Nucleus sampling parameter (optional).
-#'
+#' @param .seed Which seed should be used for random numbers  (optional).
+#' @param .num_ctx The size of the context window in tokens (optional)
+#' @param .stream  Should the answer be streamed to console as it comes (optional)
+#' @param ..ollama_server The URL of the ollama server to be used
 #' @return Returns an updated LLMMessage object.
 #' @export
 ollama <- function(.llm,
-                 .model = "mixtral-8x7b-32768",
-                 .max_tokens = 1024,
-                 .temperature = NULL,
-                 .top_p = NULL,
-                 .frequency_penalty = NULL,
-                 .presence_penalty = NULL,
-                 .ollama_server = "http://localhost:11434",
-                 .timeout = 60,
-                 .verbose = FALSE,
-                 .wait=TRUE,
-                 .min_tokens_reset = 0L) {
+                   .model="llama3",
+                   .stream=FALSE,
+                   .seed = NULL,
+                   .temperature = NULL,
+                   .num_ctx = 2048,
+                   .ollama_server= "http://localhost:11434"){
   
-  #Ususally the default API is assumed
-  ollama_api <- glue::glue("{.ollama_server}/api/chat")
-  
-  # Validate inputs
+  #Validate the inputs
   c(
     "Input .llm must be an LLMMessage object" = inherits(.llm, "LLMMessage"),
-    ".timeout must be an integer-valued numeric" = is_integer_valued(.timeout),
-    ".temperature must be numeric if provided" = is.null(.temperature) | is.numeric(.temperature),
-    ".top_p must be numeric if provided" = is.null(.top_p) | is.numeric(.top_p),
+    "Input .model must be a string" = is.character(.model),
+    "Input .stream must be logical if provided"      = is.logical(.stream),
+    "Input .temperature must be numeric if provided" = is.null(.temperature) | is.numeric(.temperature),
+    "Input .seed must be an integer-valued numeric if provided" = is.null(.seed) | is_integer_valued(.seed),
+    "Input .num_ctx must be an integer-valued numeric if provided" = is.null(.num_ctx) | is_integer_valued(.num_ctx)
   ) |>
     validate_inputs()
   
   # Get formatted message list for ollama models
-  messages <- .llm$to_api_format("ollama")
+  ollama_messages <- .llm$to_api_format("ollama")
   
+  ollama_options <- list(temperature=.temperature,
+                         seed    = .seed,
+                         num_ctx =.num_ctx) 
+  ollama_options <- base::Filter(Negate(is.null), ollama_options)
+  
+  #Build the request
+  ollama_api <- httr2::request("http://localhost:11434/") |>
+    httr2::req_url_path("/api/chat") 
+  
+  assistant_reply <- NULL
+  if(.stream==FALSE){
+    resp <- ollama_api |>
+      httr2::req_body_json(list(model=.model, 
+                                messages=ollama_messages, 
+                                options = ollama_options,
+                                stream=FALSE)) |> 
+      httr2::req_perform() |> 
+      httr2::resp_body_json()
+    
+    assistant_reply <- resp$message$content
+  }
+  
+  
+  #Do we want to stream the response and show the message when single bits arrive?
+  if(.stream==TRUE){
+    #Initialize the streaming environment variable
+    .tidyllm_stream_env$stream <- ""
+    cat("\n---------\nStart ollama streaming: \n---------\n")
+    #A callback function to stream responses from ollama 
+    callback_ollama_stream <- function(.stream){
+      stream_content <- rawToChar(.stream, multiple = FALSE) |> 
+        jsonlite::fromJSON()
+      
+      stream_response <- stream_content$message$content 
+      .tidyllm_stream_env$stream <- glue::glue("{.tidyllm_stream_env$stream}{stream_response}") |> as.character()
+      cat(stream_response)
+      flush.console()
+      TRUE
+    }
+    ollama_api |>
+      httr2::req_body_json(list(model=.model, 
+                                messages=ollama_messages, 
+                                options = ollama_options,
+                                stream=TRUE)) |> 
+      httr2::req_perform_stream(callback_ollama_stream, buffer_kb = 0.05, round="line")
+    
+    cat("\n---------\nStream finished\n---------\n")
+    assistant_reply <- .tidyllm_stream_env$stream
+  }
+  
+  
+  # Create a deep copy of the LLMMessage object
+  llm_copy <- .llm$clone_deep()
+  
+  # Add model's message to the history of the LLMMessage object
+  llm_copy$add_message("assistant", assistant_reply)
+  
+  return(llm_copy)
+
 }

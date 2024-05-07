@@ -12,7 +12,8 @@
 
 ## Requirements
 
-You need to setup your API keys for use in R for each API you want to use. 
+You either need a local version of [ollama](https://ollama.com/) with some models set up or you 
+need to setup your API keys for use in R for each API you want to use. 
 
 1. For Anthropic you can create an API key in your [Anthropic account settings
 page](https://console.anthropic.com/settings/keys) and set it with
@@ -68,16 +69,17 @@ conversation <- llm_message("Describe this image",
                       .imagefile = here("image.png")) |>
             claude()
 
-# Use the description to query further with Groq
+# Use the description to query further with ollama
 conversation |>
   llm_message("Based on the previous description, what could the research here be about?") |>
-  groq(.model="mixtral-8x7b-32768")
+  ollama(.model="llama3")
 ```
 ### Functions Overview
 
 - **`llm_message()`**: Create or update a message object, adding prompts or media content.
 - **`claude()`**: Send and receive messages  Anthropic's Claude models
 - **`chatgpt()`**: Send and receive messages from OpenAI's ChatGPT models.
+- **`ollama()`**: Send and receive messages to the ollama API (to work with local models)
 - **`groq()`**: Interact with Groq's fast open-source models, taking advantage of their dedicated hardware accelerators for efficient processing.
 - **`last_reply()`**: Fetch the most recent assistant's response from a message history.
 
@@ -164,7 +166,7 @@ To include text from a PDF file in your prompt, simply pass the file path to the
 ```r
 llm_message("Please summarize the key points from the provided PDF document.", 
      .pdf = "path/to/example_document.pdf") |>
-     groq()
+     ollama()
 ```
 
 The package will automatically extract the text from the PDF file and include it in the prompt sent to the an API. The text will be wrapped in `<pdf>` tags to clearly indicate the content from the PDF file:
