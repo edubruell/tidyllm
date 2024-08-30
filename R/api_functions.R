@@ -476,7 +476,7 @@ ollama <- function(.llm,
   if(.json==TRUE){ollama_request_body$format <- "json"}
   
   #Build the request
-  ollama_api <- httr2::request("http://localhost:11434/") |>
+  ollama_api <- httr2::request(.ollama_server) |>
     httr2::req_url_path("/api/chat") 
   
   assistant_reply <- NULL
