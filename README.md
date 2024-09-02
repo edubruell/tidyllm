@@ -1,6 +1,7 @@
 <div style="padding-top:1em; padding-bottom: 0.5em;">
 <img src="tidyllm.png" width = 120 align="right" />
 </div>
+
 # TidyLLM: Tidy Large Language Model Integration for R
 
 **TidyLLM** is an R package designed to access various large language model APIs, including **Claude**, **ChatGPT**, and **Groq** (using their unique dedicated hardware accelerators) or even local models via **Ollama**. This package is built with simplicity and functionality in mind. Whether you're looking to generate text, analyze media, or integrate rich model feedback into your RCode, **TidyLLM** provides a unified interface to get the job done.
