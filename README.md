@@ -1,3 +1,6 @@
+<div style="padding-top:1em; padding-bottom: 0.5em;">
+<img src="tidyllm.png" width = 120 align="right" />
+</div>
 # TidyLLM: Tidy Large Language Model Integration for R
 
 **TidyLLM** is an R package designed to access various large language model APIs, including **Claude**, **ChatGPT**, and **Groq** (using their unique dedicated hardware accelerators) or even local models via **Ollama**. This package is built with simplicity and functionality in mind. Whether you're looking to generate text, analyze media, or integrate rich model feedback into your RCode, **TidyLLM** provides a unified interface to get the job done.
@@ -5,7 +8,7 @@
 ## Features
 
 - **Multiple Model Support**: Seamlessly switch between various model providers like Claude, ChatGPT, Groq or Ollama using the best of what each has to offer.
-- **Media Handling**: Extract and process text from PDF files and capture console outputs for messaging. Upload imagefiles or the last plotpane to multimodal models.
+- **Media Handling**: Extract and process text from PDFs and capture console outputs for messaging. Upload imagefiles or the last plotpane to multimodal models.
 - **Interactive Messaging History**: Manage an ongoing conversation with models, maintaining a structured history of messages and media interactions, which are automatically formatted for each API
 - **Statefull handling of rate limits:** API rate limits are handled statefully within each R Session and API functions can wait automatically for rate limits to reset
 - **Tidy Workflow**: Making use of R's functional programming features for a side-effect-free, pipeline-oriented operation style that feels natural to R users.
@@ -74,7 +77,7 @@ conversation |>
   llm_message("Based on the previous description, what could the research here be about?") |>
   groq()
 ```
-### Functions Overview
+## Functions Overview
 
 - **`llm_message()`**: Create or update a message object, adding prompts or media content.
 - **`claude()`**: Send and receive messages  Anthropic's Claude models
@@ -84,9 +87,11 @@ conversation |>
 - **`last_reply()`**: Fetch the most recent assistant's response from a message history.
 - **`estimate_tokens()`**: Estimate the number of gpt-4 tokens in a message history.
 
-### Examples for specific features
+### Sending R outputs to the language model
 
-You can capture console output from R with an `llm_message()`:
+`llm_message()` has an optional argument `.f` in which you can specify a (anonymous) function, which 
+will be run and which console output will be captured and appended to the message, when you run it: 
+
 ```r
 # Some example data to show how passing R outputs to models works.
 library(tidyverse)
@@ -130,14 +135,17 @@ llm_message("Please give me an interpretation of the results in column 3 of the 
      }) |>
      claude() 
 ```
-You can also assign the role of the assistant in the `llm_message()`-function when creating a new message object.
+
+### Sending images or captured plots to multimodal models
+
+You can also send images to a multimodal models: 
 ```r
-llm_message("Was ist der deutsche Mikrozensus?",
-     .system_prompt = "You are a poetic soul and only reply with english 4 verse poems") |>
-     claude()
+llm_message("Describe this image",
+                      .imagefile = here("image.png")) |>
+            ollama(.model="llava")
 ```
 
-You can also send an image or the last plot pane to multimodal models:
+Or even capture the last plot pane and send it to a model: 
 
 ```r
 library(tidyverse)
@@ -151,10 +159,10 @@ ggplot(mtcars, aes(x = wt, y = mpg)) +
 llm_message("Please analyze the relationship between car weight and miles per gallon based on the provided plot.",
   .capture_plot = TRUE) |>
   chatgpt()
-)
 ```
+### Adding PDFs to messages
 
-The `llm_message()` function also supports extracting text from PDF files and including it in the message. This allows you to easily provide context from a PDF document when interacting with the AI assistant.
+The `llm_message()` function also supports extracting text from PDFs and including it in the message. This allows you to easily provide context from a PDF document when interacting with the AI assistant.
 
 To use this feature, you need to have the `pdftools` package installed. If it is not already installed, you can install it with:
 
@@ -170,7 +178,7 @@ llm_message("Please summarize the key points from the provided PDF document.",
      ollama()
 ```
 
-The package will automatically extract the text from the PDF file and include it in the prompt sent to the an API. The text will be wrapped in `<pdf>` tags to clearly indicate the content from the PDF file:
+The package will automatically extract the text from the PDF  and include it in the prompt sent to the an API. The text will be wrapped in `<pdf>` tags to clearly indicate the content from the PDF:
 
 ```
 Please summarize the key points from the provided PDF document.
@@ -180,7 +188,9 @@ Extracted text from the PDF file...
 </pdf>
 ```
 
-Getting the last reply from a message chain as a character vector is done with `last_reply()`. Other functions to extract useful parts from conversations will be addded.
+### Getting the last reply (as a string)
+
+Getting the last reply from a message chain as a character vector is done with `last_reply()`. Other functions to extract useful parts from conversations will be added.
 
 ```r
 reply_pdf <- llm_message("Please summarize the key points from the provided PDF document.", 
@@ -189,7 +199,7 @@ reply_pdf <- llm_message("Please summarize the key points from the provided PDF 
      last_reply()
 ```
 
-## Directly get structured data as reply
+### Directly get structured data as reply
 Using the ability of large language models to output valid JSON, tidyllm can also directly get replies directly as structured data, which is easy to use in R. 
 ```r
 de_books <- llm_message('Imagine a list of german books in JSON-format following this example:
@@ -210,7 +220,7 @@ as.data.frame(de_books)
 ```
 At the moment this feature is limited to `ollama()`-models that support json-mode.
 
-## API parameters
+### API parameters
 
 Different API functions support different model parameters like  how deterministic the response should be via parameters like temperature. Please read API-documentation and the documentation of the model functions for specific examples.
 
@@ -228,12 +238,12 @@ temp_example |> groq(.temperature=0)
 temp_example |> groq(.temperature=0)# Same answer
 
 ```
-## Experimental features
+### Experimental features
 
-At the moment `ollama()` supports realtime streaming of reply tokens to the console while the model works. This is not super useful in the context of a data-analysis centered paper but might be added to other API-functions anyway. 
+At the moment `ollama()` supports realtime streaming of reply tokens to the console while the model works. This is not super useful in the context of a data-analysis centered workflow but might be added to other API-functions anyway. 
 
 ## Future Work
 
 - **Tool use:** Add support for models ability to use tools
-- **Basic agent workflows:** Add support for some simple agent workflows similar to what `langchain` does.
-
+- **Expand ollama-API:** Add additional ollama functions and support for embedding models
+ 
