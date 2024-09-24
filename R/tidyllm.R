@@ -326,7 +326,7 @@ llm_message <- function(.llm = NULL,
       .imagefile <- plot_file
     }
     # Validate and encode the image file
-    valid_types <- c("jpeg", "png")
+    valid_types <- c("jpeg", "jpg", "png")
     file_type <- tools::file_ext(.imagefile)
     if (!(file_type %in% valid_types)) {
       stop("Unsupported file type. Only JPEG and PNG are allowed.")
