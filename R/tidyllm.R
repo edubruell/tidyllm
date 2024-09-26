@@ -280,7 +280,7 @@ LLMMessage <- R6::R6Class(
 #' Create or Update Large Language Model Message Object
 #'
 #' This function allows the creation of a new LLMMessage object or the updating of an existing one.
-#' It can handle the addition of text prompts and various media types such as images, PDFs, or plots.
+#' It can handle the addition of text prompts and various media types such as images, PDFs, text files, or plots.
 #'
 #' @param .llm An existing LLMMessage object or an initial text prompt.
 #' @param .prompt Text prompt to add to the message history.
@@ -288,6 +288,7 @@ LLMMessage <- R6::R6Class(
 #' @param .system_prompt Default system prompt if a new LLMMessage needs to be created.
 #' @param .imagefile Path to an image file to be attached (optional).
 #' @param .pdf Path to a PDF file to be attached (optional).
+#' @param .textfile Path to a text file to be read and attached (optional).
 #' @param .capture_plot Boolean to indicate whether a plot should be captured and attached as an image (optional).
 #' @param .f An R function whose output should be captured and attached (optional).
 #' @return Returns an updated or new LLMMessage object.
@@ -301,20 +302,23 @@ llm_message <- function(.llm = NULL,
                         .system_prompt = "You are a helpful assistant",
                         .imagefile = NULL, 
                         .pdf = NULL, 
+                        .textfile = NULL, 
                         .capture_plot = FALSE,
                         .f = NULL) {
-
+  
   # Handle media attached to messages
   media_list = list()
-
-  #  # If .llm is provided, check if it is an LLMMessage object
+  
+  # If .llm is provided, check if it is an LLMMessage object
   if (!is.character(.llm) & !inherits(.llm, "LLMMessage")) {
     stop("Input .llm must be an LLMMessage object or an initial text prompt.")
   }
   
-  #Early check whether an llm object exsisted before
-  pre_existing_obect <- TRUE
-  if(inherits(.llm, "LLMMessage")){pre_existing_obect <- TRUE}
+  # Early check whether an llm object existed before
+  pre_existing_object <- TRUE
+  if (inherits(.llm, "LLMMessage")) {
+    pre_existing_object <- TRUE
+  }
   
   # Handle images or captured plots
   if (!is.null(.imagefile) || .capture_plot) {
@@ -335,7 +339,6 @@ llm_message <- function(.llm = NULL,
     media_list <- c(media_list, list(list(type = "Image", content = image_base64, filename = basename(.imagefile))))
   }
   
-
   # Handle PDFs
   if (!is.null(.pdf)) {
     if (!requireNamespace("pdftools", quietly = TRUE)) {
@@ -344,21 +347,32 @@ llm_message <- function(.llm = NULL,
     pdf_text <- pdftools::pdf_text(.pdf) |> 
       stringr::str_c(collapse = "\n")
     
-    media_list <- c(media_list, list(list(type = "PDF",content=pdf_text, filename = basename(.pdf))))
+    media_list <- c(media_list, list(list(type = "PDF", content = pdf_text, filename = basename(.pdf))))
   }
   
-  #Handle function text outputs
-  if (!is.null(.f)) {
-    output <- capture.output(rlang::as_function(.f)(),file=NULL) |>
-      stringr::str_c(collapse="\n")
+  # Handle text files
+  if (!is.null(.textfile)) {
+    if (!file.exists(.textfile)) {
+      stop("The specified text file does not exist.")
+    }
+    text_content <- readLines(.textfile) |> 
+      stringr::str_c(collapse = "\n")
     
-    media_list <- c(media_list, list(list(type = "RConsole",content=output, filename = "RConsole.txt")))
+    media_list <- c(media_list, list(list(type = "TextFile", content = text_content, filename = basename(.textfile))))
   }
   
-  #If a character vector is supplied instead of an llm we use it as an inital prompt
+  # Handle function text outputs
+  if (!is.null(.f)) {
+    output <- capture.output(rlang::as_function(.f)(), file = NULL) |> 
+      stringr::str_c(collapse = "\n")
+    
+    media_list <- c(media_list, list(list(type = "RConsole", content = output, filename = "RConsole.txt")))
+  }
+  
+  # If a character vector is supplied instead of an llm, we use it as an initial prompt
   if (is.character(.llm)) {
     initial_prompt <- .llm
-    # Validate input prompt incase a prompt is used instead of a llm message object
+    # Validate input prompt in case a prompt is used instead of a llm message object
     if (length(.llm) == 0) {
       stop("Prompt must be a non-empty string.")
     }
@@ -371,31 +385,31 @@ llm_message <- function(.llm = NULL,
     }
   }
   
-  #set up a new llm if it is null with the system prompt
+  # Set up a new llm if it is null with the system prompt
   if (is.null(.llm)) {
     .llm <- LLMMessage$new(.system_prompt)
   }
   
-  #explicit prompts have precedent over ones supplied via .llm
-  if (!is.null(.prompt) & !pre_existing_obect) {
-    if ((length(.prompt) == 0) | !is.character(.prompt)){
+  # Explicit prompts have precedent over ones supplied via .llm
+  if (!is.null(.prompt) & !pre_existing_object) {
+    if ((length(.prompt) == 0) | !is.character(.prompt)) {
       stop("Prompt must be a non-empty string.")
     }
     .llm$add_message(.role, .prompt, media_list)
     return(.llm)
   }
   
-  #Deep copy output so original object is never changed!
-  if (!is.null(.prompt) & pre_existing_obect) {
-    if ((length(.prompt) == 0) | !is.character(.prompt)){
+  # Deep copy output so original object is never changed
+  if (!is.null(.prompt) & pre_existing_object) {
+    if ((length(.prompt) == 0) | !is.character(.prompt)) {
       stop("Prompt must be a non-empty string.")
     }
     llm_copy <- .llm$clone_deep()
     llm_copy$add_message(.role, .prompt, media_list)
     return(llm_copy)
   }
-  
 }
+
 
 #' Convert a Data Frame to an LLMMessage Object
 #'

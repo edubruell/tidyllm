@@ -84,3 +84,53 @@ parse_duration_to_seconds <- function(.duration_str) {
   }
   return(duration_sec)
 }
+
+#' Print the current rate limit information for all or a specific API
+#'
+#' This function retrieves and prints the rate limit details for the specified API,
+#' or for all APIs stored in the .tidyllm_rate_limit_env if no API is specified.
+#'
+#' @param .api_name (Optional) The name of the API whose rate limit info you want to print.
+#'                   If not provided, the rate limit info for all APIs in the environment will be printed.
+#' @export
+print_rate_limit_info <- function(.api_name = NULL) {
+  # If no API name is provided, print for all APIs in .tidyllm_rate_limit_env
+  api_names <- ls(envir = .tidyllm_rate_limit_env)
+  
+  if (length(api_names) == 0) {
+    stop("No rate limit information available in .tidyllm_rate_limit_env.")
+  }
+  
+  if (!is.null(.api_name)) {
+    # If a specific API is provided, check if it exists
+    if (!exists(.api_name, envir = .tidyllm_rate_limit_env)) {
+      stop(glue::glue("No rate limit information found for the API: {.api_name}."))
+    }
+    api_names <- .api_name  # Restrict to the provided API
+  }
+  
+  # Use lapply to iterate over all relevant APIs and print their rate limits
+  invisible(lapply(api_names, function(api) {
+    rl_info <- .tidyllm_rate_limit_env[[api]]
+    
+    # Check for incomplete rate limit data
+    if (is.null(rl_info$last_request) ||
+        is.null(rl_info$requests_remaining) ||
+        is.null(rl_info$tokens_remaining)) {
+      warning(glue::glue("Incomplete rate limit data for API: {api}."))
+    }
+    
+    # Print out the rate limit info
+    cat(glue::glue(
+      "\n----------------------------------------\n",
+      "Rate Limit Info for API: {api}\n",
+      "----------------------------------------\n",
+      "Last Request: {rl_info$last_request}\n",
+      "Requests Remaining: {rl_info$requests_remaining}\n",
+      "Requests Reset Time: {rl_info$requests_reset_time}\n",
+      "Tokens Remaining: {rl_info$tokens_remaining}\n",
+      "Tokens Reset Time: {rl_info$tokens_reset_time}\n\n"
+    ))
+  }))
+}
+

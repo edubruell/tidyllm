@@ -3,7 +3,7 @@
 #' Call the Anthropic API to interact with Claude models
 #'
 #' @param .llm An existing LLMMessage object or an initial text prompt.
-#' @param .model The model identifier (default: "claude-3-sonnet-20240229").
+#' @param .model The model identifier (default: "claude-3-5-sonnet-20240620").
 #' @param .max_tokens The maximum number of tokens to generate (default: 1024).
 #' @param .temperature Control for randomness in response generation (optional).
 #' @param .top_k Top k sampling parameter (optional).
@@ -17,11 +17,12 @@
 #' @param .verbose Should additional information be shown after the API call
 #' @param .wait Should we wait for rate limits if necessary?
 #' @param .min_tokens_reset How many tokens should be remaining to wait until we wait for token reset?
+#' @param .stream Stream back the response piece by piece (default: FALSE).
 #'
 #' @return Returns an updated LLMMessage object.
 #' @export
 claude <- function(.llm,
-                   .model = "claude-3-sonnet-20240229",
+                   .model = "claude-3-5-sonnet-20240620",
                    .max_tokens = 1024,
                    .temperature = NULL,
                    .top_k = NULL,
@@ -33,8 +34,10 @@ claude <- function(.llm,
                    .verbose = FALSE,
                    .wait=TRUE,
                    .min_tokens_reset = 0L,
-                   .timeout = 60) {  # Default timeout set to 60 seconds
-
+                   .timeout = 60,
+                   .stream = FALSE
+                   ) {  
+  
   #Validate inputes to the Claude function
   c(
     ".llm must be an LLMMessage object"    = inherits(.llm, "LLMMessage"),
@@ -46,6 +49,7 @@ claude <- function(.llm,
     ".stop_sequences must be a character vector" = is.null(.stop_sequences) | is.character(.stop_sequences),
     ".verbose must be logical"                   = is.logical(.verbose),
     ".wait must be logical"                      = is.logical(.wait),
+    ".stream must be logical"                    = is.logical(.stream),
     ".min_tokens_reset must be an integer"       = is_integer_valued(.min_tokens_reset)
   ) |>
     validate_inputs()
@@ -73,82 +77,144 @@ claude <- function(.llm,
     top_p = .top_p,
     metadata = .metadata,
     stop_sequences = .stop_sequences,
-    stream = FALSE,
+    stream = .stream,
     tools = .tools
   )
   
   # Filter out NULL values from the body
   request_body <- base::Filter(Negate(is.null), request_body)
   
-  
+  #An internal callback function  for streaming with claude
+  callback_claude_stream <- function(.stream){
+    # Read the stream content as raw text
+    stream_content <- rawToChar(.stream, multiple = FALSE)
+    
+    # Split the content into event and data sections
+    lines <- strsplit(stream_content, "\n")[[1]]
+    
+    for (line in lines) {
+      # Ignore empty lines
+      if (line == "") next
+      
+      # Check for event lines
+      if (grepl("^event:", line)) {
+        # Handle different types of events
+        if (grepl("message_start", line)) {
+          .tidyllm_stream_env$stream <- ""
+        } else if (grepl("message_stop", line)) {
+          cat("\n---------\nStream finished\n---------\n")
+          return(FALSE)
+        }
+      } 
+      
+      # Check for data lines (JSON content)
+      if (grepl("^data:", line)) {
+        # Extract the JSON part after "data: "
+        json_part <- sub("^data: ", "", line)
+        
+        # Try to parse the JSON content
+        tryCatch({
+          parsed_event <- jsonlite::fromJSON(json_part)
+          
+          # Handle content block deltas
+          if (parsed_event$type == "content_block_delta") {
+            delta_content <- parsed_event$delta$text
+            .tidyllm_stream_env$stream <- as.character(glue::glue("{.tidyllm_stream_env$stream}{delta_content}"))
+            cat(delta_content)
+            flush.console()
+          }
+          
+        }, error = function(e) {
+          message("Failed to parse JSON: ", e$message)
+        })
+      }
+    }
+    
+    return(TRUE)
+  }
+
   # Perform the request using httr2 package
-  response <- httr2::request(.api_url) |>
-    httr2::req_url_path("/v1/messages") |>
-    httr2::req_headers(
-      `x-api-key` = api_key,
-      `anthropic-version` = "2023-06-01",
-      `content-type` = "application/json; charset=utf-8") |>
-    httr2::req_body_json(data = request_body) |> 
-    httr2::req_timeout(.timeout) |>
-    httr2::req_perform() 
-
+  if (.stream == TRUE) {
+    # Initialize the streaming environment variable
+    .tidyllm_stream_env$stream <- ""
+    cat("\n---------\nStart Claude streaming: \n---------\n")
+    
+    # Perform the streaming request and process it with the callback function
+    response <- httr2::req_perform_stream(
+      httr2::req_body_json(
+        httr2::req_headers(
+          httr2::req_url_path(httr2::request(.api_url), "/v1/messages"), 
+          `x-api-key` = api_key,
+          `anthropic-version` = "2023-06-01",
+          `content-type` = "application/json; charset=utf-8"
+        ), 
+        data = request_body
+      ), 
+      callback_claude_stream, 
+      buffer_kb = 0.05, 
+      round = "line"
+    )
+    
+    # Assign the final streamed response
+    assistant_reply <- .tidyllm_stream_env$stream
+    
+    # Capture response headers for rate limiting information
+    response_headers <- httr2::resp_headers(response)
+    
+  } else {
+    # Non-streaming mode
+    response <- httr2::req_perform(
+      httr2::req_timeout(
+        httr2::req_body_json(
+          httr2::req_headers(
+            httr2::req_url_path(httr2::request(.api_url), "/v1/messages"), 
+            `x-api-key` = api_key,
+            `anthropic-version` = "2023-06-01",
+            `content-type` = "application/json; charset=utf-8"
+          ), 
+          data = request_body
+        ), 
+        .timeout
+      )
+    )
+    
+    # Parse the response body as JSON when not streaming
+    body_json <- httr2::resp_body_json(response)
+    assistant_reply <- body_json$content[[1]]$text
+    
+    # Capture response headers for rate limiting information
+    response_headers <- httr2::resp_headers(response)
+  }
   
-  # Encode the body as JSON
-  body_json <- response |> httr2::resp_body_json()
-
-  # Retrieve the response headers and parse them so they can be stored in the .tidyllm_rate_limit_env
-  response_headers <- response |> httr2::resp_headers()
+  # Update the rate-limit environment with the headers
   rl <- list(
     this_request_time             = strptime(response_headers["date"], format="%a, %d %b %Y %H:%M:%S", tz="GMT"),
     ratelimit_requests            = as.integer(response_headers["anthropic-ratelimit-requests-limit"]),
     ratelimit_requests_remaining  = as.integer(response_headers["anthropic-ratelimit-requests-remaining"]),
     ratelimit_requests_reset_time = as.POSIXct(
       response_headers["anthropic-ratelimit-requests-reset"]$`anthropic-ratelimit-requests-reset`,
-      format="%Y-%m-%dT%H:%M:%SZ", tz="UTC") ,
+      format="%Y-%m-%dT%H:%M:%SZ", tz="UTC"),
     ratelimit_tokens              = as.integer(response_headers["anthropic-ratelimit-tokens-limit"]),
     ratelimit_tokens_remaining    = as.integer(response_headers["anthropic-ratelimit-tokens-remaining"]),
     ratelimit_tokens_reset_time   = as.POSIXct(response_headers["anthropic-ratelimit-tokens-reset"]$`anthropic-ratelimit-tokens-reset`,
-                                               format="%Y-%m-%dT%H:%M:%SZ", tz="UTC") 
+                                               format="%Y-%m-%dT%H:%M:%SZ", tz="UTC")
   )
   
-  #Initialize an environment to store rate-limit info
+  # Initialize or update the rate limit environment
   initialize_api_env("claude")
-  #Update the rate-limit environment with info from rl
-  update_rate_limit("claude",rl)
-
+  update_rate_limit("claude", rl)
   
-  # Check for errors
-  if (httr2::resp_status(response)!=200) {
-    stop("API request failed! Here is the raw reponse from the server", httr2::resp_raw(response))
-  }
-  
-  #Show Request rate limit info if we are verbose
-  if(.verbose==TRUE){
-    glue::glue("Anthropic API answer received at {rl$this_request_time}.
-              Remaining requests rate limit: {rl$ratelimit_requests_remaining}/{rl$ratelimit_requests}
-              Requests rate limit reset at: {rl$ratelimit_requests_reset_time} 
-              Remaining tokens   rate limit: {rl$ratelimit_tokens_remaining}/{rl$ratelimit_tokens}
-              Tokens rate limit reset at: {rl$ratelimit_tokens_reset_time} 
-              
-              ") |> cat()
-  }
-  
-  # Get the content of the response
-  content_assistant_text <- body_json$content[[1]]$text
-  
-  # Create a deep copy of the LLMMessage object
+  # Return the updated LLMMessage object
   llm_copy <- .llm$clone_deep()
-  
-  #Add claudes message to the history of the llm message object
-  llm_copy$add_message("assistant",content_assistant_text)
+  llm_copy$add_message("assistant", assistant_reply)
   
   return(llm_copy)
 }
 
-#' Call the OpenAI API to interact with ChatGPT models
+#' Call the OpenAI API to interact with ChatGPT or o-reasoning models
 #'
 #' @param .llm An existing LLMMessage object or an initial text prompt.
-#' @param .model The model identifier (default: "gpt-4").
+#' @param .model The model identifier (default: "gpt-4o").
 #' @param .max_tokens The maximum number of tokens to generate (default: 1024).
 #' @param .temperature Control for randomness in response generation (optional).
 #' @param .top_k Top k sampling parameter (optional).
@@ -166,7 +232,7 @@ claude <- function(.llm,
 #' @return Returns an updated LLMMessage object.
 #' @export
 chatgpt <- function(.llm,
-                    .model = "gpt-4-turbo",
+                    .model = "gpt-4o",
                     .max_tokens = 1024,
                     .temperature = NULL,
                     .top_p = NULL,
@@ -289,7 +355,7 @@ chatgpt <- function(.llm,
 #' Call the Groq API to interact with fast opensource models on Groq
 #'
 #' @param .llm An existing LLMMessage object or an initial text prompt.
-#' @param .model The model identifier (default: "gpt-4").
+#' @param .model The model identifier (default: "llama-3.2-90b-text-preview").
 #' @param .max_tokens The maximum number of tokens to generate (default: 1024).
 #' @param .temperature Control for randomness in response generation (optional).
 #' @param .top_k Top k sampling parameter (optional).
@@ -307,7 +373,7 @@ chatgpt <- function(.llm,
 #' @return Returns an updated LLMMessage object.
 #' @export
 groq <- function(.llm,
-                 .model = "mixtral-8x7b-32768",
+                 .model = "llama-3.2-90b-text-preview",
                  .max_tokens = 1024,
                  .temperature = NULL,
                  .top_p = NULL,
@@ -435,7 +501,7 @@ groq <- function(.llm,
 #' @param .seed Which seed should be used for random numbers  (optional).
 #' @param .num_ctx The size of the context window in tokens (optional)
 #' @param .stream  Should the answer be streamed to console as it comes (optional)
-#' @param ..ollama_server The URL of the ollama server to be used
+#' @param .ollama_server The URL of the ollama server to be used
 #' @return Returns an updated LLMMessage object.
 #' @export
 ollama <- function(.llm,

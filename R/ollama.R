@@ -51,7 +51,6 @@ ollama_download_model <- function(.model, .ollama_server = "http://localhost:114
   
   # Prepare the callback function for handling stream data
   callback_modeldownload_stream <- function(.stream) {
-    browser()
     stream_content <- rawToChar(.stream, multiple = FALSE) |>
       jsonlite::fromJSON()
     #Show a progress bar for the download 

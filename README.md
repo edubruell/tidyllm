@@ -11,7 +11,7 @@
 - **Multiple Model Support**: Seamlessly switch between various model providers like Claude, ChatGPT, Groq or Ollama using the best of what each has to offer.
 - **Media Handling**: Extract and process text from PDFs and capture console outputs for messaging. Upload imagefiles or the last plotpane to multimodal models.
 - **Interactive Messaging History**: Manage an ongoing conversation with models, maintaining a structured history of messages and media interactions, which are automatically formatted for each API
-- **Statefull handling of rate limits:** API rate limits are handled statefully within each R Session and API functions can wait automatically for rate limits to reset
+- **Stateful handling of rate limits:** API rate limits are handled statefully within each R Session and API functions can wait automatically for rate limits to reset
 - **Tidy Workflow**: Making use of R's functional programming features for a side-effect-free, pipeline-oriented operation style that feels natural to R users.
 
 ## Requirements
@@ -20,25 +20,25 @@ You either need a local version of [ollama](https://ollama.com/) with some model
 need to setup your API keys for use in R for each API you want to use. 
 
 1. For Anthropic you can create an API key in your [Anthropic account settings
-page](https://console.anthropic.com/settings/keys) and set it with
+page](https://console.anthropic.com/settings/keys) and set it by
 
 ``` r
 Sys.setenv(ANTHROPIC_API_KEY = "ANTHROPIC-API-KEY-GOES-HERE")
 ```
 
 2. For ChatGPT you can create an API key in  [API pane of the OpenAI platform
-page](https://platform.openai.com/api-keys) and set it with
+page](https://platform.openai.com/api-keys) and set it by
 
 ``` r
 Sys.setenv(OPENAI_API_KEY = "OPENAI-API-KEY-GOES-HERE")
 ```
 
-3. For groq you can set the API key on the [Groq console page](https://console.groq.com/keys) and set it with
+3. For groq you can set the API key on the [Groq console page](https://console.groq.com/keys) and set it by
 ``` r
 Sys.setenv(GROQ-API_KEY = "GROQ-API-KEY-GOES-HERE")
 ```
 
-Or you can do it persistent (session-wide), by assigning the keys in your
+Or you can do it persistently (session-wide), by assigning the keys in your
 `.Renviron` file. For this, execute `usethis::edit_r_environ()`, and add a
 line with with an API key in this file, for example:
 
@@ -66,7 +66,7 @@ All communication to the APIs is done via the `llm_message()` function that allo
 allow you to send message histories to different models. 
 
 ```R
-library(tidyllm)
+library("tidyllm"")
 
 # Describe an image with a llava model on ollama
 conversation <- llm_message("Describe this image",
@@ -81,17 +81,18 @@ conversation |>
 ## Functions Overview
 
 - **`llm_message()`**: Create or update a message object, adding prompts or media content.
-- **`claude()`**: Send and receive messages  Anthropic's Claude models
+- **`claude()`**: Send and receive messages from Anthropic's Claude models
 - **`chatgpt()`**: Send and receive messages from OpenAI's ChatGPT models.
 - **`ollama()`**: Send and receive messages to the ollama API (to work with local models)
 - **`groq()`**: Interact with Groq's fast open-source models, taking advantage of their dedicated hardware accelerators for efficient processing.
 - **`last_reply()`**: Fetch the most recent assistant's response from a message history.
 - **`estimate_tokens()`**: Estimate the number of gpt-4 tokens in a message history.
+- **`print_rate_limit_info()`**: Print the current rate limits of `claude()`, `groq()` or `chatgpt()`
 
 ### Sending R outputs to the language model
 
 `llm_message()` has an optional argument `.f` in which you can specify a (anonymous) function, which 
-will be run and which console output will be captured and appended to the message, when you run it: 
+will be run and which console output will be captured and appended to the message when you run it: 
 
 ```r
 # Some example data to show how passing R outputs to models works.
@@ -149,7 +150,7 @@ llm_message("Describe this image",
 Or even capture the last plot pane and send it to a model: 
 
 ```r
-library(tidyverse)
+library("tidyverse")
 ggplot(mtcars, aes(x = wt, y = mpg)) +
   geom_point() +
   labs(title = "Car Weight vs. Miles per Gallon",
@@ -171,7 +172,7 @@ To use this feature, you need to have the `pdftools` package installed. If it is
 install.packages("pdftools")
 ```
 
-To include text from a PDF file in your prompt, simply pass the file path to the `.pdffile` argument of the `chat` function:
+To include text from a PDF in your prompt, simply pass the file path to the `.pdf` argument of the `chat` function:
 
 ```r
 llm_message("Please summarize the key points from the provided PDF document.", 
@@ -201,7 +202,7 @@ reply_pdf <- llm_message("Please summarize the key points from the provided PDF 
 ```
 
 ### Directly get structured data as reply
-Using the ability of large language models to output valid JSON, tidyllm can also directly get replies directly as structured data, which is easy to use in R. 
+Using the ability of large language models to output valid JSON, tidyllm can also directly get replies as structured data, which is easy to use in R. 
 ```r
 de_books <- llm_message('Imagine a list of german books in JSON-format following this example:
 {
@@ -241,7 +242,7 @@ temp_example |> groq(.temperature=0)# Same answer
 ```
 ### Experimental features
 
-At the moment `ollama()` supports realtime streaming of reply tokens to the console while the model works. This is not super useful in the context of a data-analysis centered workflow but might be added to other API-functions anyway. 
+At the moment `ollama()` and `claude()` support realtime streaming of reply tokens to the console while the model works. This is not super useful in the context of a data-analysis centered workflows but might be added to other API-functions anyway. 
 
 ## Future Work
 
