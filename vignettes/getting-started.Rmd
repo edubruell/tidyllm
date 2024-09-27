@@ -1,0 +1,177 @@
+---
+title: "Getting started with tidyllm"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Your Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+## Getting Started with tidyllm
+
+tidyllm is an R package designed to provide a unified interface for interacting with various large language model APIs. This vignette will guide you through the basic setup and usage of tidyllm.
+
+### Installation
+
+You can install tidyllm directly from GitHub using devtools:
+
+```{r, eval= FALSE, echo=TRUE}
+# Install devtools if not already installed
+if (!requireNamespace("devtools", quietly = TRUE)) {
+  install.packages("devtools")
+}
+
+# Install tidyllm from GitHub
+devtools::install_github("edubruell/tidyllm")
+```
+
+### Setting up API Keys
+
+Before using tidyllm, you need to set up API keys for the services you plan to use. Here's how to set them up for different providers:
+
+1. Anthropic (Claude):
+```{r, eval= FALSE, echo=TRUE}
+Sys.setenv(ANTHROPIC_API_KEY = "YOUR-ANTHROPIC-API-KEY")
+```
+
+2. OpenAI (ChatGPT):
+```{r, eval= FALSE, echo=TRUE}
+Sys.setenv(OPENAI_API_KEY = "YOUR-OPENAI-API-KEY")
+```
+
+3. Groq:
+```{r, eval= FALSE, echo=TRUE}
+Sys.setenv(GROQ_API_KEY = "YOUR-GROQ-API-KEY")
+```
+
+Alternatively, you can set these keys in your `.Renviron` file for persistent storage. For this, execute `usethis::edit_r_environ()`, and add a
+line with with an API key in this file, for example:
+
+```{r, eval= FALSE, echo=TRUE}
+ANTHROPIC_API_KEY="XX-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+```
+
+If you do not want to use remote models you can also work with local large lange models via `ollama`. Install it from [the official project website](https://ollama.com/). Ollama sets up a local large language model server that you can use to run open-source models on your own devices. 
+
+
+### Basic Usage
+
+Let's start with a simple example using tidyllm to interact with different language models:
+
+```{r firsttry,  eval=TRUE, echo=TRUE}
+library(tidyllm)
+
+# Start a conversation with Claude
+conversation <- llm_message("What is the capital of France?") |>
+  claude()
+
+#Standard way that llm_messages are printed
+conversation
+
+# Get the last reply
+last_reply(conversation)
+
+# Continue the conversation with ChatGPT
+conversation <- conversation |>
+  llm_message("What's a famous landmark in this city?") |>
+  chatgpt()
+
+# Get the last reply
+last_reply(conversation)
+```
+
+### Working with Images
+
+tidyllm also supports sending images to multimodal models:
+
+```{r images,  eval=TRUE, echo=TRUE}
+# Describe an image using a llava model on ollama
+image_description <- llm_message("Describe this image",
+                                 .imagefile = "https://raw.githubusercontent.com/edubruell/tidyllm/refs/heads/main/tidyllm.png") |>
+  ollama(.model = "llava")
+
+# Get the last reply
+last_reply(image_description)
+```
+
+### Sending R Outputs to Language Models
+
+You can include R code outputs in your prompts. In particular you can use `.caputre_plot` to send the last plot pane to a model. 
+The `.f`-argument runs a function and sends it output to a model. 
+
+```{r routputs,  eval=TRUE, echo=TRUE}
+library(tidyverse)
+
+# Example data
+example_data <- tibble(
+  x = rnorm(100),
+  y = 2 * x + rnorm(100)
+)
+
+# Create a plot
+ggplot(example_data, aes(x, y)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+
+# Send the plot and data summary to a language model
+analysis <- llm_message("Analyze this plot and data summary:", 
+                        .capture_plot = TRUE,
+                        .f = ~{summary(example_data)}) |>
+  claude()
+
+last_reply(analysis)
+```
+
+### Adding PDFs to messages
+
+The `llm_message()` function also supports extracting text from PDFs and including it in the message. This allows you to easily provide context from a PDF document when interacting with the AI assistant.
+
+To use this feature, you need to have the `pdftools` package installed. If it is not already installed, you can install it with:
+
+```{r,  eval=FALSE, echo=TRUE}
+install.packages("pdftools")
+```
+
+To include text from a PDF in your prompt, simply pass the file path to the `.pdf` argument of the `chat` function:
+
+```{r,  eval=TRUE, echo=TRUE}
+llm_message("Please summarize the key points from the provided PDF document.", 
+     .pdf = "https://pdfobject.com/pdf/sample.pdf") |>
+     ollama()
+```
+
+The package will automatically extract the text from the PDF  and include it in the prompt sent to the an API. The text will be wrapped in `<pdf>` tags to clearly indicate the content from the PDF:
+
+```
+Please summarize the key points from the provided PDF document.
+
+<pdf filename="example_document.pdf">
+Extracted text from the PDF file...
+</pdf>
+```
+
+### API parameters
+
+Different API functions support different model parameters like  how deterministic the response should be via parameters like temperature. Please read API-documentation and the documentation of the model functions for specific examples.
+
+```{r temperature,  eval=TRUE, echo=TRUE}
+temp_example <- llm_message("Explain how temperature parameters work in large language models.")
+
+#per default it is non-zero
+temp_example |> ollama()
+
+#Temperature sets the randomness of the answer
+#0 is one extreme where the output becomes fully deterministic. 
+#Else the next token is allways sampled from a list of the most likely tokens. Here only the most likely token is used every time.
+temp_example |> ollama(.temperature=0) |> last_reply()
+temp_example |> ollama(.temperature=0) |> last_reply()# Same answer
+```
+
+### Use-case vignettes. 
+
+There are three vignettes that highlight special use-cases of the `tidyllm`-package and 
+walk you true a typical use-case for the package:
+
+  1. Structured question answering for pdf documents
+  2. Automated image labeling
+  3. Synthetic data generation for testing questionnaires

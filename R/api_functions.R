@@ -226,7 +226,7 @@ chatgpt <- function(.llm,
                     .wait = TRUE,
                     .min_tokens_reset = 0L,
                     .stream = FALSE) {
-  
+
   # Validate inputs
   c(
     "Input .llm must be an LLMMessage object" = inherits(.llm, "LLMMessage"),

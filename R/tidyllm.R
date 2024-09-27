@@ -5,15 +5,22 @@
 #' This class manages a history of messages and media interactions intended for use with large language  models.
 #' It allows for adding messages, converting messages for API usage, and printing the history in a structured format.
 #'
-#' @field message_history List to store all message interactions.
-#' @field system_prompt The default prompt used by the system.
 LLMMessage <- R6::R6Class(
   "LLMMessage",
   public = list(
+    
+    #' @field message_history List to store all message interactions.
     message_history = list(),
+    
+    #' @field system_prompt The system prompt used for a conversation
     system_prompt = "You are a helpful assistant",
     
-
+    #' @description
+    #' Initializes the LLMMessage object with an optional system prompt.
+    #' 
+    #' @param system_prompt A string that sets the initial system prompt.
+    #' 
+    #' @return A new LLMMessage object.
     initialize = function(system_prompt = "You are a helpful assistant") {
       self$system_prompt <- system_prompt
       self$add_message("system", self$system_prompt)
@@ -255,9 +262,8 @@ LLMMessage <- R6::R6Class(
         }) |> max() |> as.logical()
     },
     
-    #' Print message history
-    #' 
-    #' Prints the current message history in a readable format.
+    #' @description
+    #' Prints the current message history in a structured format.
     print = function() {
       cat("Message History:\n")
       lapply(self$message_history, function(message) {
@@ -474,7 +480,7 @@ df_llm_message <- function(.df){
 #'
 #' @param .llm An LLMMessage object containing the history of messages exchanged.
 #'             This must be a valid LLMMessage object; otherwise, the function will stop with an error.
-#' @param .json
+#' @param .json Should structured json data from the last reply be returned as R list (default: FALSE)
 #' @return Returns the content of the last reply made by the assistant. If the assistant
 #'         has not replied yet, or if there are no assistant messages in the history, `NULL` is returned.
 #'

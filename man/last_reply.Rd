@@ -9,6 +9,8 @@ last_reply(.llm = NULL, .json = FALSE)
 \arguments{
 \item{.llm}{An LLMMessage object containing the history of messages exchanged.
 This must be a valid LLMMessage object; otherwise, the function will stop with an error.}
+
+\item{.json}{Should structured json data from the last reply be returned as R list (default: FALSE)}
 }
 \value{
 Returns the content of the last reply made by the assistant. If the assistant

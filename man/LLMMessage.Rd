@@ -4,6 +4,11 @@
 \alias{LLMMessage}
 \title{Large Language Model Message Class}
 \description{
+Large Language Model Message Class
+
+Large Language Model Message Class
+}
+\details{
 This class manages a history of messages and media interactions intended for use with large language  models.
 It allows for adding messages, converting messages for API usage, and printing the history in a structured format.
 }
@@ -32,15 +37,7 @@ Adds a message to the history. Optionally includes media.
 \describe{
 \item{\code{message_history}}{List to store all message interactions.}
 
-\item{\code{system_prompt}}{The default prompt used by the system.
-Deep Clone of LLMMessage Object
-
-This method creates a deep copy of the \code{LLMMessage} object. It ensures that
-all internal states, including message histories and settings, are copied
-so that the original object remains unchanged when mutations are applied
-to the copy. This is particularly useful for maintaining immutability in
-a tidyverse-like functional programming context where functions should
-not have side effects on their inputs.}
+\item{\code{system_prompt}}{The system prompt used for a conversation}
 }
 \if{html}{\out{</div>}}
 }
@@ -60,10 +57,29 @@ not have side effects on their inputs.}
 \if{html}{\out{<a id="method-LLMMessage-new"></a>}}
 \if{latex}{\out{\hypertarget{method-LLMMessage-new}{}}}
 \subsection{Method \code{new()}}{
+Initializes the LLMMessage object with an optional system prompt.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{LLMMessage$new(system_prompt = "You are a helpful assistant")}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{system_prompt}}{A string that sets the initial system prompt.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A new LLMMessage object.
+Deep Clone of LLMMessage Object
+
+This method creates a deep copy of the \code{LLMMessage} object. It ensures that
+all internal states, including message histories and settings, are copied
+so that the original object remains unchanged when mutations are applied
+to the copy. This is particularly useful for maintaining immutability in
+a tidyverse-like functional programming context where functions should
+not have side effects on their inputs.
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-LLMMessage-clone_deep"></a>}}
@@ -153,15 +169,13 @@ to the model}
 
 \subsection{Returns}{
 Returns TRUE if the message hisotry contains images
-Print message history
-
-Prints the current message history in a readable format.
 }
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-LLMMessage-print"></a>}}
 \if{latex}{\out{\hypertarget{method-LLMMessage-print}{}}}
 \subsection{Method \code{print()}}{
+Prints the current message history in a structured format.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{LLMMessage$print()}\if{html}{\out{</div>}}
 }
