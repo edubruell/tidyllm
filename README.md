@@ -244,7 +244,7 @@ temp_example |> groq(.temperature=0)# Same answer
 ```
 ### Experimental features
 
-At the moment `ollama()` and `claude()` support realtime streaming of reply tokens to the console while the model works. This is not super useful in the context of a data-analysis centered workflows but might be added to other API-functions anyway. 
+At the moment `ollama()`, `chatgpt()` and `claude()` support real-time streaming of reply tokens to the console while the model works with the `.stream=TRUE` argument. This is not super useful in the context of  data-analysis centered workflows, but gives you slightly better feedback on how your model works. We recommend using non-streaming response for production tasks though. Error handling in the callback functions for streaming responses is implemented differently for each API and differs in quality at the moment. 
 
 ## Future Work
 

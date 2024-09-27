@@ -12,7 +12,8 @@ ollama(
   .json = FALSE,
   .temperature = NULL,
   .num_ctx = 2048,
-  .ollama_server = "http://localhost:11434"
+  .ollama_server = "http://localhost:11434",
+  .timeout = 120
 )
 }
 \arguments{
@@ -28,7 +29,9 @@ ollama(
 
 \item{.num_ctx}{The size of the context window in tokens (optional)}
 
-\item{..ollama_server}{The URL of the ollama server to be used}
+\item{.ollama_server}{The URL of the ollama server to be used}
+
+\item{.timeout}{When should our connection time out}
 }
 \value{
 Returns an updated LLMMessage object.

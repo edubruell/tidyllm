@@ -6,7 +6,7 @@
 \usage{
 claude(
   .llm,
-  .model = "claude-3-sonnet-20240229",
+  .model = "claude-3-5-sonnet-20240620",
   .max_tokens = 1024,
   .temperature = NULL,
   .top_k = NULL,
@@ -18,13 +18,14 @@ claude(
   .verbose = FALSE,
   .wait = TRUE,
   .min_tokens_reset = 0L,
-  .timeout = 60
+  .timeout = 60,
+  .stream = FALSE
 )
 }
 \arguments{
 \item{.llm}{An existing LLMMessage object or an initial text prompt.}
 
-\item{.model}{The model identifier (default: "claude-3-sonnet-20240229").}
+\item{.model}{The model identifier (default: "claude-3-5-sonnet-20240620").}
 
 \item{.max_tokens}{The maximum number of tokens to generate (default: 1024).}
 
@@ -49,6 +50,8 @@ claude(
 \item{.min_tokens_reset}{How many tokens should be remaining to wait until we wait for token reset?}
 
 \item{.timeout}{Request timeout in seconds (default: 60).}
+
+\item{.stream}{Stream back the response piece by piece (default: FALSE).}
 
 \item{.system}{Additional system parameters (optional).}
 }

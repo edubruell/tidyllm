@@ -1,3 +1,59 @@
+#' Perform an API request to interact with language models
+#'
+#' @param request The httr2 request object.
+#' @param .api The API identifier (e.g., "claude", "openai").
+#' @param .stream Stream the response if TRUE.
+#' @param .timeout Request timeout in seconds.
+#' @param parse_response_fn A function to parse the assistant's reply.
+#'
+#' @return A list containing the assistant's reply and response headers.
+perform_api_request <- function(request, .api, .stream = FALSE, .timeout = 60, parse_response_fn = NULL) {
+  if (.stream == TRUE) {
+    # Initialize the streaming environment variable
+    .tidyllm_stream_env$stream <- ""
+    cat("\n---------\nStart", .api, "streaming: \n---------\n")
+    
+    # Generate the appropriate callback function
+    callback_fn <- generate_callback_function(.api)
+    
+    # Perform the streaming request and process it with the callback function
+    response <- httr2::req_perform_stream(
+      request,
+      callback = callback_fn,
+      buffer_kb = 0.05, 
+      round = "line"
+    )
+    
+    # Assign the final streamed response
+    assistant_reply <- .tidyllm_stream_env$stream
+    # And delete the content of the environment variable just in case
+    .tidyllm_stream_env$stream <- ""
+    
+    # Capture response headers for rate limiting information
+    response_headers <- httr2::resp_headers(response)
+    
+  } else {
+    # Non-streaming mode
+    response <- httr2::req_perform(
+      httr2::req_timeout(request, .timeout)
+    )
+    
+    # Parse the response body as JSON when not streaming
+    body_json <- httr2::resp_body_json(response)
+    
+    # Use the parsing function provided
+    if (!is.null(parse_response_fn)) {
+      assistant_reply <- parse_response_fn(body_json)
+    } else {
+      stop("A parsing function must be provided for non-streaming responses.")
+    }
+    
+    # Capture response headers for rate limiting information
+    response_headers <- httr2::resp_headers(response)
+  }
+  
+  return(list(assistant_reply = assistant_reply, headers = response_headers))
+}
 
 
 #' Call the Anthropic API to interact with Claude models
@@ -36,9 +92,8 @@ claude <- function(.llm,
                    .min_tokens_reset = 0L,
                    .timeout = 60,
                    .stream = FALSE
-                   ) {  
-  
-  #Validate inputes to the Claude function
+) {  
+  # Validate inputs to the Claude function
   c(
     ".llm must be an LLMMessage object"    = inherits(.llm, "LLMMessage"),
     ".max_tokens must be an integer"       = is_integer_valued(.max_tokens),
@@ -54,16 +109,16 @@ claude <- function(.llm,
   ) |>
     validate_inputs()
   
-  #Get the formated message list so we can send it to a claude model
+  # Get the formatted message list so we can send it to a Claude model
   messages <- .llm$to_api_format("claude")
   
   # Retrieve API key from environment variables
   api_key <- base::Sys.getenv("ANTHROPIC_API_KEY")
-  if (api_key == "") stop("API key is not set. Please set it with : Sys.setenv(ANTHROPIC_API_KEY = \"YOUR-KEY-GOES-HERE\").")
+  if (api_key == "") stop("API key is not set. Please set it with: Sys.setenv(ANTHROPIC_API_KEY = \"YOUR-KEY-GOES-HERE\").")
   
-  #If the rate limit environment is set we wait for the rate limit
+  # If the rate limit environment is set, wait for the rate limit
   if(.wait==TRUE & !is.null(.tidyllm_rate_limit_env[["claude"]])){
-    wait_rate_limit("claude",.min_tokens_reset)
+    wait_rate_limit("claude", .min_tokens_reset)
   }  
   
   # Data payload
@@ -84,107 +139,32 @@ claude <- function(.llm,
   # Filter out NULL values from the body
   request_body <- base::Filter(Negate(is.null), request_body)
   
-  #An internal callback function  for streaming with claude
-  callback_claude_stream <- function(.stream){
-    # Read the stream content as raw text
-    stream_content <- rawToChar(.stream, multiple = FALSE)
-    
-    # Split the content into event and data sections
-    lines <- strsplit(stream_content, "\n")[[1]]
-    
-    for (line in lines) {
-      # Ignore empty lines
-      if (line == "") next
-      
-      # Check for event lines
-      if (grepl("^event:", line)) {
-        # Handle different types of events
-        if (grepl("message_start", line)) {
-          .tidyllm_stream_env$stream <- ""
-        } else if (grepl("message_stop", line)) {
-          cat("\n---------\nStream finished\n---------\n")
-          return(FALSE)
-        }
-      } 
-      
-      # Check for data lines (JSON content)
-      if (grepl("^data:", line)) {
-        # Extract the JSON part after "data: "
-        json_part <- sub("^data: ", "", line)
-        
-        # Try to parse the JSON content
-        tryCatch({
-          parsed_event <- jsonlite::fromJSON(json_part)
-          
-          # Handle content block deltas
-          if (parsed_event$type == "content_block_delta") {
-            delta_content <- parsed_event$delta$text
-            .tidyllm_stream_env$stream <- as.character(glue::glue("{.tidyllm_stream_env$stream}{delta_content}"))
-            cat(delta_content)
-            flush.console()
-          }
-          
-        }, error = function(e) {
-          message("Failed to parse JSON: ", e$message)
-        })
-      }
+  # Build the request
+  request <- httr2::request(.api_url) |>
+    httr2::req_url_path("/v1/messages") |>
+    httr2::req_headers(
+      `x-api-key` = api_key,
+      `anthropic-version` = "2023-06-01",
+      `content-type` = "application/json; charset=utf-8"
+    ) |>
+    httr2::req_body_json(data = request_body)
+  
+  
+  # Perform the API request
+  response <- perform_api_request(
+    request, 
+    .api = "claude", 
+    .stream = .stream, 
+    .timeout = .timeout, 
+    parse_response_fn = function(body_json) {
+      assistant_reply <- body_json$content[[1]]$text
+      return(assistant_reply)
     }
-    
-    return(TRUE)
-  }
-
-  # Perform the request using httr2 package
-  if (.stream == TRUE) {
-    # Initialize the streaming environment variable
-    .tidyllm_stream_env$stream <- ""
-    cat("\n---------\nStart Claude streaming: \n---------\n")
-    
-    # Perform the streaming request and process it with the callback function
-    response <- httr2::req_perform_stream(
-      httr2::req_body_json(
-        httr2::req_headers(
-          httr2::req_url_path(httr2::request(.api_url), "/v1/messages"), 
-          `x-api-key` = api_key,
-          `anthropic-version` = "2023-06-01",
-          `content-type` = "application/json; charset=utf-8"
-        ), 
-        data = request_body
-      ), 
-      callback_claude_stream, 
-      buffer_kb = 0.05, 
-      round = "line"
-    )
-    
-    # Assign the final streamed response
-    assistant_reply <- .tidyllm_stream_env$stream
-    
-    # Capture response headers for rate limiting information
-    response_headers <- httr2::resp_headers(response)
-    
-  } else {
-    # Non-streaming mode
-    response <- httr2::req_perform(
-      httr2::req_timeout(
-        httr2::req_body_json(
-          httr2::req_headers(
-            httr2::req_url_path(httr2::request(.api_url), "/v1/messages"), 
-            `x-api-key` = api_key,
-            `anthropic-version` = "2023-06-01",
-            `content-type` = "application/json; charset=utf-8"
-          ), 
-          data = request_body
-        ), 
-        .timeout
-      )
-    )
-    
-    # Parse the response body as JSON when not streaming
-    body_json <- httr2::resp_body_json(response)
-    assistant_reply <- body_json$content[[1]]$text
-    
-    # Capture response headers for rate limiting information
-    response_headers <- httr2::resp_headers(response)
-  }
+  )
+  
+  # Extract assistant reply and response headers
+  response_headers <- response$headers
+  assistant_reply  <- response$assistant_reply
   
   # Update the rate-limit environment with the headers
   rl <- list(
@@ -211,6 +191,7 @@ claude <- function(.llm,
   return(llm_copy)
 }
 
+
 #' Call the OpenAI API to interact with ChatGPT or o-reasoning models
 #'
 #' @param .llm An existing LLMMessage object or an initial text prompt.
@@ -227,12 +208,13 @@ claude <- function(.llm,
 #' @param .timeout Request timeout in seconds (default: 60).
 #' @param .verbose Should additional information be shown after the API call
 #' @param .wait Should we wait for rate limits if necessary?
+#' @param .stream Stream back the response piece by piece (default: FALSE).
 #' @param .min_tokens_reset How many tokens should be remaining to wait until we wait for token reset?
 #'
 #' @return Returns an updated LLMMessage object.
 #' @export
 chatgpt <- function(.llm,
-                    .model = "gpt-4o",
+                    .model = "gpt-4",
                     .max_tokens = 1024,
                     .temperature = NULL,
                     .top_p = NULL,
@@ -240,11 +222,11 @@ chatgpt <- function(.llm,
                     .presence_penalty = NULL,
                     .api_url = "https://api.openai.com/",
                     .timeout = 60,
-                    .image_detail = "auto",
                     .verbose = FALSE,
-                    .wait=TRUE,
-                    .min_tokens_reset = 0L) {
-
+                    .wait = TRUE,
+                    .min_tokens_reset = 0L,
+                    .stream = FALSE) {
+  
   # Validate inputs
   c(
     "Input .llm must be an LLMMessage object" = inherits(.llm, "LLMMessage"),
@@ -254,20 +236,26 @@ chatgpt <- function(.llm,
     ".top_p must be numeric if provided" = is.null(.top_p) | is.numeric(.top_p),
     ".frequency_penalty must be numeric if provided" = is.null(.frequency_penalty) | is.numeric(.frequency_penalty),
     ".presence_penalty must be numeric if provided" = is.null(.presence_penalty) | is.numeric(.presence_penalty),
-    ".verbose must be logical"                   = is.logical(.verbose),
-    ".wait must be logical"                      = is.logical(.wait),
-    ".min_tokens_reset must be an integer"       = is_integer_valued(.min_tokens_reset)
+    ".verbose must be logical" = is.logical(.verbose),
+    ".wait must be logical" = is.logical(.wait),
+    ".min_tokens_reset must be an integer" = is_integer_valued(.min_tokens_reset),
+    ".stream must be logical" = is.logical(.stream)
   ) |>
     validate_inputs()
   
-  #Get messages from llm object
+  # Get messages from llm object
   messages <- .llm$to_api_format("chatgpt")
   
-  #Get the OpenAI API key
+  # Get the OpenAI API key
   api_key <- Sys.getenv("OPENAI_API_KEY")
   if (api_key == "") stop("API key is not set. Please set it with: Sys.setenv(OPENAI_API_KEY = \"YOUR-KEY-GOES-HERE\")")
   
-  #Fill the request body
+  # Wait for the rate-limit if necessary
+  if (.wait == TRUE & !is.null(.tidyllm_rate_limit_env[["chatgpt"]])) {
+    wait_rate_limit("chatgpt", .min_tokens_reset)
+  }
+  
+  # Build the request body
   request_body <- list(
     model = .model,
     max_tokens = .max_tokens,
@@ -275,30 +263,35 @@ chatgpt <- function(.llm,
     temperature = .temperature,
     top_p = .top_p,
     frequency_penalty = .frequency_penalty,
-    presence_penalty = .presence_penalty
+    presence_penalty = .presence_penalty,
+    stream = .stream
   )
   request_body <- base::Filter(Negate(is.null), request_body)
   
-  #Wait for the rate-limit if neccesary 
-  if(.wait==TRUE & !is.null(.tidyllm_rate_limit_env[["chatgpt"]])){
-    wait_rate_limit("chatgpt",.min_tokens_reset)
-  }  
-  
-  response <- httr2::request(.api_url) |>
+  # Build the request
+  request <- httr2::request(.api_url) |>
     httr2::req_url_path("/v1/chat/completions") |>
     httr2::req_headers(
       `Authorization` = sprintf("Bearer %s", api_key),
       `Content-Type` = "application/json"
     ) |>
-    httr2::req_body_json(data = request_body) |> 
-    httr2::req_timeout(.timeout) |>
-    httr2::req_perform()
+    httr2::req_body_json(data = request_body)
   
-  #Get the response body
-  body_json <- response |> httr2::resp_body_json()
+  # Perform the API request using perform_api_request
+  response <- perform_api_request(
+    request,
+    .api = "chatgpt",
+    .stream = .stream,
+    .timeout = .timeout,
+    parse_response_fn = function(body_json) {
+      assistant_reply <- body_json$choices[[1]]$message$content
+      return(assistant_reply)
+    }
+  )
   
-  # Retrieve the response headers and parse them so they can be stored in the .tidyllm_rate_limit_env
-  response_headers <- response |> httr2::resp_headers()
+  # Extract assistant reply and response headers
+  response_headers <- response$headers
+  assistant_reply <- response$assistant_reply
   
   #Do some parsing for the rl list 
   request_time                  <- strptime(response_headers["date"]$date, format="%a, %d %b %Y %H:%M:%S", tz="GMT")
@@ -323,8 +316,8 @@ chatgpt <- function(.llm,
   
   #Update the rate-limit environment with info from rl
   update_rate_limit("chatgpt",rl)
-
   
+  # Update rate limit information (implement this according to your rate limit handling)
   #Show Request rate limit info if we are verbose
   if(.verbose==TRUE){
     glue::glue("OpenAI API answer received at {rl$this_request_time}.
@@ -336,17 +329,9 @@ chatgpt <- function(.llm,
               ") |> cat()
   }
   
-  
-  # Check for errors
-  if (httr2::resp_status(response) != 200) {
-    stop("API request failed! Here is the raw response from the server", httr2::resp_raw(response))
-  }
-  
-  # Create a deep copy of the LLMMessage object
+  # Create a deep copy of the LLMMessage object and add the assistant's reply
   llm_copy <- .llm$clone_deep()
-  
-  # Add ChatGPT's message to the history of the LLMMessage object
-  llm_copy$add_message("assistant", body_json$choices[[1]]$message$content)
+  llm_copy$add_message("assistant", assistant_reply)
   
   return(llm_copy)
 }
@@ -502,84 +487,72 @@ groq <- function(.llm,
 #' @param .num_ctx The size of the context window in tokens (optional)
 #' @param .stream  Should the answer be streamed to console as it comes (optional)
 #' @param .ollama_server The URL of the ollama server to be used
+#' @param .timeout When should our connection time out 
 #' @return Returns an updated LLMMessage object.
 #' @export
 ollama <- function(.llm,
-                   .model="llama3",
-                   .stream=FALSE,
+                   .model = "llama3",
+                   .stream = FALSE,
                    .seed = NULL,
                    .json = FALSE,
                    .temperature = NULL,
                    .num_ctx = 2048,
-                   .ollama_server= "http://localhost:11434"){
-
-  #Validate the inputs
+                   .ollama_server = "http://localhost:11434",
+                   .timeout = 120) {
+  
+  # Validate the inputs
   c(
     "Input .llm must be an LLMMessage object" = inherits(.llm, "LLMMessage"),
     "Input .model must be a string" = is.character(.model),
-    "Input .stream must be logical if provided"      = is.logical(.stream),
-    "Input .json must be logical if provided"      = is.logical(.json),
+    "Input .stream must be logical if provided" = is.logical(.stream),
+    "Input .json must be logical if provided" = is.logical(.json),
     "Input .temperature must be numeric if provided" = is.null(.temperature) | is.numeric(.temperature),
     "Input .seed must be an integer-valued numeric if provided" = is.null(.seed) | is_integer_valued(.seed),
-    "Input .num_ctx must be an integer-valued numeric if provided" = is.null(.num_ctx) | is_integer_valued(.num_ctx)
+    "Input .num_ctx must be an integer-valued numeric if provided" = is.null(.num_ctx) | is_integer_valued(.num_ctx),
+    "Input .timeout must be an integer-valued numeric (seconds till timeout)" = is_integer_valued(.timeout)
   ) |>
     validate_inputs()
   
   # Get formatted message list for ollama models
   ollama_messages <- .llm$to_api_format("ollama")
   
-  ollama_options <- list(temperature=.temperature,
-                         seed    = .seed,
-                         num_ctx =.num_ctx) 
+  ollama_options <- list(
+    temperature = .temperature,
+    seed = .seed,
+    num_ctx = .num_ctx
+  )
   ollama_options <- base::Filter(Negate(is.null), ollama_options)
   
-  ollama_request_body <- list(model=.model, 
-       messages=ollama_messages, 
-       options = ollama_options,
-       stream=.stream)
+  ollama_request_body <- list(
+    model = .model,
+    messages = ollama_messages,
+    options = ollama_options,
+    stream = .stream
+  )
   
-  #Add format to request body if applicable
-  if(.json==TRUE){ollama_request_body$format <- "json"}
-  
-  #Build the request
-  ollama_api <- httr2::request(.ollama_server) |>
-    httr2::req_url_path("/api/chat") 
-  
-  assistant_reply <- NULL
-  if(.stream==FALSE){
-    resp <- ollama_api |>
-      httr2::req_body_json(ollama_request_body) |> 
-      httr2::req_perform() |> 
-      httr2::resp_body_json()
-    
-    assistant_reply <- resp$message$content
+  # Add format to request body if applicable
+  if (.json == TRUE) {
+    ollama_request_body$format <- "json"
   }
   
+  # Build the request
+  request <- httr2::request(.ollama_server) |>
+    httr2::req_url_path("/api/chat") |>
+    httr2::req_body_json(ollama_request_body)
   
-  #Do we want to stream the response and show the message when single bits arrive?
-  if(.stream==TRUE){
-    #Initialize the streaming environment variable
-    .tidyllm_stream_env$stream <- ""
-    cat("\n---------\nStart ollama streaming: \n---------\n")
-    #A callback function to stream responses from ollama 
-    callback_ollama_stream <- function(.stream){
-      stream_content <- rawToChar(.stream, multiple = FALSE) |> 
-        jsonlite::fromJSON()
-      
-      stream_response <- stream_content$message$content 
-      .tidyllm_stream_env$stream <- glue::glue("{.tidyllm_stream_env$stream}{stream_response}") |> as.character()
-      cat(stream_response)
-      flush.console()
-      TRUE
+  # Perform the API request
+  response <- perform_api_request(
+    request,
+    .api = "ollama",
+    .stream = .stream,
+    .timeout = .timeout,
+    parse_response_fn = function(body_json) {
+      assistant_reply <- body_json$message$content
+      return(assistant_reply)
     }
-    ollama_api |>
-      httr2::req_body_json(ollama_request_body) |> 
-      httr2::req_perform_stream(callback_ollama_stream, buffer_kb = 0.05, round="line")
-    
-    cat("\n---------\nStream finished\n---------\n")
-    assistant_reply <- .tidyllm_stream_env$stream
-  }
+  )
   
+  assistant_reply <- response$assistant_reply
   
   # Create a deep copy of the LLMMessage object
   llm_copy <- .llm$clone_deep()
@@ -588,5 +561,4 @@ ollama <- function(.llm,
   llm_copy$add_message("assistant", assistant_reply)
   
   return(llm_copy)
-
 }

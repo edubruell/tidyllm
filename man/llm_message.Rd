@@ -11,6 +11,7 @@ llm_message(
   .system_prompt = "You are a helpful assistant",
   .imagefile = NULL,
   .pdf = NULL,
+  .textfile = NULL,
   .capture_plot = FALSE,
   .f = NULL
 )
@@ -28,6 +29,8 @@ llm_message(
 
 \item{.pdf}{Path to a PDF file to be attached (optional).}
 
+\item{.textfile}{Path to a text file to be read and attached (optional).}
+
 \item{.capture_plot}{Boolean to indicate whether a plot should be captured and attached as an image (optional).}
 
 \item{.f}{An R function whose output should be captured and attached (optional).}
@@ -37,5 +40,5 @@ Returns an updated or new LLMMessage object.
 }
 \description{
 This function allows the creation of a new LLMMessage object or the updating of an existing one.
-It can handle the addition of text prompts and various media types such as images, PDFs, or plots.
+It can handle the addition of text prompts and various media types such as images, PDFs, text files, or plots.
 }

@@ -2,11 +2,11 @@
 % Please edit documentation in R/api_functions.R
 \name{chatgpt}
 \alias{chatgpt}
-\title{Call the OpenAI API to interact with ChatGPT models}
+\title{Call the OpenAI API to interact with ChatGPT or o-reasoning models}
 \usage{
 chatgpt(
   .llm,
-  .model = "gpt-4-turbo",
+  .model = "gpt-4",
   .max_tokens = 1024,
   .temperature = NULL,
   .top_p = NULL,
@@ -14,16 +14,16 @@ chatgpt(
   .presence_penalty = NULL,
   .api_url = "https://api.openai.com/",
   .timeout = 60,
-  .image_detail = "auto",
   .verbose = FALSE,
   .wait = TRUE,
-  .min_tokens_reset = 0L
+  .min_tokens_reset = 0L,
+  .stream = FALSE
 )
 }
 \arguments{
 \item{.llm}{An existing LLMMessage object or an initial text prompt.}
 
-\item{.model}{The model identifier (default: "gpt-4").}
+\item{.model}{The model identifier (default: "gpt-4o").}
 
 \item{.max_tokens}{The maximum number of tokens to generate (default: 1024).}
 
@@ -41,6 +41,8 @@ chatgpt(
 
 \item{.min_tokens_reset}{How many tokens should be remaining to wait until we wait for token reset?}
 
+\item{.stream}{Stream back the response piece by piece (default: FALSE).}
+
 \item{.top_k}{Top k sampling parameter (optional).}
 
 \item{.system}{Additional system parameters (optional).}
@@ -55,5 +57,5 @@ chatgpt(
 Returns an updated LLMMessage object.
 }
 \description{
-Call the OpenAI API to interact with ChatGPT models
+Call the OpenAI API to interact with ChatGPT or o-reasoning models
 }

@@ -6,7 +6,7 @@
 \usage{
 groq(
   .llm,
-  .model = "mixtral-8x7b-32768",
+  .model = "llama-3.2-90b-text-preview",
   .max_tokens = 1024,
   .temperature = NULL,
   .top_p = NULL,
@@ -22,7 +22,7 @@ groq(
 \arguments{
 \item{.llm}{An existing LLMMessage object or an initial text prompt.}
 
-\item{.model}{The model identifier (default: "gpt-4").}
+\item{.model}{The model identifier (default: "llama-3.2-90b-text-preview").}
 
 \item{.max_tokens}{The maximum number of tokens to generate (default: 1024).}
 
