@@ -33,10 +33,3 @@ and \code{message_stop} events to control streaming flow.
 It stops processing when the \verb{[DONE]} message is encountered.
 }
 }
-\examples{
-# Create a callback function for Claude API
-callback_fn <- generate_callback_function("claude")
-
-# Use the callback function to process a stream (example)
-# callback_fn(stream_data)
-}

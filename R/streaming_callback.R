@@ -19,12 +19,6 @@
 #'   `message$content` field.
 #' - **For ChatGPT API**: The function handles JSON data streams and processes content deltas.
 #'   It stops processing when the `[DONE]` message is encountered.
-#' @examples
-#' # Create a callback function for Claude API
-#' callback_fn <- generate_callback_function("claude")
-#' 
-#' # Use the callback function to process a stream (example)
-#' # callback_fn(stream_data)
 generate_callback_function <- function(.api) {
   if (.api == "claude") {
     callback_fn <- function(.data) {
@@ -49,7 +43,7 @@ generate_callback_function <- function(.api) {
         if (grepl("message_start", .x)) {
           .tidyllm_stream_env$stream <- ""
         } else if (grepl("message_stop", .x)) {
-          cat("\n---------\nStream finished\n---------\n")
+          message("\n---------\nStream finished\n---------\n")
           continue_processing <<- FALSE
         }
       })
@@ -69,7 +63,7 @@ generate_callback_function <- function(.api) {
           delta_content <- parsed_event$delta$text
           .tidyllm_stream_env$stream <- paste0(.tidyllm_stream_env$stream, delta_content)
           cat(delta_content)
-          flush.console()
+          utils::flush.console()
         }
       })
       
@@ -84,7 +78,7 @@ generate_callback_function <- function(.api) {
       stream_response <- stream_content$message$content 
       .tidyllm_stream_env$stream <- glue::glue("{.tidyllm_stream_env$stream}{stream_response}") |> as.character()
       cat(stream_response)
-      flush.console()
+      utils::flush.console()
       TRUE
       }
   } else if (.api == "chatgpt") {
@@ -122,11 +116,11 @@ generate_callback_function <- function(.api) {
               if (!is.null(delta_content)) {
                 .tidyllm_stream_env$stream <- paste0(.tidyllm_stream_env$stream, delta_content)
                 cat(delta_content)
-                flush.console()
+                utils::flush.console()
               }
             }
           } else {
-            cat("\n---------\nStream finished\n---------\n")
+            message("\n---------\nStream finished\n---------\n")
             continue_processing <<- FALSE
           }
         })

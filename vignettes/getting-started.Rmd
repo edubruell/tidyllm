@@ -58,7 +58,7 @@ If you do not want to use remote models you can also work with local large lange
 
 Let's start with a simple example using tidyllm to interact with different language models:
 
-```{r firsttry,  eval=TRUE, echo=TRUE}
+```{r firsttry,  eval=FALSE, echo=TRUE}
 library(tidyllm)
 
 # Start a conversation with Claude
@@ -84,7 +84,7 @@ last_reply(conversation)
 
 tidyllm also supports sending images to multimodal models:
 
-```{r images,  eval=TRUE, echo=TRUE}
+```{r images,  eval=FALSE, echo=TRUE}
 # Describe an image using a llava model on ollama
 image_description <- llm_message("Describe this image",
                                  .imagefile = "https://raw.githubusercontent.com/edubruell/tidyllm/refs/heads/main/tidyllm.png") |>
@@ -99,7 +99,7 @@ last_reply(image_description)
 You can include R code outputs in your prompts. In particular you can use `.caputre_plot` to send the last plot pane to a model. 
 The `.f`-argument runs a function and sends it output to a model. 
 
-```{r routputs,  eval=TRUE, echo=TRUE}
+```{r routputs,  eval=FALSE, echo=TRUE}
 library(tidyverse)
 
 # Example data
@@ -134,7 +134,7 @@ install.packages("pdftools")
 
 To include text from a PDF in your prompt, simply pass the file path to the `.pdf` argument of the `chat` function:
 
-```{r,  eval=TRUE, echo=TRUE}
+```{r,  eval=FALSE, echo=TRUE}
 llm_message("Please summarize the key points from the provided PDF document.", 
      .pdf = "https://pdfobject.com/pdf/sample.pdf") |>
      ollama()
@@ -154,7 +154,7 @@ Extracted text from the PDF file...
 
 Different API functions support different model parameters like  how deterministic the response should be via parameters like temperature. Please read API-documentation and the documentation of the model functions for specific examples.
 
-```{r temperature,  eval=TRUE, echo=TRUE}
+```{r temperature,  eval=FALSE, echo=TRUE}
 temp_example <- llm_message("Explain how temperature parameters work in large language models.")
 
 #per default it is non-zero

@@ -37,17 +37,6 @@ LLMMessage <- R6::R6Class(
     #' not have side effects on their inputs.
     #'
     #' @return A new `LLMMessage` object that is a deep copy of the original.
-    #' @examples
-    #' llm_original <- LLMMessage$new("Your initial system prompt")
-    #' llm_original$add_message("user", "Hello, how are you?")
-    #'
-    #' llm_clone <- llm_original$clone_deep()
-    #' llm_clone$add_message("user", "Adding a new message to the clone.")
-    #'
-    #' # Now llm_original remains unchanged with its original messages
-    #' llm_original$print()
-    #' # While llm_clone has the new message added
-    #' llm_clone$print()
     clone_deep = function() {
       new_copy <- LLMMessage$new(self$system_prompt)
       new_copy$message_history <- rlang::duplicate(self$message_history, shallow = FALSE)
@@ -369,7 +358,7 @@ llm_message <- function(.llm = NULL,
   
   # Handle function text outputs
   if (!is.null(.f)) {
-    output <- capture.output(rlang::as_function(.f)(), file = NULL) |> 
+    output <- utils::capture.output(rlang::as_function(.f)(), file = NULL) |> 
       stringr::str_c(collapse = "\n")
     
     media_list <- c(media_list, list(list(type = "RConsole", content = output, filename = "RConsole.txt")))
@@ -434,7 +423,10 @@ llm_message <- function(.llm = NULL,
 #' # Example data frame with role and content
 #'df_example <- data.frame(
 #'  role = c("system", "user", "assistant","user"),
-#'  content = c("You allways only answer with two words", "Why is the sky blue?", "Rayleigh scattering","Why is the sun yellow?"),
+#'  content = c("You allways only answer with two words", 
+#'               "Why is the sky blue?", 
+#'               "Rayleigh scattering",
+#'               "Why is the sun yellow?"),
 #'  stringsAsFactors = FALSE
 #')
 #'df_llm_message(df_example)
@@ -455,7 +447,7 @@ df_llm_message <- function(.df){
   # Splitting the dataframe into a list of single-row dataframes
   single_rows <- split(.df, seq(nrow(.df)))
   #Get the system prompt and the first message into a message history
-  initial_message <- llm_message(.llm = single_rows[[2]]$content,.system=single_rows[[1]]$content)
+  initial_message <- llm_message(.llm = single_rows[[2]]$content,.system_prompt = single_rows[[1]]$content)
   
   #We are done if it is just a two-row data.frame
   if(nrow(.df)<=2){final_message <- initial_message}
@@ -483,11 +475,6 @@ df_llm_message <- function(.df){
 #' @param .json Should structured json data from the last reply be returned as R list (default: FALSE)
 #' @return Returns the content of the last reply made by the assistant. If the assistant
 #'         has not replied yet, or if there are no assistant messages in the history, `NULL` is returned.
-#'
-#' @examples
-#' # Assuming `llm_msg` is an existing LLMMessage object that has been interacted with
-#' last_reply(llm_msg)
-#'
 #' @export
 #'
 #' @seealso \code{\link{LLMMessage}} for details on the message object structure.

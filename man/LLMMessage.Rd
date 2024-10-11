@@ -12,26 +12,6 @@ Large Language Model Message Class
 This class manages a history of messages and media interactions intended for use with large language  models.
 It allows for adding messages, converting messages for API usage, and printing the history in a structured format.
 }
-\examples{
-
-## ------------------------------------------------
-## Method `LLMMessage$clone_deep`
-## ------------------------------------------------
-
-llm_original <- LLMMessage$new("Your initial system prompt")
-llm_original$add_message("user", "Hello, how are you?")
-
-llm_clone <- llm_original$clone_deep()
-llm_clone$add_message("user", "Adding a new message to the clone.")
-
-# Now llm_original remains unchanged with its original messages
-llm_original$print()
-# While llm_clone has the new message added
-llm_clone$print()
-Add a message
-
-Adds a message to the history. Optionally includes media.
-}
 \section{Public fields}{
 \if{html}{\out{<div class="r6-fields">}}
 \describe{
@@ -91,27 +71,10 @@ not have side effects on their inputs.
 
 \subsection{Returns}{
 A new \code{LLMMessage} object that is a deep copy of the original.
-}
-\subsection{Examples}{
-\if{html}{\out{<div class="r example copy">}}
-\preformatted{llm_original <- LLMMessage$new("Your initial system prompt")
-llm_original$add_message("user", "Hello, how are you?")
-
-llm_clone <- llm_original$clone_deep()
-llm_clone$add_message("user", "Adding a new message to the clone.")
-
-# Now llm_original remains unchanged with its original messages
-llm_original$print()
-# While llm_clone has the new message added
-llm_clone$print()
 Add a message
 
 Adds a message to the history. Optionally includes media.
 }
-\if{html}{\out{</div>}}
-
-}
-
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-LLMMessage-add_message"></a>}}

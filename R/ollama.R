@@ -1,37 +1,44 @@
-#' Retrieve and print model information from the Ollama API
+
+#' Retrieve and return model information from the Ollama API
 #' 
-#' This function connects to the Ollama API and retrieves and print information 
-#' about available models.
-#' @return NULL
+#' This function connects to the Ollama API and retrieves information 
+#' about available models, returning it as a tibble.
+#' @return A tibble containing model information, or NULL if no models are found.
+#' @param .ollama_server The URL of the ollama server to be used
 #' @export
 ollama_list_models <- function(.ollama_server = "http://localhost:11434") {
-
-  #Perform the request and save the response
+  
+  # Perform the request and save the response
   response <- httr2::request(.ollama_server) |>
     httr2::req_url_path("/api/tags") |>
     httr2::req_perform() |>
     httr2::resp_body_json()
   
-  #What models are available
-  models <-  response$models
-  
   # Check if 'models' key exists in the response
   if (!is.null(response$models)) {
-      lapply(models, function(model){
-        cat("Model Name:",model$name,"\n")
-        cat("Modified At:", model$modified_at, "\n")
-        cat("Size:", model$size, "bytes\n")
-        cat("Format:", model$details$format, "\n")
-        cat("Family:", model$details$family, "\n")
-        cat("Parameter Size:", model$details$parameter_size, "\n")
-        cat("Quantization Level:", model$details$quantization_level, "\n")
-        cat("--------------------------------------------------\n")
-      })
-    } else {
-      cat("No model information found in the response.\n")
-    }
-  invisible(NULL)
+    models <- response$models
+    
+    # Create a tibble with model information
+    model_info <- tibble::tibble(
+      name = sapply(models, function(model) model$name),
+      modified_at = sapply(models, function(model) model$modified_at),
+      size = sapply(models, function(model) model$size),
+      format = sapply(models, function(model) model$details$format),
+      family = sapply(models, function(model) model$details$family),
+      parameter_size = sapply(models, function(model) model$details$parameter_size),
+      quantization_level = sapply(models, function(model) model$details$quantization_level),
+      stringsAsFactors = FALSE
+    )
+    
+    return(model_info)
+    
+  } else {
+    # Return NULL if no models are found
+    return(NULL)
+  }
 }
+
+
 
 #' Download a model from the Ollama API
 #'
@@ -39,8 +46,7 @@ ollama_list_models <- function(.ollama_server = "http://localhost:11434") {
 #' It can operate in a streaming mode where it provides live updates of the download status
 #' and progress, or a single response mode.
 #'
-#' @param model_name The name of the model to download.
-#' @param stream Boolean indicating whether to stream the download progress or not (default TRUE).
+#' @param .model The name of the model to download.
 #' @param .ollama_server The base URL of the Ollama API (default is "http://localhost:11434").
 #' @return NULL
 #' @export

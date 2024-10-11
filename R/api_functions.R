@@ -11,7 +11,7 @@ perform_api_request <- function(request, .api, .stream = FALSE, .timeout = 60, p
   if (.stream == TRUE) {
     # Initialize the streaming environment variable
     .tidyllm_stream_env$stream <- ""
-    cat("\n---------\nStart", .api, "streaming: \n---------\n")
+    message("\n---------\nStart ", .api, " streaming: \n---------\n")
     
     # Generate the appropriate callback function
     callback_fn <- generate_callback_function(.api)
@@ -56,6 +56,8 @@ perform_api_request <- function(request, .api, .stream = FALSE, .timeout = 60, p
 }
 
 
+
+
 #' Call the Anthropic API to interact with Claude models
 #'
 #' @param .llm An existing LLMMessage object or an initial text prompt.
@@ -64,7 +66,6 @@ perform_api_request <- function(request, .api, .stream = FALSE, .timeout = 60, p
 #' @param .temperature Control for randomness in response generation (optional).
 #' @param .top_k Top k sampling parameter (optional).
 #' @param .top_p Nucleus sampling parameter (optional).
-#' @param .system Additional system parameters (optional).
 #' @param .metadata Additional metadata for the request (optional).
 #' @param .stop_sequences Sequences that stop generation (optional).
 #' @param .tools Additional tools used by the model (optional).
@@ -192,6 +193,7 @@ claude <- function(.llm,
 }
 
 
+
 #' Call the OpenAI API to interact with ChatGPT or o-reasoning models
 #'
 #' @param .llm An existing LLMMessage object or an initial text prompt.
@@ -200,16 +202,14 @@ claude <- function(.llm,
 #' @param .temperature Control for randomness in response generation (optional).
 #' @param .top_k Top k sampling parameter (optional).
 #' @param .top_p Nucleus sampling parameter (optional).
-#' @param .system Additional system parameters (optional).
-#' @param .metadata Additional metadata for the request (optional).
-#' @param .stop_sequences Sequences that stop generation (optional).
-#' @param .tools Additional tools used by the model (optional).
+#' @param .frequency_penalty Controls repetition frequency (optional).
+#' @param .presence_penalty Controls how much to penalize repeating content (optional)
 #' @param .api_url Base URL for the API (default: https://api.openai.com/v1/completions).
 #' @param .timeout Request timeout in seconds (default: 60).
 #' @param .verbose Should additional information be shown after the API call
 #' @param .wait Should we wait for rate limits if necessary?
-#' @param .stream Stream back the response piece by piece (default: FALSE).
 #' @param .min_tokens_reset How many tokens should be remaining to wait until we wait for token reset?
+#' @param .stream Stream back the response piece by piece (default: FALSE).
 #'
 #' @return Returns an updated LLMMessage object.
 #' @export
@@ -218,6 +218,7 @@ chatgpt <- function(.llm,
                     .max_tokens = 1024,
                     .temperature = NULL,
                     .top_p = NULL,
+                    .top_k = NULL,
                     .frequency_penalty = NULL,
                     .presence_penalty = NULL,
                     .api_url = "https://api.openai.com/",
@@ -262,6 +263,7 @@ chatgpt <- function(.llm,
     messages = messages,
     temperature = .temperature,
     top_p = .top_p,
+    top_k = .top_k,
     frequency_penalty = .frequency_penalty,
     presence_penalty = .presence_penalty,
     stream = .stream
@@ -343,12 +345,9 @@ chatgpt <- function(.llm,
 #' @param .model The model identifier (default: "llama-3.2-90b-text-preview").
 #' @param .max_tokens The maximum number of tokens to generate (default: 1024).
 #' @param .temperature Control for randomness in response generation (optional).
-#' @param .top_k Top k sampling parameter (optional).
 #' @param .top_p Nucleus sampling parameter (optional).
-#' @param .system Additional system parameters (optional).
-#' @param .metadata Additional metadata for the request (optional).
-#' @param .stop_sequences Sequences that stop generation (optional).
-#' @param .tools Additional tools used by the model (optional).
+#' @param .frequency_penalty Controls repetition frequency (optional).
+#' @param .presence_penalty Controls how much to penalize repeating content (optional)
 #' @param .api_url Base URL for the API (default: "https://api.anthropic.com/v1/messages").
 #' @param .timeout Request timeout in seconds (default: 60).
 #' @param .verbose Should additional information be shown after the API call
@@ -482,10 +481,11 @@ groq <- function(.llm,
 #'
 #' @param .llm An existing LLMMessage object or an initial text prompt.
 #' @param .model The model identifier (default: "llama3").
+#' @param .stream  Should the answer be streamed to console as it comes (optional)
 #' @param .temperature Control for randomness in response generation (optional).
 #' @param .seed Which seed should be used for random numbers  (optional).
+#' @param .json Should output be structured as JSON  (default: FALSE).
 #' @param .num_ctx The size of the context window in tokens (optional)
-#' @param .stream  Should the answer be streamed to console as it comes (optional)
 #' @param .ollama_server The URL of the ollama server to be used
 #' @param .timeout When should our connection time out 
 #' @return Returns an updated LLMMessage object.

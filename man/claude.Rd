@@ -52,8 +52,6 @@ claude(
 \item{.timeout}{Request timeout in seconds (default: 60).}
 
 \item{.stream}{Stream back the response piece by piece (default: FALSE).}
-
-\item{.system}{Additional system parameters (optional).}
 }
 \value{
 Returns an updated LLMMessage object.

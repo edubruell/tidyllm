@@ -10,6 +10,7 @@ chatgpt(
   .max_tokens = 1024,
   .temperature = NULL,
   .top_p = NULL,
+  .top_k = NULL,
   .frequency_penalty = NULL,
   .presence_penalty = NULL,
   .api_url = "https://api.openai.com/",
@@ -31,6 +32,12 @@ chatgpt(
 
 \item{.top_p}{Nucleus sampling parameter (optional).}
 
+\item{.top_k}{Top k sampling parameter (optional).}
+
+\item{.frequency_penalty}{Controls repetition frequency (optional).}
+
+\item{.presence_penalty}{Controls how much to penalize repeating content (optional)}
+
 \item{.api_url}{Base URL for the API (default: https://api.openai.com/v1/completions).}
 
 \item{.timeout}{Request timeout in seconds (default: 60).}
@@ -42,16 +49,6 @@ chatgpt(
 \item{.min_tokens_reset}{How many tokens should be remaining to wait until we wait for token reset?}
 
 \item{.stream}{Stream back the response piece by piece (default: FALSE).}
-
-\item{.top_k}{Top k sampling parameter (optional).}
-
-\item{.system}{Additional system parameters (optional).}
-
-\item{.metadata}{Additional metadata for the request (optional).}
-
-\item{.stop_sequences}{Sequences that stop generation (optional).}
-
-\item{.tools}{Additional tools used by the model (optional).}
 }
 \value{
 Returns an updated LLMMessage object.

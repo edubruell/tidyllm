@@ -2,11 +2,17 @@
 % Please edit documentation in R/ollama.R
 \name{ollama_list_models}
 \alias{ollama_list_models}
-\title{Retrieve and print model information from the Ollama API}
+\title{Retrieve and return model information from the Ollama API}
 \usage{
 ollama_list_models(.ollama_server = "http://localhost:11434")
 }
+\arguments{
+\item{.ollama_server}{The URL of the ollama server to be used}
+}
+\value{
+A tibble containing model information, or NULL if no models are found.
+}
 \description{
-This function connects to the Ollama API and retrieves and print information
-about available models.
+This function connects to the Ollama API and retrieves information
+about available models, returning it as a tibble.
 }

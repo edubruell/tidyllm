@@ -4,7 +4,7 @@
 #' This function initializes a named environment for storing rate limit information
 #' specific to an API. It ensures that each API's rate limit data is stored separately.
 #'
-#' @param api_name The name of the API for which to initialize or retrieve the environment.
+#' @param .api_name The name of the API for which to initialize or retrieve the environment
 #' @export
 initialize_api_env <- function(.api_name) {
   if (!exists(.api_name, envir = .tidyllm_rate_limit_env)) {
@@ -21,12 +21,12 @@ initialize_api_env <- function(.api_name) {
 #' @param .api_name The name of the API for which to initialize or retrieve the environment.
 #' @param .response_object A preparsed response object cotaining info on remaining requests, tokens and rest times
 #' @export
-update_rate_limit <- function(.apiname,.response_object){
-  .tidyllm_rate_limit_env[[.apiname]]$last_request        <- .response_object$this_request_time
-  .tidyllm_rate_limit_env[[.apiname]]$requests_remaining  <- .response_object$ratelimit_requests_remaining
-  .tidyllm_rate_limit_env[[.apiname]]$requests_reset_time <- .response_object$ratelimit_requests_reset_time
-  .tidyllm_rate_limit_env[[.apiname]]$tokens_remaining    <- .response_object$ratelimit_tokens_remaining
-  .tidyllm_rate_limit_env[[.apiname]]$tokens_reset_time   <- .response_object$ratelimit_tokens_reset_time
+update_rate_limit <- function(.api_name,.response_object){
+  .tidyllm_rate_limit_env[[.api_name]]$last_request        <- .response_object$this_request_time
+  .tidyllm_rate_limit_env[[.api_name]]$requests_remaining  <- .response_object$ratelimit_requests_remaining
+  .tidyllm_rate_limit_env[[.api_name]]$requests_reset_time <- .response_object$ratelimit_requests_reset_time
+  .tidyllm_rate_limit_env[[.api_name]]$tokens_remaining    <- .response_object$ratelimit_tokens_remaining
+  .tidyllm_rate_limit_env[[.api_name]]$tokens_reset_time   <- .response_object$ratelimit_tokens_reset_time
   invisible(NULL)
 }
 
@@ -38,14 +38,14 @@ update_rate_limit <- function(.apiname,.response_object){
 #' @param .api_name The name of the API for which rate limit we want to wait
 #' @param .min_tokens_reset A token boundary at which we wish to reset (Typically should be larger than the size of the message)
 #' @export
-wait_rate_limit <- function(.apiname,.min_tokens_reset){
+wait_rate_limit <- function(.api_name,.min_tokens_reset){
   
   #Read info from .tidyllm_rate_limit_env
-  requests_remaining  <- .tidyllm_rate_limit_env[[.apiname]]$requests_remaining
-  requests_reset_time <- .tidyllm_rate_limit_env[[.apiname]]$requests_reset_time
+  requests_remaining  <- .tidyllm_rate_limit_env[[.api_name]]$requests_remaining
+  requests_reset_time <- .tidyllm_rate_limit_env[[.api_name]]$requests_reset_time
   requests_reset_difftime <- as.numeric(difftime(requests_reset_time, lubridate::now(tzone = "UTC"), units = "secs"))
-  tokens_reset_time    <- .tidyllm_rate_limit_env[[.apiname]]$tokens_reset_time
-  tokens_remaining    <- .tidyllm_rate_limit_env[[.apiname]]$tokens_remaining
+  tokens_reset_time    <- .tidyllm_rate_limit_env[[.api_name]]$tokens_reset_time
+  tokens_remaining    <- .tidyllm_rate_limit_env[[.api_name]]$tokens_remaining
   tokens_reset_difftime <- as.numeric(difftime(tokens_reset_time, lubridate::now(tzone = "UTC"), units = "secs"))
   
   #Wait if rate limit is likely to be hit
@@ -54,7 +54,7 @@ wait_rate_limit <- function(.apiname,.min_tokens_reset){
     Sys.sleep(requests_reset_difftime)
   }
   if(tokens_reset_difftime > 0 & .min_tokens_reset>0 & tokens_remaining<.min_tokens_reset){
-    glue::glue("Waiting till the token rate limit is reset: round({tokens_reset_difftime},2) seconds") |> cat()
+    glue::glue("Waiting till the token rate limit is reset: round({tokens_reset_difftime},2) seconds") |> message()
     Sys.sleep(tokens_reset_difftime)
   }
 }
@@ -85,15 +85,17 @@ parse_duration_to_seconds <- function(.duration_str) {
   return(duration_sec)
 }
 
-#' Print the current rate limit information for all or a specific API
+#' Get the current rate limit information for all or a specific API
 #'
-#' This function retrieves and prints the rate limit details for the specified API,
+#' This function retrieves the rate limit details for the specified API,
 #' or for all APIs stored in the .tidyllm_rate_limit_env if no API is specified.
 #'
 #' @param .api_name (Optional) The name of the API whose rate limit info you want to print.
-#'                   If not provided, the rate limit info for all APIs in the environment will be printed.
+#'                   If not provided, the rate limit info for all APIs in the environment will be returned
+#' @return A tibble containing the rate limit information.
+
 #' @export
-print_rate_limit_info <- function(.api_name = NULL) {
+rate_limit_info <- function(.api_name = NULL) {
   # If no API name is provided, print for all APIs in .tidyllm_rate_limit_env
   api_names <- ls(envir = .tidyllm_rate_limit_env)
   
@@ -110,7 +112,7 @@ print_rate_limit_info <- function(.api_name = NULL) {
   }
   
   # Use lapply to iterate over all relevant APIs and print their rate limits
-  invisible(lapply(api_names, function(api) {
+  rl_tibble <- purrr::map_dfr(api_names, function(api) {
     rl_info <- .tidyllm_rate_limit_env[[api]]
     
     # Check for incomplete rate limit data
@@ -120,17 +122,14 @@ print_rate_limit_info <- function(.api_name = NULL) {
       warning(glue::glue("Incomplete rate limit data for API: {api}."))
     }
     
-    # Print out the rate limit info
-    cat(glue::glue(
-      "\n----------------------------------------\n",
-      "Rate Limit Info for API: {api}\n",
-      "----------------------------------------\n",
-      "Last Request: {rl_info$last_request}\n",
-      "Requests Remaining: {rl_info$requests_remaining}\n",
-      "Requests Reset Time: {rl_info$requests_reset_time}\n",
-      "Tokens Remaining: {rl_info$tokens_remaining}\n",
-      "Tokens Reset Time: {rl_info$tokens_reset_time}\n\n"
-    ))
-  }))
+    
+    tibble::tibble(api =api, 
+                   last_request = rl_info$last_request,
+                   requests_remaining  = rl_info$requests_remaining,
+                   requests_reset_time = rl_info$requests_reset_time,
+                   tokens_remaining    = rl_info$tokens_remaining,
+                   tokens_reset_time   = rl_info$tokens_reset_time)
+  })
+  rl_tibble
 }
 

@@ -7,11 +7,9 @@
 ollama_download_model(.model, .ollama_server = "http://localhost:11434")
 }
 \arguments{
+\item{.model}{The name of the model to download.}
+
 \item{.ollama_server}{The base URL of the Ollama API (default is "http://localhost:11434").}
-
-\item{model_name}{The name of the model to download.}
-
-\item{stream}{Boolean indicating whether to stream the download progress or not (default TRUE).}
 }
 \description{
 This function sends a request to the Ollama API to download a specified model.

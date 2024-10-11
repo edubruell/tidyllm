@@ -1,9 +1,9 @@
 Package: tidyllm
-Title: Tidy Large Language Model Integration for R
+Title: Tidy Integration of Large Language Models
 Version: 0.1.0
 Authors@R: 
     person("Eduard", "Brüll", , "eduard.bruell@zew.de", role = c("aut", "cre"))
-Description: TidyLLM is an R package designed to seamlessly integrate various large language model APIs, such as Claude, ChatGPT, Groq, and local models via Ollama, into R workflows. It supports text and media-based interactions, interactive message history, stateful handling of rate limits, and tidy pipeline-oriented functionality for easy integration into data workflows.
+Description: A tidy interface for integrating large language model (LLM) APIs such as 'Claude', 'ChatGPT', 'Groq', and local models via 'Ollama' into R workflows. The package supports text and media-based interactions, interactive message history, stateful rate limit handling, and a tidy, pipeline-oriented interface for streamlined integration into data workflows. Web services are available at <https://www.anthropic.com>, <https://openai.com>, <https://groq.com>, and <https://ollama.com>.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -12,12 +12,22 @@ VignetteBuilder: knitr
 Suggests: 
     knitr,
     rmarkdown,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    tidyverse
 Imports: 
     R6,
     base64enc,
     glue,
-    jsonlite
+    jsonlite,
+    httr2,
+    lubridate,
+    pdftools,
+    purrr,
+    rlang,
+    stringr,
+    grDevices,
+    tibble,
+    cli
 Depends: 
     R (>= 4.2.0)
 Config/testthat/edition: 3

@@ -4,12 +4,12 @@
 \alias{wait_rate_limit}
 \title{Wait for ratelimit restore times to ellapse if necessary}
 \usage{
-wait_rate_limit(.apiname, .min_tokens_reset)
+wait_rate_limit(.api_name, .min_tokens_reset)
 }
 \arguments{
-\item{.min_tokens_reset}{A token boundary at which we wish to reset (Typically should be larger than the size of the message)}
-
 \item{.api_name}{The name of the API for which rate limit we want to wait}
+
+\item{.min_tokens_reset}{A token boundary at which we wish to reset (Typically should be larger than the size of the message)}
 }
 \description{
 This function implements a standardized wait for rate limit resets

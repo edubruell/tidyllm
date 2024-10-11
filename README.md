@@ -1,5 +1,5 @@
 <div style="padding-top:1em; padding-bottom: 0.5em;">
-<img src="tidyllm.png" width = 120 align="right" />
+<img src="man/tidyllm.png" width = 120 align="right" />
 </div>
 
 # TidyLLM: Tidy Large Language Model Integration for R
@@ -50,7 +50,13 @@ ANTHROPIC_API_KEY=XX-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 ## Getting Started
 
-Install **TidyLLM** directly from GitHub using devtools:
+To install **tidyllm** from CRAN , use:
+
+```R
+install.packages("tidyllm")
+```
+
+Or install a current development version directly from GitHub using devtools:
 
 ```R
 # Install devtools if not already installed
@@ -63,7 +69,7 @@ devtools::install_github("edubruell/tidyllm")
 ```
 ## Basic Usage Example
 
-Here’s a quick run-through using **TidyLLM** to send image descriptions through the Claude model and then follow-up with task-specific queries on Groq's open-source models.
+Here’s a quick run-through using **tidyllm** to send image descriptions through the Claude model and then follow-up with task-specific queries on Groq's open-source models.
 All communication to the APIs is done via the `llm_message()` function that allows you to add a message to a conversation with language models. Different model-specific functions like `chatgpt()` or `claude()` 
 allow you to send message histories to different models. 
 
@@ -88,8 +94,8 @@ conversation |>
 - **`ollama()`**: Send and receive messages to the ollama API (to work with local models)
 - **`groq()`**: Interact with Groq's fast open-source models, taking advantage of their dedicated hardware accelerators for efficient processing.
 - **`last_reply()`**: Fetch the most recent assistant's response from a message history.
-- **`estimate_tokens()`**: Estimate the number of gpt-4 tokens in a message history.
-- **`print_rate_limit_info()`**: Print the current rate limits of `claude()`, `groq()` or `chatgpt()`
+- **`rate_limit_info()`**: Get a tibble of current rate limits of `claude()`, `groq()` or `chatgpt()`
+- **`ollama_list_models`**: Get a tibble of available ollama-models
 
 ### Sending R outputs to the language model
 
@@ -246,8 +252,5 @@ temp_example |> groq(.temperature=0)# Same answer
 
 At the moment `ollama()`, `chatgpt()` and `claude()` support real-time streaming of reply tokens to the console while the model works with the `.stream=TRUE` argument. This is not super useful in the context of  data-analysis centered workflows, but gives you slightly better feedback on how your model works. We recommend using non-streaming response for production tasks though. Error handling in the callback functions for streaming responses is implemented differently for each API and differs in quality at the moment. 
 
-## Future Work
 
-- **Tool use:** Add support for models ability to use tools
-- **Expand ollama-API:** Add additional ollama functions and support for embedding models
  

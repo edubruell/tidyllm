@@ -4,12 +4,12 @@
 \alias{update_rate_limit}
 \title{Update the standard API rate limit info in the hidden .tidyllm_rate_limit_env environment}
 \usage{
-update_rate_limit(.apiname, .response_object)
+update_rate_limit(.api_name, .response_object)
 }
 \arguments{
-\item{.response_object}{A preparsed response object cotaining info on remaining requests, tokens and rest times}
-
 \item{.api_name}{The name of the API for which to initialize or retrieve the environment.}
+
+\item{.response_object}{A preparsed response object cotaining info on remaining requests, tokens and rest times}
 }
 \description{
 This function initializes stores ratelimit information from API functions for future use

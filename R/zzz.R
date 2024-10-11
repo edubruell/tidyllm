@@ -8,7 +8,6 @@
   if (!exists(".tidyllm_stream_env", envir = .GlobalEnv)) {
     .GlobalEnv$.tidyllm_stream_env <- new.env(parent = emptyenv())
   }
-  message("Package ", pkgname, " loaded.")
 }
 
 #' @export
@@ -21,5 +20,4 @@
   if (!exists(".tidyllm_stream_env", envir = .GlobalEnv)) {
     .GlobalEnv$.tidyllm_stream_env <- new.env(parent = emptyenv())
   }
-  message("Package ", pkgname, " attached.")
 }

@@ -25,11 +25,6 @@ or log it separately.
 This function only returns the content of the last assistant message and does not include
 media or other types of content that might be attached to the message.
 }
-\examples{
-# Assuming `llm_msg` is an existing LLMMessage object that has been interacted with
-last_reply(llm_msg)
-
-}
 \seealso{
 \code{\link{LLMMessage}} for details on the message object structure.
 }

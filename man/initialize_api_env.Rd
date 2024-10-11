@@ -7,7 +7,7 @@
 initialize_api_env(.api_name)
 }
 \arguments{
-\item{api_name}{The name of the API for which to initialize or retrieve the environment.}
+\item{.api_name}{The name of the API for which to initialize or retrieve the environment}
 }
 \description{
 This function initializes a named environment for storing rate limit information

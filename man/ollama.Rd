@@ -25,6 +25,8 @@ ollama(
 
 \item{.seed}{Which seed should be used for random numbers  (optional).}
 
+\item{.json}{Should output be structured as JSON  (default: FALSE).}
+
 \item{.temperature}{Control for randomness in response generation (optional).}
 
 \item{.num_ctx}{The size of the context window in tokens (optional)}
