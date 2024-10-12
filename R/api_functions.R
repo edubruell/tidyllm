@@ -412,7 +412,7 @@ groq <- function(.llm,
   # Get formatted message list for Groq models
   messages <- .llm$to_api_format("groq")
   
-  if(.llm$has_image()){warning("The message history contains image data, but groq models only support texts.
+  if(.llm$has_image()){warning("The message history contains image data, but currently groq() only supports text.
                                Only text data is sent to the groq API")}
   
   # Retrieve API key from environment variables
