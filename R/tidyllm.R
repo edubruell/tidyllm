@@ -50,8 +50,9 @@ LLMMessage <- R6::R6Class(
     #' @param role The role of the message sender (e.g., "user", "assistant").
     #' @param content The textual content of the message.
     #' @param media Optional; media content to attach to the message.
-    add_message = function(role, content, media = NULL) {
-      message_details <- list(role = role, content = content)
+    #' @param json Is the message a raw string that contains a json response?
+    add_message = function(role, content, media = NULL,json=FALSE) {
+      message_details <- list(role = role, content = content,json=json)
       if (!is.null(media)) {
         message_details$media <- media
       }
@@ -464,49 +465,76 @@ df_llm_message <- function(.df){
   return(final_message)
 }
 
-#' Retrieve Last Reply from an Assistant
+#' Retrieve the Last Assistant Reply
 #'
-#' This function extracts the last reply made by the assistant from a given LLMMessage object.
-#' It is particularly useful for fetching the most recent response from the assistant to display
-#' or log it separately.
+#' Extracts the content of the most recent reply from the assistant in a given `LLMMessage` object. 
+#' This function can handle replies that are expected to be in JSON format by attempting to parse them. 
+#' If parsing fails or if the user opts for raw text, the function will gracefully return the original content.
 #'
-#' @param .llm An LLMMessage object containing the history of messages exchanged.
-#'             This must be a valid LLMMessage object; otherwise, the function will stop with an error.
-#' @param .json Should structured json data from the last reply be returned as R list (default: FALSE)
-#' @return Returns the content of the last reply made by the assistant. If the assistant
-#'         has not replied yet, or if there are no assistant messages in the history, `NULL` is returned.
+#' @param .llm A `LLMMessage` object containing the history of messages exchanged with the assistant.
+#'             This parameter must be a valid `LLMMessage` object; otherwise, the function will throw an error.
+#' @param .raw A logical value indicating whether to return the raw text even if the message is marked as JSON.
+#'             Defaults to `FALSE`, meaning the function will attempt to parse the JSON.
+#' 
+#' @return Returns the content of the assistant's last reply, based on the following conditions:
+#'   - If there are no assistant replies, `NULL` is returned.
+#'   - If the last reply is marked as JSON and parsing is successful, a list containing:
+#'     - `parsed_content`: The parsed JSON content.
+#'     - `raw_response`: The original raw content.
+#'     - `json`: A flag indicating successful JSON parsing (`TRUE`).
+#'   - If JSON parsing fails, a list containing:
+#'     - `parsed_content`: `NULL`.
+#'     - `raw_response`: The original raw content.
+#'     - `json`: `FALSE`.
+#'   - If `.raw` is `TRUE` or the message is not marked as JSON, returns the raw text content directly.
+#'
 #' @export
 #'
-#' @seealso \code{\link{LLMMessage}} for details on the message object structure.
+#' @seealso [LLMMessage()] for details on the structure of the `LLMMessage` object.
 #'
-#' @note This function only returns the content of the last assistant message and does not include
-#'       media or other types of content that might be attached to the message.
-#'
-#'
-#' @rdname last_reply
-last_reply <- function(.llm  = NULL,
-                       .json = FALSE) {
-  # Check if .llm is provided and is a valid LLMMessage object
+#' @note The function checks the `json` flag in the last assistant message to determine whether JSON parsing 
+#'       should be attempted. If parsing fails, it falls back to returning the raw text content. 
+#'       Use `.raw = TRUE` to always return the raw content without attempting parsing.
+last_reply <- function(.llm = NULL, .raw = FALSE) {
+  # Validate inputs
   c(
     "Input .llm must be an LLMMessage object" = inherits(.llm, "LLMMessage"),
-    "Input .json must be logical if provided" = is.logical(.json)
-  ) |>
-    validate_inputs()
+    "Input .raw must be logical if provided" = is.logical(.raw)
+  ) |> validate_inputs()
   
-  # Filter out all messages from the assistant
+  # Filter to get all assistant messages
   assistant_replies <- Filter(function(x) x$role == "assistant", .llm$message_history)
   
-  # Extract the last assistant reply, if available
-  last_reply <- assistant_replies[length(assistant_replies)]
-  if (length(last_reply) > 0) {
-    if(.json==FALSE){ return(last_reply[[1]]$content)}
-    if(.json==TRUE){  return(jsonlite::fromJSON(last_reply[[1]]$content))}
-    
-  } else {
+  # Return NULL if there are no assistant replies
+  if (length(assistant_replies) == 0) {
     return(NULL)
   }
+  
+  # Extract the last assistant reply
+  last_reply <- assistant_replies[[length(assistant_replies)]]
+  content <- last_reply$content
+  is_json_response <- last_reply$json
+  
+  # If raw content is requested or the message is not JSON, return the raw content
+  if (.raw || !is_json_response) {
+    return(content)
+  }
+  
+  # Attempt to parse the JSON content
+  parsed_content <- tryCatch(
+    jsonlite::fromJSON(content),
+    error = function(e) {
+      warning("Failed to parse JSON content. Returning raw text.")
+      NULL
+    }
+  )
+  
+  # Return structured response list
+  response_list <- list(
+    raw_response = content,
+    parsed_content = parsed_content,
+    is_parsed = !is.null(parsed_content)
+  )
+  
+  return(response_list)
 }
-
-
-
-

@@ -19,6 +19,7 @@ claude(
   .wait = TRUE,
   .min_tokens_reset = 0L,
   .timeout = 60,
+  .json = FALSE,
   .stream = FALSE
 )
 }
@@ -50,6 +51,8 @@ claude(
 \item{.min_tokens_reset}{How many tokens should be remaining to wait until we wait for token reset?}
 
 \item{.timeout}{Request timeout in seconds (default: 60).}
+
+\item{.json}{Should output be in JSON  (default: FALSE).}
 
 \item{.stream}{Stream back the response piece by piece (default: FALSE).}
 }

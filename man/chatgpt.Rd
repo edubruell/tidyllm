@@ -6,7 +6,7 @@
 \usage{
 chatgpt(
   .llm,
-  .model = "gpt-4",
+  .model = "gpt-4o",
   .max_tokens = 1024,
   .temperature = NULL,
   .top_p = NULL,
@@ -17,6 +17,7 @@ chatgpt(
   .timeout = 60,
   .verbose = FALSE,
   .wait = TRUE,
+  .json = FALSE,
   .min_tokens_reset = 0L,
   .stream = FALSE
 )
@@ -45,6 +46,8 @@ chatgpt(
 \item{.verbose}{Should additional information be shown after the API call}
 
 \item{.wait}{Should we wait for rate limits if necessary?}
+
+\item{.json}{Should output be in JSON  mode (default: FALSE).}
 
 \item{.min_tokens_reset}{How many tokens should be remaining to wait until we wait for token reset?}
 

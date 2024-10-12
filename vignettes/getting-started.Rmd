@@ -150,6 +150,42 @@ Extracted text from the PDF file...
 </pdf>
 ```
 
+### Getting the last reply (as raw text or structured data)
+
+You can retrieve the last assistant reply from a message chain with `last_reply()`. Typically, it returns a character vector with the text of the assistant's reply. However, if API functions have requested replies in JSON mode, it can directly validate and return them as structured output. The function handles these different response types automatically.
+
+If a JSON reply is detected, it returns a list with the following fields:
+- `parsed_content`: The parsed JSON content (or `NULL` in case of parsing errors).
+- `raw_response`: The direct string format of the reply.
+- `is_parsed`: A flag set to `TRUE` if JSON parsing was successful, or `FALSE` otherwise.
+
+You can also force standard raw text replies, even when JSON mode is detected, using the `.raw` argument.
+
+#### Example 1: Getting standard text replies
+
+```{r standard_last_reply,  eval=FALSE, echo=TRUE}
+reply_text <- llm_message("Please summarize the key points from the provided PDF document in 50 words.", 
+     .pdf = "path/to/example_document.pdf") |>
+     groq() |>
+     last_reply()
+```
+#### Example 2: Getting structured replies from APIs in JSON mode
+
+```{r jsonmode,  eval=FALSE, echo=TRUE}
+address <- llm_message('Imagine an address in JSON format. Reply only with JSON.') |>
+  ollama(.json = TRUE) |>  # API is asked to return JSON
+  last_reply()
+
+# Access the structured data
+if (address$is_parsed) {
+  address_data <- as.data.frame(address$parsed_content)
+} else {
+  # Fallback: Handle the raw text if parsing fails
+  address_raw <- address$raw_response
+}
+```
+All API functions have a `.json`-argument that enables JSON-mode. Note that `claude()` does not have an explicit JSON-mode in the API-request but you need to specify that you want only JSON-output and ideally your shema in the prompt to the assistant.
+
 ### API parameters
 
 Different API functions support different model parameters like  how deterministic the response should be via parameters like temperature. Please read API-documentation and the documentation of the model functions for specific examples.

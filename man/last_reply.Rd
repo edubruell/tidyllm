@@ -2,29 +2,46 @@
 % Please edit documentation in R/tidyllm.R
 \name{last_reply}
 \alias{last_reply}
-\title{Retrieve Last Reply from an Assistant}
+\title{Retrieve the Last Assistant Reply}
 \usage{
-last_reply(.llm = NULL, .json = FALSE)
+last_reply(.llm = NULL, .raw = FALSE)
 }
 \arguments{
-\item{.llm}{An LLMMessage object containing the history of messages exchanged.
-This must be a valid LLMMessage object; otherwise, the function will stop with an error.}
+\item{.llm}{A \code{LLMMessage} object containing the history of messages exchanged with the assistant.
+This parameter must be a valid \code{LLMMessage} object; otherwise, the function will throw an error.}
 
-\item{.json}{Should structured json data from the last reply be returned as R list (default: FALSE)}
+\item{.raw}{A logical value indicating whether to return the raw text even if the message is marked as JSON.
+Defaults to \code{FALSE}, meaning the function will attempt to parse the JSON.}
 }
 \value{
-Returns the content of the last reply made by the assistant. If the assistant
-has not replied yet, or if there are no assistant messages in the history, \code{NULL} is returned.
+Returns the content of the assistant's last reply, based on the following conditions:
+\itemize{
+\item If there are no assistant replies, \code{NULL} is returned.
+\item If the last reply is marked as JSON and parsing is successful, a list containing:
+\itemize{
+\item \code{parsed_content}: The parsed JSON content.
+\item \code{raw_response}: The original raw content.
+\item \code{json}: A flag indicating successful JSON parsing (\code{TRUE}).
+}
+\item If JSON parsing fails, a list containing:
+\itemize{
+\item \code{parsed_content}: \code{NULL}.
+\item \code{raw_response}: The original raw content.
+\item \code{json}: \code{FALSE}.
+}
+\item If \code{.raw} is \code{TRUE} or the message is not marked as JSON, returns the raw text content directly.
+}
 }
 \description{
-This function extracts the last reply made by the assistant from a given LLMMessage object.
-It is particularly useful for fetching the most recent response from the assistant to display
-or log it separately.
+Extracts the content of the most recent reply from the assistant in a given \code{LLMMessage} object.
+This function can handle replies that are expected to be in JSON format by attempting to parse them.
+If parsing fails or if the user opts for raw text, the function will gracefully return the original content.
 }
 \note{
-This function only returns the content of the last assistant message and does not include
-media or other types of content that might be attached to the message.
+The function checks the \code{json} flag in the last assistant message to determine whether JSON parsing
+should be attempted. If parsing fails, it falls back to returning the raw text content.
+Use \code{.raw = TRUE} to always return the raw content without attempting parsing.
 }
 \seealso{
-\code{\link{LLMMessage}} for details on the message object structure.
+\code{\link[=LLMMessage]{LLMMessage()}} for details on the structure of the \code{LLMMessage} object.
 }

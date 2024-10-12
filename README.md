@@ -198,37 +198,41 @@ Extracted text from the PDF file...
 </pdf>
 ```
 
-### Getting the last reply (as a string)
+### Getting the last reply (as raw text or structured data)
 
-Getting the last reply from a message chain as a character vector is done with `last_reply()`. Other functions to extract useful parts from conversations will be added.
+You can retrieve the last assistant reply from a message chain with `last_reply()`. Typically, it returns a character vector with the text of the assistant's reply. However, if API functions have requested replies in JSON mode, it can directly validate and return them as structured output. The function handles these different response types automatically.
+
+If a JSON reply is detected, it returns a list with the following fields:
+- `parsed_content`: The parsed JSON content (or `NULL` in case of parsing errors).
+- `raw_response`: The direct string format of the reply.
+- `is_parsed`: A flag set to `TRUE` if JSON parsing was successful, or `FALSE` otherwise.
+
+You can also force standard raw text replies, even when JSON mode is detected, using the `.raw` argument.
+
+#### Example 1: Getting standard text replies
 
 ```r
-reply_pdf <- llm_message("Please summarize the key points from the provided PDF document.", 
+reply_text <- llm_message("Please summarize the key points from the provided PDF document in 50 words.", 
      .pdf = "path/to/example_document.pdf") |>
      groq() |>
      last_reply()
 ```
+#### Example 2: Getting structured replies from APIs in JSON mode
 
-### Directly get structured data as reply
-Using the ability of large language models to output valid JSON, tidyllm can also directly get replies as structured data, which is easy to use in R. 
 ```r
-de_books <- llm_message('Imagine a list of german books in JSON-format following this example:
-{
-  "books": [
-    {"title": "To Kill a Mockingbird", "author": "Harper Lee", "genre": "Fiction", "price": "$8.99"},
-    {"title": "1984", "author": "George Orwell", "genre": "Dystopian", "price": "$7.99"},
-    {"title": "The Great Gatsby", "author": "F. Scott Fitzgerald", "genre": "Fiction", "price": "$6.99"},
-    {"title": "Pride and Prejudice", "author": "Jane Austen", "genre": "Romance", "price": "$5.99"},
-    {"title": "Moby Dick", "author": "Herman Melville", "genre": "Adventure", "price": "$10.99"}
-  ]
+address <- llm_message('Imagine an address in JSON format. Reply only with JSON.') |>
+  ollama(.json = TRUE) |>  # API is asked to return JSON
+  last_reply()
+
+# Access the structured data
+if (address$is_parsed) {
+  address_data <- as.data.frame(address$parsed_content)
+} else {
+  # Fallback: Handle the raw text if parsing fails
+  address_raw <- address$raw_response
 }
-') |>
-  ollama(.json=TRUE) |>
-  last_reply(.json=TRUE)
-  
-as.data.frame(de_books) 
 ```
-At the moment this feature is limited to `ollama()`-models that support json-mode.
+All API functions have a `.json`-argument that enables JSON-mode. Note that `claude()` does not have an explicit JSON-mode in the API-request but you need to specify that you want only JSON-output and ideally your shema in the prompt to the assistant.
 
 ### API parameters
 
@@ -251,6 +255,15 @@ temp_example |> groq(.temperature=0)# Same answer
 ### Experimental features
 
 At the moment `ollama()`, `chatgpt()` and `claude()` support real-time streaming of reply tokens to the console while the model works with the `.stream=TRUE` argument. This is not super useful in the context of  data-analysis centered workflows, but gives you slightly better feedback on how your model works. We recommend using non-streaming response for production tasks though. Error handling in the callback functions for streaming responses is implemented differently for each API and differs in quality at the moment. 
+
+### Changes in the current development version 0.1.1: JSON Mode Enhancements and Changes
+
+In version 0.1.1, JSON mode is now more widely supported across all API functions, allowing for structured outputs when APIs support them. The `.json` argument is now passed only to API functions, specifying how the API should respond, it is not needed anymore in `last_reply()`
+
+Additionally, the behavior of the `last_reply()` function has changed. It now automatically handles JSON replies by parsing them into structured data and falling back to raw text in case of errors. You can still force raw text replies even for JSON output using the `.raw` argument.
+
+**Note:** These changes may introduce breaking behavior in workflows that relied on the previous handling of JSON replies, so please review any code that depends on `last_reply()` or JSON-mode API responses.
+
 
 
  

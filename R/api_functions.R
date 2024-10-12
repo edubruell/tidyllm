@@ -73,6 +73,7 @@ perform_api_request <- function(request, .api, .stream = FALSE, .timeout = 60, p
 #' @param .timeout Request timeout in seconds (default: 60).
 #' @param .verbose Should additional information be shown after the API call
 #' @param .wait Should we wait for rate limits if necessary?
+#' @param .json Should output be in JSON  (default: FALSE).
 #' @param .min_tokens_reset How many tokens should be remaining to wait until we wait for token reset?
 #' @param .stream Stream back the response piece by piece (default: FALSE).
 #'
@@ -92,6 +93,7 @@ claude <- function(.llm,
                    .wait=TRUE,
                    .min_tokens_reset = 0L,
                    .timeout = 60,
+                   .json =FALSE,
                    .stream = FALSE
 ) {  
   # Validate inputs to the Claude function
@@ -106,12 +108,23 @@ claude <- function(.llm,
     ".verbose must be logical"                   = is.logical(.verbose),
     ".wait must be logical"                      = is.logical(.wait),
     ".stream must be logical"                    = is.logical(.stream),
+    ".json must be logical if provided"          = is.logical(.json),
     ".min_tokens_reset must be an integer"       = is_integer_valued(.min_tokens_reset)
   ) |>
     validate_inputs()
   
   # Get the formatted message list so we can send it to a Claude model
   messages <- .llm$to_api_format("claude")
+  
+  # Handle JSON mode (which is not as explicitly supported as for other APIs)
+  if (.json == TRUE) {
+    #Get the raw messages text for some tests
+    raw_messages <- purrr::map_chr(.llm$message_history,"content") |> stringr::str_c(collapse="\n")
+    #Throw a warning i json mode is set but the word json is nowhere in the messages
+    if(!grepl("json",stringr::str_to_lower(raw_messages), fixed = TRUE)){
+      warning("JSON mode is enabled, but the word 'json' is not found in the messages. Make sure to explicitly ask for JSON formatting in your prompt to improve consistency in the response.")
+    }
+  }
   
   # Retrieve API key from environment variables
   api_key <- base::Sys.getenv("ANTHROPIC_API_KEY")
@@ -187,7 +200,7 @@ claude <- function(.llm,
   
   # Return the updated LLMMessage object
   llm_copy <- .llm$clone_deep()
-  llm_copy$add_message("assistant", assistant_reply)
+  llm_copy$add_message("assistant", assistant_reply,json=.json)
   
   return(llm_copy)
 }
@@ -206,6 +219,7 @@ claude <- function(.llm,
 #' @param .presence_penalty Controls how much to penalize repeating content (optional)
 #' @param .api_url Base URL for the API (default: https://api.openai.com/v1/completions).
 #' @param .timeout Request timeout in seconds (default: 60).
+#' @param .json Should output be in JSON  mode (default: FALSE).
 #' @param .verbose Should additional information be shown after the API call
 #' @param .wait Should we wait for rate limits if necessary?
 #' @param .min_tokens_reset How many tokens should be remaining to wait until we wait for token reset?
@@ -214,7 +228,7 @@ claude <- function(.llm,
 #' @return Returns an updated LLMMessage object.
 #' @export
 chatgpt <- function(.llm,
-                    .model = "gpt-4",
+                    .model = "gpt-4o",
                     .max_tokens = 1024,
                     .temperature = NULL,
                     .top_p = NULL,
@@ -225,6 +239,7 @@ chatgpt <- function(.llm,
                     .timeout = 60,
                     .verbose = FALSE,
                     .wait = TRUE,
+                    .json = FALSE,
                     .min_tokens_reset = 0L,
                     .stream = FALSE) {
 
@@ -240,6 +255,7 @@ chatgpt <- function(.llm,
     ".verbose must be logical" = is.logical(.verbose),
     ".wait must be logical" = is.logical(.wait),
     ".min_tokens_reset must be an integer" = is_integer_valued(.min_tokens_reset),
+    ".json must be logical if provided"          = is.logical(.json),
     ".stream must be logical" = is.logical(.stream)
   ) |>
     validate_inputs()
@@ -269,6 +285,12 @@ chatgpt <- function(.llm,
     stream = .stream
   )
   request_body <- base::Filter(Negate(is.null), request_body)
+  
+  # Handle JSON mode
+  if (.json == TRUE) {
+    # Add response_format to request_body
+    request_body$response_format <- list(type = "json_object")
+  }
   
   # Build the request
   request <- httr2::request(.api_url) |>
@@ -333,7 +355,7 @@ chatgpt <- function(.llm,
   
   # Create a deep copy of the LLMMessage object and add the assistant's reply
   llm_copy <- .llm$clone_deep()
-  llm_copy$add_message("assistant", assistant_reply)
+  llm_copy$add_message("assistant", assistant_reply,json=.json)
   
   return(llm_copy)
 }
@@ -349,6 +371,7 @@ chatgpt <- function(.llm,
 #' @param .frequency_penalty Controls repetition frequency (optional).
 #' @param .presence_penalty Controls how much to penalize repeating content (optional)
 #' @param .api_url Base URL for the API (default: "https://api.anthropic.com/v1/messages").
+#' @param .json Should output be structured as JSON  (default: FALSE).
 #' @param .timeout Request timeout in seconds (default: 60).
 #' @param .verbose Should additional information be shown after the API call
 #' @param .wait Should we wait for rate limits if necessary?
@@ -364,6 +387,7 @@ groq <- function(.llm,
                  .frequency_penalty = NULL,
                  .presence_penalty = NULL,
                  .api_url = "https://api.groq.com/",
+                 .json = FALSE,
                  .timeout = 60,
                  .verbose = FALSE,
                  .wait=TRUE,
@@ -380,6 +404,7 @@ groq <- function(.llm,
     ".presence_penalty must be numeric if provided" = is.null(.presence_penalty) | is.numeric(.presence_penalty),
     ".verbose must be logical"                   = is.logical(.verbose),
     ".wait must be logical"                      = is.logical(.wait),
+    ".json must be logical if provided"          = is.logical(.json),
     ".min_tokens_reset must be an integer"       = is_integer_valued(.min_tokens_reset)
   ) |>
     validate_inputs()
@@ -405,6 +430,12 @@ groq <- function(.llm,
     presence_penalty = .presence_penalty
   )
   request_body <- base::Filter(Negate(is.null), request_body)
+  
+  # Handle JSON mode
+  if (.json == TRUE) {
+    # Add response_format to request_body
+    request_body$response_format <- list(type = "json_object")
+  }
   
   #Wait for the rate-limit if neccesary 
   if(.wait==TRUE & !is.null(.tidyllm_rate_limit_env[["groq"]])){
@@ -472,7 +503,7 @@ groq <- function(.llm,
   llm_copy <- .llm$clone_deep()
   
   # Add model's message to the history of the LLMMessage object
-  llm_copy$add_message("assistant", body_json$choices[[1]]$message$content)
+  llm_copy$add_message("assistant", body_json$choices[[1]]$message$content,json=.json)
   
   return(llm_copy)
 }
@@ -558,7 +589,7 @@ ollama <- function(.llm,
   llm_copy <- .llm$clone_deep()
   
   # Add model's message to the history of the LLMMessage object
-  llm_copy$add_message("assistant", assistant_reply)
+  llm_copy$add_message("assistant", assistant_reply,json=.json)
   
   return(llm_copy)
 }

@@ -81,7 +81,7 @@ Adds a message to the history. Optionally includes media.
 \if{latex}{\out{\hypertarget{method-LLMMessage-add_message}{}}}
 \subsection{Method \code{add_message()}}{
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{LLMMessage$add_message(role, content, media = NULL)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{LLMMessage$add_message(role, content, media = NULL, json = FALSE)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -91,7 +91,9 @@ Adds a message to the history. Optionally includes media.
 
 \item{\code{content}}{The textual content of the message.}
 
-\item{\code{media}}{Optional; media content to attach to the message.
+\item{\code{media}}{Optional; media content to attach to the message.}
+
+\item{\code{json}}{Is the message a raw string that contains a json response?
 Convert to API format
 
 Converts the message history to a format suitable for various API calls.}

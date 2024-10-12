@@ -13,6 +13,7 @@ groq(
   .frequency_penalty = NULL,
   .presence_penalty = NULL,
   .api_url = "https://api.groq.com/",
+  .json = FALSE,
   .timeout = 60,
   .verbose = FALSE,
   .wait = TRUE,
@@ -35,6 +36,8 @@ groq(
 \item{.presence_penalty}{Controls how much to penalize repeating content (optional)}
 
 \item{.api_url}{Base URL for the API (default: "https://api.anthropic.com/v1/messages").}
+
+\item{.json}{Should output be structured as JSON  (default: FALSE).}
 
 \item{.timeout}{Request timeout in seconds (default: 60).}
 
