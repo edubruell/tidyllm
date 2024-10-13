@@ -380,7 +380,7 @@ chatgpt <- function(.llm,
 #' @return Returns an updated LLMMessage object.
 #' @export
 groq <- function(.llm,
-                 .model = "llama-3.2-90b-text-preview",
+                 .model = "llama-3.2-11b-vision-preview",
                  .max_tokens = 1024,
                  .temperature = NULL,
                  .top_p = NULL,
