@@ -392,7 +392,7 @@ groq <- function(.llm,
                  .verbose = FALSE,
                  .wait=TRUE,
                  .min_tokens_reset = 0L) {
-  
+
   # Validate inputs
   c(
     "Input .llm must be an LLMMessage object" = inherits(.llm, "LLMMessage"),
@@ -411,9 +411,6 @@ groq <- function(.llm,
   
   # Get formatted message list for Groq models
   messages <- .llm$to_api_format("groq")
-  
-  if(.llm$has_image()){warning("The message history contains image data, but currently groq() only supports text.
-                               Only text data is sent to the groq API")}
   
   # Retrieve API key from environment variables
   api_key <- Sys.getenv("GROQ_API_KEY")
@@ -442,17 +439,17 @@ groq <- function(.llm,
     wait_rate_limit("groq",.min_tokens_reset)
   }  
 
-  #Get the response via httr2
+  # Perform the request
   response <- httr2::request(.api_url) |>
-    httr2::req_url_path("/openai/v1/chat/completions") |>
-    httr2::req_headers(
-      `Authorization` = sprintf("Bearer %s", api_key),
-      `Content-Type` = "application/json"
-    ) |>
-    httr2::req_body_json(data = request_body) |> 
-    httr2::req_timeout(.timeout) |>
-    httr2::req_perform()
-  
+      httr2::req_url_path("/openai/v1/chat/completions") |>
+      httr2::req_headers(
+        `Authorization` = sprintf("Bearer %s", api_key),
+        `Content-Type` = "application/json"
+      ) |>
+      httr2::req_body_json(data = request_body) |> 
+      httr2::req_timeout(.timeout) |> 
+      httr2::req_perform()
+    
   #Get the response body
   body_json <- response |> httr2::resp_body_json()
   

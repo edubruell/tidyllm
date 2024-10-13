@@ -258,7 +258,12 @@ llm_message("Please give me an interpretation of the results in column 3 of the 
 
 At the moment `ollama()`, `chatgpt()` and `claude()` support real-time streaming of reply tokens to the console while the model works with the `.stream=TRUE` argument. This is not super useful in the context of  data-analysis centered workflows, but gives you slightly better feedback on how your model works. We recommend using non-streaming response for production tasks though. Error handling in the callback functions for streaming responses is implemented differently for each API and differs in quality at the moment. 
 
-## Changes in the current development version 0.1.1
+## Changelog for current development version 0.1.2
+
+### Groq support for vision
+
+The `groq()` function now supports images. Since more modern models on groq, especially the ones with
+multimodal abilities do not support system prompts, the system role is deleted from groq api calls.
 
 ### JSON Mode Improvements 
 
@@ -266,7 +271,7 @@ In version 0.1.1, JSON mode is now more widely supported across all API function
 
 Additionally, the behavior of the `last_reply()` function has changed. It now automatically handles JSON replies by parsing them into structured data and falling back to raw text in case of errors. You can still force raw text replies even for JSON output using the `.raw` argument.
 
-### Breaking Changes in 0.1.1
+### Breaking Changes compared to release 0.1.0
 **Note:** These changes may introduce breaking behavior in workflows that relied on the previous handling of JSON replies, so please review any code that depends on `last_reply()` or JSON-mode API responses.
 
 

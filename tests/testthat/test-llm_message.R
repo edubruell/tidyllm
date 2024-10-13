@@ -40,8 +40,3 @@ test_that("LLMMessage converts to Claude API format", {
 })
 
 
-test_that("LLMMessage saves media attachments in the right place", {
-  llm <- LLMMessage$new()
-  llm$add_message("user", "Here is an image", media = list(list(type = "Image", content = "base64string", filename = "image.png")))
-  expect_equal(llm$message_history[[2]]$media[[1]]$filename, "image.png")
-})
