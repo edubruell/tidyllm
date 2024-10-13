@@ -279,7 +279,7 @@ multimodal abilities do not support system prompts, the system role is deleted f
 
 ### JSON Mode Improvements 
 
-In version 0.1.1, JSON mode is now more widely supported across all API functions, allowing for structured outputs when APIs support them. The `.json` argument is now passed only to API functions, specifying how the API should respond, it is not needed anymore in `last_reply()`.
+Since version 0.1.1, JSON mode is now more widely supported across all API functions, allowing for structured outputs when APIs support them. The `.json` argument is now passed only to API functions, specifying how the API should respond, it is not needed anymore in `last_reply()`.
 
 Additionally, the behavior of the reply functions has changed. They now automatically handle JSON replies by parsing them into structured data and falling back to raw text in case of errors. You can still force raw text replies even for JSON output using the `.raw` argument.
 
@@ -288,8 +288,7 @@ Additionally, the behavior of the reply functions has changed. They now automati
 - **`last_reply()` Changes**: The `.json` argument is no longer used, and JSON replies are automatically parsed. Use `.raw` for raw text.
 - **Groq Models**: System prompts are no longer sent for Groq  models, since many models on groq do not support them and all multimodal models on groq do not allow for them.
 
-### Breaking Changes compared to release 0.1.0
-**Note:** These changes may introduce breaking behavior in workflows that relied on the previous handling of JSON replies, so please review any code that depends on `last_reply()` or JSON-mode API responses.
+
 
 
 
