@@ -90,6 +90,8 @@ conversation |>
 - **`get_user_message()`**: Retrieve a user message by a specific index in the user messages.
 - **`rate_limit_info()`**: Get a tibble of current rate limits of `claude()`, `groq()` or `chatgpt()`
 - **`ollama_list_models()`**: Get a tibble of available ollama-models
+- **`ollama_download_model()`**: Pull a new model from ollama's the repo of online models
+- **`ollama_embedding()`**: Generate embeddings for each message in each message history with ollama models
 
 ## Basic Features
 
@@ -261,7 +263,7 @@ llm_message("Please give me an interpretation of the results in column 3 of the 
 
 At the moment `ollama()`, `chatgpt()` and `claude()` support real-time streaming of reply tokens to the console while the model works with the `.stream=TRUE` argument. This is not super useful in the context of  data-analysis centered workflows, but gives you slightly better feedback on how your model works. We recommend using non-streaming response for production tasks though. Error handling in the callback functions for streaming responses is implemented differently for each API and differs in quality at the moment. 
 
-## Changelog for Development Version 0.1.3 (Since Last CRAN Release 0.1.0)
+## Changelog for Development Version 0.1.4 (Since Last CRAN Release 0.1.0)
 
 ### New Features
 
@@ -269,6 +271,12 @@ At the moment `ollama()`, `chatgpt()` and `claude()` support real-time streaming
   - `last_user_message()`, `get_reply(index)`, `get_user_message(index)`
 
 - **Updated `last_reply()`**: Now a wrapper around `get_reply()` for more consistent behavior.
+
+- **New Ollama functions**:
+
+  + **Model Download:** Introduced the `ollama_download_model()` function to download models from the Ollama API. It supports a streaming mode that provides live progress bar updates on the download progress.
+  
+  + **Embedding Generation:** Added `ollama_embedding()` to generate embeddings using the Ollama API. It processes message histories and combines  text from message content and media attachements for embeddings.
 
 ### Improvements
 

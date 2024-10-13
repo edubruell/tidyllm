@@ -590,3 +590,4 @@ ollama <- function(.llm,
   
   return(llm_copy)
 }
+
