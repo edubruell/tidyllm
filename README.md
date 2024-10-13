@@ -85,6 +85,9 @@ conversation |>
 - **`ollama()`**: Send and receive messages to the ollama API (to work with local models)
 - **`groq()`**: Interact with Groq's fast open-source models, taking advantage of their dedicated hardware accelerators for efficient processing.
 - **`last_reply()`**: Fetch the most recent assistant's response from a message history.
+- **`get_reply()`**: Retrieve an assistant reply by a specific index in the assistant messages.
+- **`last_user_message()`**: Fetch the most recent user message from a message history.
+- **`get_user_message()`**: Retrieve a user message by a specific index in the user messages.
 - **`rate_limit_info()`**: Get a tibble of current rate limits of `claude()`, `groq()` or `chatgpt()`
 - **`ollama_list_models()`**: Get a tibble of available ollama-models
 
@@ -258,7 +261,16 @@ llm_message("Please give me an interpretation of the results in column 3 of the 
 
 At the moment `ollama()`, `chatgpt()` and `claude()` support real-time streaming of reply tokens to the console while the model works with the `.stream=TRUE` argument. This is not super useful in the context of  data-analysis centered workflows, but gives you slightly better feedback on how your model works. We recommend using non-streaming response for production tasks though. Error handling in the callback functions for streaming responses is implemented differently for each API and differs in quality at the moment. 
 
-## Changelog for current development version 0.1.2
+## Changelog for Development Version 0.1.3 (Since Last CRAN Release 0.1.0)
+
+### New Features
+
+- **Message Retrieval Functions**: Added functions to retrieve single messages from conversations:
+  - `last_user_message()`, `get_reply(index)`, `get_user_message(index)`
+
+- **Updated `last_reply()`**: Now a wrapper around `get_reply()` for more consistent behavior.
+
+### Improvements
 
 ### Groq support for vision
 
@@ -269,7 +281,12 @@ multimodal abilities do not support system prompts, the system role is deleted f
 
 In version 0.1.1, JSON mode is now more widely supported across all API functions, allowing for structured outputs when APIs support them. The `.json` argument is now passed only to API functions, specifying how the API should respond, it is not needed anymore in `last_reply()`.
 
-Additionally, the behavior of the `last_reply()` function has changed. It now automatically handles JSON replies by parsing them into structured data and falling back to raw text in case of errors. You can still force raw text replies even for JSON output using the `.raw` argument.
+Additionally, the behavior of the reply functions has changed. They now automatically handle JSON replies by parsing them into structured data and falling back to raw text in case of errors. You can still force raw text replies even for JSON output using the `.raw` argument.
+
+### Breaking Changes (Compared to CRAN Release 0.1.0)
+
+- **`last_reply()` Changes**: The `.json` argument is no longer used, and JSON replies are automatically parsed. Use `.raw` for raw text.
+- **Groq Models**: System prompts are no longer sent for Groq  models, since many models on groq do not support them and all multimodal models on groq do not allow for them.
 
 ### Breaking Changes compared to release 0.1.0
 **Note:** These changes may introduce breaking behavior in workflows that relied on the previous handling of JSON replies, so please review any code that depends on `last_reply()` or JSON-mode API responses.

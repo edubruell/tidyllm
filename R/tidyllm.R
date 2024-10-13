@@ -287,6 +287,22 @@ LLMMessage <- R6::R6Class(
         }) |> max() |> as.logical()
     },
     
+    #' Remove a Message by Index
+    #'
+    #' Removes a message from the message history at the specified index.
+    #' @param index A positive integer indicating the position of the message to remove.
+    #' @return The `LLMMessage` object, invisibly.
+    remove_message = function(index) {
+      # Validate index
+      c(
+        "Index must be a positive integer" = is_integer_valued(index) && index > 0,
+        "Index is out of bounds" = index <= length(self$message_history)
+      ) |> validate_inputs()
+      
+      # Remove the message
+      self$message_history <- self$message_history[-index]
+      invisible(self)
+    },
     #' @description
     #' Prints the current message history in a structured format.
     print = function() {
@@ -500,76 +516,4 @@ df_llm_message <- function(.df){
   return(final_message)
 }
 
-#' Retrieve the Last Assistant Reply
-#'
-#' Extracts the content of the most recent reply from the assistant in a given `LLMMessage` object. 
-#' This function can handle replies that are expected to be in JSON format by attempting to parse them. 
-#' If parsing fails or if the user opts for raw text, the function will gracefully return the original content.
-#'
-#' @param .llm A `LLMMessage` object containing the history of messages exchanged with the assistant.
-#'             This parameter must be a valid `LLMMessage` object; otherwise, the function will throw an error.
-#' @param .raw A logical value indicating whether to return the raw text even if the message is marked as JSON.
-#'             Defaults to `FALSE`, meaning the function will attempt to parse the JSON.
-#' 
-#' @return Returns the content of the assistant's last reply, based on the following conditions:
-#'   - If there are no assistant replies, `NULL` is returned.
-#'   - If the last reply is marked as JSON and parsing is successful, a list containing:
-#'     - `parsed_content`: The parsed JSON content.
-#'     - `raw_response`: The original raw content.
-#'     - `json`: A flag indicating successful JSON parsing (`TRUE`).
-#'   - If JSON parsing fails, a list containing:
-#'     - `parsed_content`: `NULL`.
-#'     - `raw_response`: The original raw content.
-#'     - `json`: `FALSE`.
-#'   - If `.raw` is `TRUE` or the message is not marked as JSON, returns the raw text content directly.
-#'
-#' @export
-#'
-#' @seealso [LLMMessage()] for details on the structure of the `LLMMessage` object.
-#'
-#' @note The function checks the `json` flag in the last assistant message to determine whether JSON parsing 
-#'       should be attempted. If parsing fails, it falls back to returning the raw text content. 
-#'       Use `.raw = TRUE` to always return the raw content without attempting parsing.
-last_reply <- function(.llm = NULL, .raw = FALSE) {
-  # Validate inputs
-  c(
-    "Input .llm must be an LLMMessage object" = inherits(.llm, "LLMMessage"),
-    "Input .raw must be logical if provided" = is.logical(.raw)
-  ) |> validate_inputs()
-  
-  # Filter to get all assistant messages
-  assistant_replies <- Filter(function(x) x$role == "assistant", .llm$message_history)
-  
-  # Return NULL if there are no assistant replies
-  if (length(assistant_replies) == 0) {
-    return(NULL)
-  }
-  
-  # Extract the last assistant reply
-  last_reply <- assistant_replies[[length(assistant_replies)]]
-  content <- last_reply$content
-  is_json_response <- last_reply$json
-  
-  # If raw content is requested or the message is not JSON, return the raw content
-  if (.raw || !is_json_response) {
-    return(content)
-  }
-  
-  # Attempt to parse the JSON content
-  parsed_content <- tryCatch(
-    jsonlite::fromJSON(content),
-    error = function(e) {
-      warning("Failed to parse JSON content. Returning raw text.")
-      NULL
-    }
-  )
-  
-  # Return structured response list
-  response_list <- list(
-    raw_response = content,
-    parsed_content = parsed_content,
-    is_parsed = !is.null(parsed_content)
-  )
-  
-  return(response_list)
-}
+

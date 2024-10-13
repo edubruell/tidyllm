@@ -105,3 +105,67 @@ test_that("last_reply returns NULL for empty message history", {
   # Check that the reply is NULL
   expect_null(reply)
 })
+
+test_that("get_reply retrieves assistant reply by index", {
+  # Create a new LLMMessage object
+  llm <- LLMMessage$new()
+  # Add assistant messages
+  llm$add_message(role = "assistant", content = "Assistant reply 1", json = FALSE)
+  llm$add_message(role = "assistant", content = '{"data": "Assistant reply 2"}', json = TRUE)
+  # Retrieve first assistant reply
+  reply1 <- get_reply(llm, .index = 1)
+  expect_equal(reply1, "Assistant reply 1")
+  # Retrieve second assistant reply
+  reply2 <- get_reply(llm, .index = 2)
+  expect_equal(reply2$parsed_content, jsonlite::fromJSON('{"data": "Assistant reply 2"}'))
+})
+
+test_that("get_reply returns error for invalid index", {
+  llm <- LLMMessage$new()
+  llm$add_message(role = "assistant", content = "Assistant reply", json = FALSE)
+  expect_error(get_reply(llm, .index = 0), "Index must be a positive integer")
+  expect_error(get_reply(llm, .index = 2), "Index is out of bounds")
+})
+
+test_that("get_user_message retrieves user message by index", {
+  llm <- LLMMessage$new()
+  llm$add_message(role = "user", content = "User message 1")
+  llm$add_message(role = "user", content = "User message 2")
+  # Retrieve first user message
+  msg1 <- get_user_message(llm, .index = 1)
+  expect_equal(msg1, "User message 1")
+  # Retrieve second user message
+  msg2 <- get_user_message(llm, .index = 2)
+  expect_equal(msg2, "User message 2")
+})
+
+test_that("get_user_message returns error for invalid index", {
+  llm <- LLMMessage$new()
+  llm$add_message(role = "user", content = "User message")
+  expect_error(get_user_message(llm, .index = 0), "Index must be a positive integer")
+  expect_error(get_user_message(llm, .index = 2), "Index is out of bounds")
+})
+
+test_that("last_user_message retrieves the most recent user message", {
+  llm <- LLMMessage$new()
+  llm$add_message(role = "user", content = "First user message")
+  llm$add_message(role = "assistant", content = "Assistant reply")
+  llm$add_message(role = "user", content = "Second user message")
+  # Retrieve last user message
+  last_msg <- last_user_message(llm)
+  expect_equal(last_msg, "Second user message")
+})
+
+test_that("get_reply returns NULL when there are no assistant replies", {
+  llm <- LLMMessage$new()
+  llm$add_message(role = "user", content = "User message")
+  reply <- get_reply(llm, .index = 1)
+  expect_null(reply)
+})
+
+test_that("get_user_message returns NULL when there are no user messages", {
+  llm <- LLMMessage$new()
+  llm$add_message(role = "assistant", content = "Assistant reply")
+  msg <- get_user_message(llm, .index = 1)
+  expect_null(msg)
+})
