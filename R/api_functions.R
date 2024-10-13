@@ -364,7 +364,7 @@ chatgpt <- function(.llm,
 #' Call the Groq API to interact with fast opensource models on Groq
 #'
 #' @param .llm An existing LLMMessage object or an initial text prompt.
-#' @param .model The model identifier (default: "llama-3.2-90b-text-preview").
+#' @param .model The model identifier (default: "llama-3.2-11b-vision-preview").
 #' @param .max_tokens The maximum number of tokens to generate (default: 1024).
 #' @param .temperature Control for randomness in response generation (optional).
 #' @param .top_p Nucleus sampling parameter (optional).
@@ -380,7 +380,7 @@ chatgpt <- function(.llm,
 #' @return Returns an updated LLMMessage object.
 #' @export
 groq <- function(.llm,
-                 .model = "llama-3.2-90b-text-preview",
+                 .model = "llama-3.2-11b-vision-preview",
                  .max_tokens = 1024,
                  .temperature = NULL,
                  .top_p = NULL,
