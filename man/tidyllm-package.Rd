@@ -8,6 +8,14 @@
 \description{
 A tidy interface for integrating large language model (LLM) APIs such as 'Claude', 'ChatGPT', 'Groq', and local models via 'Ollama' into R workflows. The package supports text and media-based interactions, interactive message history, stateful rate limit handling, and a tidy, pipeline-oriented interface for streamlined integration into data workflows. Web services are available at \url{https://www.anthropic.com}, \url{https://openai.com}, \url{https://groq.com}, and \url{https://ollama.com}.
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/edubruell/tidyllm}
+  \item Report bugs at \url{https://github.com/edubruell/tidyllm/issues}
+}
+
+}
 \author{
 \strong{Maintainer}: Eduard Brüll \email{eduard.bruell@zew.de}
 

@@ -6,7 +6,7 @@
 \usage{
 groq(
   .llm,
-  .model = "llama-3.2-90b-text-preview",
+  .model = "llama-3.2-11b-vision-preview",
   .max_tokens = 1024,
   .temperature = NULL,
   .top_p = NULL,
@@ -23,7 +23,7 @@ groq(
 \arguments{
 \item{.llm}{An existing LLMMessage object or an initial text prompt.}
 
-\item{.model}{The model identifier (default: "llama-3.2-90b-text-preview").}
+\item{.model}{The model identifier (default: "llama-3.2-11b-vision-preview").}
 
 \item{.max_tokens}{The maximum number of tokens to generate (default: 1024).}
 

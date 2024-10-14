@@ -29,6 +29,7 @@ It allows for adding messages, converting messages for API usage, and printing t
 \item \href{#method-LLMMessage-add_message}{\code{LLMMessage$add_message()}}
 \item \href{#method-LLMMessage-to_api_format}{\code{LLMMessage$to_api_format()}}
 \item \href{#method-LLMMessage-has_image}{\code{LLMMessage$has_image()}}
+\item \href{#method-LLMMessage-remove_message}{\code{LLMMessage$remove_message()}}
 \item \href{#method-LLMMessage-print}{\code{LLMMessage$print()}}
 \item \href{#method-LLMMessage-clone}{\code{LLMMessage$clone()}}
 }
@@ -134,6 +135,28 @@ to the model}
 
 \subsection{Returns}{
 Returns TRUE if the message hisotry contains images
+Remove a Message by Index
+
+Removes a message from the message history at the specified index.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-LLMMessage-remove_message"></a>}}
+\if{latex}{\out{\hypertarget{method-LLMMessage-remove_message}{}}}
+\subsection{Method \code{remove_message()}}{
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{LLMMessage$remove_message(index)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{index}}{A positive integer indicating the position of the message to remove.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+The \code{LLMMessage} object, invisibly.
 }
 }
 \if{html}{\out{<hr>}}
