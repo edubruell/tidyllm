@@ -100,7 +100,7 @@ ollama_download_model <- function(.model, .ollama_server = "http://localhost:114
 
 #' Generate Embeddings Using Ollama API
 #'
-#' @param .llm An existing LLMMessage object.
+#' @param .llm An existing LLMMessage object (or a charachter vector of texts to embed)
 #' @param .model The embedding model identifier (default: "all-minilm").
 #' @param .truncate Whether to truncate inputs to fit the model's context length (default: TRUE).
 #' @param .ollama_server The URL of the Ollama server to be used (default: "http://localhost:11434").
@@ -112,38 +112,43 @@ ollama_embedding <- function(.llm,
                              .truncate = TRUE,
                              .ollama_server = "http://localhost:11434",
                              .timeout = 120) {
+  
   # Validate the inputs
   c(
-    "Input .llm must be an LLMMessage object" = inherits(.llm, "LLMMessage"),
+    "Input .llm must be an LLMMessage object or a character vector" = inherits(.llm, "LLMMessage") | is.character(.llm),
     "Input .model must be a string" = is.character(.model),
     "Input .truncate must be logical" = is.logical(.truncate),
     "Input .timeout must be an integer-valued numeric (seconds till timeout)" = is.numeric(.timeout) && .timeout > 0
   ) |> validate_inputs()
   
-  ollama_history <- Filter(function(x){
-    if ("role" %in% names(x)) {
-      return(x$role %in% c("user","assistant"))
-    } else {
-      return(FALSE)
-    }},.llm$message_history)
+  if(!is.character(.llm)){
+    ollama_history <- Filter(function(x){
+      if ("role" %in% names(x)) {
+        return(x$role %in% c("user","assistant"))
+      } else {
+        return(FALSE)
+      }},.llm$message_history)
+    
+    # Extract messages and combine content and text media
+    message_texts <- lapply(ollama_history, function(m) {
+      # The basic text content supplied with the message
+      base_content <- m$content
+      
+      # Get the relevant media for the current message
+      media_list <- m$media
+      
+      # Extract the text content from media
+      text_media <- extract_media(media_list, "text")
+      text_media_combined <- paste(unlist(text_media), collapse = " ")
+      
+      # Combine base content and text media
+      combined_text <- paste(base_content, text_media_combined, sep = " ")
+      combined_text
+    })
+  }
   
-  # Extract messages and combine content and text media
-  message_texts <- lapply(ollama_history, function(m) {
-    # The basic text content supplied with the message
-    base_content <- m$content
+  if(is.character(.llm)){message_texts <- .llm}
     
-    # Get the relevant media for the current message
-    media_list <- m$media
-    
-    # Extract the text content from media
-    text_media <- extract_media(media_list, "text")
-    text_media_combined <- paste(unlist(text_media), collapse = " ")
-    
-    # Combine base content and text media
-    combined_text <- paste(base_content, text_media_combined, sep = " ")
-    combined_text
-  })
-  
   # Prepare the request body
   request_body <- list(
     model = .model,
