@@ -13,7 +13,8 @@ ollama(
   .temperature = NULL,
   .num_ctx = 2048,
   .ollama_server = "http://localhost:11434",
-  .timeout = 120
+  .timeout = 120,
+  .dry_run = FALSE
 )
 }
 \arguments{
@@ -34,6 +35,8 @@ ollama(
 \item{.ollama_server}{The URL of the ollama server to be used}
 
 \item{.timeout}{When should our connection time out}
+
+\item{.dry_run}{If TRUE, perform a dry run and return the request object.}
 }
 \value{
 Returns an updated LLMMessage object.

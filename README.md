@@ -264,7 +264,7 @@ llm_message("Please give me an interpretation of the results in column 3 of the 
 
 At the moment `ollama()`, `chatgpt()` and `claude()` support real-time streaming of reply tokens to the console while the model works with the `.stream=TRUE` argument. This is not super useful in the context of  data-analysis centered workflows, but gives you slightly better feedback on how your model works. We recommend using non-streaming response for production tasks though. Error handling in the callback functions for streaming responses is implemented differently for each API and differs in quality at the moment. 
 
-## Changelog for Development Version 0.1.5 (Since Last CRAN Release 0.1.0)
+## Changelog for Development Version 0.1.6 (Since Last CRAN Release 0.1.0)
 
 ### New Features
 
@@ -293,6 +293,10 @@ multimodal abilities do not support system prompts, the system role is deleted f
 Since version 0.1.1, JSON mode is now more widely supported across all API functions, allowing for structured outputs when APIs support them. The `.json` argument is now passed only to API functions, specifying how the API should respond, it is not needed anymore in `last_reply()`.
 
 Additionally, the behavior of the reply functions has changed. They now automatically handle JSON replies by parsing them into structured data and falling back to raw text in case of errors. You can still force raw text replies even for JSON output using the `.raw` argument.
+
+### New tests for API functions
+- **Easier Troubleshooting in API-function**: All API functions now support the `.dry_run` argument, allowing users to generate an `httr2`-request for easier debugging and inspection.
+- **API Function Tests:** Implemented `httptest2`-based tests with mock responses for all API functions, covering both basic functionality and rate-limiting.
 
 ### Breaking Changes (Compared to CRAN Release 0.1.0)
 

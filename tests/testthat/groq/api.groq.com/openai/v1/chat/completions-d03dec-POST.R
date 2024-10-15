@@ -1,0 +1,13 @@
+structure(list(method = "POST", url = "https://api.groq.com/openai/v1/chat/completions", 
+    status_code = 200L, headers = structure(list(date = "Tue, 15 Oct 2024 15:31:14 GMT", 
+        `content-type` = "application/json", `cache-control` = "private, max-age=0, no-store, no-cache, must-revalidate", 
+        vary = "Origin", `x-ratelimit-limit-requests` = "7000", 
+        `x-ratelimit-limit-tokens` = "7000", `x-ratelimit-remaining-requests` = "6999", 
+        `x-ratelimit-remaining-tokens` = "6992", `x-ratelimit-reset-requests` = "12.342857142s", 
+        `x-ratelimit-reset-tokens` = "68.571428ms", `x-request-id` = "req_01ja8cw1fnf0yaeyx6jre320sp", 
+        via = "1.1 google", `alt-svc` = "h3=\":443\"; ma=86400", 
+        `cf-cache-status` = "DYNAMIC", `set-cookie` = "REDACTED", 
+        server = "cloudflare", `cf-ray` = "8d30dadc1f03371b-FRA", 
+        `content-encoding` = "gzip"), class = "httr2_headers"), 
+    body = charToRaw("{\"id\":\"chatcmpl-aa7b1e70-479a-46ee-9ecd-509df661ec23\",\"object\":\"chat.completion\",\"created\":1729006274,\"model\":\"llama-3.2-11b-vision-preview\",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",\"content\":\"Hello, world. How can I assist you today?\"},\"logprobs\":null,\"finish_reason\":\"stop\"}],\"usage\":{\"queue_time\":0.005244071,\"prompt_tokens\":39,\"prompt_time\":0.007719048,\"completion_tokens\":12,\"completion_time\":0.016,\"total_tokens\":51,\"total_time\":0.023719048},\"system_fingerprint\":\"fp_f66ccb39ec\",\"x_groq\":{\"id\":\"req_01ja8cw1fnf0yaeyx6jre320sp\"}}\n"), 
+    cache = new.env(parent = emptyenv())), class = "httr2_response")

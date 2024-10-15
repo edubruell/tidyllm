@@ -9,7 +9,8 @@ ollama_embedding(
   .model = "all-minilm",
   .truncate = TRUE,
   .ollama_server = "http://localhost:11434",
-  .timeout = 120
+  .timeout = 120,
+  .dry_run = FALSE
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ ollama_embedding(
 \item{.ollama_server}{The URL of the Ollama server to be used (default: "http://localhost:11434").}
 
 \item{.timeout}{Timeout for the API request in seconds (default: 120).}
+
+\item{.dry_run}{If TRUE, perform a dry run and return the request object.}
 }
 \value{
 A matrix where each column corresponds to the embedding of a message in the message history.

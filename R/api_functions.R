@@ -244,6 +244,7 @@ claude <- function(.llm,
 #' @param .wait Should we wait for rate limits if necessary?
 #' @param .min_tokens_reset How many tokens should be remaining to wait until we wait for token reset?
 #' @param .stream Stream back the response piece by piece (default: FALSE).
+#' @param .dry_run If TRUE, perform a dry run and return the request object.
 #'
 #' @return Returns an updated LLMMessage object.
 #' @export
@@ -261,7 +262,8 @@ chatgpt <- function(.llm,
                     .wait = TRUE,
                     .json = FALSE,
                     .min_tokens_reset = 0L,
-                    .stream = FALSE) {
+                    .stream = FALSE,
+                    .dry_run = FALSE) {  
 
   # Validate inputs
   c(
@@ -276,7 +278,8 @@ chatgpt <- function(.llm,
     ".wait must be logical" = is.logical(.wait),
     ".min_tokens_reset must be an integer" = is_integer_valued(.min_tokens_reset),
     ".json must be logical if provided"          = is.logical(.json),
-    ".stream must be logical" = is.logical(.stream)
+    ".stream must be logical" = is.logical(.stream),
+    ".dry_run must be logical"                   = is.logical(.dry_run)
   ) |>
     validate_inputs()
   
@@ -330,8 +333,14 @@ chatgpt <- function(.llm,
     .parse_response_fn = function(body_json) {
       assistant_reply <- body_json$choices[[1]]$message$content
       return(assistant_reply)
-    }
+    },
+    .dry_run = .dry_run
   )
+  
+  # Return only the request object in a dry run.
+  if (.dry_run) {
+    return(response)  
+  }
   
   # Extract assistant reply and response headers
   response_headers <- response$headers
@@ -396,6 +405,7 @@ chatgpt <- function(.llm,
 #' @param .verbose Should additional information be shown after the API call
 #' @param .wait Should we wait for rate limits if necessary?
 #' @param .min_tokens_reset How many tokens should be remaining to wait until we wait for token reset?
+#' @param .dry_run If TRUE, perform a dry run and return the request object.
 #'
 #' @return Returns an updated LLMMessage object.
 #' @export
@@ -411,7 +421,8 @@ groq <- function(.llm,
                  .timeout = 60,
                  .verbose = FALSE,
                  .wait=TRUE,
-                 .min_tokens_reset = 0L) {
+                 .min_tokens_reset = 0L,
+                 .dry_run = FALSE) {
 
   # Validate inputs
   c(
@@ -425,7 +436,8 @@ groq <- function(.llm,
     ".verbose must be logical"                   = is.logical(.verbose),
     ".wait must be logical"                      = is.logical(.wait),
     ".json must be logical if provided"          = is.logical(.json),
-    ".min_tokens_reset must be an integer"       = is_integer_valued(.min_tokens_reset)
+    ".min_tokens_reset must be an integer"       = is_integer_valued(.min_tokens_reset),
+    ".dry_run must be logical"                   = is.logical(.dry_run)
   ) |>
     validate_inputs()
   
@@ -459,15 +471,23 @@ groq <- function(.llm,
     wait_rate_limit("groq",.min_tokens_reset)
   }  
 
+  
+  groq_request <- httr2::request(.api_url) |>
+    httr2::req_url_path("/openai/v1/chat/completions") |>
+    httr2::req_headers(
+      `Authorization` = sprintf("Bearer %s", api_key),
+      `Content-Type` = "application/json"
+    ) |>
+    httr2::req_body_json(data = request_body) |> 
+    httr2::req_timeout(.timeout) 
+  
+  # Return only the request object in a dry run.
+  if (.dry_run) {
+    return(groq_request)  
+  }
+  
   # Perform the request
-  response <- httr2::request(.api_url) |>
-      httr2::req_url_path("/openai/v1/chat/completions") |>
-      httr2::req_headers(
-        `Authorization` = sprintf("Bearer %s", api_key),
-        `Content-Type` = "application/json"
-      ) |>
-      httr2::req_body_json(data = request_body) |> 
-      httr2::req_timeout(.timeout) |> 
+  response <- groq_request |> 
       httr2::req_perform()
     
   #Get the response body
@@ -536,6 +556,7 @@ groq <- function(.llm,
 #' @param .num_ctx The size of the context window in tokens (optional)
 #' @param .ollama_server The URL of the ollama server to be used
 #' @param .timeout When should our connection time out 
+#' @param .dry_run If TRUE, perform a dry run and return the request object.
 #' @return Returns an updated LLMMessage object.
 #' @export
 ollama <- function(.llm,
@@ -546,7 +567,8 @@ ollama <- function(.llm,
                    .temperature = NULL,
                    .num_ctx = 2048,
                    .ollama_server = "http://localhost:11434",
-                   .timeout = 120) {
+                   .timeout = 120,
+                   .dry_run = FALSE) {
   
   # Validate the inputs
   c(
@@ -557,7 +579,8 @@ ollama <- function(.llm,
     "Input .temperature must be numeric if provided" = is.null(.temperature) | is.numeric(.temperature),
     "Input .seed must be an integer-valued numeric if provided" = is.null(.seed) | is_integer_valued(.seed),
     "Input .num_ctx must be an integer-valued numeric if provided" = is.null(.num_ctx) | is_integer_valued(.num_ctx),
-    "Input .timeout must be an integer-valued numeric (seconds till timeout)" = is_integer_valued(.timeout)
+    "Input .timeout must be an integer-valued numeric (seconds till timeout)" = is_integer_valued(.timeout),
+    ".dry_run must be logical"                   = is.logical(.dry_run)
   ) |>
     validate_inputs()
   
@@ -597,8 +620,14 @@ ollama <- function(.llm,
     .parse_response_fn = function(body_json) {
       assistant_reply <- body_json$message$content
       return(assistant_reply)
-    }
+    },
+    .dry_run = .dry_run
   )
+  
+  # Return only the request object in a dry run.
+  if (.dry_run) {
+    return(response)  
+  }
   
   assistant_reply <- response$assistant_reply
   

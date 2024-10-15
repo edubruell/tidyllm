@@ -105,20 +105,23 @@ ollama_download_model <- function(.model, .ollama_server = "http://localhost:114
 #' @param .truncate Whether to truncate inputs to fit the model's context length (default: TRUE).
 #' @param .ollama_server The URL of the Ollama server to be used (default: "http://localhost:11434").
 #' @param .timeout Timeout for the API request in seconds (default: 120).
+#' @param .dry_run If TRUE, perform a dry run and return the request object.
 #' @return A matrix where each column corresponds to the embedding of a message in the message history.
 #' @export
 ollama_embedding <- function(.llm,
                              .model = "all-minilm",
                              .truncate = TRUE,
                              .ollama_server = "http://localhost:11434",
-                             .timeout = 120) {
+                             .timeout = 120,
+                             .dry_run=FALSE) {
   
   # Validate the inputs
   c(
     "Input .llm must be an LLMMessage object or a character vector" = inherits(.llm, "LLMMessage") | is.character(.llm),
     "Input .model must be a string" = is.character(.model),
     "Input .truncate must be logical" = is.logical(.truncate),
-    "Input .timeout must be an integer-valued numeric (seconds till timeout)" = is.numeric(.timeout) && .timeout > 0
+    "Input .timeout must be an integer-valued numeric (seconds till timeout)" = is.numeric(.timeout) && .timeout > 0,
+    ".dry_run must be logical"                   = is.logical(.dry_run)
   ) |> validate_inputs()
   
   if(!is.character(.llm)){
@@ -160,6 +163,11 @@ ollama_embedding <- function(.llm,
   request <- httr2::request(.ollama_server) |>
     httr2::req_url_path("/api/embed") |>
     httr2::req_body_json(request_body)
+  
+  # Return only the request object in a dry run.
+  if (.dry_run) {
+    return(request)  
+  }
   
   # Perform the API request
   response <- request |>

@@ -19,7 +19,8 @@ chatgpt(
   .wait = TRUE,
   .json = FALSE,
   .min_tokens_reset = 0L,
-  .stream = FALSE
+  .stream = FALSE,
+  .dry_run = FALSE
 )
 }
 \arguments{
@@ -52,6 +53,8 @@ chatgpt(
 \item{.min_tokens_reset}{How many tokens should be remaining to wait until we wait for token reset?}
 
 \item{.stream}{Stream back the response piece by piece (default: FALSE).}
+
+\item{.dry_run}{If TRUE, perform a dry run and return the request object.}
 }
 \value{
 Returns an updated LLMMessage object.

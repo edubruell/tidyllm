@@ -17,7 +17,8 @@ groq(
   .timeout = 60,
   .verbose = FALSE,
   .wait = TRUE,
-  .min_tokens_reset = 0L
+  .min_tokens_reset = 0L,
+  .dry_run = FALSE
 )
 }
 \arguments{
@@ -46,6 +47,8 @@ groq(
 \item{.wait}{Should we wait for rate limits if necessary?}
 
 \item{.min_tokens_reset}{How many tokens should be remaining to wait until we wait for token reset?}
+
+\item{.dry_run}{If TRUE, perform a dry run and return the request object.}
 }
 \value{
 Returns an updated LLMMessage object.
