@@ -34,9 +34,14 @@ page](https://platform.openai.com/api-keys) and set it by
 Sys.setenv(OPENAI_API_KEY = "OPENAI-API-KEY-GOES-HERE")
 ```
 
-3. For groq you can set the API key on the [Groq console page](https://console.groq.com/keys) and set it by
+3. For Mistral you can set the API key on the [Mistral console page](https://console.mistral.ai/api-keys/) and set it by
 ``` r
-Sys.setenv(GROQ-API_KEY = "GROQ-API-KEY-GOES-HERE")
+Sys.setenv(MISTRAL_API_KEY = "MISTRAL-API-KEY-GOES-HERE")
+```
+
+4. For groq you can set the API key on the [Groq console page](https://console.groq.com/keys) and set it by
+``` r
+Sys.setenv(GROQ_API_KEY = "GROQ-API-KEY-GOES-HERE")
 ```
 
 Or you can do it persistently (session-wide), by assigning the keys in your
