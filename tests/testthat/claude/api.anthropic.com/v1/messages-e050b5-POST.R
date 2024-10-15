@@ -1,0 +1,12 @@
+structure(list(method = "POST", url = "https://api.anthropic.com/v1/messages", 
+    status_code = 200L, headers = structure(list(date = "Tue, 15 Oct 2024 09:48:23 GMT", 
+        `content-type` = "application/json", `anthropic-ratelimit-requests-limit` = "50", 
+        `anthropic-ratelimit-requests-remaining` = "49", `anthropic-ratelimit-requests-reset` = "2024-10-15T09:49:10Z", 
+        `anthropic-ratelimit-tokens-limit` = "40000", `anthropic-ratelimit-tokens-remaining` = "40000", 
+        `anthropic-ratelimit-tokens-reset` = "2024-10-15T09:48:23Z", 
+        `request-id` = "req_019wGfiTXuPVGqimAyq4912o", `x-cloud-trace-context` = "9ecc7a0656e50c0602d9e7dd6ad8ae98", 
+        via = "1.1 google", `cf-cache-status` = "DYNAMIC", `x-robots-tag` = "none", 
+        server = "cloudflare", `cf-ray` = "8d2ee49cc90836dd-FRA", 
+        `content-encoding` = "gzip"), class = "httr2_headers"), 
+    body = charToRaw("{\"id\":\"msg_01ATtd6A2FAsaFDNqzGKiy5c\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"claude-3-5-sonnet-20240620\",\"content\":[{\"type\":\"text\",\"text\":\"Hello! It's nice to meet you. How can I assist you today? Is there anything specific you'd like to talk about or any questions you have?\"}],\"stop_reason\":\"end_turn\",\"stop_sequence\":null,\"usage\":{\"input_tokens\":16,\"output_tokens\":35}}"), 
+    cache = new.env(parent = emptyenv())), class = "httr2_response")

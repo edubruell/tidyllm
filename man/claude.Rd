@@ -20,7 +20,8 @@ claude(
   .min_tokens_reset = 0L,
   .timeout = 60,
   .json = FALSE,
-  .stream = FALSE
+  .stream = FALSE,
+  .dry_run = FALSE
 )
 }
 \arguments{
@@ -55,6 +56,8 @@ claude(
 \item{.json}{Should output be in JSON  (default: FALSE).}
 
 \item{.stream}{Stream back the response piece by piece (default: FALSE).}
+
+\item{.dry_run}{If TRUE, perform a dry run and return the request object.}
 }
 \value{
 Returns an updated LLMMessage object.

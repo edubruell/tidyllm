@@ -5,15 +5,16 @@
 \title{Perform an API request to interact with language models}
 \usage{
 perform_api_request(
-  request,
+  .request,
   .api,
   .stream = FALSE,
   .timeout = 60,
-  parse_response_fn = NULL
+  .parse_response_fn = NULL,
+  .dry_run = FALSE
 )
 }
 \arguments{
-\item{request}{The httr2 request object.}
+\item{.request}{The httr2 request object.}
 
 \item{.api}{The API identifier (e.g., "claude", "openai").}
 
@@ -21,7 +22,9 @@ perform_api_request(
 
 \item{.timeout}{Request timeout in seconds.}
 
-\item{parse_response_fn}{A function to parse the assistant's reply.}
+\item{.parse_response_fn}{A function to parse the assistant's reply.}
+
+\item{.dry_run}{If TRUE, perform a dry run and return the request object.}
 }
 \value{
 A list containing the assistant's reply and response headers.

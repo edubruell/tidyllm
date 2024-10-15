@@ -1,13 +1,25 @@
 #' Perform an API request to interact with language models
 #'
-#' @param request The httr2 request object.
+#' @param .request The httr2 request object.
 #' @param .api The API identifier (e.g., "claude", "openai").
 #' @param .stream Stream the response if TRUE.
 #' @param .timeout Request timeout in seconds.
-#' @param parse_response_fn A function to parse the assistant's reply.
+#' @param .parse_response_fn A function to parse the assistant's reply.
+#' @param .dry_run If TRUE, perform a dry run and return the request object.
 #'
 #' @return A list containing the assistant's reply and response headers.
-perform_api_request <- function(request, .api, .stream = FALSE, .timeout = 60, parse_response_fn = NULL) {
+perform_api_request <- function(.request, 
+                                .api, 
+                                .stream = FALSE, 
+                                .timeout = 60, 
+                                .parse_response_fn = NULL,
+                                .dry_run =FALSE) {
+  
+  # Return the request object if test mode is enabled
+  if (.dry_run) {
+    return(.request)
+  }
+  
   if (.stream == TRUE) {
     # Initialize the streaming environment variable
     .tidyllm_stream_env$stream <- ""
@@ -18,7 +30,7 @@ perform_api_request <- function(request, .api, .stream = FALSE, .timeout = 60, p
     
     # Perform the streaming request and process it with the callback function
     response <- httr2::req_perform_stream(
-      request,
+      .request,
       callback = callback_fn,
       buffer_kb = 0.05, 
       round = "line"
@@ -35,15 +47,15 @@ perform_api_request <- function(request, .api, .stream = FALSE, .timeout = 60, p
   } else {
     # Non-streaming mode
     response <- httr2::req_perform(
-      httr2::req_timeout(request, .timeout)
+      httr2::req_timeout(.request, .timeout)
     )
     
     # Parse the response body as JSON when not streaming
     body_json <- httr2::resp_body_json(response)
     
     # Use the parsing function provided
-    if (!is.null(parse_response_fn)) {
-      assistant_reply <- parse_response_fn(body_json)
+    if (!is.null(.parse_response_fn)) {
+      assistant_reply <- .parse_response_fn(body_json)
     } else {
       stop("A parsing function must be provided for non-streaming responses.")
     }
@@ -76,6 +88,7 @@ perform_api_request <- function(request, .api, .stream = FALSE, .timeout = 60, p
 #' @param .json Should output be in JSON  (default: FALSE).
 #' @param .min_tokens_reset How many tokens should be remaining to wait until we wait for token reset?
 #' @param .stream Stream back the response piece by piece (default: FALSE).
+#' @param .dry_run If TRUE, perform a dry run and return the request object.
 #'
 #' @return Returns an updated LLMMessage object.
 #' @export
@@ -94,8 +107,8 @@ claude <- function(.llm,
                    .min_tokens_reset = 0L,
                    .timeout = 60,
                    .json =FALSE,
-                   .stream = FALSE
-) {  
+                   .stream = FALSE,
+                   .dry_run = FALSE) {  
   # Validate inputs to the Claude function
   c(
     ".llm must be an LLMMessage object"    = inherits(.llm, "LLMMessage"),
@@ -109,7 +122,8 @@ claude <- function(.llm,
     ".wait must be logical"                      = is.logical(.wait),
     ".stream must be logical"                    = is.logical(.stream),
     ".json must be logical if provided"          = is.logical(.json),
-    ".min_tokens_reset must be an integer"       = is_integer_valued(.min_tokens_reset)
+    ".min_tokens_reset must be an integer"       = is_integer_valued(.min_tokens_reset),
+    ".dry_run must be logical"                   = is.logical(.dry_run)
   ) |>
     validate_inputs()
   
@@ -166,15 +180,21 @@ claude <- function(.llm,
   
   # Perform the API request
   response <- perform_api_request(
-    request, 
+    .request = request,
     .api = "claude", 
     .stream = .stream, 
     .timeout = .timeout, 
-    parse_response_fn = function(body_json) {
+    .parse_response_fn = function(body_json) {
       assistant_reply <- body_json$content[[1]]$text
       return(assistant_reply)
-    }
+    },
+    .dry_run = .dry_run
   )
+  
+  # Return only the request object in a dry run.
+  if (.dry_run) {
+    return(response)  
+  }
   
   # Extract assistant reply and response headers
   response_headers <- response$headers
@@ -303,11 +323,11 @@ chatgpt <- function(.llm,
   
   # Perform the API request using perform_api_request
   response <- perform_api_request(
-    request,
+    .request = request,
     .api = "chatgpt",
     .stream = .stream,
     .timeout = .timeout,
-    parse_response_fn = function(body_json) {
+    .parse_response_fn = function(body_json) {
       assistant_reply <- body_json$choices[[1]]$message$content
       return(assistant_reply)
     }
@@ -570,11 +590,11 @@ ollama <- function(.llm,
   
   # Perform the API request
   response <- perform_api_request(
-    request,
+    .request = request,
     .api = "ollama",
     .stream = .stream,
     .timeout = .timeout,
-    parse_response_fn = function(body_json) {
+    .parse_response_fn = function(body_json) {
       assistant_reply <- body_json$message$content
       return(assistant_reply)
     }
