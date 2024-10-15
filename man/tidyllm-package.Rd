@@ -6,7 +6,7 @@
 \alias{tidyllm-package}
 \title{tidyllm: Tidy Integration of Large Language Models}
 \description{
-A tidy interface for integrating large language model (LLM) APIs such as 'Claude', 'ChatGPT', 'Groq', and local models via 'Ollama' into R workflows. The package supports text and media-based interactions, interactive message history, stateful rate limit handling, and a tidy, pipeline-oriented interface for streamlined integration into data workflows. Web services are available at \url{https://www.anthropic.com}, \url{https://openai.com}, \url{https://groq.com}, and \url{https://ollama.com}.
+A tidy interface for integrating large language model (LLM) APIs such as 'Claude', 'ChatGPT', 'Groq','Mistral' and local models via 'Ollama' into R workflows. The package supports text and media-based interactions, interactive message history, stateful rate limit handling, and a tidy, pipeline-oriented interface for streamlined integration into data workflows. Web services are available at \url{https://www.anthropic.com}, \url{https://openai.com}, \url{https://groq.com}, \url{https://mistral.ai/} and \url{https://ollama.com}.
 }
 \seealso{
 Useful links:

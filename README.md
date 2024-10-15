@@ -81,9 +81,10 @@ conversation |>
 
 - **`llm_message()`**: Create or update a message object, adding prompts or media content.
 - **`claude()`**: Send and receive messages from Anthropic's Claude models
-- **`chatgpt()`**: Send and receive messages from OpenAI's ChatGPT models.
 - **`ollama()`**: Send and receive messages to the ollama API (to work with local models)
+- **`chatgpt()`**: Send and receive messages from OpenAI's ChatGPT models.
 - **`groq()`**: Interact with Groq's fast open-source models, taking advantage of their dedicated hardware accelerators for efficient processing.
+- **`mistral()`**: Run Models available in the Mistral API hosted on servers in the EU.
 - **`last_reply()`**: Fetch the most recent assistant's response from a message history.
 - **`get_reply()`**: Retrieve an assistant reply by a specific index in the assistant messages.
 - **`last_user_message()`**: Fetch the most recent user message from a message history.
@@ -262,9 +263,9 @@ llm_message("Please give me an interpretation of the results in column 3 of the 
 
 ### Experimental features
 
-At the moment `ollama()`, `chatgpt()` and `claude()` support real-time streaming of reply tokens to the console while the model works with the `.stream=TRUE` argument. This is not super useful in the context of  data-analysis centered workflows, but gives you slightly better feedback on how your model works. We recommend using non-streaming response for production tasks though. Error handling in the callback functions for streaming responses is implemented differently for each API and differs in quality at the moment. 
+At the moment `ollama()`, `chatgpt()`, `mistral()` and `claude()` support real-time streaming of reply tokens to the console while the model works with the `.stream=TRUE` argument. This is not super useful in the context of  data-analysis centered workflows, but gives you slightly better feedback on how your model works. We recommend using non-streaming response for production tasks though. Error handling in the callback functions for streaming responses is implemented differently for each API and differs in quality at the moment. 
 
-## Changelog for Development Version 0.1.6 (Since Last CRAN Release 0.1.0)
+## Changelog for Development Version 0.1.7 (Since Last CRAN Release 0.1.0)
 
 ### New Features
 
@@ -280,6 +281,8 @@ At the moment `ollama()`, `chatgpt()` and `claude()` support real-time streaming
   + **Embedding Generation:** Added `ollama_embedding()` to generate embeddings using the Ollama API. It processes message histories and combines  text from message content and media attachements for embeddings.
 
 - **PDF Page Batch Processing**: Introduced the `pdf_page_batch()` function, which processes PDF files page by page, extracting text and converting each page into an image and allows for a general prompt or page specific prompts. The function generates a list of `LLMMessage` objects that can each be sent to an API 
+
+- **Support for the Mistral API**: New `mistral()` function to use Mistral Models on Le Platforme on servers hosted in the EU. With rate-limiting and streaming-support.
 
 ### Improvements
 

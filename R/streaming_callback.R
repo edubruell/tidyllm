@@ -2,11 +2,11 @@
 #'
 #' This function generates a callback function that processes streaming responses
 #' from different language model APIs. The callback function is specific to the
-#' API provided (`claude`, `ollama`, or `chatgpt`) and processes incoming data streams,
+#' API provided (`claude`, `ollama`, `"mistral"`, or `chatgpt`) and processes incoming data streams,
 #' printing the content to the console and updating a global environment for further use.
 #'
 #' @param .api A character string indicating the API type. Supported values are
-#'   `"claude"`, `"ollama"`, and `"chatgpt"`.
+#'   `"claude"`, `"ollama"`, `"mistral"`, and `"chatgpt"`.
 #' @return A function that serves as a callback to handle streaming responses
 #'   from the specified API. The callback function processes the raw data, updates
 #'   the `.tidyllm_stream_env$stream` object, and prints the streamed content to the console.
@@ -19,6 +19,8 @@
 #'   `message$content` field.
 #' - **For ChatGPT API**: The function handles JSON data streams and processes content deltas.
 #'   It stops processing when the `[DONE]` message is encountered.
+#' - **For Mistral API**: The function is very similar to the ChatGPT callback function.
+#'   It stops processing when the `[DONE]` message is encountered. 
 generate_callback_function <- function(.api) {
   if (.api == "claude") {
     callback_fn <- function(.data) {
@@ -127,7 +129,53 @@ generate_callback_function <- function(.api) {
         
         return(continue_processing)
       }
-    } else {
+  } else if (.api == "mistral") {
+    callback_fn <- function(.data) {
+      # Read the stream content and split into lines
+      lines <- .data |>
+        rawToChar(multiple = FALSE) |>
+        stringr::str_split("\n") |>
+        unlist()
+      
+      # Initialize a flag to control early exit
+      continue_processing <- TRUE
+      
+      # Process lines that start with "data: "
+      data_lines <- lines |>
+        purrr::keep(~ grepl("^data: ", .x) && .x != "")
+      
+      # Process data lines
+      purrr::walk(data_lines, ~ {
+        
+        json_part <- sub("^data: ", "", .x)
+        
+        if (json_part != "[DONE]") {
+          # Try to parse the JSON content
+          parsed_event <- tryCatch(
+            jsonlite::fromJSON(json_part, simplifyVector = FALSE, simplifyDataFrame = FALSE),
+            error = function(e) {
+              message("Failed to parse JSON: ", e$message)
+              return(NULL)
+            }
+          )
+          
+          if (!is.null(parsed_event)) {
+            delta_content <- parsed_event$choices[[1]]$delta$content
+            if (!is.null(delta_content)) {
+              .tidyllm_stream_env$stream <- paste0(.tidyllm_stream_env$stream, delta_content)
+              cat(delta_content)
+              utils::flush.console()
+            }
+          }
+        } else {
+          message("\n---------\nStream finished\n---------\n")
+          continue_processing <<- FALSE
+        }
+      })
+      
+      return(continue_processing)
+    }
+  } else {
     stop("Unknown API for callback function.")
   }
   
