@@ -1,8 +1,8 @@
 ---
-title: "Getting started with tidyllm"
+title: "Getting Started"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Your Vignette Title}
+  %\VignetteIndexEntry{Getting Started}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -11,9 +11,15 @@ vignette: >
 
 tidyllm is an R package designed to provide a unified interface for interacting with various large language model APIs. This vignette will guide you through the basic setup and usage of tidyllm.
 
-### Installation
+## Installation
 
-You can install tidyllm directly from GitHub using devtools:
+To install **tidyllm** from CRAN , use:
+
+```{r, eval= FALSE, echo=TRUE}
+install.packages("tidyllm")
+```
+
+Or install a current development version directly from GitHub using devtools:
 
 ```{r, eval= FALSE, echo=TRUE}
 # Install devtools if not already installed
@@ -21,7 +27,7 @@ if (!requireNamespace("devtools", quietly = TRUE)) {
   install.packages("devtools")
 }
 
-# Install tidyllm from GitHub
+# Install TidyLLM from GitHub
 devtools::install_github("edubruell/tidyllm")
 ```
 
@@ -48,7 +54,7 @@ Alternatively, you can set these keys in your `.Renviron` file for persistent st
 line with with an API key in this file, for example:
 
 ```{r, eval= FALSE, echo=TRUE}
-ANTHROPIC_API_KEY="XX-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+ANTHROPIC_API_KEY="YOUR-ANTHROPIC-API-KEY"
 ```
 
 If you do not want to use remote models you can also work with local large lange models via `ollama`. Install it from [the official project website](https://ollama.com/). Ollama sets up a local large language model server that you can use to run open-source models on your own devices. 
@@ -58,7 +64,7 @@ If you do not want to use remote models you can also work with local large lange
 
 Let's start with a simple example using tidyllm to interact with different language models:
 
-```{r firsttry,  eval=FALSE, echo=TRUE}
+```{r convo1,  eval=FALSE, echo=TRUE}
 library(tidyllm)
 
 # Start a conversation with Claude
@@ -67,59 +73,53 @@ conversation <- llm_message("What is the capital of France?") |>
 
 #Standard way that llm_messages are printed
 conversation
+```
+```{r convo1_out,  eval=TRUE, echo=FALSE}
+library(tidyllm)
 
-# Get the last reply
+#Easier than mocking. httptest2 caused a few issues with my vignette
+conversation <- llm_message("What is the capital of France?") |>
+  llm_message("The capital of France is Paris.",.role="assistant")
+
+conversation
+```
+```{r convo2,  eval=FALSE, echo=TRUE}
+# Get the last assistant reply as a charcter vector
 last_reply(conversation)
 
+```
+```{r convo2_out,  eval=TRUE, echo=FALSE}
 # Continue the conversation with ChatGPT
 conversation <- conversation |>
   llm_message("What's a famous landmark in this city?") |>
   chatgpt()
 
-# Get the last reply
 last_reply(conversation)
 ```
+```{r convo3,  eval=FALSE, echo=TRUE}
+c("A famous landmark in Paris is the Eiffel Tower.")
+```
+
 
 ### Working with Images
+
+```{r, echo=FALSE, out.width="70%"}
+knitr::include_graphics("picture.jpeg")
+```
 
 tidyllm also supports sending images to multimodal models:
 
 ```{r images,  eval=FALSE, echo=TRUE}
 # Describe an image using a llava model on ollama
-image_description <- llm_message("Describe this image",
-                                 .imagefile = "https://raw.githubusercontent.com/edubruell/tidyllm/refs/heads/main/tidyllm.png") |>
-  ollama(.model = "llava")
+image_description <- llm_message("Describe this picture? Can you guess where it was made?",
+                                 .imagefile = "picture.jpeg") |>
+  chatgpt(.model = "gpt-4o")
 
 # Get the last reply
 last_reply(image_description)
 ```
-
-### Sending R Outputs to Language Models
-
-You can include R code outputs in your prompts. In particular you can use `.caputre_plot` to send the last plot pane to a model. 
-The `.f`-argument runs a function and sends it output to a model. 
-
-```{r routputs,  eval=FALSE, echo=TRUE}
-library(tidyverse)
-
-# Example data
-example_data <- tibble(
-  x = rnorm(100),
-  y = 2 * x + rnorm(100)
-)
-
-# Create a plot
-ggplot(example_data, aes(x, y)) +
-  geom_point() +
-  geom_smooth(method = "lm")
-
-# Send the plot and data summary to a language model
-analysis <- llm_message("Analyze this plot and data summary:", 
-                        .capture_plot = TRUE,
-                        .f = ~{summary(example_data)}) |>
-  claude()
-
-last_reply(analysis)
+```{r images_out,  eval=TRUE, echo=FALSE}
+c("The picture shows a beautiful landscape with a lake, mountains, and a town nestled below. The sun is shining brightly, casting a serene glow over the water. The area appears lush and green, with agricultural fields visible. \n\nThis type of scenery is reminiscent of northern Italy, particularly around Lake Garda, which features similar large mountains, picturesque water, and charming towns.")
 ```
 
 ### Adding PDFs to messages
@@ -134,12 +134,26 @@ install.packages("pdftools")
 
 To include text from a PDF in your prompt, simply pass the file path to the `.pdf` argument of the `chat` function:
 
-```{r,  eval=FALSE, echo=TRUE}
+```{r pdf,  eval=FALSE, echo=TRUE}
 llm_message("Please summarize the key points from the provided PDF document.", 
-     .pdf = "https://pdfobject.com/pdf/sample.pdf") |>
-     ollama()
+     .pdf = "die_verwandlung.pdf") |>
+     chatgpt(.model = "gpt-4o-mini")
 ```
+```{r pdf_out,  eval=TRUE, echo=FALSE}
+  llm_message("Please summarize the key points from the provided PDF document.", 
+              .pdf="die_verwandlung.pdf") |>
+    llm_message("Here are the key points from the provided PDF document 'Die Verwandlung' by Franz Kafka:
 
+1. The story centers around Gregor Samsa, who wakes up one morning to find that he has been transformed into a giant insect-like creature.
+
+2. Gregor's transformation causes distress and disruption for his family. They struggle to come to terms with the situation and how to deal with Gregor in his new state.
+
+3. Gregor's family, especially his sister Grete, initially tries to care for him, but eventually decides they need to get rid of him. They lock him in his room and discuss finding a way to remove him.
+
+4. Gregor becomes increasingly isolated and neglected by his family. He becomes weaker and less mobile due to his injuries and lack of proper care.
+
+5. Eventually, Gregor dies, and his family is relieved. They then begin to make plans to move to a smaller, more affordable apartment and start looking for new jobs and opportunities.",.role="assistant")
+```
 The package will automatically extract the text from the PDF  and include it in the prompt sent to the an API. The text will be wrapped in `<pdf>` tags to clearly indicate the content from the PDF:
 
 ```
@@ -149,40 +163,85 @@ Please summarize the key points from the provided PDF document.
 Extracted text from the PDF file...
 </pdf>
 ```
+### Sending R Outputs to Language Models
+
+You can include R code outputs in your prompts. In particular you can use `.caputre_plot` to send the last plot pane to a model. 
+The `.f`-argument runs a function and sends it output to a model. 
+
+```{r routputs_base,  eval=TRUE, echo=TRUE}
+library(tidyverse)
+
+# Create a plot for the mtcars example data
+ggplot(mtcars, aes(wt, mpg)) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = 'y ~ x') +
+  labs(x="Weight",y="Miles per gallon")
+```
+
+Now we can send the plot and data summary to a language model:
+```{r routputs_base_out,  eval=FALSE, echo=TRUE}
+library(tidyverse)
+llm_message("Analyze this plot and data summary:", 
+                  .capture_plot = TRUE, #Send the plot pane to a model
+                  .f = ~{summary(mtcars)}) |> #Run summary(data) and send the output
+  claude()
+```
+```{r routputs_base_rq,  eval=TRUE, echo=FALSE}
+# Create a plot for the mtcars example data
+
+llm_message("Analyze this plot and data summary:", 
+                  .imagefile = "file1568f6c1b4565.png", #Send the plot pane to a model
+                  .f = ~{summary(mtcars)}) |> #Run summary(data) and send the output
+  llm_message("Based on the plot and data summary provided, here's an analysis:\n\n1. Relationship between Weight and MPG:\n   The scatter plot shows a clear negative correlation between weight (wt) and miles per gallon (mpg). As the weight of the car increases, the fuel efficiency (mpg) decreases.\n\n2. Linear Trend:\n   The blue line in the plot represents a linear regression fit. The downward slope confirms the negative relationship between weight and mpg.\n\n3. Data Distribution:\n   - The weight of cars in the dataset ranges from 1.513 to 5.424 (likely in thousands of pounds).\n   - The mpg values range from 10.40 to 33.90.\n\n4. Variability:\n   There's some scatter around the regression line, indicating that while weight is a strong predictor of mpg, other factors also influence fuel efficiency.\n\n5. Other Variables:\n   While not shown in the plot, the summary statistics provide information on other variables:\n   - Cylinder count (cyl) ranges from 4 to 8, with a median of 6.\n   - Horsepower (hp) ranges from 52 to 335, with a mean of 146.7.\n   - Transmission type (am) is binary (0 or 1), likely indicating automatic vs. manual.\n\n6. Model Fit:\n   The grey shaded area around the regression line represents the confidence interval. It widens at the extremes of the weight range, indicating less certainty in predictions for very light or very heavy vehicles.\n\n7. Outliers:\n   There are a few potential outliers, particularly at the lower and higher ends of the weight spectrum, that deviate from the general trend.\n\nIn conclusion, this analysis strongly suggests that weight is a significant factor in determining a car's fuel efficiency, with heavier cars generally having lower mpg. However, the presence of scatter in the data indicates that other factors (possibly related to engine characteristics, transmission type, or aerodynamics) also play a role in determining fuel efficiency.",.role="assistant")
+```
 
 ### Getting the last reply (as raw text or structured data)
 
-You can retrieve the last assistant reply from a message chain with `last_reply()`. Typically, it returns a character vector with the text of the assistant's reply. However, if API functions have requested replies in JSON mode, it can directly validate and return them as structured output. The function handles these different response types automatically.
+You can retrieve the last assistant reply from a message chain with `last_reply()`. Typically, it returns a character vector with the text of the assistant's reply. However, if API functions have requested replies in [JSON](https://de.wikipedia.org/wiki/JavaScript_Object_Notation) mode, it can directly validate and return them as structured output. The function handles these different response types automatically.
 
 If a JSON reply is detected, it returns a list with the following fields:
-- `parsed_content`: The parsed JSON content (or `NULL` in case of parsing errors).
-- `raw_response`: The direct string format of the reply.
-- `is_parsed`: A flag set to `TRUE` if JSON parsing was successful, or `FALSE` otherwise.
+
+  - `parsed_content`: The parsed JSON content (or `NULL` in case of parsing errors).
+  - `raw_response`: The direct string format of the reply.
+  - `is_parsed`: A flag set to `TRUE` if JSON parsing was successful, or `FALSE` otherwise.
 
 You can also force standard raw text replies, even when JSON mode is detected, using the `.raw` argument.
 
 #### Example 1: Getting standard text replies
 
 ```{r standard_last_reply,  eval=FALSE, echo=TRUE}
-reply_text <- llm_message("Please summarize the key points from the provided PDF document in 50 words.", 
-     .pdf = "path/to/example_document.pdf") |>
+reply_text <- llm_message("Imagine a German adress.") |>
      groq() |>
      last_reply()
 ```
+```{r standard_last_reply_out,  eval=TRUE, echo=FALSE}
+llm_message("Imagine a German adress.") |>
+  llm_message("Let's imagine a German address. \n\nHerr Müller\nMusterstraße 12\n53111 Bonn\n\nThis address is formatted according to German conventions:\n\n- 'Herr Müller' is the recipient's name (Mr. Müller).\n- 'Musterstraße 12' is the street name and number.\n- '53111 Bonn' is the postal code and city (Bonn).",
+              .role="assistant")
+```
+
 #### Example 2: Getting structured replies from APIs in JSON mode
 
 ```{r jsonmode,  eval=FALSE, echo=TRUE}
-address <- llm_message('Imagine an address in JSON format. Reply only with JSON.') |>
+address <- llm_message('Imagine a German adress in JSON format. Reply only with JSON.') 
+
+address|>
   ollama(.json = TRUE) |>  # API is asked to return JSON
   last_reply()
 
-# Access the structured data
-if (address$is_parsed) {
-  address_data <- as.data.frame(address$parsed_content)
-} else {
-  # Fallback: Handle the raw text if parsing fails
-  address_raw <- address$raw_response
-}
+str(address)
+```
+```{r jsonmode_out,  eval=TRUE, echo=FALSE}
+  address <- llm_message('Imagine a German adress in JSON format. Reply only with JSON.') 
+  address$add_message("assistant",'{
+   "street": "Kurfürstenstraße",
+   "houseNumber": 23,
+   "postcode": "10785",
+   "city": "Berlin",
+   "region": "Berlin",
+   "country": "Deutschland"
+}',json=TRUE)
+last_reply(address) |> str()
 ```
 All API functions have a `.json`-argument that enables JSON-mode. Note that `claude()` does not have an explicit JSON-mode in the API-request but you need to specify that you want only JSON-output and ideally your shema in the prompt to the assistant.
 
@@ -191,23 +250,25 @@ All API functions have a `.json`-argument that enables JSON-mode. Note that `cla
 Different API functions support different model parameters like  how deterministic the response should be via parameters like temperature. Please read API-documentation and the documentation of the model functions for specific examples.
 
 ```{r temperature,  eval=FALSE, echo=TRUE}
-temp_example <- llm_message("Explain how temperature parameters work in large language models.")
+  temp_example <- llm_message("Explain how temperature parameters work in large language models  and why temperature 0 gives you deterministic outputs in one sentence.")
+  
+  #per default it is non-zero
+  temp_example |> ollama(.temperature=0)
+```
+```{r temperature_out,  eval=TRUE, echo=FALSE}
+  temp_example <- llm_message("Explain how temperature parameters work in large language models  and why temperature 0 gives you deterministic outputs in one sentence.")
 
-#per default it is non-zero
-temp_example |> ollama()
-
-#Temperature sets the randomness of the answer
-#0 is one extreme where the output becomes fully deterministic. 
-#Else the next token is allways sampled from a list of the most likely tokens. Here only the most likely token is used every time.
-temp_example |> ollama(.temperature=0) |> last_reply()
-temp_example |> ollama(.temperature=0) |> last_reply()# Same answer
+  temp_example |>
+    llm_message("In large language models, temperature parameters control the randomness of generated text by scaling the output probabilities, with higher temperatures introducing more uncertainty and lower temperatures favoring more likely outcomes; specifically, setting temperature to 0 effectively eliminates all randomness, resulting in deterministic outputs because it sets the probability of each token to its maximum likelihood value.",
+                .role="assistant")
 ```
 
-### Use-case vignettes. 
-
-There are three vignettes that highlight special use-cases of the `tidyllm`-package and 
-walk you true a typical use-case for the package:
-
-  1. Structured question answering for pdf documents
-  2. Automated image labeling
-  3. Synthetic data generation for testing questionnaires
+```{r temp2,  eval=FALSE, echo=TRUE}
+  #Retrying with .temperature=0
+  temp_example |> ollama(.temperature=0)
+```
+```{r temp2_out,  eval=TRUE, echo=FALSE}
+  temp_example |>
+    llm_message("In large language models, temperature parameters control the randomness of generated text by scaling the output probabilities, with higher temperatures introducing more uncertainty and lower temperatures favoring more likely outcomes; specifically, setting temperature to 0 effectively eliminates all randomness, resulting in deterministic outputs because it sets the probability of each token to its maximum likelihood value.",
+                .role="assistant")
+```

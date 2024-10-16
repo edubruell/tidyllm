@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 
-**tidyllm** is an R package designed to access various large language model APIs, including **Claude**, **ChatGPT**, **Groq**, and even local models via **Ollama**. Built for simplicity and functionality, it helps you generate text, analyze media, and integrate rich model feedback into your R code with ease. tidyllm offers a unified interface for seamless communication with different models.
+**tidyllm** is an R package designed to access various large language model APIs, including **Claude**, **ChatGPT**, **Groq**, **Mistral** and even local models via **Ollama**. Built for simplicity and functionality, it helps you generate text, analyze media, and integrate rich model feedback into your R code with ease. tidyllm offers a unified interface for seamless communication with different models.
 
 ## Features
 
