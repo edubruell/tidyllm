@@ -49,14 +49,14 @@ conversation |>
   ollama(.model = "gemma2")
 ```
 
-For more examples and advanced usage, check the [Get Started vignette](https://edubruell.github.io/tidyllm/articles/Get-Started.html).
+For more examples and advanced usage, check the [Get Started vignette](https://edubruell.github.io/tidyllm/articles/tidyllm.html).
 
-Please note: To use **tidyllm**, you need either an installation of **ollama** or an active API key for one of the supported providers (e.g., Claude, ChatGPT). See the [Get Started vignette](https://edubruell.github.io/tidyllm/articles/Get-Started.html) for setup instructions.
+Please note: To use **tidyllm**, you need either an installation of **ollama** or an active API key for one of the supported providers (e.g., Claude, ChatGPT). See the [Get Started vignette](https://edubruell.github.io/tidyllm/articles/tidyllm.html) for setup instructions.
 
 ## Learn More
 
 For detailed instructions and advanced features, see:
-- [Get Started with tidyllm](https://edubruell.github.io/tidyllm/articles/Get-Started.html)
+- [Get Started with tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm.html)
 - [Changelog](https://edubruell.github.io/tidyllm/news/)
 - [Documentation](https://edubruell.github.io/tidyllm/)
 
