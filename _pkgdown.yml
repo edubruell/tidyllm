@@ -1,0 +1,47 @@
+url: https://edubruell.github.io/tidyllm/
+template:
+  bootstrap: 5
+  bootswatch: litera  
+  assets:
+    css: ["extra.scss"]  
+
+reference:
+  - title: "LLM Message Handling"
+    contents:
+      - llm_message
+      - df_llm_message
+      - last_reply
+      - last_user_message
+      - get_reply
+      - get_user_message
+
+  - title: "Core API Functions"
+    contents:
+      - chatgpt
+      - claude
+      - groq
+      - mistral
+      - ollama
+
+  - title: "Ollama Functions"
+    contents:
+      - ollama_download_model
+      - ollama_embedding
+      - ollama_list_models
+
+  - title: "Internals and Utility Functions"
+    contents:
+      - LLMMessage
+      - perform_api_request
+      - generate_callback_function
+      - initialize_api_env
+      - rate_limit_info
+      - update_rate_limit
+      - wait_rate_limit
+      - parse_duration_to_seconds
+
+  - title: "PDF Processing"
+    contents:
+      - pdf_page_batch
+
+

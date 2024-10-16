@@ -65,6 +65,8 @@ LLMMessage <- R6::R6Class(
     #' Converts the message history to a format suitable for various API calls.
     #' @param api_type The type of API (e.g., "claude","groq","chatgpt").
     #' @param cgpt_image_detail Specific option for ChatGPT API (imagedetail - set to auto)
+    #' 
+    #' @return A message history in the target API format
     to_api_format = function(api_type,cgpt_image_detail="auto") {
       switch(api_type,
              "claude" = {
@@ -471,17 +473,6 @@ llm_message <- function(.llm = NULL,
 #'
 #' @return An LLMMessage object containing the structured messages as per the input data frame.
 #'
-#' @examples
-#' # Example data frame with role and content
-#'df_example <- data.frame(
-#'  role = c("system", "user", "assistant","user"),
-#'  content = c("You allways only answer with two words", 
-#'               "Why is the sky blue?", 
-#'               "Rayleigh scattering",
-#'               "Why is the sun yellow?"),
-#'  stringsAsFactors = FALSE
-#')
-#'df_llm_message(df_example)
 #'
 #' @export
 df_llm_message <- function(.df){

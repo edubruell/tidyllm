@@ -115,14 +115,17 @@ Converts the message history to a format suitable for various API calls.}
 \describe{
 \item{\code{api_type}}{The type of API (e.g., "claude","groq","chatgpt").}
 
-\item{\code{cgpt_image_detail}}{Specific option for ChatGPT API (imagedetail - set to auto)
+\item{\code{cgpt_image_detail}}{Specific option for ChatGPT API (imagedetail - set to auto)}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A message history in the target API format
 Simple helper function to determine whether the message history contains
 an image
 We check this function whenever we call models that do not support images
 so we can post a warning to the user that images were found but not sent
-to the model}
-}
-\if{html}{\out{</div>}}
+to the model
 }
 }
 \if{html}{\out{<hr>}}

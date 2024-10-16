@@ -1,4 +1,5 @@
-## Changelog for Development Version 0.1.7 
+## Changelog for Development Version  0.1.7
+
 Changes since the last CRAN Release 0.1.0
 
 ### Breaking Changes (Compared to CRAN Release 0.1.0)

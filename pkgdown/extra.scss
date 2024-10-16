@@ -1,0 +1,34 @@
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code&family=Inter:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css?family=Montserrat:400,400i,400b&display=swap');
+
+/* Replace the News Cycle font with Montserrat or Josefin */
+.navbar {
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+/* Apply the font to other headings if needed */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Montserrat',  sans-serif;
+}
+/* Custom code block styling for better readability with Cerulean */
+pre {
+  border-radius: 8px;                    /* Rounded corners */
+  padding: 16px;                         /* Padding for better readability */
+  white-space: pre-wrap;                 /* Wrap lines instead of scrolling */
+  font-family: 'Fira Code', monospace;   /* Cool monospace fonts like Fira Code */
+  font-size: 0.85em;                     /* Slightly smaller for better alignment */
+}
+
+pre code span.st{
+  color:  #22863a
+}
+
+pre code span.fu{
+  color:  #5480e5
+}
+
+pre code span.cn{
+  color:  #e55473
+}

@@ -1,8 +1,8 @@
 ---
-title: "Getting Started"
+title: "Get Started"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Getting Started}
+  %\VignetteIndexEntry{Get Started}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -88,7 +88,7 @@ conversation
 last_reply(conversation)
 
 ```
-```{r convo2_out,  eval=TRUE, echo=FALSE}
+```{r convo2_out,  eval=FALSE, echo=FALSE}
 # Continue the conversation with ChatGPT
 conversation <- conversation |>
   llm_message("What's a famous landmark in this city?") |>
@@ -96,7 +96,7 @@ conversation <- conversation |>
 
 last_reply(conversation)
 ```
-```{r convo3,  eval=FALSE, echo=TRUE}
+```{r convo3,  eval=TRUE, echo=FALSE}
 c("A famous landmark in Paris is the Eiffel Tower.")
 ```
 

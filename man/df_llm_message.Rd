@@ -20,16 +20,3 @@ representing a conversation history. The data frame should contain specific
 columns (\code{role} and \code{content}) with each row representing a message in the
 conversation.
 }
-\examples{
-# Example data frame with role and content
-df_example <- data.frame(
- role = c("system", "user", "assistant","user"),
- content = c("You allways only answer with two words", 
-              "Why is the sky blue?", 
-              "Rayleigh scattering",
-              "Why is the sun yellow?"),
- stringsAsFactors = FALSE
-)
-df_llm_message(df_example)
-
-}
