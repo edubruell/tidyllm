@@ -56,6 +56,7 @@ Please note: To use **tidyllm**, you need either an installation of **ollama** o
 ## Learn More
 
 For detailed instructions and advanced features, see:
+
 - [Get Started with tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm.html)
 - [Changelog](https://edubruell.github.io/tidyllm/news/)
 - [Documentation](https://edubruell.github.io/tidyllm/)
