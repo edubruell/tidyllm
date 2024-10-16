@@ -10,7 +10,7 @@
 
 ## Features
 
-- **Multiple Model Support**: Seamlessly switch between various model providers like Claude, ChatGPT, Groq or Ollama using the best of what each has to offer.
+- **Multiple Model Support**: Seamlessly switch between various model providers like Claude, ChatGPT, Groq, Mistral or Ollama using the best of what each has to offer.
 - **Media Handling**: Extract and process text from PDFs and capture console outputs for messaging. Upload imagefiles or the last plotpane to multimodal models.
 - **Interactive Messaging History**: Manage an ongoing conversation with models, maintaining a structured history of messages and media interactions, which are automatically formatted for each API
 - **Stateful handling of rate limits:** API rate limits are handled statefully within each R Session and API functions can wait automatically for rate limits to reset
@@ -94,7 +94,7 @@ conversation |>
 - **`get_reply()`**: Retrieve an assistant reply by a specific index in the assistant messages.
 - **`last_user_message()`**: Fetch the most recent user message from a message history.
 - **`get_user_message()`**: Retrieve a user message by a specific index in the user messages.
-- **`rate_limit_info()`**: Get a tibble of current rate limits of `claude()`, `groq()` or `chatgpt()`
+- **`rate_limit_info()`**: Get a tibble of current rate limits of `claude()`, `groq()`, `mistral()` or `chatgpt()`
 - **`ollama_list_models()`**: Get a tibble of available ollama-models
 - **`ollama_download_model()`**: Pull a new model from ollama's the online repo of models
 - **`ollama_embedding()`**: Generate embeddings for each message in each message history with ollama models
