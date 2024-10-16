@@ -101,7 +101,7 @@ c("A famous landmark in Paris is the Eiffel Tower.")
 ```
 
 
-### Working with Images
+### Sending Images to Models
 
 ```{r, echo=FALSE, out.width="70%"}
 knitr::include_graphics("picture.jpeg")
