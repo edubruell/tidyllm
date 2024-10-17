@@ -7,8 +7,7 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-## Getting Started with tidyllm
-
+# Introduction to tidyllm
 tidyllm is an R package designed to provide a unified interface for interacting with various large language model APIs. This vignette will guide you through the basic setup and usage of tidyllm.
 
 ## Installation
@@ -31,7 +30,7 @@ if (!requireNamespace("devtools", quietly = TRUE)) {
 devtools::install_github("edubruell/tidyllm")
 ```
 
-### Setting up API Keys
+### Setting up API Keys or ollama 
 
 Before using tidyllm, you need to set up API keys for the services you plan to use. Here's how to set them up for different providers:
 
@@ -44,8 +43,11 @@ Sys.setenv(ANTHROPIC_API_KEY = "YOUR-ANTHROPIC-API-KEY")
 ```{r, eval= FALSE, echo=TRUE}
 Sys.setenv(OPENAI_API_KEY = "YOUR-OPENAI-API-KEY")
 ```
-
-3. Groq:
+3. For Mistral you can set the API key on the [Mistral console page](https://console.mistral.ai/api-keys/) and set it by
+``` r
+Sys.setenv(MISTRAL_API_KEY = "MISTRAL-API-KEY-GOES-HERE")
+```
+4. Groq:
 ```{r, eval= FALSE, echo=TRUE}
 Sys.setenv(GROQ_API_KEY = "YOUR-GROQ-API-KEY")
 ```
@@ -57,8 +59,8 @@ line with with an API key in this file, for example:
 ANTHROPIC_API_KEY="YOUR-ANTHROPIC-API-KEY"
 ```
 
-If you do not want to use remote models you can also work with local large lange models via `ollama`. Install it from [the official project website](https://ollama.com/). Ollama sets up a local large language model server that you can use to run open-source models on your own devices. 
 
+If you want to work with local large lange models via `ollama` you need to install it from [the official project website](https://ollama.com/). Ollama sets up a local large language model server that you can use to run open-source models on your own devices. 
 
 ### Basic Usage
 
@@ -84,11 +86,6 @@ conversation <- llm_message("What is the capital of France?") |>
 conversation
 ```
 ```{r convo2,  eval=FALSE, echo=TRUE}
-# Get the last assistant reply as a charcter vector
-last_reply(conversation)
-
-```
-```{r convo2_out,  eval=FALSE, echo=FALSE}
 # Continue the conversation with ChatGPT
 conversation <- conversation |>
   llm_message("What's a famous landmark in this city?") |>
@@ -96,19 +93,19 @@ conversation <- conversation |>
 
 last_reply(conversation)
 ```
-```{r convo3,  eval=TRUE, echo=FALSE}
+```{r convo2_out,  eval=TRUE, echo=FALSE}
 c("A famous landmark in Paris is the Eiffel Tower.")
 ```
 
 
 ### Sending Images to Models
 
+tidyllm also supports sending images to multimodal models. Let's send this picture here:
 ```{r, echo=FALSE, out.width="70%"}
 knitr::include_graphics("picture.jpeg")
 ```
 
-tidyllm also supports sending images to multimodal models:
-
+Here we let ChatGPT guess where the picture was made:
 ```{r images,  eval=FALSE, echo=TRUE}
 # Describe an image using a llava model on ollama
 image_description <- llm_message("Describe this picture? Can you guess where it was made?",
@@ -124,7 +121,7 @@ c("The picture shows a beautiful landscape with a lake, mountains, and a town ne
 
 ### Adding PDFs to messages
 
-The `llm_message()` function also supports extracting text from PDFs and including it in the message. This allows you to easily provide context from a PDF document when interacting with the AI assistant.
+The `llm_message()` function also supports extracting text from PDFs and including it in the message. This allows you to easily provide context from a PDF document when interacting with an AI assistant.
 
 To use this feature, you need to have the `pdftools` package installed. If it is not already installed, you can install it with:
 
@@ -165,8 +162,11 @@ Extracted text from the PDF file...
 ```
 ### Sending R Outputs to Language Models
 
-You can include R code outputs in your prompts. In particular you can use `.caputre_plot` to send the last plot pane to a model. 
-The `.f`-argument runs a function and sends it output to a model. 
+You can automatically include R code outputs in your prompts. 
+`llm_message()` has an optional argument `.f` in which you can specify a (anonymous) function, which 
+will be run and which console output will be captured and appended to the message when you run it.
+
+In addition you can use `.caputre_plot` to send the last plot pane to a model. 
 
 ```{r routputs_base,  eval=TRUE, echo=TRUE}
 library(tidyverse)
@@ -197,7 +197,7 @@ llm_message("Analyze this plot and data summary:",
 
 ### Getting the last reply (as raw text or structured data)
 
-You can retrieve the last assistant reply from a message chain with `last_reply()`. Typically, it returns a character vector with the text of the assistant's reply. However, if API functions have requested replies in [JSON](https://de.wikipedia.org/wiki/JavaScript_Object_Notation) mode, it can directly validate and return them as structured output. The function handles these different response types automatically.
+You can retrieve the last assistant reply from a message history with `last_reply()`. Typically, it returns a character vector with the text of the assistant's reply. However, if API functions have requested replies in [JSON](https://de.wikipedia.org/wiki/JavaScript_Object_Notation) mode, it can directly validate and return them as structured output. The function handles these different response types automatically.
 
 If a JSON reply is detected, it returns a list with the following fields:
 
