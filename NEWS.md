@@ -24,6 +24,20 @@ Changes since the last CRAN Release 0.1.0
 
 - **Support for the Mistral API**: New `mistral()` function to use Mistral Models on Le Platforme on servers hosted in the EU. With rate-limiting and streaming-support.
 
+- **PDF Page Support in `llm_message()`:** 
+  The `llm_message()` function now supports specifying a range of pages in a PDF by passing a list with `filename`, `start_page`, and `end_page`. This allows users to extract and process specific pages of a PDF, as shown in the example below:
+
+  ```r
+  llm_message(
+    .prompt = "Please summarize pages 2 to 5 of the attached document.",
+    .pdf = list(
+      filename = "path/to/your/document.pdf",
+      start_page = 2,
+      end_page = 5
+    )
+  )
+
+
 ### Improvements
 
 ### Groq support for vision

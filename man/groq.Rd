@@ -22,7 +22,7 @@ groq(
 )
 }
 \arguments{
-\item{.llm}{An existing LLMMessage object or an initial text prompt.}
+\item{.llm}{An existing LLMMessage object.}
 
 \item{.model}{The model identifier (default: "llama-3.2-11b-vision-preview").}
 

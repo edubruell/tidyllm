@@ -330,16 +330,17 @@ LLMMessage <- R6::R6Class(
 #'
 #' This function allows the creation of a new LLMMessage object or the updating of an existing one.
 #' It can handle the addition of text prompts and various media types such as images, PDFs, text files, or plots.
+#' The function includes input validation to ensure that all provided parameters are in the correct format.
 #'
 #' @param .llm An existing LLMMessage object or an initial text prompt.
 #' @param .prompt Text prompt to add to the message history.
 #' @param .role The role of the message sender, typically "user" or "assistant".
 #' @param .system_prompt Default system prompt if a new LLMMessage needs to be created.
 #' @param .imagefile Path to an image file to be attached (optional).
-#' @param .pdf Path to a PDF file to be attached (optional).
+#' @param .pdf Path to a PDF file to be attached (optional). Can be a character vector of length one (file path), or a list with `filename`, `start_page`, and `end_page`.
 #' @param .textfile Path to a text file to be read and attached (optional).
 #' @param .capture_plot Boolean to indicate whether a plot should be captured and attached as an image (optional).
-#' @param .f An R function whose output should be captured and attached (optional).
+#' @param .f An R function or an object coercible to a function via `rlang::as_function`, whose output should be captured and attached (optional).
 #' @return Returns an updated or new LLMMessage object.
 #' @importFrom R6 R6Class
 #' @importFrom jsonlite toJSON
@@ -358,16 +359,25 @@ llm_message <- function(.llm = NULL,
   # Handle media attached to messages
   media_list = list()
   
-  # If .llm is provided, check if it is an LLMMessage object
-  if (!is.character(.llm) & !inherits(.llm, "LLMMessage")) {
-    stop("Input .llm must be an LLMMessage object or an initial text prompt.")
-  }
+  # Validate inputs using the existing validate_inputs function
+  validate_inputs(c(
+    ".llm must be NULL, a character vector, or an LLMMessage object" = is.null(.llm) || is.character(.llm) || inherits(.llm, "LLMMessage"),
+    ".prompt must be a non-empty string if provided" = is.null(.prompt) || (is.character(.prompt) && length(.prompt) == 1 && nchar(.prompt) > 0),
+    ".role must be a non-empty string" = is.character(.role) && length(.role) == 1 && nchar(.role) > 0,
+    ".system_prompt must be a string" = is.character(.system_prompt),
+    ".imagefile must be NULL or a valid file path" = is.null(.imagefile) || (is.character(.imagefile) && length(.imagefile) == 1 && file.exists(.imagefile)),
+    ".pdf must be NULL, a file path, or a list with filename, start_page, and end_page" = is.null(.pdf) ||
+      (is.character(.pdf) && length(.pdf) == 1 && file.exists(.pdf)) ||
+      (is.list(.pdf) && all(c("filename", "start_page", "end_page") %in% names(.pdf)) &&
+         is.character(.pdf$filename) && length(.pdf$filename) == 1 && file.exists(.pdf$filename) &&
+         is.numeric(.pdf$start_page) && is.numeric(.pdf$end_page) && .pdf$start_page >= 1 && .pdf$end_page >= .pdf$start_page),
+    ".textfile must be NULL or a valid file path" = is.null(.textfile) || (is.character(.textfile) && length(.textfile) == 1 && file.exists(.textfile)),
+    ".capture_plot must be logical" = is.logical(.capture_plot) && length(.capture_plot) == 1,
+    ".f must be NULL or coercible to a function via rlang::as_function" = is.null(.f) || (tryCatch({rlang::as_function(.f); TRUE}, error = function(e) FALSE))
+  ))
   
   # Early check whether an llm object existed before
-  pre_existing_object <- TRUE
-  if (inherits(.llm, "LLMMessage")) {
-    pre_existing_object <- TRUE
-  }
+  pre_existing_object <- inherits(.llm, "LLMMessage")
   
   # Handle images or captured plots
   if (!is.null(.imagefile) || .capture_plot) {
@@ -393,20 +403,41 @@ llm_message <- function(.llm = NULL,
     if (!requireNamespace("pdftools", quietly = TRUE)) {
       stop("The 'pdftools' package is required to read PDF files. Please install it.")
     }
-    pdf_text <- pdftools::pdf_text(.pdf) |> 
+    if (is.character(.pdf) && length(.pdf) == 1) {
+      # .pdf is a path to a PDF file
+      pdf_file <- .pdf
+      start_page <- 1
+      pdf_info <- pdftools::pdf_info(pdf_file)
+      total_pages <- pdf_info$pages
+      end_page <- total_pages
+    } else if (is.list(.pdf)) {
+      # .pdf is a list with filename, start_page, end_page
+      pdf_file <- .pdf$filename
+      start_page <- .pdf$start_page
+      end_page <- .pdf$end_page
+      if (start_page < 1) {
+        warning("start_page is less than 1. Setting start_page to 1.")
+        start_page <- 1
+      }
+      pdf_info <- pdftools::pdf_info(pdf_file)
+      total_pages <- pdf_info$pages
+      if (end_page > total_pages) {
+        warning("end_page is greater than total pages. Setting end_page to total pages.")
+        end_page <- total_pages
+      }
+    } else {
+      stop(".pdf must be either a file path (character vector of length 1) or a list with filename, start_page, and end_page.")
+    }
+    # Read the specified pages
+    pdf_text <- pdftools::pdf_text(pdf_file)[start_page:end_page] |> 
       stringr::str_c(collapse = "\n")
-    
-    media_list <- c(media_list, list(list(type = "PDF", content = pdf_text, filename = basename(.pdf))))
+    media_list <- c(media_list, list(list(type = "PDF", content = pdf_text, filename = basename(pdf_file))))
   }
   
   # Handle text files
   if (!is.null(.textfile)) {
-    if (!file.exists(.textfile)) {
-      stop("The specified text file does not exist.")
-    }
     text_content <- readLines(.textfile) |> 
       stringr::str_c(collapse = "\n")
-    
     media_list <- c(media_list, list(list(type = "TextFile", content = text_content, filename = basename(.textfile))))
   }
   
@@ -414,20 +445,13 @@ llm_message <- function(.llm = NULL,
   if (!is.null(.f)) {
     output <- utils::capture.output(rlang::as_function(.f)(), file = NULL) |> 
       stringr::str_c(collapse = "\n")
-    
     media_list <- c(media_list, list(list(type = "RConsole", content = output, filename = "RConsole.txt")))
   }
   
-  # If a character vector is supplied instead of an llm, we use it as an initial prompt
+  # If a character vector is supplied instead of an llm, use it as an initial prompt
   if (is.character(.llm)) {
     initial_prompt <- .llm
-    # Validate input prompt in case a prompt is used instead of a llm message object
-    if (length(.llm) == 0) {
-      stop("Prompt must be a non-empty string.")
-    }
-    
     .llm <- LLMMessage$new(.system_prompt)
-    
     if (is.null(.prompt)) {
       .llm$add_message(.role, initial_prompt, media_list)
       return(.llm)
@@ -439,25 +463,22 @@ llm_message <- function(.llm = NULL,
     .llm <- LLMMessage$new(.system_prompt)
   }
   
-  # Explicit prompts have precedent over ones supplied via .llm
-  if (!is.null(.prompt) & !pre_existing_object) {
-    if ((length(.prompt) == 0) | !is.character(.prompt)) {
-      stop("Prompt must be a non-empty string.")
-    }
+  # Explicit prompts have precedence over ones supplied via .llm
+  if (!is.null(.prompt) && !pre_existing_object) {
     .llm$add_message(.role, .prompt, media_list)
     return(.llm)
   }
   
   # Deep copy output so original object is never changed
-  if (!is.null(.prompt) & pre_existing_object) {
-    if ((length(.prompt) == 0) | !is.character(.prompt)) {
-      stop("Prompt must be a non-empty string.")
-    }
+  if (!is.null(.prompt) && pre_existing_object) {
     llm_copy <- .llm$clone_deep()
     llm_copy$add_message(.role, .prompt, media_list)
     return(llm_copy)
   }
 }
+
+
+
 
 
 #' Convert a Data Frame to an LLMMessage Object

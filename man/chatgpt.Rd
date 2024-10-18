@@ -24,7 +24,7 @@ chatgpt(
 )
 }
 \arguments{
-\item{.llm}{An existing LLMMessage object or an initial text prompt.}
+\item{.llm}{An  LLMMessage object.}
 
 \item{.model}{The model identifier (default: "gpt-4o").}
 

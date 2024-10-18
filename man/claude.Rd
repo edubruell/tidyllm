@@ -25,7 +25,7 @@ claude(
 )
 }
 \arguments{
-\item{.llm}{An existing LLMMessage object or an initial text prompt.}
+\item{.llm}{An LLMMessage object.}
 
 \item{.model}{The model identifier (default: "claude-3-5-sonnet-20240620").}
 
