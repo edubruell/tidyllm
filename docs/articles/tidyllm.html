@@ -37,6 +37,12 @@
       <ul class="navbar-nav me-auto">
 <li class="active nav-item"><a class="nav-link" href="../articles/tidyllm.html">Get started</a></li>
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
+<li><a class="dropdown-item" href="../articles/tidyllm_classifiers.html">Classifying texts with tidyllm</a></li>
+  </ul>
+</li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
@@ -393,6 +399,19 @@ functions for specific examples.</p>
 <span><span class="co">## --------------------------------------------------------------</span></span>
 <span><span class="co">## assistant: In large language models, temperature parameters control the randomness of generated text by scaling the output probabilities, with higher temperatures introducing more uncertainty and lower temperatures favoring more likely outcomes; specifically, setting temperature to 0 effectively eliminates all randomness, resulting in deterministic outputs because it sets the probability of each token to its maximum likelihood value.</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span></code></pre>
+</div>
+<div class="section level4">
+<h4 id="streamning-back-responses-experimental">Streamning back responses (Experimental)<a class="anchor" aria-label="anchor" href="#streamning-back-responses-experimental"></a>
+</h4>
+<p>At the moment <code><a href="../reference/ollama.html">ollama()</a></code>, <code><a href="../reference/chatgpt.html">chatgpt()</a></code>,
+<code><a href="../reference/mistral.html">mistral()</a></code> and <code><a href="../reference/claude.html">claude()</a></code> support real-time
+streaming of reply tokens to the console while the model works with the
+<code>.stream=TRUE</code> argument. While this feature offers slightly
+better feedback on model behavior in real-time, it’s not particularly
+useful for data-analysis workflows. We consider this feature
+experimental and recommend using non-streaming responses for production
+tasks. Note that error handling in streaming callbacks varies by API and
+differs in quality at this time.</p>
 </div>
 </div>
 </div>

@@ -72,7 +72,7 @@ perform_api_request <- function(.request,
 
 #' Call the Anthropic API to interact with Claude models
 #'
-#' @param .llm An existing LLMMessage object or an initial text prompt.
+#' @param .llm An LLMMessage object.
 #' @param .model The model identifier (default: "claude-3-5-sonnet-20240620").
 #' @param .max_tokens The maximum number of tokens to generate (default: 1024).
 #' @param .temperature Control for randomness in response generation (optional).
@@ -229,7 +229,7 @@ claude <- function(.llm,
 
 #' Call the OpenAI API to interact with ChatGPT or o-reasoning models
 #'
-#' @param .llm An existing LLMMessage object or an initial text prompt.
+#' @param .llm An  LLMMessage object. 
 #' @param .model The model identifier (default: "gpt-4o").
 #' @param .max_tokens The maximum number of tokens to generate (default: 1024).
 #' @param .temperature Control for randomness in response generation (optional).
@@ -392,7 +392,7 @@ chatgpt <- function(.llm,
 
 #' Call the Groq API to interact with fast opensource models on Groq
 #'
-#' @param .llm An existing LLMMessage object or an initial text prompt.
+#' @param .llm An existing LLMMessage object.
 #' @param .model The model identifier (default: "llama-3.2-11b-vision-preview").
 #' @param .max_tokens The maximum number of tokens to generate (default: 1024).
 #' @param .temperature Control for randomness in response generation (optional).
@@ -547,7 +547,7 @@ groq <- function(.llm,
 
 #' Send LLMMessage to ollama API
 #'
-#' @param .llm An existing LLMMessage object or an initial text prompt.
+#' @param .llm An existing LLMMessage object.
 #' @param .model The model identifier (default: "llama3").
 #' @param .stream  Should the answer be streamed to console as it comes (optional)
 #' @param .temperature Control for randomness in response generation (optional).
@@ -642,7 +642,7 @@ ollama <- function(.llm,
 
 #' Send LLMMessage to Mistral API
 #'
-#' @param .llm An existing LLMMessage object or an initial text prompt.
+#' @param .llm An LLMMessage object.
 #' @param .model The model identifier (default: "mistral-large-latest").
 #' @param .stream  Should the answer be streamed to console as it comes (optional)
 #' @param .temperature Control for randomness in response generation (optional).

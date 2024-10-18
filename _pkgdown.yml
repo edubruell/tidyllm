@@ -3,8 +3,8 @@ template:
   bootstrap: 5
   bootswatch: litera  
   assets:
-    css: ["extra.scss"]  
-
+    css: ["extra.scss"]
+    
 reference:
   - title: "LLM Message Handling"
     contents:
