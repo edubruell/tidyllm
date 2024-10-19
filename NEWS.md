@@ -27,7 +27,7 @@ Changes since the last CRAN Release 0.1.0
 - **PDF Page Support in `llm_message()`:** 
   The `llm_message()` function now supports specifying a range of pages in a PDF by passing a list with `filename`, `start_page`, and `end_page`. This allows users to extract and process specific pages of a PDF, as shown in the example below:
 
-  ```r
+```r
   llm_message(
     .prompt = "Please summarize pages 2 to 5 of the attached document.",
     .pdf = list(
@@ -36,7 +36,7 @@ Changes since the last CRAN Release 0.1.0
       end_page = 5
     )
   )
-
+```
 
 ### Improvements
 

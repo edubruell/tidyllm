@@ -322,7 +322,7 @@ We'll define a set of prompts and models that we want to test. This will allow u
   - **Prompt 3:** A shorter, more concise version to test whether the model performs similarly with less detailed instructions.
 2. **Models:**
   - **Llama3.2:3B:** A opensource large language model with just 3 billion parameters that is very fast, when you run it locally via `ollama()`
-  - **Gemma2:9B:** Another candidate model, which performs well for classification tasks, but is double the size of Lama3.2 and is therefore somewhat slower.
+  - **Gemma2:9B:** Another candidate model, which performs well for classification tasks, but is more than double the size of Lama3.2 and is therefore somewhat slower.
 
 We set up a grid combining all the prompts and models. The `expand_grid()` function from the tidyverse is a useful tool here to create every possible combination of prompts and models, which we will use to evaluate the classifier:
 
@@ -352,12 +352,12 @@ prompts <- tibble(prompt =
 
 grid <- expand_grid(train_data, 
                     prompts, 
-                    model = c("llama3.2", "gemma2")) %>%
+                    model = c("llama3.2", "gemma2")) |>
   arrange(model) %>% # Arrange by model so ollama does not reload them often
-  rename(occupation = occupation_open) %>%
+  rename(occupation = occupation_open) |>
   rowwise() %>%  # Glue together prompts and occupation row-by-row
-  mutate(prompt = glue(prompt)) %>%
-  ungroup() %>% # Ungroup after the rowwise operation
+  mutate(prompt = glue(prompt)) |>
+  ungroup() |> # Ungroup after the rowwise operation
   select(model,occupation,occ2,prompt_id,prompt)
 
 nrow(grid)
@@ -395,7 +395,7 @@ grid_results <- bind_rows(
 ```{r grfactors, eval=TRUE,echo=TRUE}
 library(yardstick)
 
-gr_factors <- grid_results %>%
+gr_factors <- grid_results |>
   mutate(across(starts_with("occ2_"),
                 ~factor(.x,
                         levels=c(occ_codes$occ2,97, 98,99),
@@ -405,8 +405,8 @@ gr_factors <- grid_results %>%
 
 First we just just calculate and plot the model accuracy:
 ```{r accuracy, fig.width=16, fig.height=9}
-accuracy <- gr_factors  %>%
-  group_by(prompt_id, model) %>%
+accuracy <- gr_factors  |>
+  group_by(prompt_id, model) |>
   accuracy(truth = occ2_truth, estimate = occ2_predict)
 
 accuracy %>%
@@ -419,13 +419,13 @@ accuracy %>%
 ```
 
 Here are the main insights of our classification experiment: 
-- **Gemma2** consistently outperforms **llama3.2**, but even **gemma2's** top performance on *Prompt 1 (73.8%)* falls far short of Claude Sonnet's **98% accuracy** in the initial run.
-- The simplified prompt clearly introduces challenges, especially for the smaller models like **llama3.2**, which shows particularly poor performance (as low as 18.8% on Prompt 3). This suggests that these models might not generalize well to slightly varied or less explicit prompts, whereas Claude is able to handle the variations with far greater ease.
+- **Gemma2** consistently outperforms **llama3.2**, but even **gemma2's** top performance on *Prompt 1 (79.1)* falls far short of Claude Sonnet's **98% accuracy** in the initial run.
+- The simplified prompt clearly introduces challenges, especially for the smaller models like **llama3.2**, which shows particularly poor performance (as low as 20.2% on Prompt 3). This suggests that these models might not generalize well to slightly varied or less explicit prompts, whereas Claude is able to handle the variations with far greater ease.
 
 Let's look at the confusion matrix for the top **gemma2** performance to see whether any specific occupation category causes problems here:
 ```{r confmatrix, fig.width=16, fig.height=12}
-conf_mat <- gr_factors %>%
-  filter(prompt_id == 1, model == "gemma2") %>%
+conf_mat <- gr_factors |>
+  filter(prompt_id == 1, model == "gemma2") |>
   conf_mat(truth = occ2_truth, estimate = occ2_predict)
 
 # Autoplot the confusion matrix
@@ -440,9 +440,9 @@ A lot of the miss-classifications are in management occupations and office servi
 Another thing worth trying are cheap, simple and fast chatgpt-4o mini models.
 Let's try it on the initial prompt
 ```{r chatgptgrid, eval=FALSE,echo=TRUE}
-chatgpt_grid <- grid %>%
-  filter(model=="gemma2", prompt_id ==1) %>%
-  mutate(model="gpt-4o-mini") %>%
+chatgpt_grid <- grid |>
+  filter(model=="gemma2", prompt_id ==1) |>
+  mutate(model="gpt-4o-mini") |>
   pmap_dfr(classify_occupation_grid,
            api_function = chatgpt) 
 
@@ -451,7 +451,7 @@ chatgpt_grid %>%
                 ~factor(.x,
                         levels=c(occ_codes$occ2,97, 98,99),
                         labels=c(occ_codes$occ_title,"APIFAIL","INVALID","MISSING")
-                )))  %>%
+                )))  |>
   accuracy(truth = occ2_truth, estimate = occ2_predict)
 ```
 ```{r chatgptgrid_hidden, eval=TRUE,echo=FALSE}
@@ -462,10 +462,133 @@ chatgpt_grid %>%
                 ~factor(.x,
                         levels=c(occ_codes$occ2,97, 98,99),
                         labels=c(occ_codes$occ_title,"APIFAIL","INVALID","MISSING")
+                )))  |>
+  accuracy(truth = occ2_truth, estimate = occ2_predict)
+```
+Still worse accuracy than Claude Sonnet and not much better than **gemma2**. But there is another trick that goes beyond simple one-shot classification. A common idea is to use multi-shot classifications (and give the model classification examples in the prompt, or even guide its output by letting it complete conversations where it answers the right way). The function `df_llm_message()` let's you easily built such message histories where you put some words into the mouth of the model. But there are other ways that can help you increase accuracy. A popular one is to first let the model reason in detail what the best candidates for classification would be to build a chain of thought before it gives the final answer. 
+
+### Multistep Chain-of-Thought Prompting
+For this we need a major change in the classification function, because we send two messages to the model. A first one elicits a reasoning step, the second one asks for the final code, based on the answer to the first message. This is easily doable with the message-chaining abilities of **tidyllm**
+
+Here is a modified chain of thought prompting function with a reasoning and an output step:
+
+```{r cot, eval=FALSE, echo=TRUE}
+classify_occupation_cot <- function(occupation,
+                                    occ2,
+                                    api_function,
+                                    model,
+                                    stream = FALSE){
+  # Output what the model is currently doing to the console
+  glue("Classifying with CoT: {model} - {occupation}\n") |> cat("\n")
+  
+  # Step 1: Ask the model to think through the problem
+  prompt_reasoning <- glue('
+    Think about which of the following occupation codes would best describe this occupation description from a survey respondent: "{occupation}"
+    
+    {numerical_code_list}
+    
+    Explain your reasoning for the 3 top candidate codes step by step. Then evaluate which seems best.
+  ')
+  
+  reasoning_response <- tryCatch({
+    conversation <<- llm_message(prompt_reasoning) |>
+      api_function(.model = model, .temperature = 0, .stream=stream) 
+    
+    conversation |>
+      last_reply()
+  }, error = function(e){
+    conversation <<- llm_message("Please classify this occupation response: {occupation}")
+    "Error in reasoning step."
+  })
+  
+  # Step 2: Ask the model to provide the final answer
+  prompt_final <- glue('
+    Based on your reasoning, which code do you pick? Answer only with a numerical code!
+
+  ')
+  
+  final_response <- tryCatch({
+    conversation |>
+    llm_message(prompt_final) |>
+      api_function(.model = model, .temperature = 0, .stream=stream) |>
+      last_reply() |>
+      str_squish()
+  }, error = function(e){
+    "97"
+  })
+  
+  # Validate the model's final response
+  valid_codes <- as.character(occ_codes$occ2)
+  
+  classification <- if (final_response %in% valid_codes) {
+    as.integer(final_response)
+  } else {
+    98L  # Return 98 for invalid responses
+  }
+  
+  # Return a tibble containing the original occupation description and classification result
+  tibble(
+    occupation_open = occupation,
+    occ2_predict    = classification,
+    occ2_truth      = occ2,
+    model           = glue("{model}_cot"),
+    reasoning       = reasoning_response,
+    final_response  = final_response
+  )
+}
+```
+Note that this increases the compute time for **gemma2** massively because it now produces a multiple of the output from before. Each run produces roughly a page of reasoning, before the second question generates a number, while our original prompting strategy just gave us one number. So run-times increase strongly.
+
+> **Note:** To test more complicated prompting strategies like this in realtime, another feature of **tidyllm** comes in handy. You can stream back responses  just like in online chatbot interfaces during a first test run with the `.stream`-argument in most api functions to immediately see whether you made strange errors in your prompting. Therefore, here we pass the stream arguement trough `classify_occupation_cot()` to first test the function and the prompting on single inputs before we scale it up to the whole data.
+
+Let's run this function  with **gemma2**:
+
+```{r, eval=FALSE, echo=TRUE}
+results_cot <- grid |>
+  filter(model=="gemma2", prompt_id ==1) |>
+  select(-prompt,-prompt_id) |>
+  pmap_dfr(classify_occupation_cot,api_function = ollama, stream=FALSE)
+```
+```{r, eval=TRUE, echo=FALSE}
+classifications <- c(
+  "gemma2 - 1 - Computer network technician", 
+  "gemma2 - 2 - Educational support", 
+  "gemma2 - 3 - Fine Carpentry", 
+  "..."
+)
+
+cat(glue::glue("Classifying with CoT: {classifications}"), sep = "\n")
+```
+
+Did this work. It turns out in this case it did not!
+```{r cot_hidden, eval=TRUE,echo=FALSE}
+results_cot <- read_rds("gemma_cot_results.rds")
+```
+```{r cot_acc, eval=TRUE,echo=TRUE}
+results_cot %>%
+  mutate(across(starts_with("occ2_"),
+                ~factor(.x,
+                        levels=c(occ_codes$occ2,97, 98,99),
+                        labels=c(occ_codes$occ_title,"APIFAIL","INVALID","MISSING")
                 )))  %>%
   accuracy(truth = occ2_truth, estimate = occ2_predict)
 ```
-Still worse accuracy than Claude Sonnet and not much better than **gemma2**. So it looks like the easiest solution for our task is to spend roughly 2,50$ for the Anthropic API and use Claude Sonnet. We already know test performance for this model on the original split, since we manually checked it. So the final step is to use this model on all data.
+The accuracy is even worse than without the reasoning step! One interesting thing though is that the model has the right classification in one of its candidates in the reasoning step for 94% of the cases. So probably, there is still some way to get a better final result out of **gemma2**:
+
+```{r cot_acc2, eval=TRUE,echo=TRUE}
+results_cot %>%
+  rowwise() %>%
+  mutate(reasoning_classifications = str_extract_all(reasoning,"\\d{2}"),
+         reasoning_classifications = list(map_int(reasoning_classifications, as.integer)),
+         right_in_reasoning = occ2_truth %in% reasoning_classifications
+         ) %>%
+  ungroup() %>%
+  count(right_in_reasoning) %>%
+  mutate(pct=n/sum(n))
+```
+
+
+Yet it likely is not worth to invest more time into trying to get good results out of a local model for this use-case. Thus, it looks like we still have a clear favorite final choice without even needing to do further testing. We already know test performance for Claude Sonnet 3.5  on the original split, since we manually checked it. Paying the roughly 2,50$ for the Anthropic API and use Claude Sonnet to classify the whole sample at 98% accuracy is probably worth it in this case. So the final step is to use the initial `classify_occupation()` based on `claude()`  on all data.
 
 ## Scaling Up to the Full Dataset
 

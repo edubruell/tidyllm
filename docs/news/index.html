@@ -62,7 +62,17 @@
 </ul></li>
 <li><p><strong>PDF Page Batch Processing</strong>: Introduced the <code><a href="../reference/pdf_page_batch.html">pdf_page_batch()</a></code> function, which processes PDF files page by page, extracting text and converting each page into an image and allows for a general prompt or page specific prompts. The function generates a list of <code>LLMMessage</code> objects that can each be sent to an API</p></li>
 <li><p><strong>Support for the Mistral API</strong>: New <code><a href="../reference/mistral.html">mistral()</a></code> function to use Mistral Models on Le Platforme on servers hosted in the EU. With rate-limiting and streaming-support.</p></li>
-</ul></div>
+<li><p><strong>PDF Page Support in <code><a href="../reference/llm_message.html">llm_message()</a></code>:</strong> The <code><a href="../reference/llm_message.html">llm_message()</a></code> function now supports specifying a range of pages in a PDF by passing a list with <code>filename</code>, <code>start_page</code>, and <code>end_page</code>. This allows users to extract and process specific pages of a PDF, as shown in the example below:</p></li>
+</ul><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span>  <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span></span>
+<span>    .prompt <span class="op">=</span> <span class="st">"Please summarize pages 2 to 5 of the attached document."</span>,</span>
+<span>    .pdf <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>      filename <span class="op">=</span> <span class="st">"path/to/your/document.pdf"</span>,</span>
+<span>      start_page <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>      end_page <span class="op">=</span> <span class="fl">5</span></span>
+<span>    <span class="op">)</span></span>
+<span>  <span class="op">)</span></span></code></pre></div>
+</div>
 <div class="section level3">
 <h3 id="improvements-0-1-7">Improvements<a class="anchor" aria-label="anchor" href="#improvements-0-1-7"></a></h3>
 </div>

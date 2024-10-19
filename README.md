@@ -60,7 +60,9 @@ For detailed instructions and advanced features, see:
 - [Get Started with tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm.html)
 - [Changelog](https://edubruell.github.io/tidyllm/news/)
 - [Documentation](https://edubruell.github.io/tidyllm/)
-
+- Use-case oriented articles: 
+  - [Classifying texts with tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_classifiers.html)
+  
 ## Contributing
 
 We welcome contributions! Feel free to open issues or submit pull requests on [GitHub](https://github.com/edubruell/tidyllm).

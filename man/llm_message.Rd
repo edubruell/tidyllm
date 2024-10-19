@@ -27,13 +27,13 @@ llm_message(
 
 \item{.imagefile}{Path to an image file to be attached (optional).}
 
-\item{.pdf}{Path to a PDF file to be attached (optional).}
+\item{.pdf}{Path to a PDF file to be attached (optional). Can be a character vector of length one (file path), or a list with \code{filename}, \code{start_page}, and \code{end_page}.}
 
 \item{.textfile}{Path to a text file to be read and attached (optional).}
 
 \item{.capture_plot}{Boolean to indicate whether a plot should be captured and attached as an image (optional).}
 
-\item{.f}{An R function whose output should be captured and attached (optional).}
+\item{.f}{An R function or an object coercible to a function via \code{rlang::as_function}, whose output should be captured and attached (optional).}
 }
 \value{
 Returns an updated or new LLMMessage object.
@@ -41,4 +41,5 @@ Returns an updated or new LLMMessage object.
 \description{
 This function allows the creation of a new LLMMessage object or the updating of an existing one.
 It can handle the addition of text prompts and various media types such as images, PDFs, text files, or plots.
+The function includes input validation to ensure that all provided parameters are in the correct format.
 }
