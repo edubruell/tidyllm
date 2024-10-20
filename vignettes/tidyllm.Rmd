@@ -34,12 +34,12 @@ devtools::install_github("edubruell/tidyllm")
 
 Before using tidyllm, you need to set up API keys for the services you plan to use. Here's how to set them up for different providers:
 
-1. Anthropic (Claude):
+1. For Claude models you can get an API key in the [Anthropic Console](https://console.anthropic.com/settings/keys):
 ```{r, eval= FALSE, echo=TRUE}
 Sys.setenv(ANTHROPIC_API_KEY = "YOUR-ANTHROPIC-API-KEY")
 ```
 
-2. OpenAI (ChatGPT):
+2. For ChatGPT you can obtain an API key by signing up at [OpenAI](https://platform.openai.com/account/api-keys) and set it with:
 ```{r, eval= FALSE, echo=TRUE}
 Sys.setenv(OPENAI_API_KEY = "YOUR-OPENAI-API-KEY")
 ```
@@ -47,7 +47,7 @@ Sys.setenv(OPENAI_API_KEY = "YOUR-OPENAI-API-KEY")
 ``` r
 Sys.setenv(MISTRAL_API_KEY = "MISTRAL-API-KEY-GOES-HERE")
 ```
-4. Groq:
+4. For groq (not be confused with [grok](https://x.ai/)) you can setup you API keys in the [Groq Console](https://console.groq.com/playground):
 ```{r, eval= FALSE, echo=TRUE}
 Sys.setenv(GROQ_API_KEY = "YOUR-GROQ-API-KEY")
 ```
@@ -276,3 +276,19 @@ Different API functions support different model parameters like  how determinist
 ### Streamning back responses (Experimental)
 
 At the moment `ollama()`, `chatgpt()`, `mistral()` and `claude()` support real-time streaming of reply tokens to the console while the model works with the `.stream=TRUE` argument.  While this feature offers slightly better feedback on model behavior in real-time, it’s not particularly useful for data-analysis workflows. We consider this feature experimental and recommend using non-streaming responses for production tasks. Note that error handling in streaming callbacks varies by API and differs in quality at this time.
+
+### Choosing the Right Model and API
+
+tidyllm supports multiple APIs, each offering distinct large language models with varying strengths. The choice of which model or API to use often depends on the specific task, cost considerations, and data privacy concerns.
+
+1. **Claude (Anthropic API):** Claude is known for generating thoughtful, nuanced responses, making it ideal for tasks that require more human-like reasoning, such as summarization or creative writing. However, it can sometimes be more verbose than necessary, and it lacks direct JSON support, which requires additional prompting and validation to ensure structured output.
+
+2. **ChatGPT (OpenAI API):** ChatGPT, particularly the GPT-4o models, is extremely versatile and performs well across a wide range of tasks, including text generation, code completion, and multimodal analysis. While it is good for most cases, it tends to be more expensive than other alternatives, especially for large-scale usage.
+
+3. **Mistral (EU-based):** Mistral is a lighter-weight, open-source model hosted in the EU, making it particularly appealing if data protection (e.g., GDPR compliance) is a concern. While it may not be as powerful as GPT-4 or Claude, it offers good performance for standard text generation tasks.
+
+4. **Groq (US-based):** Groq offers a unique advantage with its API accelerators, delivering high performance at low costs, especially for tasks that require fast execution. It hosts many strong open-source models, like **lamma3:70b**, but since it's hosted in the US, data protection concerns (e.g., GDPR) might need to be considered for EU users.
+
+5. **ollama (Local Models):** If data privacy is a priority, running open-source models like **gemma2::9B** locally via `ollama()` gives you full control over model execution and data. However, the trade-off is that local models require significant computational resources, and are often not quite as powerful as the large API-providers. The [ollama blog](https://ollama.com/blog) regularly has posts about new models and their advantages that you can download via `ollama_download_model()`.
+
+

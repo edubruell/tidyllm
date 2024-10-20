@@ -1,0 +1,209 @@
+---
+title: "Structured Question Answering from PDFs"
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+Navigating through a large collection of academic papers can be time-consuming, especially when you're trying to extract specific insights or determine the relevance of each document to your research. With **tidyllm**, you can streamline this process by automating the extraction of structured answers directly from PDF documents using large language models.
+
+Imagine you have a folder of papers on the economic effects of generative AI, and you need to assess how each paper is related to your own research interests. This article will guide you through setting up a workflow that processes the first few pages of each paper, asks an AI model targeted questions, and returns the answers in a structured JSON format — perfect for converting into a table for easy review and analysis.
+
+## What is JSON and JSON Mode?
+
+**JSON** ([JavaScript Object Notation](https://de.wikipedia.org/wiki/JavaScript_Object_Notation)) is a lightweight, text-based format for representing structured data. It’s commonly used for transmitting data between a server and web application or between different parts of a system. A JSON object consists of key-value pairs, making it ideal for capturing structured data like the title of a paper, its authors, or answers to specific research questions.
+
+In **tidyllm**, we can use the ability of many large language models to write their answers in JSON  to ensure that the AI model returns answers in a structured format directly into R. This is particularly useful for automating processes, such as extracting information from multiple documents, and allows for easy conversion into tables or further data manipulation.
+
+## Context length
+
+When working with long documents such as research papers, reports, or even entire books, one challenge that arises is how much of the document the model can handle at once. Large language models have a limitation known as **context** length, which refers to the maximum amount of text they can process in a single query. This is important because if a document exceeds this limit, the model won’t be able to process the entire content at once—leading to missing sections or incomplete answers.
+
+In most models, the context length is measured in tokens (the basic units of text).  For example, the maximum context length of many smaller models is 8192 tokens which typically covers about 30-35 pages of text. This means that for longer documents, like an academic paper that exceeds this length, only the first portion of the document will be seen by the model, potentially omitting key sections like the bibliography or appendices, where important citations or results may reside.
+
+To mitigate this, a common approach is to limit the number of pages sent to the model for processing. For example, in this workflow, we restrict the input to the first 35 pages, which typically includes the abstract, introduction, methodology, results, and discussion—sections that are most relevant for summarizing the paper. While this approach ensures the model can process the core content of most academic papers, it does mean that information  typically found later in the document could be missed.
+
+Alternatively, for very large documents, you could split them into smaller chunks and process each chunk separately. This way, you can cover the entire content without exceeding the model's context window. However, keep in mind that doing so might disrupt the flow of the text and make it harder for the model to retain overall context across chunks.
+
+## Example Workflow
+
+Imagine your folder looks something like this—many downloaded papers, but no structure yet:
+
+```{r setup, message=FALSE}
+library(tidyverse)
+library(tidyllm)
+dir("aipapers")
+```
+
+We can write a simple function that processes a document and passes it to the model. For demonstration purposes, I only send the first 35 pages of the pdf to the model, even though gpt-4o can handle 128,000 tokens. This feature is primarily needed, when you have large reports or whole books that are larger than a typical models context window. Usually for papers 35 pages should provide the model with enough information to reasonably answer some main summarisation queries. If you want to upload the complete files though, as possible with larger models, you just need to specify a file name in the `.pdf` argument as a string variable.
+
+```{r pdf_function}
+pdf_summary <- function(file, document_prompt){
+  summary <- llm_message(document_prompt, 
+              .pdf = list(
+                filename = file,
+                start_page = 1,
+                end_page = 35) 
+              ) |>
+    chatgpt(.json=TRUE,.stream=TRUE) |>
+    last_reply()
+  
+  summary
+}
+```
+In this example, we use `chatgpt()` with the default `gpt-4o` model to answer our questions. For a 35-page paper, the API cost is approximately $0.08, making it affordable to process multiple papers with different queries. See details about [pricing](https://openai.com/api/pricing/) here. While you could also try open-source local models, paid remote models like `gpt-4o` typically handle longer documents much more effectively. Smaller local models, such as `gemma2:9B` in `ollama()`, often struggle with such extensive content even though their context window is large. To use them, you might need to reduce the number of processed pages or simplify your queries. Alternatively, larger local models like `llama3::70B` could work, but they require significant hardware resources to run effectively.
+
+> ⚠️ **Note:** When using paid remote models, it's important to consider data privacy and security, especially if you're processing sensitive documents, as uploading data to external servers may introduce risks — local models provide more control in such cases. 
+
+By enabling `.json = TRUE`, we instruct the model to return its response in JSON format. To effectively extract key information from multiple academic papers, we also need a consistent way to prompt the large language model. The prompt we use specifies the details we want from each document, such as the title, authors, type of paper, and answers to some specific questions. Here our example questions cover the empirical methods, theoretical framework, main point, and the paper’s key contribution. You can of course ask more specific questions and can extract information that is even more relevant for your use case. But this is a nice start.  We also give the model the exact schema we need for our answers in order to make it easier to work with the results in R.
+
+Here is the example output for a lengthy prompt for one paper:
+```{r prompting, eval=FALSE}
+files <- paste0("aipapers/",dir("aipapers"))
+
+example_output <- pdf_summary(files[8],document_prompt = '
+Please analyze this document and provide the following details:
+    1. Title: The full title of the paper.
+    2. Authors: List of all authors.
+    3. Suggested new filename: A filename for the document in the format "ReleaseYear_Author_etal_ShortTitle.pdf"
+    4. Type: Is this a (brief) policy report or a research paper? Answer with either "Policy" or "Research"
+    5. Answer these four  questions based on the document. Each answer should be roughly one 100 words long:
+        Q1. What empirical methods are used in this work?
+        Q2. What theoretical framework is applied or discussed?
+        Q3. What is the main point or argument presented?
+        Q4. What is the key contribution of this work?
+    6. Key citations: List the four most important references that the document uses in describing its own contribution.
+    
+Please  answers only with a json output in the following format:
+
+{
+  "title": "",
+  "authors": [],
+  "suggested_new_filename": "",
+  "type": "",
+  "questions": {
+    "empirical_methods": "",
+    "theory": "",
+    "main_point": "",
+    "contribution": ""
+  },
+  "key_citations": []
+}
+')
+
+example_output
+```
+```{r prompt_hidden, echo=FALSE, eval=TRUE}
+files <- paste0("aipapers/",dir("aipapers"))
+example_output <- read_rds("answer_demming.rds")
+example_output
+```
+The output of the function seems quite daunting. But it is very close to our prompt, where we specified a schema. It is structured into three key components: `parsed_content`, `raw_response`, and `is_parsed`.  This structure ensures that you always have access to the model's reply in both in its raw form and as structured R list:
+
+  - `raw_response`: Even if the response is successfully parsed, it’s useful to keep the original raw output from the model. This field stores the unprocessed response as returned by the LLM, which can be valuable for debugging or comparison purposes. Most models explicitly check whether they return valid JSON. However, APIs without explicit JSON support like Anthropic,often add sentences like  *"Based on the document, here is the requested information in JSON format:"* before the actual json. In these cases it can not be parsed but is easy to fix with the `raw_response`, `stringr` and `jsonlite::fromJSON()`.  However, printing out our raw response in our example gives  us a JSON in the structure we asked for:
+  
+```{r raw_resp}
+example_output$raw_response |> cat()
+```
+
+  - `parsed_content`: This field contains the structured response after it has been successfully parsed to a list in R. It allows you to directly access the specific elements of the reply, such as the title, authors, and answers to your questions, making it easy to integrate these results into further analysis or to save them to a human readable document. For example you can directly get the suggested file name from the response:
+  
+```{r}
+example_output$parsed_content$suggested_new_filename
+```
+  
+ - `is_parsed`: This is a logical flag indicating whether the parsing was successful. If `TRUE`, it means that the `parsed_content` is available and the output conforms to the expected JSON structure. If `FALSE`, no parsed_content is returned, and you can rely on the `raw_response` for inspection or further manual handling.
+ 
+We can now run our function to generate this kind of response for all papers in our folder:
+```{r map_it, eval=FALSE}
+pdf_responses <- map(files,pdf_summary)
+```
+```{r map_it_back, eval=TRUE, echo=FALSE}
+pdf_responses <- read_rds("complete_run.rds")
+```
+Let's look which files were successfully parsed: 
+```{r parsing overview}
+pdf_responses |>
+  map_lgl("is_parsed") 
+```
+Luckily, all of them did parse successfully. Now we can proceed with getting the structured output from each response and saving it into an easily readable format. For example we could have the name, all author names,the  paper type and the answers to our questions  together in a row of a  tibble for each model output:
+```{r summaries}
+table1 <- pdf_responses |>
+  map("parsed_content") |>
+  map_dfr(~{
+    #Collapse authors into a single string
+    base_info <- tibble(
+      authors = str_c(.x$authors, collapse = "; "),
+      title   = .x$title,
+      type    = .x$type
+    ) 
+    
+    answers <- tibble(
+     main_point   = .x$questions$main_point,
+     contribution =.x$questions$contribution,
+     theory       = .x$questions$theory,
+     methods      = .x$questions$empirical_methods
+    )
+    bind_cols(base_info,answers)
+  })
+
+table1 
+```
+We can then save these summaries to an excel table that we can format manually for better readability:
+```{r to_excel, eval=FALSE}
+table1 |> writexl::write_xlsx("papers_summaries.xlsx")
+```
+Similarly we can extract the key references and add them to a separate Excel file. A next step to work with our output, is to go through parsed content and always pick out the `key_citations` with map. But here in our example, we encouter an error if we do that:
+```{r schema_error, eval=TRUE, error=TRUE}
+pdf_responses |>
+  map("parsed_content") |>
+  map("key_citations") |>
+  map_dfr(~as_tibble)
+```
+Looking into the cause you see a common problem with some JSON-based workflows. You can see this problem in the raw responses of the second paper that was parsed:
+```{r schame_error2, echo=FALSE}
+out_ex <- pdf_responses[[2]]$parsed_content 
+out_ex$questions$empirical_methods =".. abbreviated .."
+out_ex$questions$contribution =".. abbreviated .."
+out_ex$questions$theory =".. abbreviated .."
+out_ex$questions$main_point =".. abbreviated .."
+out_ex |> jsonlite::toJSON(pretty = TRUE) |>
+  cat()
+```
+`key_citations` was put under questions instead of as a separate field. The model did not completely adhere to what we asked it to produce.
+A quick fix for this problem is to check where `key_citations` was put and to:
+```{r schema_error3}
+pdf_responses |>
+  map("parsed_content") |>
+  map_dfr(~{
+    # Check if key_citations is nested under questions or at the top level
+    citations <- if (!is.null(.x$key_citations)) {
+      as_tibble(.x$key_citations)
+    } else if (!is.null(.x$questions$key_citations)) {
+      as_tibble(.x$questions$key_citations)
+    }
+    citations
+  })
+```
+A better solution is to check at the start whether the model adheres to the schema we requested. Many newer APIs, such as the most recent [OpenAI API](https://platform.openai.com/docs/guides/structured-outputs), now offer the ability to pre-specify a valid output schema. This means you can enforce strict formatting rules before the model generates a response, reducing the need for post-processing corrections. This functionality will be supported in future versions of **tidyllm**, allowing for smoother integration of structured outputs. 
+
+Another potential fix is to modify the prompt to ensure the model outputs in a non-nested *JSON* format, which often simplifies prompt adherence and downstream handling. In workflows like this, it’s common to need several iterations to refine the structure of the output, especially when working with complex queries. For example, in this case, defining how citations should be formatted might also improve consistency, since the `key_citation` field varies between responses. Additionally, it may be beneficial to run a separate pass just for citations, perhaps asking the model to output BibTeX keys for the four most important references together with a reason why each citation is important in the note-field of the bibtex.
+
+But for now, we have the processing steps we wanted for answers and citations and can proceed to the file names we got to structure our folder:
+```{r filenames, eval=FALSE}
+tibble(old_name  = files,
+       new_name  = pdf_responses |>
+         map("parsed_content") |>
+         map_chr("suggested_new_filename") 
+       ) |>
+  mutate(
+    success = file.rename(old_name, file.path("aipapers", new_name))
+  )
+```
+
+## Outlook
+
+This structured question-answering workflow not only streamlines the extraction of key insights from academic papers, but can also be adapted for other document-heavy tasks. Whether you’re working with reports, policy documents, or news articles this approach can quickly help you summarize and categorize information for further analysis. Additionally, by refining prompts and leveraging schema validation, you can expand the use of this workflow to handle various types of structured data, such as extracting key insights from legal documents, patents, or even pictures of historical documents— anywhere you need structured information from unstructured text.

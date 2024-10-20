@@ -25,6 +25,7 @@ pdf_page_batch <- function(.pdf,
   
   # Validate the inputs using validate_inputs
   validate_inputs(c(
+    "The 'pdftools' package is required to read PDF files. Please install it." = requireNamespace("pdftools", quietly = TRUE),
     "The .pdf file must exist" = file.exists(.pdf),
     "The .general_prompt must be a non-empty string" = is.character(.general_prompt) && nchar(.general_prompt) > 0,
     "The .system_prompt must be a non-empty string" = is.character(.system_prompt) && nchar(.system_prompt) > 0,

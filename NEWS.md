@@ -1,4 +1,4 @@
-## Changelog for Development Version  0.1.7
+## Changelog for Development Version  0.1.8
 
 Changes since the last CRAN Release 0.1.0
 
@@ -8,17 +8,22 @@ Changes since the last CRAN Release 0.1.0
 - **Groq Models**: System prompts are no longer sent for Groq  models, since many models on groq do not support them and all multimodal models on groq do not allow for them.
 
 ### New Features
+- **Embedding Models Support:** Embedding model support for three APIs:
+  -  Embedding functions process message histories and combines  text from message content and media attachements for embedding models
+  - `ollama_embedding()` to generate embeddings using the Ollama API. 
+  - `openai_embedding()` to generate embeddings using the OpenAI API. 
+  - `mistral_embedding()` to generate embeddings using the Mistral API. 
 
 - **Message Retrieval Functions**: Added functions to retrieve single messages from conversations:
-  - `last_user_message()`, `get_reply(index)`, `get_user_message(index)`
+  - `last_user_message()` pulls the last message the user sent
+  - `get_reply()` gets the assistant reply at a given index of assistant messages 
+  - `get_user_message()` gets the user message  at a given index of user messages 
 
 - **Updated `last_reply()`**: Now a wrapper around `get_reply()` for more consistent behavior.
 
 - **New Ollama functions**:
 
   + **Model Download:** Introduced the `ollama_download_model()` function to download models from the Ollama API. It supports a streaming mode that provides live progress bar updates on the download progress.
-  
-  + **Embedding Generation:** Added `ollama_embedding()` to generate embeddings using the Ollama API. It processes message histories and combines  text from message content and media attachements for embeddings.
 
 - **PDF Page Batch Processing**: Introduced the `pdf_page_batch()` function, which processes PDF files page by page, extracting text and converting each page into an image and allows for a general prompt or page specific prompts. The function generates a list of `LLMMessage` objects that can each be sent to an API 
 

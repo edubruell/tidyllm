@@ -15,18 +15,23 @@ reference:
       - get_reply
       - get_user_message
 
-  - title: "Core API Functions"
+  - title: "Core Chat-API Functions"
     contents:
       - chatgpt
       - claude
       - groq
       - mistral
       - ollama
+      
+  - title: "Embedding API Functions"
+    contents:
+    - ollama_embedding
+    - openai_embedding
+    - mistral_embedding
 
   - title: "Ollama Functions"
     contents:
       - ollama_download_model
-      - ollama_embedding
       - ollama_list_models
 
   - title: "Internals and Utility Functions"

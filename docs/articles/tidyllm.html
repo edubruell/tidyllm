@@ -26,7 +26,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.8</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -41,6 +41,7 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/tidyllm_classifiers.html">Classifying texts with tidyllm</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm-pdfquestions.html">Structured Question Answering from PDFs</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -99,12 +100,14 @@ devtools:</p>
 <p>Before using tidyllm, you need to set up API keys for the services
 you plan to use. Here’s how to set them up for different providers:</p>
 <ol style="list-style-type: decimal">
-<li>Anthropic (Claude):</li>
+<li>For Claude models you can get an API key in the <a href="https://console.anthropic.com/settings/keys" class="external-link">Anthropic
+Console</a>:</li>
 </ol>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Sys.setenv.html" class="external-link">Sys.setenv</a></span><span class="op">(</span>ANTHROPIC_API_KEY <span class="op">=</span> <span class="st">"YOUR-ANTHROPIC-API-KEY"</span><span class="op">)</span></span></code></pre></div>
 <ol start="2" style="list-style-type: decimal">
-<li>OpenAI (ChatGPT):</li>
+<li>For ChatGPT you can obtain an API key by signing up at <a href="https://platform.openai.com/account/api-keys" class="external-link">OpenAI</a> and set
+it with:</li>
 </ol>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Sys.setenv.html" class="external-link">Sys.setenv</a></span><span class="op">(</span>OPENAI_API_KEY <span class="op">=</span> <span class="st">"YOUR-OPENAI-API-KEY"</span><span class="op">)</span></span></code></pre></div>
@@ -115,7 +118,8 @@ set it by</li>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Sys.setenv.html" class="external-link">Sys.setenv</a></span><span class="op">(</span>MISTRAL_API_KEY <span class="op">=</span> <span class="st">"MISTRAL-API-KEY-GOES-HERE"</span><span class="op">)</span></span></code></pre></div>
 <ol start="4" style="list-style-type: decimal">
-<li>Groq:</li>
+<li>For groq (not be confused with <a href="https://x.ai/" class="external-link">grok</a>) you
+can setup you API keys in the <a href="https://console.groq.com/playground" class="external-link">Groq Console</a>:</li>
 </ol>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Sys.setenv.html" class="external-link">Sys.setenv</a></span><span class="op">(</span>GROQ_API_KEY <span class="op">=</span> <span class="st">"YOUR-GROQ-API-KEY"</span><span class="op">)</span></span></code></pre></div>
@@ -412,6 +416,47 @@ useful for data-analysis workflows. We consider this feature
 experimental and recommend using non-streaming responses for production
 tasks. Note that error handling in streaming callbacks varies by API and
 differs in quality at this time.</p>
+</div>
+<div class="section level4">
+<h4 id="choosing-the-right-model-and-api">Choosing the Right Model and API<a class="anchor" aria-label="anchor" href="#choosing-the-right-model-and-api"></a>
+</h4>
+<p>tidyllm supports multiple APIs, each offering distinct large language
+models with varying strengths. The choice of which model or API to use
+often depends on the specific task, cost considerations, and data
+privacy concerns.</p>
+<ol style="list-style-type: decimal">
+<li><p><strong>Claude (Anthropic API):</strong> Claude is known for
+generating thoughtful, nuanced responses, making it ideal for tasks that
+require more human-like reasoning, such as summarization or creative
+writing. However, it can sometimes be more verbose than necessary, and
+it lacks direct JSON support, which requires additional prompting and
+validation to ensure structured output.</p></li>
+<li><p><strong>ChatGPT (OpenAI API):</strong> ChatGPT, particularly the
+GPT-4o models, is extremely versatile and performs well across a wide
+range of tasks, including text generation, code completion, and
+multimodal analysis. While it is good for most cases, it tends to be
+more expensive than other alternatives, especially for large-scale
+usage.</p></li>
+<li><p><strong>Mistral (EU-based):</strong> Mistral is a lighter-weight,
+open-source model hosted in the EU, making it particularly appealing if
+data protection (e.g., GDPR compliance) is a concern. While it may not
+be as powerful as GPT-4 or Claude, it offers good performance for
+standard text generation tasks.</p></li>
+<li><p><strong>Groq (US-based):</strong> Groq offers a unique advantage
+with its API accelerators, delivering high performance at low costs,
+especially for tasks that require fast execution. It hosts many strong
+open-source models, like <strong>lamma3:70b</strong>, but since it’s
+hosted in the US, data protection concerns (e.g., GDPR) might need to be
+considered for EU users.</p></li>
+<li><p><strong>ollama (Local Models):</strong> If data privacy is a
+priority, running open-source models like <strong>gemma2::9B</strong>
+locally via <code><a href="../reference/ollama.html">ollama()</a></code> gives you full control over model
+execution and data. However, the trade-off is that local models require
+significant computational resources, and are often not quite as powerful
+as the large API-providers. The <a href="https://ollama.com/blog" class="external-link">ollama
+blog</a> regularly has posts about new models and their advantages that
+you can download via <code><a href="../reference/ollama_download_model.html">ollama_download_model()</a></code>.</p></li>
+</ol>
 </div>
 </div>
 </div>

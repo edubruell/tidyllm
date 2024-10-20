@@ -4,6 +4,7 @@
 <url><loc>https://edubruell.github.io/tidyllm/LICENSE.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/articles/getting-started.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/articles/index.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/articles/tidyllm-pdfquestions.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/articles/tidyllm.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/articles/tidyllm_classifiers.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/authors.html</loc></url>
@@ -23,10 +24,12 @@
 <url><loc>https://edubruell.github.io/tidyllm/reference/last_user_message.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/llm_message.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/mistral.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/mistral_embedding.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/ollama.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/ollama_download_model.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/ollama_embedding.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/ollama_list_models.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/openai_embedding.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/parse_duration_to_seconds.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/pdf_page_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/perform_api_request.html</loc></url>

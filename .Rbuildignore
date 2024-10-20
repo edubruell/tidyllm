@@ -8,3 +8,7 @@
 ^pkgdown$
 ^\.github$
 ^vignettes/articles$
+^local_wip/
+^NEWS.html$
+^README.html$
+
