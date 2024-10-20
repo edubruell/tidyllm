@@ -428,26 +428,27 @@ privacy concerns.</p>
 <li><p><strong>Claude (Anthropic API):</strong> Claude is known for
 generating thoughtful, nuanced responses, making it ideal for tasks that
 require more human-like reasoning, such as summarization or creative
-writing. However, it can sometimes be more verbose than necessary, and
-it lacks direct JSON support, which requires additional prompting and
-validation to ensure structured output.</p></li>
+writing. Calude Sonnet 3.5 currently is one of the top-performing models
+on many benchmarks. However, it can sometimes be more verbose than
+necessary, and it lacks direct JSON support, which requires additional
+prompting and validation to ensure structured output.</p></li>
 <li><p><strong>ChatGPT (OpenAI API):</strong> ChatGPT, particularly the
-GPT-4o models, is extremely versatile and performs well across a wide
+GPT-4o model, is extremely versatile and performs well across a wide
 range of tasks, including text generation, code completion, and
 multimodal analysis. While it is good for most cases, it tends to be
 more expensive than other alternatives, especially for large-scale
 usage.</p></li>
-<li><p><strong>Mistral (EU-based):</strong> Mistral is a lighter-weight,
-open-source model hosted in the EU, making it particularly appealing if
-data protection (e.g., GDPR compliance) is a concern. While it may not
-be as powerful as GPT-4 or Claude, it offers good performance for
-standard text generation tasks.</p></li>
-<li><p><strong>Groq (US-based):</strong> Groq offers a unique advantage
-with its API accelerators, delivering high performance at low costs,
+<li><p><strong>Mistral (EU-based):</strong> Mistral offers
+lighter-weight, open-source models developed and hosted in the EU,
+making it particularly appealing if data protection (e.g., GDPR
+compliance) is a concern. While the models may not be as powerful as
+GPT-4o or Claude Sonnet, Mistral offers good performance for standard
+text generation tasks.</p></li>
+<li><p><strong>Groq (Fast):</strong> Groq offers a unique advantage with
+its custom AI accelerator hardware, that get you the fastest output
+available on any API. It delivers high performance at low costs,
 especially for tasks that require fast execution. It hosts many strong
-open-source models, like <strong>lamma3:70b</strong>, but since it’s
-hosted in the US, data protection concerns (e.g., GDPR) might need to be
-considered for EU users.</p></li>
+open-source models, like <strong>lamma3:70b</strong>.</p></li>
 <li><p><strong>ollama (Local Models):</strong> If data privacy is a
 priority, running open-source models like <strong>gemma2::9B</strong>
 locally via <code><a href="../reference/ollama.html">ollama()</a></code> gives you full control over model

@@ -72,6 +72,14 @@
 
     
     
+<blockquote>
+<p>⚠️ <strong>Note:</strong> This article discusses code that uses
+features from the development version 0.1.8 of <strong>tidyllm</strong>
+that are not in the last CRAN release. You can install the development
+version with:</p>
+</blockquote>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"edubruell/tidyllm"</span><span class="op">)</span></span></code></pre></div>
 <p>Navigating through a large collection of academic papers can be
 time-consuming, especially when you’re trying to extract specific
 insights or determine the relevance of each document to your research.
@@ -140,7 +148,7 @@ chunks.</p>
 </h2>
 <p>Imagine your folder looks something like this—many downloaded papers,
 but no structure yet:</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tidyverse.tidyverse.org" class="external-link">tidyverse</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/edubruell/tidyllm" class="external-link">tidyllm</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">dir</a></span><span class="op">(</span><span class="st">"aipapers"</span><span class="op">)</span></span>
@@ -200,7 +208,7 @@ information to reasonably answer some main summarisation queries. If you
 want to upload the complete files though, as possible with larger
 models, you just need to specify a file name in the <code>.pdf</code>
 argument as a string variable.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pdf_summary</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">file</span>, <span class="va">document_prompt</span><span class="op">)</span><span class="op">{</span></span>
 <span>  <span class="va">summary</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="va">document_prompt</span>, </span>
 <span>              .pdf <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
@@ -246,7 +254,7 @@ relevant for your use case. But this is a nice start. We also give the
 model the exact schema we need for our answers in order to make it
 easier to work with the results in R.</p>
 <p>Here is the example output for a lengthy prompt for one paper:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">files</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"aipapers/"</span>,<span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">dir</a></span><span class="op">(</span><span class="st">"aipapers"</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">example_output</span> <span class="op">&lt;-</span> <span class="fu">pdf_summary</span><span class="op">(</span><span class="va">files</span><span class="op">[</span><span class="fl">8</span><span class="op">]</span>,document_prompt <span class="op">=</span> <span class="st">'</span></span>
@@ -340,7 +348,7 @@ with the <code>raw_response</code>, <code>stringr</code> and
 response in our example gives us a JSON in the structure we asked
 for:</li>
 </ul>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example_output</span><span class="op">$</span><span class="va">raw_response</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="co">#&gt; {</span></span>
 <span><span class="co">#&gt;   "title": "The Rapid Adoption of Generative AI",</span></span>
@@ -370,7 +378,7 @@ integrate these results into further analysis or to save them to a human
 readable document. For example you can directly get the suggested file
 name from the response:</li>
 </ul>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example_output</span><span class="op">$</span><span class="va">parsed_content</span><span class="op">$</span><span class="va">suggested_new_filename</span></span>
 <span><span class="co">#&gt; [1] "2024_Bick_etal_RapidAdoptionGenerativeAI.pdf"</span></span></code></pre></div>
 <ul>
@@ -384,10 +392,10 @@ inspection or further manual handling.</li>
 </ul>
 <p>We can now run our function to generate this kind of response for all
 papers in our folder:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pdf_responses</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="va">files</span>,<span class="va">pdf_summary</span><span class="op">)</span></span></code></pre></div>
 <p>Let’s look which files were successfully parsed:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pdf_responses</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map_lgl</a></span><span class="op">(</span><span class="st">"is_parsed"</span><span class="op">)</span> </span>
 <span><span class="co">#&gt;  [1] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE</span></span>
@@ -397,7 +405,7 @@ getting the structured output from each response and saving it into an
 easily readable format. For example we could have the name, all author
 names,the paper type and the answers to our questions together in a row
 of a tibble for each model output:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">table1</span> <span class="op">&lt;-</span> <span class="va">pdf_responses</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="st">"parsed_content"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://purrr.tidyverse.org/reference/map_dfr.html" class="external-link">map_dfr</a></span><span class="op">(</span><span class="op">~</span><span class="op">{</span></span>
@@ -434,14 +442,14 @@ of a tibble for each model output:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 13 more rows</span></span></span></code></pre></div>
 <p>We can then save these summaries to an excel table that we can format
 manually for better readability:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">table1</span> <span class="op">|&gt;</span> <span class="fu">writexl</span><span class="fu">::</span><span class="fu"><a href="https://docs.ropensci.org/writexl/reference/write_xlsx.html" class="external-link">write_xlsx</a></span><span class="op">(</span><span class="st">"papers_summaries.xlsx"</span><span class="op">)</span></span></code></pre></div>
 <p>Similarly we can extract the key references and add them to a
 separate Excel file. A next step to work with our output, is to go
 through parsed content and always pick out the
 <code>key_citations</code> with map. But here in our example, we
 encouter an error if we do that:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pdf_responses</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="st">"parsed_content"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="st">"key_citations"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -468,7 +476,7 @@ paper that was parsed:</p>
 separate field. The model did not completely adhere to what we asked it
 to produce. A quick fix for this problem is to check where
 <code>key_citations</code> was put and to:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pdf_responses</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="st">"parsed_content"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://purrr.tidyverse.org/reference/map_dfr.html" class="external-link">map_dfr</a></span><span class="op">(</span><span class="op">~</span><span class="op">{</span></span>
@@ -516,7 +524,7 @@ citation is important in the note-field of the bibtex.</p>
 <p>But for now, we have the processing steps we wanted for answers and
 citations and can proceed to the file names we got to structure our
 folder:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>old_name  <span class="op">=</span> <span class="va">files</span>,</span>
 <span>       new_name  <span class="op">=</span> <span class="va">pdf_responses</span> <span class="op">|&gt;</span></span>
 <span>         <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="st">"parsed_content"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
