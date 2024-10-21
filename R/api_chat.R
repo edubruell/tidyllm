@@ -70,7 +70,7 @@ perform_api_request <- function(.request,
 
 
 
-#' Call the Anthropic API to interact with Claude models
+#' Send LLMMessages to the Anthropic API to interact with Claude models
 #'
 #' @param .llm An LLMMessage object.
 #' @param .model The model identifier (default: "claude-3-5-sonnet-20240620").
@@ -227,7 +227,7 @@ claude <- function(.llm,
 
 
 
-#' Call the OpenAI API to interact with ChatGPT or o-reasoning models
+#' Send LLMMessages to the OpenAI API to interact with ChatGPT
 #'
 #' @param .llm An  LLMMessage object. 
 #' @param .model The model identifier (default: "gpt-4o").

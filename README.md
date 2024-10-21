@@ -61,9 +61,10 @@ For detailed instructions and advanced features, see:
 - [Changelog](https://edubruell.github.io/tidyllm/news/)
 - [Documentation](https://edubruell.github.io/tidyllm/)
 - Use-case oriented articles: 
-  - [Classifying texts with tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_classifiers.html)
+  - [Classifying Texts with tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_classifiers.html)
   - [Structured Question Answering from PDFs](https://edubruell.github.io/tidyllm/articles/tidyllm-pdfquestions.html)
-
+  - [Generate Synthetic Survey Data](https://edubruell.github.io/tidyllm/articles/tidyllm-synthetic-data.html)
+  
 ## Contributing
 
 We welcome contributions! Feel free to open issues or submit pull requests on [GitHub](https://github.com/edubruell/tidyllm).

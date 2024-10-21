@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Classifying texts with tidyllm • tidyllm</title>
+<title>Classifying Texts with tidyllm • tidyllm</title>
 <!-- favicons --><link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
 <link rel="apple-touch-icon" type="image/png" sizes="180x180" href="../apple-touch-icon.png">
@@ -16,7 +16,7 @@
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.4.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.4.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Classifying texts with tidyllm">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Classifying Texts with tidyllm">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -40,8 +40,9 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/tidyllm_classifiers.html">Classifying texts with tidyllm</a></li>
+<li><a class="dropdown-item" href="../articles/tidyllm_classifiers.html">Classifying Texts with tidyllm</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm-pdfquestions.html">Structured Question Answering from PDFs</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm-synthetic-data.html">Generate Synthetic Data with tidyllm</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -63,7 +64,7 @@
 
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-      <img src="../logo.png" class="logo" alt=""><h1>Classifying texts with tidyllm</h1>
+      <img src="../logo.png" class="logo" alt=""><h1>Classifying Texts with tidyllm</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/edubruell/tidyllm/blob/HEAD/vignettes/articles/tidyllm_classifiers.Rmd" class="external-link"><code>vignettes/articles/tidyllm_classifiers.Rmd</code></a></small>
@@ -642,17 +643,20 @@ to encode the ground truth and the model predictions as factors:</p>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_continuous.html" class="external-link">scale_y_continuous</a></span><span class="op">(</span>labels <span class="op">=</span> <span class="fu">scales</span><span class="fu">::</span><span class="fu"><a href="https://scales.r-lib.org/reference/label_percent.html" class="external-link">label_percent</a></span><span class="op">(</span><span class="op">)</span>,limits <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_brewer.html" class="external-link">scale_fill_brewer</a></span><span class="op">(</span>palette <span class="op">=</span> <span class="st">"Set1"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tidyllm_classifiers_files/figure-html/accuracy-1.png" width="1536"></p>
-<p>Here are the main insights of our classification experiment: -
+<p>Here are the main insights of our classification experiment:</p>
+<ul>
+<li>
 <strong>Gemma2</strong> consistently outperforms
 <strong>llama3.2</strong>, but even <strong>gemma2’s</strong> top
 performance on <em>Prompt 1 (79.1)</em> falls far short of Claude
-Sonnet’s <strong>98% accuracy</strong> in the initial run. - The
-simplified prompt clearly introduces challenges, especially for the
-smaller models like <strong>llama3.2</strong>, which shows particularly
-poor performance (as low as 20.2% on Prompt 3). This suggests that these
-models might not generalize well to slightly varied or less explicit
-prompts, whereas Claude is able to handle the variations with far
-greater ease.</p>
+Sonnet’s <strong>98% accuracy</strong> in the initial run.</li>
+<li>The simplified prompt clearly introduces challenges, especially for
+the smaller models like <strong>llama3.2</strong>, which shows
+particularly poor performance (as low as 20.2% on Prompt 3). This
+suggests that these models might not generalize well to slightly varied
+or less explicit prompts, whereas Claude is able to handle the
+variations with far greater ease.</li>
+</ul>
 <p>Let’s look at the confusion matrix for the top
 <strong>gemma2</strong> performance to see whether any specific
 occupation category causes problems here:</p>

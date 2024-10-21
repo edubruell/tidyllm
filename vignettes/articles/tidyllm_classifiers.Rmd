@@ -1,5 +1,5 @@
 ---
-title: "Classifying texts with tidyllm"
+title: "Classifying Texts with tidyllm"
 ---
 
 ```{r, include = FALSE}
@@ -419,6 +419,7 @@ accuracy %>%
 ```
 
 Here are the main insights of our classification experiment: 
+
 - **Gemma2** consistently outperforms **llama3.2**, but even **gemma2's** top performance on *Prompt 1 (79.1)* falls far short of Claude Sonnet's **98% accuracy** in the initial run.
 - The simplified prompt clearly introduces challenges, especially for the smaller models like **llama3.2**, which shows particularly poor performance (as low as 20.2% on Prompt 3). This suggests that these models might not generalize well to slightly varied or less explicit prompts, whereas Claude is able to handle the variations with far greater ease.
 
