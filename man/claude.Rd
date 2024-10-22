@@ -2,7 +2,7 @@
 % Please edit documentation in R/api_chat.R
 \name{claude}
 \alias{claude}
-\title{Call the Anthropic API to interact with Claude models}
+\title{Send LLMMessages to the Anthropic API to interact with Claude models}
 \usage{
 claude(
   .llm,
@@ -63,5 +63,5 @@ claude(
 Returns an updated LLMMessage object.
 }
 \description{
-Call the Anthropic API to interact with Claude models
+Send LLMMessages to the Anthropic API to interact with Claude models
 }

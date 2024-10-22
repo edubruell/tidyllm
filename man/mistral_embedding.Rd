@@ -6,7 +6,7 @@
 \usage{
 mistral_embedding(
   .llm,
-  .model = "mistral-7b",
+  .model = "mistral-embed",
   .mistral_api_key = Sys.getenv("MISTRAL_API_KEY"),
   .timeout = 120,
   .dry_run = FALSE
@@ -15,7 +15,7 @@ mistral_embedding(
 \arguments{
 \item{.llm}{An existing LLMMessage object (or a character vector of texts to embed)}
 
-\item{.model}{The embedding model identifier (default: "mistral-7b").}
+\item{.model}{The embedding model identifier (default: "mistral-embed").}
 
 \item{.mistral_api_key}{Your Mistral API key for authentication.}
 

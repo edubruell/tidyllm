@@ -2,7 +2,7 @@
 % Please edit documentation in R/api_chat.R
 \name{chatgpt}
 \alias{chatgpt}
-\title{Call the OpenAI API to interact with ChatGPT or o-reasoning models}
+\title{Send LLMMessages to the OpenAI API to interact with ChatGPT}
 \usage{
 chatgpt(
   .llm,
@@ -60,5 +60,5 @@ chatgpt(
 Returns an updated LLMMessage object.
 }
 \description{
-Call the OpenAI API to interact with ChatGPT or o-reasoning models
+Send LLMMessages to the OpenAI API to interact with ChatGPT
 }
