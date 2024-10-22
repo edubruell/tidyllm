@@ -93,7 +93,7 @@ perform_api_request <- function(.request,
 #' @return Returns an updated LLMMessage object.
 #' @export
 claude <- function(.llm,
-                   .model = "claude-3-5-sonnet-20240620",
+                   .model = "claude-3-5-sonnet-20241022",
                    .max_tokens = 1024,
                    .temperature = NULL,
                    .top_k = NULL,
