@@ -128,19 +128,21 @@ ollama_embedding <- function(.llm,
 openai_embedding <- function(.llm,
                              .model = "text-embedding-3-small",
                              .truncate = TRUE,
-                             .openai_api_key = Sys.getenv("OPENAI_API_KEY"),
                              .timeout = 120,
                              .dry_run = FALSE) {
-
+  
+  # Get the OpenAI API key
+  api_key <- Sys.getenv("OPENAI_API_KEY")
+  if (api_key == "") stop("API key is not set. Please set it with: Sys.setenv(OPENAI_API_KEY = \"YOUR-KEY-GOES-HERE\")")
+  
   # Validate the inputs
   c(
     "Input .llm must be an LLMMessage object or a character vector" = inherits(.llm, "LLMMessage") | is.character(.llm),
     "Input .model must be a string" = is.character(.model),
     "Input .truncate must be logical" = is.logical(.truncate),
     "Input .timeout must be an integer-valued numeric (seconds till timeout)" = is.numeric(.timeout) && .timeout > 0,
-    ".dry_run must be logical" = is.logical(.dry_run),
-    ".openai_api_key must be provided" = nzchar(.openai_api_key)
-  ) |> validate_inputs()
+    ".dry_run must be logical" = is.logical(.dry_run)
+    ) |> validate_inputs()
   
   if (!is.character(.llm)) {
     openai_history <- Filter(function(x) {
@@ -176,7 +178,7 @@ openai_embedding <- function(.llm,
   request <- httr2::request("https://api.openai.com/v1/embeddings") |>
     httr2::req_headers(
       "Content-Type" = "application/json",
-      "Authorization" = paste("Bearer", .openai_api_key)
+      "Authorization" = paste("Bearer", api_key)
     ) |>
     httr2::req_body_json(request_body)
   
@@ -249,9 +251,13 @@ openai_embedding <- function(.llm,
 #' @export
 mistral_embedding <- function(.llm,
                               .model = "mistral-embed",
-                              .mistral_api_key = Sys.getenv("MISTRAL_API_KEY"),
                               .timeout = 120,
                               .dry_run = FALSE) {
+  
+  # Retrieve API key from environment variables
+  api_key <- Sys.getenv("MISTRAL_API_KEY")
+  if (api_key == "") stop("API key is not set. Please set it with: Sys.setenv(GROQ_API_KEY = \"YOUR-KEY-GOES-HERE\")")
+  
   # Validate the inputs
   c(
     "Input .llm must be an LLMMessage object or a character vector" = inherits(.llm, "LLMMessage") | is.character(.llm),
@@ -295,7 +301,7 @@ mistral_embedding <- function(.llm,
   request <- httr2::request("https://api.mistral.ai/v1/embeddings") |>
     httr2::req_headers(
       "Content-Type" = "application/json",
-      "Authorization" = paste("Bearer", .mistral_api_key)
+      "Authorization" = paste("Bearer", api_key)
     ) |>
     httr2::req_body_json(request_body)
   

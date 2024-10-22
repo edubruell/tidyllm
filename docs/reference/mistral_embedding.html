@@ -48,7 +48,6 @@
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">mistral_embedding</span><span class="op">(</span></span>
 <span>  <span class="va">.llm</span>,</span>
 <span>  .model <span class="op">=</span> <span class="st">"mistral-embed"</span>,</span>
-<span>  .mistral_api_key <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"MISTRAL_API_KEY"</span><span class="op">)</span>,</span>
 <span>  .timeout <span class="op">=</span> <span class="fl">120</span>,</span>
 <span>  .dry_run <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -66,16 +65,16 @@
 <dd><p>The embedding model identifier (default: "mistral-embed").</p></dd>
 
 
-<dt id="arg--mistral-api-key">.mistral_api_key<a class="anchor" aria-label="anchor" href="#arg--mistral-api-key"></a></dt>
-<dd><p>Your Mistral API key for authentication.</p></dd>
-
-
 <dt id="arg--timeout">.timeout<a class="anchor" aria-label="anchor" href="#arg--timeout"></a></dt>
 <dd><p>Timeout for the API request in seconds (default: 120).</p></dd>
 
 
 <dt id="arg--dry-run">.dry_run<a class="anchor" aria-label="anchor" href="#arg--dry-run"></a></dt>
 <dd><p>If TRUE, perform a dry run and return the request object.</p></dd>
+
+
+<dt id="arg--mistral-api-key">.mistral_api_key<a class="anchor" aria-label="anchor" href="#arg--mistral-api-key"></a></dt>
+<dd><p>Your Mistral API key for authentication.</p></dd>
 
 </dl></div>
     <div class="section level2">

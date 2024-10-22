@@ -8,7 +8,6 @@ openai_embedding(
   .llm,
   .model = "text-embedding-3-small",
   .truncate = TRUE,
-  .openai_api_key = Sys.getenv("OPENAI_API_KEY"),
   .timeout = 120,
   .dry_run = FALSE
 )
@@ -20,11 +19,11 @@ openai_embedding(
 
 \item{.truncate}{Whether to truncate inputs to fit the model's context length (default: TRUE).}
 
-\item{.openai_api_key}{Your OpenAI API key for authentication.}
-
 \item{.timeout}{Timeout for the API request in seconds (default: 120).}
 
 \item{.dry_run}{If TRUE, perform a dry run and return the request object.}
+
+\item{.openai_api_key}{Your OpenAI API key for authentication.}
 }
 \value{
 A matrix where each column corresponds to the embedding of a message in the message history.
