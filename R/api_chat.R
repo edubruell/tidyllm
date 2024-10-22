@@ -46,9 +46,10 @@ perform_api_request <- function(.request,
     
   } else {
     # Non-streaming mode
-    response <- httr2::req_perform(
-      httr2::req_timeout(.request, .timeout)
-    )
+    response <- .request |>
+      httr2::req_timeout(.timeout) |>
+      httr2::req_error(is_error = function(resp) FALSE) |>
+      httr2::req_perform()
     
     # Parse the response body as JSON when not streaming
     body_json <- httr2::resp_body_json(response)
@@ -70,27 +71,39 @@ perform_api_request <- function(.request,
 
 
 
-#' Send LLMMessages to the Anthropic API to interact with Claude models
+#' Interact with Claude AI models via the Anthropic API
 #'
-#' @param .llm An LLMMessage object.
-#' @param .model The model identifier (default: "claude-3-5-sonnet-20240620").
-#' @param .max_tokens The maximum number of tokens to generate (default: 1024).
-#' @param .temperature Control for randomness in response generation (optional).
-#' @param .top_k Top k sampling parameter (optional).
-#' @param .top_p Nucleus sampling parameter (optional).
-#' @param .metadata Additional metadata for the request (optional).
-#' @param .stop_sequences Sequences that stop generation (optional).
-#' @param .tools Additional tools used by the model (optional).
-#' @param .api_url Base URL for the API (default: "https://api.anthropic.com/v1/messages").
-#' @param .timeout Request timeout in seconds (default: 60).
-#' @param .verbose Should additional information be shown after the API call
-#' @param .wait Should we wait for rate limits if necessary?
-#' @param .json Should output be in JSON  (default: FALSE).
-#' @param .min_tokens_reset How many tokens should be remaining to wait until we wait for token reset?
-#' @param .stream Stream back the response piece by piece (default: FALSE).
-#' @param .dry_run If TRUE, perform a dry run and return the request object.
+#' @param .llm An LLMMessage object containing the conversation history and system prompt.
+#' @param .model Character string specifying the Claude model version (default: "claude-3-5-sonnet-20241022").
+#' @param .max_tokens Integer specifying the maximum number of tokens in the response (default: 1024).
+#' @param .temperature Numeric between 0 and 1 controlling response randomness.
+#' @param .top_k Integer controlling diversity by limiting the top K tokens.
+#' @param .top_p Numeric between 0 and 1 for nucleus sampling.
+#' @param .metadata List of additional metadata to include with the request.
+#' @param .stop_sequences Character vector of sequences that will halt response generation.
+#' @param .tools List of additional tools or functions the model can use.
+#' @param .api_url Base URL for the Anthropic API (default: "https://api.anthropic.com/").
+#' @param .verbose Logical; if TRUE, displays additional information about the API call (default: FALSE).
+#' @param .wait Logical; if TRUE, respects rate limits by waiting when necessary (default: TRUE).
+#' @param .min_tokens_reset Integer specifying the minimum token threshold before waiting for reset.
+#' @param .timeout Integer specifying the request timeout in seconds (default: 60).
+#' @param .json Logical; if TRUE, instructs Claude to return responses in JSON format (default: FALSE).
+#' @param .stream Logical; if TRUE, streams the response piece by piece (default: FALSE).
+#' @param .dry_run Logical; if TRUE, returns the prepared request object without executing it (default: FALSE).
 #'
-#' @return Returns an updated LLMMessage object.
+#' @return A new LLMMessage object containing the original messages plus Claude's response.
+#' @examples
+#' \dontrun{
+#' # Basic usage
+#' msg <- llm_message("What is R programming?")
+#' result <- claude(msg)
+#' 
+#' # With custom parameters
+#' result2 <- claude(msg, 
+#'                  .temperature = 0.7, 
+#'                  .max_tokens = 2000)
+#' }
+#'
 #' @export
 claude <- function(.llm,
                    .model = "claude-3-5-sonnet-20241022",
@@ -111,19 +124,25 @@ claude <- function(.llm,
                    .dry_run = FALSE) {  
   # Validate inputs to the Claude function
   c(
-    ".llm must be an LLMMessage object"    = inherits(.llm, "LLMMessage"),
-    ".max_tokens must be an integer"       = is_integer_valued(.max_tokens),
+    ".llm must be an LLMMessage object" = inherits(.llm, "LLMMessage"),
+    ".max_tokens must be an integer" = is_integer_valued(.max_tokens),
     ".timeout must be an integer-valued numeric (seconds till timeout)" = is_integer_valued(.timeout),
-    ".temperature must be numeric if provided"   = is.null(.temperature)  | is.numeric(.temperature),
-    ".top_k must be numeric if provided"         = is.null(.top_k) | is.numeric(.top_k),
-    ".top_p must be numeric if provided"         = is.null(.top_p) | is.numeric(.top_p),
-    ".stop_sequences must be a character vector" = is.null(.stop_sequences) | is.character(.stop_sequences),
-    ".verbose must be logical"                   = is.logical(.verbose),
-    ".wait must be logical"                      = is.logical(.wait),
-    ".stream must be logical"                    = is.logical(.stream),
-    ".json must be logical if provided"          = is.logical(.json),
-    ".min_tokens_reset must be an integer"       = is_integer_valued(.min_tokens_reset),
-    ".dry_run must be logical"                   = is.logical(.dry_run)
+    ".temperature must be numeric between 0 and 1 if provided" = 
+      is.null(.temperature) | (is.numeric(.temperature) && .temperature >= 0 && .temperature <= 1),
+    ".top_k must be a positive integer if provided" = 
+      is.null(.top_k) | (is.numeric(.top_k) && .top_k > 0 && floor(.top_k) == .top_k),
+    ".top_p must be numeric between 0 and 1 if provided" = 
+      is.null(.top_p) | (is.numeric(.top_p) && .top_p >= 0 && .top_p <= 1),
+    "Only one of .temperature or .top_p should be specified" = 
+      is.null(.temperature) | is.null(.top_p),
+    ".stop_sequences must be a character vector" = 
+      is.null(.stop_sequences) | is.character(.stop_sequences),
+    ".verbose must be logical" = is.logical(.verbose),
+    ".wait must be logical" = is.logical(.wait),
+    ".stream must be logical" = is.logical(.stream),
+    ".json must be logical if provided" = is.logical(.json),
+    ".min_tokens_reset must be an integer" = is_integer_valued(.min_tokens_reset),
+    ".dry_run must be logical" = is.logical(.dry_run)
   ) |>
     validate_inputs()
   
@@ -179,17 +198,66 @@ claude <- function(.llm,
   
   
   # Perform the API request
-  response <- perform_api_request(
-    .request = request,
-    .api = "claude", 
-    .stream = .stream, 
-    .timeout = .timeout, 
-    .parse_response_fn = function(body_json) {
-      assistant_reply <- body_json$content[[1]]$text
-      return(assistant_reply)
-    },
-    .dry_run = .dry_run
-  )
+  response <- tryCatch({
+    perform_api_request(
+      .request = request,
+      .api = "claude", 
+      .stream = .stream, 
+      .timeout = .timeout, 
+      .parse_response_fn = function(body_json) {
+        if ("error" %in% names(body_json)) {
+          error_type <- body_json$error$type
+          error_message <- body_json$error$message
+          
+          # Handle specific Claude API error cases
+          switch(error_type,
+                 "invalid_request_error" = stop(sprintf("Invalid request: %s", error_message)),
+                 "authentication_error" = stop("Authentication failed. Please check your API key."),
+                 "permission_error" = stop("Permission denied. Please check your API key permissions."),
+                 "rate_limit_error" = stop(sprintf("Rate limit exceeded: %s", error_message)),
+                 "model_not_ready_error" = stop(sprintf("Model not ready: %s", error_message)),
+                 "invalid_model_error" = stop(sprintf("Invalid model specified: %s", error_message)),
+                 "content_policy_violation" = stop(sprintf("Content policy violation: %s", error_message)),
+                 "context_length_exceeded" = stop(sprintf("Context length exceeded: %s", error_message)),
+                 stop(sprintf("Unexpected error (%s): %s", error_type, error_message))
+          )
+        }
+        
+        # Check if content is present in the response
+        if (!"content" %in% names(body_json) || length(body_json$content) == 0) {
+          stop("Received empty response from Claude API")
+        }
+        
+        assistant_reply <- body_json$content[[1]]$text
+        return(assistant_reply)
+      },
+      .dry_run = .dry_run
+    )
+  }, error = function(e) {
+    # Handle timeout errors specifically
+    if (inherits(e, "httr2_timeout")) {
+      stop(sprintf("Request timed out after %d seconds", .timeout))
+    }
+    
+    # Handle connection errors
+    if (inherits(e, "httr2_error")) {
+      status <- attr(e, "status")
+      if (!is.null(status)) {
+        switch(as.character(status),
+               "401" = stop("Unauthorized: Invalid API key"),
+               "403" = stop("Forbidden: You don't have permission to use this model"),
+               "404" = stop("Not Found: The requested resource doesn't exist"),
+               "429" = stop("Rate limit exceeded. Please wait before making more requests"),
+               "500" = stop("Internal server error from Claude API"),
+               "503" = stop("Claude API is temporarily unavailable"),
+               stop(sprintf("HTTP error %d: %s", status, conditionMessage(e)))
+        )
+      }
+    }
+    
+    # Re-throw other errors
+    stop(conditionMessage(e))
+  })
   
   # Return only the request object in a dry run.
   if (.dry_run) {

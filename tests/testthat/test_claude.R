@@ -9,7 +9,7 @@ test_that("claude function constructs a correct request and dry runs it", {
   
   # Call claude with .dry_run = TRUE and perform the dry run
   request <- llm |>
-    claude(.dry_run = TRUE) 
+    claude(.dry_run = TRUE,.model="claude-3-5-sonnet-20240620") 
   
   dry_run <- request |>
     httr2::req_dry_run(redact_headers = TRUE, quiet = TRUE)
@@ -97,5 +97,47 @@ test_that("claude returns expected response", {
   },simplify = FALSE)
 })
 
+test_that("input validation works correctly", {
+  llm <- LLMMessage$new()
+  llm$add_message("user", "Test message")
+  
+  # Test temperature validation
+  expect_error(
+    claude(.llm = llm, .temperature = 1.5),
+    ".temperature must be numeric between 0 and 1 if provided"
+  )
+  expect_error(
+    claude(.llm = llm, .temperature = -0.1),
+    ".temperature must be numeric between 0 and 1 if provided"
+  )
+  
+  # Test top_p validation
+  expect_error(
+    claude(.llm = llm, .top_p = 1.5),
+    ".top_p must be numeric between 0 and 1 if provided"
+  )
+  
+  # Test top_k validation
+  expect_error(
+    claude(.llm = llm, .top_k = 0.5),
+    ".top_k must be a positive integer if provided"
+  )
+  expect_error(
+    claude(.llm = llm, .top_k = -1),
+    ".top_k must be a positive integer if provided"
+  )
+  
+  # Test temperature and top_p mutual exclusivity
+  expect_error(
+    claude(.llm = llm, .temperature = 0.7, .top_p = 0.9),
+    "Only one of .temperature or .top_p should be specified"
+  )
+  
+  # Test stop_sequences validation
+  expect_error(
+    claude(.llm = llm, .stop_sequences = 123),
+    ".stop_sequences must be a character vector"
+  )
+})
 
 

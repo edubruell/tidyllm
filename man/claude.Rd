@@ -2,11 +2,11 @@
 % Please edit documentation in R/api_chat.R
 \name{claude}
 \alias{claude}
-\title{Send LLMMessages to the Anthropic API to interact with Claude models}
+\title{Interact with Claude AI models via the Anthropic API}
 \usage{
 claude(
   .llm,
-  .model = "claude-3-5-sonnet-20240620",
+  .model = "claude-3-5-sonnet-20241022",
   .max_tokens = 1024,
   .temperature = NULL,
   .top_k = NULL,
@@ -25,43 +25,56 @@ claude(
 )
 }
 \arguments{
-\item{.llm}{An LLMMessage object.}
+\item{.llm}{An LLMMessage object containing the conversation history and system prompt.}
 
-\item{.model}{The model identifier (default: "claude-3-5-sonnet-20240620").}
+\item{.model}{Character string specifying the Claude model version (default: "claude-3-5-sonnet-20241022").}
 
-\item{.max_tokens}{The maximum number of tokens to generate (default: 1024).}
+\item{.max_tokens}{Integer specifying the maximum number of tokens in the response (default: 1024).}
 
-\item{.temperature}{Control for randomness in response generation (optional).}
+\item{.temperature}{Numeric between 0 and 1 controlling response randomness.}
 
-\item{.top_k}{Top k sampling parameter (optional).}
+\item{.top_k}{Integer controlling diversity by limiting the top K tokens.}
 
-\item{.top_p}{Nucleus sampling parameter (optional).}
+\item{.top_p}{Numeric between 0 and 1 for nucleus sampling.}
 
-\item{.metadata}{Additional metadata for the request (optional).}
+\item{.metadata}{List of additional metadata to include with the request.}
 
-\item{.stop_sequences}{Sequences that stop generation (optional).}
+\item{.stop_sequences}{Character vector of sequences that will halt response generation.}
 
-\item{.tools}{Additional tools used by the model (optional).}
+\item{.tools}{List of additional tools or functions the model can use.}
 
-\item{.api_url}{Base URL for the API (default: "https://api.anthropic.com/v1/messages").}
+\item{.api_url}{Base URL for the Anthropic API (default: "https://api.anthropic.com/").}
 
-\item{.verbose}{Should additional information be shown after the API call}
+\item{.verbose}{Logical; if TRUE, displays additional information about the API call (default: FALSE).}
 
-\item{.wait}{Should we wait for rate limits if necessary?}
+\item{.wait}{Logical; if TRUE, respects rate limits by waiting when necessary (default: TRUE).}
 
-\item{.min_tokens_reset}{How many tokens should be remaining to wait until we wait for token reset?}
+\item{.min_tokens_reset}{Integer specifying the minimum token threshold before waiting for reset.}
 
-\item{.timeout}{Request timeout in seconds (default: 60).}
+\item{.timeout}{Integer specifying the request timeout in seconds (default: 60).}
 
-\item{.json}{Should output be in JSON  (default: FALSE).}
+\item{.json}{Logical; if TRUE, instructs Claude to return responses in JSON format (default: FALSE).}
 
-\item{.stream}{Stream back the response piece by piece (default: FALSE).}
+\item{.stream}{Logical; if TRUE, streams the response piece by piece (default: FALSE).}
 
-\item{.dry_run}{If TRUE, perform a dry run and return the request object.}
+\item{.dry_run}{Logical; if TRUE, returns the prepared request object without executing it (default: FALSE).}
 }
 \value{
-Returns an updated LLMMessage object.
+A new LLMMessage object containing the original messages plus Claude's response.
 }
 \description{
-Send LLMMessages to the Anthropic API to interact with Claude models
+Interact with Claude AI models via the Anthropic API
+}
+\examples{
+\dontrun{
+# Basic usage
+msg <- llm_message("What is R programming?")
+result <- claude(msg)
+
+# With custom parameters
+result2 <- claude(msg, 
+                 .temperature = 0.7, 
+                 .max_tokens = 2000)
+}
+
 }
