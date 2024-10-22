@@ -15,7 +15,7 @@ ollama_embedding <- function(.llm,
                              .ollama_server = "http://localhost:11434",
                              .timeout = 120,
                              .dry_run=FALSE) {
-  
+
   # Validate the inputs
   c(
     "Input .llm must be an LLMMessage object or a character vector" = inherits(.llm, "LLMMessage") | is.character(.llm),
@@ -76,35 +76,44 @@ ollama_embedding <- function(.llm,
     httr2::req_timeout(.timeout) |>
     httr2::req_perform()
   
-  # Check for HTTP errors
-  if (httr2::resp_is_error(response)) {
-    stop("HTTP error: ", httr2::resp_status(response))
-  }
-  
-  # Parse the response
-  response_content <- httr2::resp_body_json(response)
-  
-  # Check for errors in the response
-  if (!is.null(response_content$error)) {
-    stop("API error: ", response_content$error)
-  }
-  
-  # Get the embeddings
-  embeddings <- response_content$embeddings
-  
-  # Check if embeddings are present
-  if (is.null(embeddings)) {
-    stop("No embeddings returned in the response.")
-  }
-  
-  embeddings <- purrr::map(embeddings,~purrr::flatten_dbl(.x))
-  
-  # Convert embeddings to a matrix
-  embedding_matrix <- do.call(cbind, embeddings) 
-  
-  # Return the embeddings
-  return(embedding_matrix)
+  # Check for API errors
+  tryCatch({
+    # Check for HTTP errors
+    if (httr2::resp_is_error(response)) {
+      # Try to parse the JSON response body
+      error_message <- tryCatch({
+        json_content <- httr2::resp_body_json(response)
+        if (!is.null(json_content)) {
+          paste0("API error response - ", json_content$error)
+        } else {
+          "Unknown error occurred"
+        }
+      }, error = function(e) {
+        paste("HTTP error:", httr2::resp_status(response), "- Unable to parse error message")
+      })
+      
+      stop(error_message)
+    }    
+    # Parse the response and extract embeddings
+    response_content <- httr2::resp_body_json(response)
+    embeddings <- response_content$embeddings
+    
+    # Check if embeddings are present
+    if (is.null(embeddings)) {
+      stop("No embeddings returned in the response.")
+    }
+    
+    embeddings <- purrr::map(embeddings,~purrr::flatten_dbl(.x))
+    embedding_matrix <- do.call(cbind, embeddings)
+    
+    # Return the embeddings
+    return(embedding_matrix)
+    
+  }, error = function(e) {
+    stop("An error occurred during the API request - ", e$message)
+  })
 }
+
 
 #' Generate Embeddings Using OpenAI API
 #'
@@ -122,7 +131,7 @@ openai_embedding <- function(.llm,
                              .openai_api_key = Sys.getenv("OPENAI_API_KEY"),
                              .timeout = 120,
                              .dry_run = FALSE) {
-  
+
   # Validate the inputs
   c(
     "Input .llm must be an LLMMessage object or a character vector" = inherits(.llm, "LLMMessage") | is.character(.llm),
@@ -182,27 +191,48 @@ openai_embedding <- function(.llm,
     httr2::req_error(is_error = function(resp) FALSE) |>
     httr2::req_perform()
   
-  # Check for HTTP errors
-  if (httr2::resp_is_error(response)) {
-    stop("HTTP error: ", httr2::resp_status(response))
-  }
-  
-  # Parse the response
-  response_content <- httr2::resp_body_json(response)
-  
   # Check for API errors
-  if (!is.null(response_content$error)) {
-    stop("API error: ", response_content$error$message)
-  }
+  tryCatch({
+    # Check for HTTP errors
+    if (httr2::resp_is_error(response)) {
+      # Try to parse the JSON response body
+      error_message <- tryCatch({
+        json_content <- httr2::resp_body_json(response)
+        if (!is.null(json_content)) {
+          paste0("API error response - ", json_content$error$message)
+        } else {
+          "Unknown error occurred"
+        }
+      }, error = function(e) {
+        paste("HTTP error:", httr2::resp_status(response), "- Unable to parse error message")
+      })
+      
+      stop(error_message)
+    }    
+    # Parse the response and extract embeddings
+    # Parse the response
+    response_content <- httr2::resp_body_json(response)
+    
+    
+    # Extract the embeddings
+    embeddings <- response_content$data |> purrr::map("embedding")
+    
+    # Check if embeddings are present
+    if (is.null(embeddings)) {
+      stop("No embeddings returned in the response.")
+    }
+    
+    # Convert embeddings to a matrix
+    embedding_matrix <- do.call(cbind, embeddings)
+    
+
+    # Return the embeddings
+    return(embedding_matrix)
+    
+  }, error = function(e) {
+    stop("An error occurred during the API request - ", e$message)
+  })
   
-  # Extract the embeddings
-  embeddings <- response_content$data |> purrr::map("embedding")
-  
-  # Convert embeddings to a matrix
-  embedding_matrix <- do.call(cbind, embeddings)
-  
-  # Return the embeddings
-  return(embedding_matrix)
 }
 
 
@@ -280,7 +310,7 @@ mistral_embedding <- function(.llm,
     httr2::req_error(is_error = function(resp) FALSE) |>
     httr2::req_perform()
   
-  # Check for AOI errors
+  # Check for API errors
   tryCatch({
     # Check for HTTP errors
     if (httr2::resp_is_error(response)) {
