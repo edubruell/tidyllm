@@ -30,7 +30,6 @@ update_rate_limit <- function(.api_name,.response_object){
   invisible(NULL)
 }
 
-
 #' Wait for ratelimit restore times to ellapse if necessary
 #'
 #' This function implements a standardized wait for rate limit resets
@@ -83,6 +82,60 @@ parse_duration_to_seconds <- function(.duration_str) {
     duration_sec <- 0
   }
   return(duration_sec)
+}
+
+
+#' Extract rate limit information from API response headers
+#'
+#' @param .response_headers Headers from the API response
+#' @param .api The API type ("claude" or "chatgpt")
+#' @return A list containing rate limit information
+ratelimit_from_header <- function(.response_headers, .api) {
+  switch(.api,
+         "claude" = {
+           list(
+             this_request_time = strptime(.response_headers["date"], 
+                                          format="%a, %d %b %Y %H:%M:%S", tz="GMT"),
+             ratelimit_requests = as.integer(
+               .response_headers["anthropic-ratelimit-requests-limit"]),
+             ratelimit_requests_remaining = as.integer(
+               .response_headers["anthropic-ratelimit-requests-remaining"]),
+             ratelimit_requests_reset_time = as.POSIXct(
+               .response_headers["anthropic-ratelimit-requests-reset"]$`anthropic-ratelimit-requests-reset`,
+               format="%Y-%m-%dT%H:%M:%SZ", tz="UTC"),
+             ratelimit_tokens = as.integer(
+               .response_headers["anthropic-ratelimit-tokens-limit"]),
+             ratelimit_tokens_remaining = as.integer(
+               .response_headers["anthropic-ratelimit-tokens-remaining"]),
+             ratelimit_tokens_reset_time = as.POSIXct(
+               .response_headers["anthropic-ratelimit-tokens-reset"]$`anthropic-ratelimit-tokens-reset`,
+               format="%Y-%m-%dT%H:%M:%SZ", tz="UTC")
+           )
+         },
+         "chatgpt" = {
+           request_time <- strptime(.response_headers["date"]$date, 
+                                    format="%a, %d %b %Y %H:%M:%S", tz="GMT")
+           ratelimit_requests_reset_dt <- parse_duration_to_seconds(
+             .response_headers["x-ratelimit-reset-requests"]$`x-ratelimit-reset-requests`)
+           ratelimit_tokens_reset_dt <- parse_duration_to_seconds(
+             .response_headers["x-ratelimit-reset-tokens"]$`x-ratelimit-reset-tokens`)
+           
+           list(
+             this_request_time = request_time,
+             ratelimit_requests = as.integer(
+               .response_headers["x-ratelimit-limit-requests"]),
+             ratelimit_requests_remaining = as.integer(
+               .response_headers["x-ratelimit-remaining-requests"]),
+             ratelimit_requests_reset_time = request_time + ratelimit_requests_reset_dt,
+             ratelimit_tokens = as.integer(
+               .response_headers["x-ratelimit-limit-tokens"]),
+             ratelimit_tokens_remaining = as.integer(
+               .response_headers["x-ratelimit-remaining-tokens"]),
+             ratelimit_tokens_reset_time = request_time + ratelimit_tokens_reset_dt
+           )
+         },
+         stop(sprintf("Unsupported API type: %s", .api))
+  )
 }
 
 #' Get the current rate limit information for all or a specific API

@@ -19,8 +19,6 @@ mistral_embedding(
 \item{.timeout}{Timeout for the API request in seconds (default: 120).}
 
 \item{.dry_run}{If TRUE, perform a dry run and return the request object.}
-
-\item{.mistral_api_key}{Your Mistral API key for authentication.}
 }
 \value{
 A matrix where each column corresponds to the embedding of a message in the message history.

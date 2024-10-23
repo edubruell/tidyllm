@@ -120,17 +120,20 @@ ollama_embedding <- function(.llm,
 #' @param .llm An existing LLMMessage object (or a character vector of texts to embed)
 #' @param .model The embedding model identifier (default: "text-embedding-3-small").
 #' @param .truncate Whether to truncate inputs to fit the model's context length (default: TRUE).
-#' @param .openai_api_key Your OpenAI API key for authentication.
 #' @param .timeout Timeout for the API request in seconds (default: 120).
 #' @param .dry_run If TRUE, perform a dry run and return the request object.
+#' @param .wait Logical; if TRUE, respects rate limits by waiting when necessary (default: TRUE).
+#' @param .min_tokens_reset Integer specifying the minimum token threshold before waiting for reset.
 #' @return A matrix where each column corresponds to the embedding of a message in the message history.
 #' @export
 openai_embedding <- function(.llm,
                              .model = "text-embedding-3-small",
                              .truncate = TRUE,
                              .timeout = 120,
-                             .dry_run = FALSE) {
-  
+                             .dry_run = FALSE,
+                             .min_tokens_reset = 0L,
+                             .wait=TRUE) {
+
   # Get the OpenAI API key
   api_key <- Sys.getenv("OPENAI_API_KEY")
   if (api_key == "") stop("API key is not set. Please set it with: Sys.setenv(OPENAI_API_KEY = \"YOUR-KEY-GOES-HERE\")")
@@ -141,7 +144,9 @@ openai_embedding <- function(.llm,
     "Input .model must be a string" = is.character(.model),
     "Input .truncate must be logical" = is.logical(.truncate),
     "Input .timeout must be an integer-valued numeric (seconds till timeout)" = is.numeric(.timeout) && .timeout > 0,
-    ".dry_run must be logical" = is.logical(.dry_run)
+    ".dry_run must be logical" = is.logical(.dry_run),
+    ".wait must be logical" = is.logical(.wait),
+    ".min_tokens_reset must be an integer" = is_integer_valued(.min_tokens_reset)
     ) |> validate_inputs()
   
   if (!is.character(.llm)) {
@@ -173,6 +178,12 @@ openai_embedding <- function(.llm,
     model = .model,
     input = message_texts
   )
+  
+  # If the rate limit environment is set, wait for the rate limit
+  if(.wait==TRUE & !is.null(.tidyllm_rate_limit_env[["chatgpt"]])){
+    wait_rate_limit("chatgpt", .min_tokens_reset)
+  }  
+  
   
   # Build the request
   request <- httr2::request("https://api.openai.com/v1/embeddings") |>
@@ -215,6 +226,10 @@ openai_embedding <- function(.llm,
     # Parse the response
     response_content <- httr2::resp_body_json(response)
     
+    # Parse and update rate limit info from headers
+    rl <- ratelimit_from_header(response$headers,"chatgpt")
+    initialize_api_env("chatgpt")
+    update_rate_limit("chatgpt",rl)
     
     # Extract the embeddings
     embeddings <- response_content$data |> purrr::map("embedding")
@@ -244,7 +259,6 @@ openai_embedding <- function(.llm,
 #'
 #' @param .llm An existing LLMMessage object (or a character vector of texts to embed)
 #' @param .model The embedding model identifier (default: "mistral-embed").
-#' @param .mistral_api_key Your Mistral API key for authentication.
 #' @param .timeout Timeout for the API request in seconds (default: 120).
 #' @param .dry_run If TRUE, perform a dry run and return the request object.
 #' @return A matrix where each column corresponds to the embedding of a message in the message history.

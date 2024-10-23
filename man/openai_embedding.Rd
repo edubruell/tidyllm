@@ -9,7 +9,9 @@ openai_embedding(
   .model = "text-embedding-3-small",
   .truncate = TRUE,
   .timeout = 120,
-  .dry_run = FALSE
+  .dry_run = FALSE,
+  .min_tokens_reset = 0L,
+  .wait = TRUE
 )
 }
 \arguments{
@@ -23,7 +25,9 @@ openai_embedding(
 
 \item{.dry_run}{If TRUE, perform a dry run and return the request object.}
 
-\item{.openai_api_key}{Your OpenAI API key for authentication.}
+\item{.min_tokens_reset}{Integer specifying the minimum token threshold before waiting for reset.}
+
+\item{.wait}{Logical; if TRUE, respects rate limits by waiting when necessary (default: TRUE).}
 }
 \value{
 A matrix where each column corresponds to the embedding of a message in the message history.

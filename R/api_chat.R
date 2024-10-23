@@ -122,6 +122,7 @@ claude <- function(.llm,
                    .json =FALSE,
                    .stream = FALSE,
                    .dry_run = FALSE) {  
+  
   # Validate inputs to the Claude function
   c(
     ".llm must be an LLMMessage object" = inherits(.llm, "LLMMessage"),
@@ -268,21 +269,8 @@ claude <- function(.llm,
   response_headers <- response$headers
   assistant_reply  <- response$assistant_reply
   
-  # Update the rate-limit environment with the headers
-  rl <- list(
-    this_request_time             = strptime(response_headers["date"], format="%a, %d %b %Y %H:%M:%S", tz="GMT"),
-    ratelimit_requests            = as.integer(response_headers["anthropic-ratelimit-requests-limit"]),
-    ratelimit_requests_remaining  = as.integer(response_headers["anthropic-ratelimit-requests-remaining"]),
-    ratelimit_requests_reset_time = as.POSIXct(
-      response_headers["anthropic-ratelimit-requests-reset"]$`anthropic-ratelimit-requests-reset`,
-      format="%Y-%m-%dT%H:%M:%SZ", tz="UTC"),
-    ratelimit_tokens              = as.integer(response_headers["anthropic-ratelimit-tokens-limit"]),
-    ratelimit_tokens_remaining    = as.integer(response_headers["anthropic-ratelimit-tokens-remaining"]),
-    ratelimit_tokens_reset_time   = as.POSIXct(response_headers["anthropic-ratelimit-tokens-reset"]$`anthropic-ratelimit-tokens-reset`,
-                                               format="%Y-%m-%dT%H:%M:%SZ", tz="UTC")
-  )
-  
   # Initialize or update the rate limit environment
+  rl <- ratelimit_from_header(response_headers,"claude")
   initialize_api_env("claude")
   update_rate_limit("claude", rl)
   
