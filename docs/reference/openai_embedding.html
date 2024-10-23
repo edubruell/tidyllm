@@ -35,7 +35,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Generate Embeddings Using OpenAI API</h1>
-      <small class="dont-index">Source: <a href="https://github.com/edubruell/tidyllm/blob/HEAD/R/api_embeddings.R" class="external-link"><code>R/api_embeddings.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/edubruell/tidyllm/blob/HEAD/R/openai.R" class="external-link"><code>R/openai.R</code></a></small>
       <div class="d-none name"><code>openai_embedding.Rd</code></div>
     </div>
 
@@ -50,7 +50,9 @@
 <span>  .model <span class="op">=</span> <span class="st">"text-embedding-3-small"</span>,</span>
 <span>  .truncate <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  .timeout <span class="op">=</span> <span class="fl">120</span>,</span>
-<span>  .dry_run <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  .dry_run <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  .min_tokens_reset <span class="op">=</span> <span class="fl">0L</span>,</span>
+<span>  .wait <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -76,6 +78,14 @@
 
 <dt id="arg--dry-run">.dry_run<a class="anchor" aria-label="anchor" href="#arg--dry-run"></a></dt>
 <dd><p>If TRUE, perform a dry run and return the request object.</p></dd>
+
+
+<dt id="arg--min-tokens-reset">.min_tokens_reset<a class="anchor" aria-label="anchor" href="#arg--min-tokens-reset"></a></dt>
+<dd><p>Integer specifying the minimum token threshold before waiting for reset.</p></dd>
+
+
+<dt id="arg--wait">.wait<a class="anchor" aria-label="anchor" href="#arg--wait"></a></dt>
+<dd><p>Logical; if TRUE, respects rate limits by waiting when necessary (default: TRUE).</p></dd>
 
 </dl></div>
     <div class="section level2">

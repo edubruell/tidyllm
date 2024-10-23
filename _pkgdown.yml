@@ -44,6 +44,7 @@ reference:
       - update_rate_limit
       - wait_rate_limit
       - parse_duration_to_seconds
+      - ratelimit_from_header
 
   - title: "PDF Processing"
     contents:
