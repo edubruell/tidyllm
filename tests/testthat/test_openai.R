@@ -82,4 +82,17 @@ test_that("chatgpt returns expected response", {
   },simplify = FALSE)
 })
 
+test_that("openai_embedding returns expected response", {
+  with_mock_dir("openai_embedding",expr = {
+    
+    result <- c("It is not that I am mad, it is only that my head is different from yours",
+                "A man can do as he wills, but not will as he wills",
+                "Whereof one cannot speak, thereof one must be silent",
+                "The limits of my language mean the limits of my world") |>
+      openai_embedding() 
+    
+    expect_equal(dim(result),c(1536,4))
+    
+  },simplify = FALSE)
+})
 

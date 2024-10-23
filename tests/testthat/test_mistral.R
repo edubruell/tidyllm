@@ -76,3 +76,17 @@ test_that("mistral returns expected response",{
   
 })
  
+
+test_that("mistral_embedding returns expected response", {
+  with_mock_dir("mistral_embedding",expr = {
+    
+    result <- c("It is not that I am mad, it is only that my head is different from yours",
+                "A man can do as he wills, but not will as he wills",
+                "Whereof one cannot speak, thereof one must be silent",
+                "The limits of my language mean the limits of my world") |>
+      mistral_embedding() 
+    
+    expect_equal(dim(result),c(1024,4))
+    
+  },simplify = FALSE)
+})

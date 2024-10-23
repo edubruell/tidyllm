@@ -49,11 +49,13 @@ wait_rate_limit <- function(.api_name,.min_tokens_reset){
   
   #Wait if rate limit is likely to be hit
   if(requests_remaining  == 1){
-    glue::glue("Waiting till requests rate limit is reset: {round(requests_reset_difftime},2)}")
+    req_reset_wait_time <- round(requests_reset_difftime,2)
+    glue::glue("Waiting till requests rate limit is reset: {req_reset_wait_time}")
     Sys.sleep(requests_reset_difftime)
   }
   if(tokens_reset_difftime > 0 & .min_tokens_reset>0 & tokens_remaining<.min_tokens_reset){
-    glue::glue("Waiting till the token rate limit is reset: round({tokens_reset_difftime},2) seconds") |> message()
+    tk_reset_wait_time <- round(tokens_reset_difftime,2)
+    glue::glue("Waiting till the token rate limit is reset: {tk_reset_wait_time} seconds") |> message()
     Sys.sleep(tokens_reset_difftime)
   }
 }

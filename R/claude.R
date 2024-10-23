@@ -13,7 +13,7 @@
 #' @param .api_url Base URL for the Anthropic API (default: "https://api.anthropic.com/").
 #' @param .verbose Logical; if TRUE, displays additional information about the API call (default: FALSE).
 #' @param .wait Logical; if TRUE, respects rate limits by waiting when necessary (default: TRUE).
-#' @param .min_tokens_reset Integer specifying the minimum token threshold before waiting for reset.
+#' @param .min_tokens_reset Integer specifying the minimum token threshold before waiting for reset (default:1000).
 #' @param .timeout Integer specifying the request timeout in seconds (default: 60).
 #' @param .json Logical; if TRUE, instructs Claude to return responses in JSON format (default: FALSE).
 #' @param .stream Logical; if TRUE, streams the response piece by piece (default: FALSE).
@@ -29,7 +29,7 @@
 #' # With custom parameters
 #' result2 <- claude(msg, 
 #'                  .temperature = 0.7, 
-#'                  .max_tokens = 2000)
+#'                  .max_tokens = 1000)
 #' }
 #'
 #' @export
@@ -45,7 +45,7 @@ claude <- function(.llm,
                    .api_url = "https://api.anthropic.com/",
                    .verbose = FALSE,
                    .wait=TRUE,
-                   .min_tokens_reset = 0L,
+                   .min_tokens_reset = 1000L,
                    .timeout = 60,
                    .json =FALSE,
                    .stream = FALSE,
