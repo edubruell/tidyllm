@@ -2,7 +2,7 @@
 % Please edit documentation in R/groq.R
 \name{groq}
 \alias{groq}
-\title{Call the Groq API to interact with fast opensource models on Groq}
+\title{Send LLM Messages to the Groq Chat API}
 \usage{
 groq(
   .llm,
@@ -12,47 +12,70 @@ groq(
   .top_p = NULL,
   .frequency_penalty = NULL,
   .presence_penalty = NULL,
+  .stop = NULL,
+  .seed = NULL,
   .api_url = "https://api.groq.com/",
   .json = FALSE,
   .timeout = 60,
   .verbose = FALSE,
   .wait = TRUE,
-  .min_tokens_reset = 0L,
+  .min_tokens_reset = 1000L,
+  .stream = FALSE,
   .dry_run = FALSE
 )
 }
 \arguments{
-\item{.llm}{An existing LLMMessage object.}
+\item{.llm}{An \code{LLMMessage} object containing the conversation history.}
 
-\item{.model}{The model identifier (default: "llama-3.2-11b-vision-preview").}
+\item{.model}{The identifier of the model to use (default: "llama-3.2-11b-vision-preview").}
 
-\item{.max_tokens}{The maximum number of tokens to generate (default: 1024).}
+\item{.max_tokens}{The maximum number of tokens that can be generated in the response (default: 1024).}
 
-\item{.temperature}{Control for randomness in response generation (optional).}
+\item{.temperature}{Controls the randomness in the model's response. Values between 0 and 2 are allowed, where higher values increase randomness (optional).}
 
-\item{.top_p}{Nucleus sampling parameter (optional).}
+\item{.top_p}{Nucleus sampling parameter that controls the proportion of probability mass considered. Values between 0 and 1 are allowed (optional).}
 
-\item{.frequency_penalty}{Controls repetition frequency (optional).}
+\item{.frequency_penalty}{Number between -2.0 and 2.0. Positive values penalize repeated tokens, reducing likelihood of repetition (optional).}
 
-\item{.presence_penalty}{Controls how much to penalize repeating content (optional)}
+\item{.presence_penalty}{Number between -2.0 and 2.0. Positive values encourage new topics by penalizing tokens that have appeared so far (optional).}
 
-\item{.api_url}{Base URL for the API (default: "https://api.anthropic.com/v1/messages").}
+\item{.stop}{One or more sequences where the API will stop generating further tokens. Can be a string or a list of strings (optional).}
 
-\item{.json}{Should output be structured as JSON  (default: FALSE).}
+\item{.seed}{An integer for deterministic sampling. If specified, attempts to return the same result for repeated requests with identical parameters (optional).}
+
+\item{.api_url}{Base URL for the Groq API (default: "https://api.groq.com/").}
+
+\item{.json}{Whether the response should be structured as JSON (default: FALSE).}
 
 \item{.timeout}{Request timeout in seconds (default: 60).}
 
-\item{.verbose}{Should additional information be shown after the API call}
+\item{.verbose}{If TRUE, displays additional information after the API call, including rate limit details (default: FALSE).}
 
-\item{.wait}{Should we wait for rate limits if necessary?}
+\item{.wait}{If TRUE, waits for rate limits to reset if necessary before sending the request (default: TRUE).}
 
-\item{.min_tokens_reset}{How many tokens should be remaining to wait until we wait for token reset?}
+\item{.min_tokens_reset}{The number of tokens remaining when the system should wait for token reset (default: 1000L).}
 
-\item{.dry_run}{If TRUE, perform a dry run and return the request object.}
+\item{.stream}{Logical; if TRUE, streams the response piece by piece (default: FALSE).}
+
+\item{.dry_run}{If TRUE, performs a dry run and returns the constructed request object without executing it (default: FALSE).}
 }
 \value{
-Returns an updated LLMMessage object.
+A new \code{LLMMessage} object containing the original messages plus the assistant's response.
 }
 \description{
-Call the Groq API to interact with fast opensource models on Groq
+This function sends a message history to the Groq Chat API and returns the assistant's reply.
+}
+\examples{
+\dontrun{
+# Basic usage
+msg <- llm_message("What is Groq?")
+result <- groq(msg)
+
+# With custom parameters
+result2 <- groq(msg, 
+               .model = "llama-3.2-vision",
+               .temperature = 0.5, 
+               .max_tokens = 512)
+}
+
 }

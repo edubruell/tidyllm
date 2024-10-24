@@ -1,29 +1,35 @@
 #' Send LLMMessage to Mistral API
 #'
-#' @param .llm An LLMMessage object.
-#' @param .model The model identifier (default: "mistral-large-latest").
-#' @param .stream  Should the answer be streamed to console as it comes (optional)
-#' @param .temperature Control for randomness in response generation (optional).
-#' @param .max_tokens Maximum number of tokens for response (default: 1024).
-#' @param .min_tokens Minimum number of tokens for response (optional).
-#' @param .seed Which seed should be used for random numbers  (optional).
-#' @param .json Should output be structured as JSON  (default: FALSE).
-#' @param .wait Should we wait for rate limits if necessary?
-#' @param .min_tokens_reset How many tokens should be remaining to wait until we wait for token reset?
-#' @param .timeout When should our connection time out (default: 120 seconds).
-#' @param .verbose Should additional information be shown after the API call
-#' @param .dry_run If TRUE, perform a dry run and return the request object.
-#' @return Returns an updated LLMMessage object.
+#' @param .llm An `LLMMessage` object.
+#' @param .model The model identifier to use (default: `"mistral-large-latest"`). 
+#' @param .stream Whether to stream back partial progress to the console. (default: `FALSE`).
+#' @param .temperature Sampling temperature to use, between `0.0` and `1.5`. Higher values make the output more random, while lower values make it more focused and deterministic (default: `0.7`).
+#' @param .top_p Nucleus sampling parameter, between `0.0` and `1.0`. The model considers tokens with top_p probability mass (default: `1`).
+#' @param .max_tokens The maximum number of tokens to generate in the completion. Must be `>= 0` (default: `1024`).
+#' @param .min_tokens The minimum number of tokens to generate in the completion. Must be `>= 0` (optional).
+#' @param .seed The seed to use for random sampling. If set, different calls will generate deterministic results (optional).
+#' @param .stop Stop generation if this token is detected, or if one of these tokens is detected when providing a list (optional).
+#' @param .json Whether the output should be in JSON mode(default: `FALSE`).
+#' @param .safe_prompt Whether to inject a safety prompt before all conversations (default: `FALSE`).
+#' @param .wait Should we wait for rate limits if necessary? (default: `TRUE`)
+#' @param .min_tokens_reset How many tokens should be remaining until we wait for token reset? (default: `1000`)
+#' @param .timeout When should our connection time out in seconds (default: `120`).
+#' @param .verbose Should additional information be shown after the API call? (default: `FALSE`)
+#' @param .dry_run If `TRUE`, perform a dry run and return the request object (default: `FALSE`).
+#' @return Returns an updated `LLMMessage` object.
 #' @export
 mistral <- function(.llm,
                     .model = "mistral-large-latest",
                     .stream = FALSE,
                     .seed = NULL,
                     .json = FALSE,
-                    .temperature = NULL,
+                    .temperature = 0.7,
+                    .top_p = 1,
+                    .stop = NULL,
+                    .safe_prompt = FALSE,
                     .timeout = 120,
                     .wait = TRUE,
-                    .min_tokens_reset = 0L,
+                    .min_tokens_reset = 1000L,
                     .max_tokens = 1024,
                     .min_tokens = NULL,
                     .dry_run = FALSE,
@@ -32,21 +38,23 @@ mistral <- function(.llm,
   # Validate the inputs
   c(
     "Input .llm must be an LLMMessage object" = inherits(.llm, "LLMMessage"),
-    "Input .model must be a string" = is.character(.model),
-    "Input .stream must be logical if provided" = is.logical(.stream),
-    "Input .json must be logical if provided" = is.logical(.json),
-    "Input .temperature must be numeric if provided" = is.null(.temperature) | is.numeric(.temperature),
-    "Input .seed must be an integer-valued numeric if provided" = is.null(.seed) | is_integer_valued(.seed),
-    "Input .max_tokens must be an integer-valued numeric if provided" = is.null(.max_tokens) | is_integer_valued(.max_tokens),
-    "Input .min_tokens must be an integer-valued numeric if provided" = is.null(.min_tokens) | is_integer_valued(.min_tokens),
-    "Input .timeout must be an integer-valued numeric (seconds till timeout)" = is_integer_valued(.timeout),
-    "Input .wait must be logical" = is.logical(.wait),
-    "Input .min_tokens_reset must be an integer" = is_integer_valued(.min_tokens_reset),
-    "Input .dry_run must be logical"    = is.logical(.dry_run),
-    "Input .verbose must be logical"    = is.logical(.verbose)
+    "Input .model must be a string or NULL" = is.null(.model) || (is.character(.model) && length(.model) == 1),
+    "Input .stream must be logical" = is.logical(.stream) && length(.stream) == 1,
+    "Input .temperature must be numeric between 0 and 1.5" = is.null(.temperature) || (is.numeric(.temperature) && .temperature >= 0 && .temperature <= 1.5),
+    "Input .top_p must be numeric between 0 and 1" = is.null(.top_p) || (is.numeric(.top_p) && .top_p >= 0 && .top_p <= 1),
+    "Input .max_tokens must be integer >= 0" = is.null(.max_tokens) || (is_integer_valued(.max_tokens) && .max_tokens >= 0),
+    "Input .min_tokens must be integer >= 0 if provided" = is.null(.min_tokens) || (is_integer_valued(.min_tokens) && .min_tokens >= 0),
+    "Input .seed must be integer >= 0 if provided" = is.null(.seed) || (is_integer_valued(.seed) && .seed >= 0),
+    "Input .stop must be a string or vector of strings if provided" = is.null(.stop) || (is.character(.stop)),
+    "Input .json must be logical" = is.logical(.json) && length(.json) == 1,
+    "Input .safe_prompt must be logical" = is.logical(.safe_prompt) && length(.safe_prompt) == 1,
+    "Input .wait must be logical" = is.logical(.wait) && length(.wait) == 1,
+    "Input .min_tokens_reset must be integer-valued numeric" = is_integer_valued(.min_tokens_reset),
+    "Input .timeout must be integer-valued numeric (seconds till timeout)" = is_integer_valued(.timeout),
+    "Input .dry_run must be logical" = is.logical(.dry_run) && length(.dry_run) == 1,
+    "Input .verbose must be logical" = is.logical(.verbose) && length(.verbose) == 1
   ) |>
     validate_inputs()
-  
   
   # Mistral and groq have the same API format for messages!
   mistral_messages <- .llm$to_api_format("groq")
@@ -59,7 +67,10 @@ mistral <- function(.llm,
     random_seed = .seed,
     max_tokens  = .max_tokens,
     min_tokens  = .min_tokens,
-    stream      = .stream
+    stream      = .stream,
+    top_p        = .top_p,          
+    stop         = .stop,           
+    safe_prompt  = .safe_prompt     
   )
   mistral_request_body <- base::Filter(Negate(is.null), mistral_request_body)
   
@@ -94,6 +105,12 @@ mistral <- function(.llm,
     .stream = .stream,
     .timeout = .timeout,
     .parse_response_fn = function(body_json) {
+      if(body_json$object=="error"){
+        sprintf("Mistral API returned an Error (code: %s)\nMessage: %s",
+                body_json$code,
+                body_json$message) |>
+          stop()
+      }
       assistant_reply <- body_json$choices[[1]]$message$content
       return(assistant_reply)
     },

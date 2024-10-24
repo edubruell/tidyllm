@@ -13,11 +13,15 @@ The development version of `tidyllm` reflects the ongoing updates in the GitHub 
 
 ## Major Features
 
-- **Enhanced Input Validation**: Functions like `ollama()`, `claude()`, and `openai()` now have improved input validation, ensuring better alignment with API documentation and providing more human-readable error messages.
+- **Enhanced Input Validation**: All API functions now have improved input validation, ensuring better alignment with API documentation
+
+- **Improved error handling**  More human-readable error messages for failed requests from the API
   
 - **Advanced JSON Mode in `openai()`**: The `openai()` function now supports advanced `.json_schemas`, allowing structured output in JSON mode for more precise responses.
 
 - **Reasoning Models Support**: Support for O1 reasoning models has been added, with better handling of system prompts in the `openai()` function.
+
+- **Streaming callback functions refactored:** Given that the streaming callback format for Open AI, Mistral and Groq is nearly identical the three now rely on the same callback function. 
 
 ## Breaking Changes
 

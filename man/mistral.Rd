@@ -10,10 +10,13 @@ mistral(
   .stream = FALSE,
   .seed = NULL,
   .json = FALSE,
-  .temperature = NULL,
+  .temperature = 0.7,
+  .top_p = 1,
+  .stop = NULL,
+  .safe_prompt = FALSE,
   .timeout = 120,
   .wait = TRUE,
-  .min_tokens_reset = 0L,
+  .min_tokens_reset = 1000L,
   .max_tokens = 1024,
   .min_tokens = NULL,
   .dry_run = FALSE,
@@ -21,34 +24,40 @@ mistral(
 )
 }
 \arguments{
-\item{.llm}{An LLMMessage object.}
+\item{.llm}{An \code{LLMMessage} object.}
 
-\item{.model}{The model identifier (default: "mistral-large-latest").}
+\item{.model}{The model identifier to use (default: \code{"mistral-large-latest"}).}
 
-\item{.stream}{Should the answer be streamed to console as it comes (optional)}
+\item{.stream}{Whether to stream back partial progress to the console. (default: \code{FALSE}).}
 
-\item{.seed}{Which seed should be used for random numbers  (optional).}
+\item{.seed}{The seed to use for random sampling. If set, different calls will generate deterministic results (optional).}
 
-\item{.json}{Should output be structured as JSON  (default: FALSE).}
+\item{.json}{Whether the output should be in JSON mode(default: \code{FALSE}).}
 
-\item{.temperature}{Control for randomness in response generation (optional).}
+\item{.temperature}{Sampling temperature to use, between \code{0.0} and \code{1.5}. Higher values make the output more random, while lower values make it more focused and deterministic (default: \code{0.7}).}
 
-\item{.timeout}{When should our connection time out (default: 120 seconds).}
+\item{.top_p}{Nucleus sampling parameter, between \code{0.0} and \code{1.0}. The model considers tokens with top_p probability mass (default: \code{1}).}
 
-\item{.wait}{Should we wait for rate limits if necessary?}
+\item{.stop}{Stop generation if this token is detected, or if one of these tokens is detected when providing a list (optional).}
 
-\item{.min_tokens_reset}{How many tokens should be remaining to wait until we wait for token reset?}
+\item{.safe_prompt}{Whether to inject a safety prompt before all conversations (default: \code{FALSE}).}
 
-\item{.max_tokens}{Maximum number of tokens for response (default: 1024).}
+\item{.timeout}{When should our connection time out in seconds (default: \code{120}).}
 
-\item{.min_tokens}{Minimum number of tokens for response (optional).}
+\item{.wait}{Should we wait for rate limits if necessary? (default: \code{TRUE})}
 
-\item{.dry_run}{If TRUE, perform a dry run and return the request object.}
+\item{.min_tokens_reset}{How many tokens should be remaining until we wait for token reset? (default: \code{1000})}
 
-\item{.verbose}{Should additional information be shown after the API call}
+\item{.max_tokens}{The maximum number of tokens to generate in the completion. Must be \verb{>= 0} (default: \code{1024}).}
+
+\item{.min_tokens}{The minimum number of tokens to generate in the completion. Must be \verb{>= 0} (optional).}
+
+\item{.dry_run}{If \code{TRUE}, perform a dry run and return the request object (default: \code{FALSE}).}
+
+\item{.verbose}{Should additional information be shown after the API call? (default: \code{FALSE})}
 }
 \value{
-Returns an updated LLMMessage object.
+Returns an updated \code{LLMMessage} object.
 }
 \description{
 Send LLMMessage to Mistral API

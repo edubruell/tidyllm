@@ -9,7 +9,7 @@ ratelimit_from_header(.response_headers, .api)
 \arguments{
 \item{.response_headers}{Headers from the API response}
 
-\item{.api}{The API type ("claude" or "chatgpt")}
+\item{.api}{The API type ("claude", "openai","groq")}
 }
 \value{
 A list containing rate limit information

@@ -90,7 +90,7 @@ parse_duration_to_seconds <- function(.duration_str) {
 #' Extract rate limit information from API response headers
 #'
 #' @param .response_headers Headers from the API response
-#' @param .api The API type ("claude" or "chatgpt")
+#' @param .api The API type ("claude", "openai","groq")
 #' @return A list containing rate limit information
 ratelimit_from_header <- function(.response_headers, .api) {
   switch(.api,
@@ -134,6 +134,25 @@ ratelimit_from_header <- function(.response_headers, .api) {
              ratelimit_tokens_remaining = as.integer(
                .response_headers["x-ratelimit-remaining-tokens"]),
              ratelimit_tokens_reset_time = request_time + ratelimit_tokens_reset_dt
+           )
+         },
+         "groq" ={
+           #Do some parsing for the rl list 
+           request_time                  <- strptime(.response_headers["date"]$date, format="%a, %d %b %Y %H:%M:%S", tz="GMT")
+           ratelimit_requests_reset_dt   <- parse_duration_to_seconds(.response_headers["x-ratelimit-reset-requests"]$`x-ratelimit-reset-requests`)
+           ratelimit_requests_reset_time <- request_time + ratelimit_requests_reset_dt
+           ratelimit_tokens_reset_dt     <- parse_duration_to_seconds(.response_headers["x-ratelimit-reset-tokens"]$`x-ratelimit-reset-tokens`)
+           ratelimit_tokens_reset_time   <- request_time + ratelimit_tokens_reset_dt
+           
+           #Ratelimit list
+           list(
+             this_request_time             = request_time ,
+             ratelimit_requests            = as.integer(.response_headers["x-ratelimit-limit-requests"]),
+             ratelimit_requests_remaining  = as.integer(.response_headers["x-ratelimit-remaining-requests"]),
+             ratelimit_requests_reset_time = ratelimit_requests_reset_time ,
+             ratelimit_tokens              = as.integer(.response_headers["x-ratelimit-limit-tokens"]),
+             ratelimit_tokens_remaining    = as.integer(.response_headers["x-ratelimit-remaining-tokens"]),
+             ratelimit_tokens_reset_time   = ratelimit_tokens_reset_time
            )
          },
          stop(sprintf("Unsupported API type: %s", .api))

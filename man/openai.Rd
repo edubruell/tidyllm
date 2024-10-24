@@ -52,7 +52,7 @@ openai(
 
 \item{.stop}{Up to 4 sequences where the API will stop generating further tokens.}
 
-\item{.stream}{If set to TRUE, partial message deltas will be sent as they become available (default: FALSE).}
+\item{.stream}{If set to TRUE, the answer will be streamed to console as it comes (default: FALSE).}
 
 \item{.temperature}{What sampling temperature to use, between 0 and 2. Higher values make the output more random.}
 

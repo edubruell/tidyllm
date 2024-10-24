@@ -63,7 +63,7 @@ printing the content to the console and updating a global environment for furthe
 
 <dl><dt id="arg--api">.api<a class="anchor" aria-label="anchor" href="#arg--api"></a></dt>
 <dd><p>A character string indicating the API type. Supported values are
-<code>"claude"</code>, <code>"ollama"</code>, <code>"mistral"</code>, and <code>"openai"</code>.</p></dd>
+<code>"claude"</code>, <code>"ollama"</code>, <code>"mistral"</code>, <code>"groq"</code> and <code>"openai"</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -81,9 +81,7 @@ streaming is finished.</p>
 and <code>message_stop</code> events to control streaming flow.</p></li>
 <li><p><strong>For Ollama API</strong>: The function directly parses the stream content as JSON and extracts the
 <code>message$content</code> field.</p></li>
-<li><p><strong>For OpenAI API</strong>: The function handles JSON data streams and processes content deltas.
-It stops processing when the <code>[DONE]</code> message is encountered.</p></li>
-<li><p><strong>For Mistral API</strong>: The function is very similar to the ChatGPT callback function.
+<li><p><strong>For OpenAI, Mistral and Groq</strong>: The function handles JSON data streams and processes content deltas.
 It stops processing when the <code>[DONE]</code> message is encountered.</p></li>
 </ul></div>
 

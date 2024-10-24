@@ -14,7 +14,7 @@
 #' @param .seed If specified, the system will make a best effort to sample deterministically.
 #' @param .service_tier Specifies the latency tier to use for processing the request (default: "auto").
 #' @param .stop Up to 4 sequences where the API will stop generating further tokens.
-#' @param .stream If set to TRUE, partial message deltas will be sent as they become available (default: FALSE).
+#' @param .stream If set to TRUE, the answer will be streamed to console as it comes (default: FALSE).
 #' @param .temperature What sampling temperature to use, between 0 and 2. Higher values make the output more random.
 #' @param .top_p An alternative to sampling with temperature, called nucleus sampling.
 #' @param .api_url Base URL for the API (default: "https://api.openai.com/").
