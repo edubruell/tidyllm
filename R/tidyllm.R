@@ -63,7 +63,7 @@ LLMMessage <- R6::R6Class(
     #' Convert to API format
     #' 
     #' Converts the message history to a format suitable for various API calls.
-    #' @param api_type The type of API (e.g., "claude","groq","chatgpt").
+    #' @param api_type The type of API (e.g., "claude","groq","openai").
     #' @param cgpt_image_detail Specific option for ChatGPT API (imagedetail - set to auto)
     #' 
     #' @return A message history in the target API format
@@ -120,7 +120,7 @@ LLMMessage <- R6::R6Class(
                  output
                }) 
              },
-             "chatgpt" = {
+             "openai" = {
                lapply(self$message_history, function(m) {
                  # The basic text content supplied with the prompt
                  base_content <- m$content

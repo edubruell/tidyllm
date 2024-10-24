@@ -445,7 +445,7 @@ chatgpt_grid <- grid |>
   filter(model=="gemma2", prompt_id ==1) |>
   mutate(model="gpt-4o-mini") |>
   pmap_dfr(classify_occupation_grid,
-           api_function = chatgpt) 
+           api_function = openai) 
 
 chatgpt_grid %>%
   mutate(across(starts_with("occ2_"),

@@ -113,7 +113,7 @@ Converts the message history to a format suitable for various API calls.}
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{api_type}}{The type of API (e.g., "claude","groq","chatgpt").}
+\item{\code{api_type}}{The type of API (e.g., "claude","groq","openai").}
 
 \item{\code{cgpt_image_detail}}{Specific option for ChatGPT API (imagedetail - set to auto)}
 }

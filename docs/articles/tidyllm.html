@@ -26,7 +26,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.8</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -160,7 +160,7 @@ different language models:</p>
 <code class="sourceCode R"><span><span class="co"># Continue the conversation with ChatGPT</span></span>
 <span><span class="va">conversation</span> <span class="op">&lt;-</span> <span class="va">conversation</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"What's a famous landmark in this city?"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/chatgpt.html">chatgpt</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/last_reply.html">last_reply</a></span><span class="op">(</span><span class="va">conversation</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## [1] "A famous landmark in Paris is the Eiffel Tower."</span></span></code></pre>
@@ -175,7 +175,7 @@ this picture here: <img src="picture.jpeg" width="70%"></p>
 <code class="sourceCode R"><span><span class="co"># Describe an image using a llava model on ollama</span></span>
 <span><span class="va">image_description</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Describe this picture? Can you guess where it was made?"</span>,</span>
 <span>                                 .imagefile <span class="op">=</span> <span class="st">"picture.jpeg"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/chatgpt.html">chatgpt</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-4o"</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-4o"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Get the last reply</span></span>
 <span><span class="fu"><a href="../reference/last_reply.html">last_reply</a></span><span class="op">(</span><span class="va">image_description</span><span class="op">)</span></span></code></pre></div>
@@ -198,7 +198,7 @@ to the <code>.pdf</code> argument of the <code>chat</code> function:</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Please summarize the key points from the provided PDF document."</span>, </span>
 <span>     .pdf <span class="op">=</span> <span class="st">"die_verwandlung.pdf"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>     <span class="fu"><a href="../reference/chatgpt.html">chatgpt</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-4o-mini"</span><span class="op">)</span></span></code></pre></div>
+<span>     <span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-4o-mini"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Message History:</span></span>
 <span><span class="co">## system: You are a helpful assistant</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span>
@@ -408,7 +408,7 @@ functions for specific examples.</p>
 <div class="section level4">
 <h4 id="streaming-back-responses-experimental">Streaming back responses (Experimental)<a class="anchor" aria-label="anchor" href="#streaming-back-responses-experimental"></a>
 </h4>
-<p>At the moment <code><a href="../reference/ollama.html">ollama()</a></code>, <code><a href="../reference/chatgpt.html">chatgpt()</a></code>,
+<p>At the moment <code><a href="../reference/ollama.html">ollama()</a></code>, <code><a href="../reference/openai.html">openai()</a></code>,
 <code><a href="../reference/mistral.html">mistral()</a></code> and <code><a href="../reference/claude.html">claude()</a></code> support real-time
 streaming of reply tokens to the console while the model works with the
 <code>.stream=TRUE</code> argument. While this feature offers slightly
@@ -426,33 +426,35 @@ models with varying strengths. The choice of which model or API to use
 often depends on the specific task, cost considerations, and data
 privacy concerns.</p>
 <ol style="list-style-type: decimal">
-<li><p><strong>Claude (Anthropic API):</strong> Claude is known for
-generating thoughtful, nuanced responses, making it ideal for tasks that
-require more human-like reasoning, such as summarization or creative
-writing. Calude Sonnet 3.5 currently is one of the top-performing models
-on many benchmarks. However, it can sometimes be more verbose than
-necessary, and it lacks direct JSON support, which requires additional
-prompting and validation to ensure structured output.</p></li>
-<li><p><strong>ChatGPT (OpenAI API):</strong> ChatGPT, particularly the
-GPT-4o model, is extremely versatile and performs well across a wide
-range of tasks, including text generation, code completion, and
-multimodal analysis. While it is good for most cases, it tends to be
-more expensive than other alternatives, especially for large-scale
-usage.</p></li>
-<li><p><strong>Mistral (EU-based):</strong> Mistral offers
-lighter-weight, open-source models developed and hosted in the EU,
-making it particularly appealing if data protection (e.g., GDPR
-compliance) is a concern. While the models may not be as powerful as
-GPT-4o or Claude Sonnet, Mistral offers good performance for standard
-text generation tasks.</p></li>
-<li><p><strong>Groq (Fast):</strong> Groq offers a unique advantage with
-its custom AI accelerator hardware, that get you the fastest output
-available on any API. It delivers high performance at low costs,
-especially for tasks that require fast execution. It hosts many strong
-open-source models, like <strong>lamma3:70b</strong>.</p></li>
-<li><p><strong>ollama (Local Models):</strong> If data privacy is a
-priority, running open-source models like <strong>gemma2::9B</strong>
-locally via <code><a href="../reference/ollama.html">ollama()</a></code> gives you full control over model
+<li><p><strong><code><a href="../reference/claude.html">claude()</a></code> (Anthropic API):</strong> <a href="https://docs.anthropic.com/en/docs/welcome" class="external-link">Claude</a> is known
+for generating thoughtful, nuanced responses, making it ideal for tasks
+that require more human-like reasoning, such as summarization or
+creative writing. Claude Sonnet 3.5 currently is one of the
+top-performing models on many benchmarks. However, it can sometimes be
+more verbose than necessary, and it lacks direct JSON support, which
+requires additional prompting and validation to ensure structured
+output.</p></li>
+<li><p><strong><code><a href="../reference/openai.html">openai()</a></code> (OpenAI API):</strong> Models on
+the <a href="https://platform.openai.com/docs/api-reference/chat" class="external-link">OpenAI
+API</a>, particularly the GPT-4o model, are extremely versatile and
+perform well across a wide range of tasks, including text generation,
+code completion, and multimodal analysis. In addition the o1-reasoning
+models offer very good performance for a set of specific task (at a
+relatively high price).</p></li>
+<li><p><strong><code><a href="../reference/mistral.html">mistral()</a></code> (EU-based):</strong> <a href="https://docs.mistral.ai/" class="external-link">Mistral</a> offers lighter-weight,
+open-source models developed and hosted in the EU, making it
+particularly appealing if data protection (e.g., GDPR compliance) is a
+concern. While the models may not be as powerful as GPT-4o or Claude
+Sonnet, Mistral offers good performance for standard text generation
+tasks.</p></li>
+<li><p><strong><code><a href="../reference/groq.html">groq()</a></code> (Fast):</strong> <a href="https://console.groq.com/docs/quickstart" class="external-link">Groq</a> offers a unique
+advantage with its custom AI accelerator hardware, that get you the
+fastest output available on any API. It delivers high performance at low
+costs, especially for tasks that require fast execution. It hosts many
+strong open-source models, like <strong>lamma3:70b</strong>.</p></li>
+<li><p><strong><code><a href="../reference/ollama.html">ollama()</a></code> (Local Models):</strong> If data
+privacy is a priority, running open-source models like
+<strong>gemma2::9B</strong> locally via <a href="https://ollama.com/" class="external-link">ollama</a> gives you full control over model
 execution and data. However, the trade-off is that local models require
 significant computational resources, and are often not quite as powerful
 as the large API-providers. The <a href="https://ollama.com/blog" class="external-link">ollama

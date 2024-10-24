@@ -2,7 +2,7 @@
 % Please edit documentation in R/openai.R
 \name{chatgpt}
 \alias{chatgpt}
-\title{Send LLMMessages to the OpenAI API to interact with ChatGPT}
+\title{ChatGPT Wrapper (Deprecated)}
 \usage{
 chatgpt(
   .llm,
@@ -24,41 +24,62 @@ chatgpt(
 )
 }
 \arguments{
-\item{.llm}{An  LLMMessage object.}
+\item{.llm}{An \code{LLMMessage} (passed directly to the \code{openai()} function)}
 
-\item{.model}{The model identifier (default: "gpt-4o").}
+\item{.model}{A character string specifying the model to use.}
 
-\item{.max_tokens}{The maximum number of tokens to generate (default: 1024).}
+\item{.max_tokens}{An integer specifying the maximum number of tokens  (mapped to \code{.max_completion_tokens} in \code{openai()})}
 
-\item{.temperature}{Control for randomness in response generation (optional).}
+\item{.temperature}{A numeric value for controlling randomness. This is}
 
-\item{.top_p}{Nucleus sampling parameter (optional).}
+\item{.top_p}{A numeric value for nucleus sampling, indicating the top}
 
-\item{.top_k}{Top k sampling parameter (optional).}
+\item{.top_k}{Currently unused, as it is not supported by \code{openai()}.}
 
-\item{.frequency_penalty}{Controls repetition frequency (optional).}
+\item{.frequency_penalty}{A numeric value that penalizes new tokens based on
+their frequency so far.}
 
-\item{.presence_penalty}{Controls how much to penalize repeating content (optional)}
+\item{.presence_penalty}{A numeric value that penalizes new tokens based on
+whether they appear in the text so far.}
 
-\item{.api_url}{Base URL for the API (default: https://api.openai.com/v1/completions).}
+\item{.api_url}{Character string specifying the API URL. Defaults to the
+OpenAI API endpoint.}
 
-\item{.timeout}{Request timeout in seconds (default: 60).}
+\item{.timeout}{An integer specifying the request timeout in seconds. This is}
 
-\item{.verbose}{Should additional information be shown after the API call}
+\item{.verbose}{Will print additional information about the request (default: false)}
 
-\item{.wait}{Should we wait for rate limits if necessary?}
+\item{.wait}{Logical, if \code{TRUE}, will wait for rate limits to reset (default: true)}
 
-\item{.json}{Should output be in JSON  mode (default: FALSE).}
+\item{.json}{Should json-mode be used? (detault: false)}
 
-\item{.min_tokens_reset}{How many tokens should be remaining to wait until we wait for token reset?}
+\item{.min_tokens_reset}{An integer specifying the minimum tokens before a rate limit reset is taken into account.}
 
-\item{.stream}{Stream back the response piece by piece (default: FALSE).}
+\item{.stream}{Should the response  be processed as a stream (default: false)}
 
-\item{.dry_run}{If TRUE, perform a dry run and return the request object.}
+\item{.dry_run}{Shouldthe request is constructed but not actually sent. Useful for debugging and testing. (default: false)}
 }
 \value{
-Returns an updated LLMMessage object.
+An \code{LLMMessage} object with the assistant's reply.
 }
 \description{
-Send LLMMessages to the OpenAI API to interact with ChatGPT
+Provides a wrapper for the \code{openai()} function to facilitate
+migration from the deprecated \code{chatgpt()} function. This ensures backward
+compatibility while allowing users to transition to the updated features.
+}
+\details{
+This function is deprecated and is now a wrapper around \code{openai()}. It is
+recommended to switch to using \code{openai()} directly in future code. The
+\code{chatgpt()} function remains available to ensure backward compatibility for
+existing projects.
+}
+\examples{
+\dontrun{
+# Using the deprecated chatgpt() function
+result <- chatgpt(.llm = llm_message(), .prompt = "Hello, how are you?")
+}
+
+}
+\seealso{
+Use \code{\link[=openai]{openai()}} instead.
 }

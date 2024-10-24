@@ -17,7 +17,7 @@ claude(
   .api_url = "https://api.anthropic.com/",
   .verbose = FALSE,
   .wait = TRUE,
-  .min_tokens_reset = 0L,
+  .min_tokens_reset = 1000L,
   .timeout = 60,
   .json = FALSE,
   .stream = FALSE,
@@ -49,7 +49,7 @@ claude(
 
 \item{.wait}{Logical; if TRUE, respects rate limits by waiting when necessary (default: TRUE).}
 
-\item{.min_tokens_reset}{Integer specifying the minimum token threshold before waiting for reset.}
+\item{.min_tokens_reset}{Integer specifying the minimum token threshold before waiting for reset (default:1000).}
 
 \item{.timeout}{Integer specifying the request timeout in seconds (default: 60).}
 
@@ -74,7 +74,7 @@ result <- claude(msg)
 # With custom parameters
 result2 <- claude(msg, 
                  .temperature = 0.7, 
-                 .max_tokens = 2000)
+                 .max_tokens = 1000)
 }
 
 }

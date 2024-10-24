@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.8</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -58,7 +58,7 @@
 <span>  .api_url <span class="op">=</span> <span class="st">"https://api.anthropic.com/"</span>,</span>
 <span>  .verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  .wait <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  .min_tokens_reset <span class="op">=</span> <span class="fl">0L</span>,</span>
+<span>  .min_tokens_reset <span class="op">=</span> <span class="fl">1000L</span>,</span>
 <span>  .timeout <span class="op">=</span> <span class="fl">60</span>,</span>
 <span>  .json <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  .stream <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -119,7 +119,7 @@
 
 
 <dt id="arg--min-tokens-reset">.min_tokens_reset<a class="anchor" aria-label="anchor" href="#arg--min-tokens-reset"></a></dt>
-<dd><p>Integer specifying the minimum token threshold before waiting for reset.</p></dd>
+<dd><p>Integer specifying the minimum token threshold before waiting for reset (default:1000).</p></dd>
 
 
 <dt id="arg--timeout">.timeout<a class="anchor" aria-label="anchor" href="#arg--timeout"></a></dt>
@@ -153,7 +153,7 @@
 <span><span class="co"># With custom parameters</span></span>
 <span><span class="va">result2</span> <span class="op">&lt;-</span> <span class="fu">claude</span><span class="op">(</span><span class="va">msg</span>, </span>
 <span>                 .temperature <span class="op">=</span> <span class="fl">0.7</span>, </span>
-<span>                 .max_tokens <span class="op">=</span> <span class="fl">2000</span><span class="op">)</span></span>
+<span>                 .max_tokens <span class="op">=</span> <span class="fl">1000</span><span class="op">)</span></span>
 <span><span class="op">}</span> <span class="co"># }</span></span>
 <span></span></code></pre></div>
     </div>

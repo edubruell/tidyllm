@@ -26,7 +26,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.8</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -217,7 +217,7 @@ argument as a string variable.</p>
 <span>                start_page <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>                end_page <span class="op">=</span> <span class="fl">35</span><span class="op">)</span> </span>
 <span>              <span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>    <span class="fu"><a href="../reference/chatgpt.html">chatgpt</a></span><span class="op">(</span>.json<span class="op">=</span><span class="cn">TRUE</span>,.stream<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.json<span class="op">=</span><span class="cn">TRUE</span>,.stream<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>    <span class="fu"><a href="../reference/last_reply.html">last_reply</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>  </span>
 <span>  <span class="va">summary</span></span>
@@ -508,9 +508,57 @@ to the schema we requested. Many newer APIs, such as the most recent <a href="ht
 API</a>, now offer the ability to pre-specify a valid output schema.
 This means you can enforce strict formatting rules before the model
 generates a response, reducing the need for post-processing corrections.
-This functionality will be supported in future versions of
-<strong>tidyllm</strong>, allowing for smoother integration of
-structured outputs.</p>
+You can use this functionality via the
+<code>.json_schema</code>-arguement of <code><a href="../reference/openai.html">openai()</a></code>. Instead of
+writing out the schema in pure json give the model an R list version of
+the schema:</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Creating an llm_message with the document analysis task</span></span>
+<span><span class="va">msg</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">'Please analyze this document and provide the following details:</span></span>
+<span><span class="st">    1. Title: The full title of the paper.</span></span>
+<span><span class="st">    2. Authors: List of all authors.</span></span>
+<span><span class="st">    3. Suggested new filename: A filename for the document in the format "ReleaseYear_Author_etal_ShortTitle.pdf"</span></span>
+<span><span class="st">    4. Type: Is this a (brief) policy report or a research paper? Answer with either "Policy" or "Research"</span></span>
+<span><span class="st">    5. Answer these four  questions based on the document. Each answer should be roughly one 100 words long:</span></span>
+<span><span class="st">        Q1. What empirical methods are used in this work?</span></span>
+<span><span class="st">        Q2. What theoretical framework is applied or discussed?</span></span>
+<span><span class="st">        Q3. What is the main point or argument presented?</span></span>
+<span><span class="st">        Q4. What is the key contribution of this work?</span></span>
+<span><span class="st">    6. Key citations: List the four most important references that the document uses in describing its own contribution.</span></span>
+<span><span class="st"></span></span>
+<span><span class="st">Please provide the answers only as JSON in the following format:'</span>, .pdf <span class="op">=</span> <span class="va">files</span><span class="op">[[</span><span class="fl">8</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Define a JSON schema for the expected output format with 'name' and 'schema' fields</span></span>
+<span><span class="va">json_schema</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  name <span class="op">=</span> <span class="st">"DocumentAnalysisSchema"</span>,  <span class="co"># Name of the schema</span></span>
+<span>  schema <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>                    <span class="co"># The actual schema definition</span></span>
+<span>    type <span class="op">=</span> <span class="st">"object"</span>,</span>
+<span>    properties <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>      Title <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"string"</span><span class="op">)</span>,</span>
+<span>      Authors <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"array"</span>, items <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"string"</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>      SuggestedFilename <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"string"</span><span class="op">)</span>,</span>
+<span>      Type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"string"</span>, enum <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Policy"</span>, <span class="st">"Research"</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>      Answers <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>        type <span class="op">=</span> <span class="st">"object"</span>,</span>
+<span>        properties <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>          Q1 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"string"</span><span class="op">)</span>,</span>
+<span>          Q2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"string"</span><span class="op">)</span>,</span>
+<span>          Q3 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"string"</span><span class="op">)</span>,</span>
+<span>          Q4 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"string"</span><span class="op">)</span></span>
+<span>        <span class="op">)</span>,</span>
+<span>        required <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Q1"</span>, <span class="st">"Q2"</span>, <span class="st">"Q3"</span>, <span class="st">"Q4"</span><span class="op">)</span></span>
+<span>      <span class="op">)</span>,</span>
+<span>      KeyCitations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"array"</span>, items <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"string"</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="op">)</span>,</span>
+<span>    required <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Title"</span>, <span class="st">"Authors"</span>, <span class="st">"SuggestedFilename"</span>, <span class="st">"Type"</span>, <span class="st">"Answers"</span>, <span class="st">"KeyCitations"</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Call the OpenAI function with the message and JSON schema</span></span>
+<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span></span>
+<span>  .llm <span class="op">=</span> <span class="va">msg</span>,</span>
+<span>  .json_schema <span class="op">=</span> <span class="va">json_schema</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 <p>Another potential fix is to modify the prompt to ensure the model
 outputs in a non-nested <em>JSON</em> format, which often simplifies
 prompt adherence and downstream handling. In workflows like this, it’s
@@ -525,7 +573,7 @@ citation is important in the note-field of the bibtex.</p>
 <p>But for now, we have the processing steps we wanted for answers and
 citations and can proceed to the file names we got to structure our
 folder:</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>old_name  <span class="op">=</span> <span class="va">files</span>,</span>
 <span>       new_name  <span class="op">=</span> <span class="va">pdf_responses</span> <span class="op">|&gt;</span></span>
 <span>         <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="st">"parsed_content"</span><span class="op">)</span> <span class="op">|&gt;</span></span>

@@ -2,11 +2,11 @@
 #'
 #' This function generates a callback function that processes streaming responses
 #' from different language model APIs. The callback function is specific to the
-#' API provided (`claude`, `ollama`, `"mistral"`, or `chatgpt`) and processes incoming data streams,
+#' API provided (`claude`, `ollama`, `"mistral"`, or `openai`) and processes incoming data streams,
 #' printing the content to the console and updating a global environment for further use.
 #'
 #' @param .api A character string indicating the API type. Supported values are
-#'   `"claude"`, `"ollama"`, `"mistral"`, and `"chatgpt"`.
+#'   `"claude"`, `"ollama"`, `"mistral"`, and `"openai"`.
 #' @return A function that serves as a callback to handle streaming responses
 #'   from the specified API. The callback function processes the raw data, updates
 #'   the `.tidyllm_stream_env$stream` object, and prints the streamed content to the console.
@@ -17,7 +17,7 @@
 #'   and `message_stop` events to control streaming flow.
 #' - **For Ollama API**: The function directly parses the stream content as JSON and extracts the
 #'   `message$content` field.
-#' - **For ChatGPT API**: The function handles JSON data streams and processes content deltas.
+#' - **For OpenAI API**: The function handles JSON data streams and processes content deltas.
 #'   It stops processing when the `[DONE]` message is encountered.
 #' - **For Mistral API**: The function is very similar to the ChatGPT callback function.
 #'   It stops processing when the `[DONE]` message is encountered. 
@@ -83,7 +83,7 @@ generate_callback_function <- function(.api) {
       utils::flush.console()
       TRUE
       }
-  } else if (.api == "chatgpt") {
+  } else if (.api == "openai") {
       callback_fn <- function(.data) {
         # Read the stream content and split into lines
         lines <- .data |>

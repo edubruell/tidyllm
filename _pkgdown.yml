@@ -17,12 +17,13 @@ reference:
 
   - title: "Core Chat-API Functions"
     contents:
-      - chatgpt
+      - openai
       - claude
       - groq
       - mistral
       - ollama
-      
+      - chatgpt # Deprecated, use openai instead
+
   - title: "Embedding API Functions"
     contents:
     - ollama_embedding

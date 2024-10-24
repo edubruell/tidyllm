@@ -89,7 +89,7 @@ conversation
 # Continue the conversation with ChatGPT
 conversation <- conversation |>
   llm_message("What's a famous landmark in this city?") |>
-  chatgpt()
+  openai()
 
 last_reply(conversation)
 ```
@@ -110,7 +110,7 @@ Here we let ChatGPT guess where the picture was made:
 # Describe an image using a llava model on ollama
 image_description <- llm_message("Describe this picture? Can you guess where it was made?",
                                  .imagefile = "picture.jpeg") |>
-  chatgpt(.model = "gpt-4o")
+  openai(.model = "gpt-4o")
 
 # Get the last reply
 last_reply(image_description)
@@ -134,7 +134,7 @@ To include text from a PDF in your prompt, simply pass the file path to the `.pd
 ```{r pdf,  eval=FALSE, echo=TRUE}
 llm_message("Please summarize the key points from the provided PDF document.", 
      .pdf = "die_verwandlung.pdf") |>
-     chatgpt(.model = "gpt-4o-mini")
+     openai(.model = "gpt-4o-mini")
 ```
 ```{r pdf_out,  eval=TRUE, echo=FALSE}
   llm_message("Please summarize the key points from the provided PDF document.", 
@@ -275,20 +275,20 @@ Different API functions support different model parameters like  how determinist
 
 ### Streaming back responses (Experimental)
 
-At the moment `ollama()`, `chatgpt()`, `mistral()` and `claude()` support real-time streaming of reply tokens to the console while the model works with the `.stream=TRUE` argument.  While this feature offers slightly better feedback on model behavior in real-time, it’s not particularly useful for data-analysis workflows. We consider this feature experimental and recommend using non-streaming responses for production tasks. Note that error handling in streaming callbacks varies by API and differs in quality at this time.
+At the moment `ollama()`, `openai()`, `mistral()` and `claude()` support real-time streaming of reply tokens to the console while the model works with the `.stream=TRUE` argument.  While this feature offers slightly better feedback on model behavior in real-time, it’s not particularly useful for data-analysis workflows. We consider this feature experimental and recommend using non-streaming responses for production tasks. Note that error handling in streaming callbacks varies by API and differs in quality at this time.
 
 ### Choosing the Right Model and API
 
 tidyllm supports multiple APIs, each offering distinct large language models with varying strengths. The choice of which model or API to use often depends on the specific task, cost considerations, and data privacy concerns.
 
-1. **Claude (Anthropic API):** Claude is known for generating thoughtful, nuanced responses, making it ideal for tasks that require more human-like reasoning, such as summarization or creative writing. Calude Sonnet 3.5 currently is one of the top-performing models on many benchmarks. However, it can sometimes be more verbose than necessary, and it lacks direct JSON support, which requires additional prompting and validation to ensure structured output.
+1. **`claude()` (Anthropic API):** [Claude](https://docs.anthropic.com/en/docs/welcome) is known for generating thoughtful, nuanced responses, making it ideal for tasks that require more human-like reasoning, such as summarization or creative writing. Claude Sonnet 3.5 currently is one of the top-performing models on many benchmarks. However, it can sometimes be more verbose than necessary, and it lacks direct JSON support, which requires additional prompting and validation to ensure structured output. 
 
-2. **ChatGPT (OpenAI API):** ChatGPT, particularly the GPT-4o model, is extremely versatile and performs well across a wide range of tasks, including text generation, code completion, and multimodal analysis. While it is good for most cases, it tends to be more expensive than other alternatives, especially for large-scale usage.
+2. **`openai()` (OpenAI API):** Models on the [OpenAI API](https://platform.openai.com/docs/api-reference/chat), particularly the GPT-4o model, are extremely versatile and perform well across a wide range of tasks, including text generation, code completion, and multimodal analysis. In addition the o1-reasoning models offer very good performance for a set of specific task (at a relatively high price).
 
-3. **Mistral (EU-based):** Mistral offers  lighter-weight, open-source models developed and hosted in the EU, making it particularly appealing if data protection (e.g., GDPR compliance) is a concern. While the models may not be as powerful as GPT-4o or Claude Sonnet, Mistral offers good performance for standard text generation tasks.
+3. **`mistral()` (EU-based):** [Mistral](https://docs.mistral.ai/) offers  lighter-weight, open-source models developed and hosted in the EU, making it particularly appealing if data protection (e.g., GDPR compliance) is a concern. While the models may not be as powerful as GPT-4o or Claude Sonnet, Mistral offers good performance for standard text generation tasks.
 
-4. **Groq (Fast):** Groq offers a unique advantage with its custom AI accelerator hardware, that get you the fastest output available on any API. It delivers high performance at low costs, especially for tasks that require fast execution. It hosts many strong open-source models, like **lamma3:70b**.
+4. **`groq()` (Fast):** [Groq](https://console.groq.com/docs/quickstart) offers a unique advantage with its custom AI accelerator hardware, that get you the fastest output available on any API. It delivers high performance at low costs, especially for tasks that require fast execution. It hosts many strong open-source models, like **lamma3:70b**.
 
-5. **ollama (Local Models):** If data privacy is a priority, running open-source models like **gemma2::9B** locally via `ollama()` gives you full control over model execution and data. However, the trade-off is that local models require significant computational resources, and are often not quite as powerful as the large API-providers. The [ollama blog](https://ollama.com/blog) regularly has posts about new models and their advantages that you can download via `ollama_download_model()`.
+5. **`ollama()` (Local Models):** If data privacy is a priority, running open-source models like **gemma2::9B** locally via [ollama](https://ollama.com/) gives you full control over model execution and data. However, the trade-off is that local models require significant computational resources, and are often not quite as powerful as the large API-providers. The [ollama blog](https://ollama.com/blog) regularly has posts about new models and their advantages that you can download via `ollama_download_model()`.
 
 

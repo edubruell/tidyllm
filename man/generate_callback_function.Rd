@@ -8,7 +8,7 @@ generate_callback_function(.api)
 }
 \arguments{
 \item{.api}{A character string indicating the API type. Supported values are
-\code{"claude"}, \code{"ollama"}, \code{"mistral"}, and \code{"chatgpt"}.}
+\code{"claude"}, \code{"ollama"}, \code{"mistral"}, and \code{"openai"}.}
 }
 \value{
 A function that serves as a callback to handle streaming responses
@@ -20,7 +20,7 @@ streaming is finished.
 \description{
 This function generates a callback function that processes streaming responses
 from different language model APIs. The callback function is specific to the
-API provided (\code{claude}, \code{ollama}, \code{"mistral"}, or \code{chatgpt}) and processes incoming data streams,
+API provided (\code{claude}, \code{ollama}, \code{"mistral"}, or \code{openai}) and processes incoming data streams,
 printing the content to the console and updating a global environment for further use.
 }
 \details{
@@ -29,7 +29,7 @@ printing the content to the console and updating a global environment for furthe
 and \code{message_stop} events to control streaming flow.
 \item \strong{For Ollama API}: The function directly parses the stream content as JSON and extracts the
 \code{message$content} field.
-\item \strong{For ChatGPT API}: The function handles JSON data streams and processes content deltas.
+\item \strong{For OpenAI API}: The function handles JSON data streams and processes content deltas.
 It stops processing when the \verb{[DONE]} message is encountered.
 \item \strong{For Mistral API}: The function is very similar to the ChatGPT callback function.
 It stops processing when the \verb{[DONE]} message is encountered.

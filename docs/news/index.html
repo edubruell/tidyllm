@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.8</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -39,20 +39,31 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.1.8" id="changelog-for-development-version-018">Changelog for Development Version 0.1.8<a class="anchor" aria-label="anchor" href="#changelog-for-development-version-018"></a></h2>
-<p>Changes since the last CRAN Release 0.1.0</p>
+<h2 class="pkg-version" data-toc-text="0.1.9" id="version-019-current-development-version">Version 0.1.9 (Current Development Version)<a class="anchor" aria-label="anchor" href="#version-019-current-development-version"></a></h2>
 <div class="section level3">
-<h3 id="breaking-changes-compared-to-cran-release-0-1-8">Breaking Changes (Compared to CRAN Release 0.1.0)<a class="anchor" aria-label="anchor" href="#breaking-changes-compared-to-cran-release-0-1-8"></a></h3>
-<ul><li>
-<strong><code><a href="../reference/last_reply.html">last_reply()</a></code> Changes</strong>: The <code>.json</code> argument is no longer used, and JSON replies are automatically parsed. Use <code>.raw</code> for raw text.</li>
-<li>
-<strong>Groq Models</strong>: System prompts are no longer sent for Groq models, since many models on groq do not support them and all multimodal models on groq do not allow for them.</li>
+<h3 id="major-features-0-1-9">Major Features<a class="anchor" aria-label="anchor" href="#major-features-0-1-9"></a></h3>
+<ul><li><p><strong>Enhanced Input Validation</strong>: Functions like <code><a href="../reference/ollama.html">ollama()</a></code>, <code><a href="../reference/claude.html">claude()</a></code>, and <code><a href="../reference/openai.html">openai()</a></code> now have improved input validation, ensuring better alignment with API documentation and providing more human-readable error messages.</p></li>
+<li><p><strong>Advanced JSON Mode in <code><a href="../reference/openai.html">openai()</a></code></strong>: The <code><a href="../reference/openai.html">openai()</a></code> function now supports advanced <code>.json_schemas</code>, allowing structured output in JSON mode for more precise responses.</p></li>
+<li><p><strong>Reasoning Models Support</strong>: Support for O1 reasoning models has been added, with better handling of system prompts in the <code><a href="../reference/openai.html">openai()</a></code> function.</p></li>
 </ul></div>
 <div class="section level3">
-<h3 id="new-features-0-1-8">New Features<a class="anchor" aria-label="anchor" href="#new-features-0-1-8"></a></h3>
+<h3 id="breaking-changes-0-1-9">Breaking Changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-1-9"></a></h3>
 <ul><li>
-<p><strong>Embedding Models Support:</strong> Embedding model support for three APIs:</p>
-<ul><li>Embedding functions process message histories and combines text from message content and media attachements for embedding models</li>
+<strong><code><a href="../reference/chatgpt.html">chatgpt()</a></code> Deprecated</strong>: The <code><a href="../reference/chatgpt.html">chatgpt()</a></code> function has been deprecated in favor of <code><a href="../reference/openai.html">openai()</a></code>. Users should migrate to <code><a href="../reference/openai.html">openai()</a></code> to take advantage of the new features and enhancements.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="improvements-0-1-9">Improvements<a class="anchor" aria-label="anchor" href="#improvements-0-1-9"></a></h3>
+<ul><li>
+<strong>Better Error Handling</strong>: The <code><a href="../reference/openai.html">openai()</a></code>, <code><a href="../reference/ollama.html">ollama()</a></code>, and <code><a href="../reference/claude.html">claude()</a></code> functions now return more informative error messages when API calls fail, helping with debugging and troubleshooting.</li>
+</ul><hr></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.1.8" id="version-018">Version 0.1.8<a class="anchor" aria-label="anchor" href="#version-018"></a></h2>
+<div class="section level3">
+<h3 id="major-features-0-1-8">Major Features<a class="anchor" aria-label="anchor" href="#major-features-0-1-8"></a></h3>
+<ul><li>
+<strong>Embedding Models Support:</strong> Embedding model support for three APIs:
+<ul><li>Embedding functions process message histories and combine text from message content and media attachments for embedding models.</li>
 <li>
 <code><a href="../reference/ollama_embedding.html">ollama_embedding()</a></code> to generate embeddings using the Ollama API.</li>
 <li>
@@ -60,52 +71,102 @@
 <li>
 <code><a href="../reference/mistral_embedding.html">mistral_embedding()</a></code> to generate embeddings using the Mistral API.</li>
 </ul></li>
-<li>
-<p><strong>Message Retrieval Functions</strong>: Added functions to retrieve single messages from conversations:</p>
-<ul><li>
-<code><a href="../reference/last_user_message.html">last_user_message()</a></code> pulls the last message the user sent</li>
-<li>
-<code><a href="../reference/get_reply.html">get_reply()</a></code> gets the assistant reply at a given index of assistant messages</li>
-<li>
-<code><a href="../reference/get_user_message.html">get_user_message()</a></code> gets the user message at a given index of user messages</li>
-</ul></li>
-<li><p><strong>Updated <code><a href="../reference/last_reply.html">last_reply()</a></code></strong>: Now a wrapper around <code><a href="../reference/get_reply.html">get_reply()</a></code> for more consistent behavior.</p></li>
-<li>
-<p><strong>New Ollama functions</strong>:</p>
-<ul><li>
-<strong>Model Download:</strong> Introduced the <code><a href="../reference/ollama_download_model.html">ollama_download_model()</a></code> function to download models from the Ollama API. It supports a streaming mode that provides live progress bar updates on the download progress.</li>
-</ul></li>
-<li><p><strong>PDF Page Batch Processing</strong>: Introduced the <code><a href="../reference/pdf_page_batch.html">pdf_page_batch()</a></code> function, which processes PDF files page by page, extracting text and converting each page into an image and allows for a general prompt or page specific prompts. The function generates a list of <code>LLMMessage</code> objects that can each be sent to an API</p></li>
-<li><p><strong>Support for the Mistral API</strong>: New <code><a href="../reference/mistral.html">mistral()</a></code> function to use Mistral Models on Le Platforme on servers hosted in the EU. With rate-limiting and streaming-support.</p></li>
-<li><p><strong>PDF Page Support in <code><a href="../reference/llm_message.html">llm_message()</a></code>:</strong> The <code><a href="../reference/llm_message.html">llm_message()</a></code> function now supports specifying a range of pages in a PDF by passing a list with <code>filename</code>, <code>start_page</code>, and <code>end_page</code>. This allows users to extract and process specific pages of a PDF, as shown in the example below:</p></li>
-</ul><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span>  <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span></span>
-<span>    .prompt <span class="op">=</span> <span class="st">"Please summarize pages 2 to 5 of the attached document."</span>,</span>
-<span>    .pdf <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>      filename <span class="op">=</span> <span class="st">"path/to/your/document.pdf"</span>,</span>
-<span>      start_page <span class="op">=</span> <span class="fl">2</span>,</span>
-<span>      end_page <span class="op">=</span> <span class="fl">5</span></span>
-<span>    <span class="op">)</span></span>
-<span>  <span class="op">)</span></span></code></pre></div>
-</div>
+</ul></div>
 <div class="section level3">
 <h3 id="improvements-0-1-8">Improvements<a class="anchor" aria-label="anchor" href="#improvements-0-1-8"></a></h3>
-</div>
-<div class="section level3">
-<h3 id="groq-support-for-vision-0-1-8">Groq support for vision<a class="anchor" aria-label="anchor" href="#groq-support-for-vision-0-1-8"></a></h3>
-<p>The <code><a href="../reference/groq.html">groq()</a></code> function now supports images. Since more modern models on groq, especially the ones with multimodal abilities do not support system prompts, the system role is deleted from groq api calls.</p>
-</div>
-<div class="section level3">
-<h3 id="json-mode-improvements-0-1-8">JSON Mode Improvements<a class="anchor" aria-label="anchor" href="#json-mode-improvements-0-1-8"></a></h3>
-<p>Since version 0.1.1, JSON mode is now more widely supported across all API functions, allowing for structured outputs when APIs support them. The <code>.json</code> argument is now passed only to API functions, specifying how the API should respond, it is not needed anymore in <code><a href="../reference/last_reply.html">last_reply()</a></code>.</p>
-<p>Additionally, the behavior of the reply functions has changed. They now automatically handle JSON replies by parsing them into structured data and falling back to raw text in case of errors. You can still force raw text replies even for JSON output using the <code>.raw</code> argument.</p>
-</div>
-<div class="section level3">
-<h3 id="new-tests-for-api-functions-0-1-8">New tests for API functions<a class="anchor" aria-label="anchor" href="#new-tests-for-api-functions-0-1-8"></a></h3>
 <ul><li>
+<strong>PDF Page Support in <code><a href="../reference/llm_message.html">llm_message()</a></code>:</strong> The <code><a href="../reference/llm_message.html">llm_message()</a></code> function now supports specifying a range of pages in a PDF by passing a list with <code>filename</code>, <code>start_page</code>, and <code>end_page</code>. This allows users to extract and process specific pages of a PDF.</li>
+</ul><hr></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.1.7" id="version-017">Version 0.1.7<a class="anchor" aria-label="anchor" href="#version-017"></a></h2>
+<div class="section level3">
+<h3 id="major-features-0-1-7">Major Features<a class="anchor" aria-label="anchor" href="#major-features-0-1-7"></a></h3>
+<ul><li>
+<strong>PDF Page Batch Processing</strong>: Introduced the <code><a href="../reference/pdf_page_batch.html">pdf_page_batch()</a></code> function, which processes PDF files page by page, extracting text and converting each page into an image, allowing for a general prompt or page-specific prompts. The function generates a list of <code>LLMMessage</code> objects that can each be sent to an API.</li>
+</ul><hr></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.1.6" id="version-016">Version 0.1.6<a class="anchor" aria-label="anchor" href="#version-016"></a></h2>
+<div class="section level3">
+<h3 id="major-features-0-1-6">Major Features<a class="anchor" aria-label="anchor" href="#major-features-0-1-6"></a></h3>
+<ul><li>
+<strong>Support for the Mistral API</strong>: New <code><a href="../reference/mistral.html">mistral()</a></code> function to use Mistral Models on Le Platforme on servers hosted in the EU, with rate-limiting and streaming support.</li>
+</ul><hr></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.1.5" id="version-015">Version 0.1.5<a class="anchor" aria-label="anchor" href="#version-015"></a></h2>
+<div class="section level3">
+<h3 id="major-features-0-1-5">Major Features<a class="anchor" aria-label="anchor" href="#major-features-0-1-5"></a></h3>
+<ul><li>
+<strong>Message Retrieval Functions</strong>: Added functions to retrieve single messages from conversations:
+<ul><li>
+<code><a href="../reference/last_user_message.html">last_user_message()</a></code> pulls the last message the user sent.</li>
+<li>
+<code><a href="../reference/get_reply.html">get_reply()</a></code> gets the assistant reply at a given index of assistant messages.</li>
+<li>
+<code><a href="../reference/get_user_message.html">get_user_message()</a></code> gets the user message at a given index of user messages.</li>
+</ul></li>
+</ul></div>
+<div class="section level3">
+<h3 id="improvements-0-1-5">Improvements<a class="anchor" aria-label="anchor" href="#improvements-0-1-5"></a></h3>
+<ul><li>
+<strong>PDF Page Processing</strong>: Introduced the <code><a href="../reference/pdf_page_batch.html">pdf_page_batch()</a></code> function to process PDFs page by page, allowing for both general and page-specific prompts.</li>
+<li>
 <strong>Easier Troubleshooting in API-function</strong>: All API functions now support the <code>.dry_run</code> argument, allowing users to generate an <code>httr2</code>-request for easier debugging and inspection.</li>
 <li>
 <strong>API Function Tests:</strong> Implemented <code>httptest2</code>-based tests with mock responses for all API functions, covering both basic functionality and rate-limiting.</li>
+</ul><hr></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.1.4" id="version-014">Version 0.1.4<a class="anchor" aria-label="anchor" href="#version-014"></a></h2>
+<div class="section level3">
+<h3 id="major-features-0-1-4">Major Features<a class="anchor" aria-label="anchor" href="#major-features-0-1-4"></a></h3>
+<ul><li>
+<strong>New Ollama functions</strong>:
+<ul><li>
+<strong>Model Download:</strong> Introduced the <code><a href="../reference/ollama_download_model.html">ollama_download_model()</a></code> function to download models from the Ollama API. It supports a streaming mode that provides live progress bar updates on the download progress.</li>
+</ul></li>
+</ul></div>
+<div class="section level3">
+<h3 id="improvements-0-1-4">Improvements<a class="anchor" aria-label="anchor" href="#improvements-0-1-4"></a></h3>
+<ul><li>Refactoring of <code><a href="../reference/llm_message.html">llm_message()</a></code>
+</li>
+</ul><hr></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.1.3" id="version-013">Version 0.1.3<a class="anchor" aria-label="anchor" href="#version-013"></a></h2>
+<div class="section level3">
+<h3 id="major-features-0-1-3">Major Features<a class="anchor" aria-label="anchor" href="#major-features-0-1-3"></a></h3>
+<ul><li>The <code><a href="../reference/groq.html">groq()</a></code> function now supports images.</li>
+<li>More complete streaming support across API-functions.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="breaking-changes-0-1-3">Breaking Changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-1-3"></a></h3>
+<ul><li>
+<strong>Groq Models</strong>: System prompts are no longer sent for Groq models, since many models on Groq do not support them and all multimodal models on Groq disallow them.</li>
+</ul><hr></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.1.2" id="version-012">Version 0.1.2<a class="anchor" aria-label="anchor" href="#version-012"></a></h2>
+<div class="section level3">
+<h3 id="improvements-0-1-2">Improvements<a class="anchor" aria-label="anchor" href="#improvements-0-1-2"></a></h3>
+<ul><li>
+<strong>New unit tests for <code><a href="../reference/llm_message.html">llm_message()</a></code></strong>.</li>
+<li>Improvements in streaming functions.</li>
+</ul><hr></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.1.1" id="version-011">Version 0.1.1<a class="anchor" aria-label="anchor" href="#version-011"></a></h2>
+<div class="section level3">
+<h3 id="major-features-0-1-1">Major Features<a class="anchor" aria-label="anchor" href="#major-features-0-1-1"></a></h3>
+<ul><li><p><strong>JSON Mode</strong>: JSON mode is now more widely supported across all API functions, allowing for structured outputs when APIs support them. The <code>.json</code> argument is now passed only to API functions, specifying how the API should respond, and it is not needed anymore in <code><a href="../reference/last_reply.html">last_reply()</a></code>.</p></li>
+<li><p><strong>Improved <code><a href="../reference/last_reply.html">last_reply()</a></code> Behavior</strong>: The behavior of the <code><a href="../reference/last_reply.html">last_reply()</a></code> function has changed. It now automatically handles JSON replies by parsing them into structured data and falling back to raw text in case of errors. You can still force raw text replies even for JSON output using the <code>.raw</code> argument.</p></li>
+</ul></div>
+<div class="section level3">
+<h3 id="breaking-changes-0-1-1">Breaking Changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-1-1"></a></h3>
+<ul><li>
+<strong><code><a href="../reference/last_reply.html">last_reply()</a></code></strong>: The <code>.json</code> argument is no longer used, and JSON replies are automatically parsed. Use <code>.raw</code> to force raw text replies.</li>
 </ul></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

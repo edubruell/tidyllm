@@ -54,7 +54,7 @@ pdf_summary <- function(file, document_prompt){
                 start_page = 1,
                 end_page = 35) 
               ) |>
-    chatgpt(.json=TRUE,.stream=TRUE) |>
+    openai(.json=TRUE,.stream=TRUE) |>
     last_reply()
   
   summary
@@ -194,7 +194,57 @@ pdf_responses |>
     citations
   })
 ```
-A better solution is to check at the start whether the model adheres to the schema we requested. Many newer APIs, such as the most recent [OpenAI API](https://platform.openai.com/docs/guides/structured-outputs), now offer the ability to pre-specify a valid output schema. This means you can enforce strict formatting rules before the model generates a response, reducing the need for post-processing corrections. This functionality will be supported in future versions of **tidyllm**, allowing for smoother integration of structured outputs. 
+A better solution is to check at the start whether the model adheres to the schema we requested. Many newer APIs, such as the most recent [OpenAI API](https://platform.openai.com/docs/guides/structured-outputs), now offer the ability to pre-specify a valid output schema. This means you can enforce strict formatting rules before the model generates a response, reducing the need for post-processing corrections. You can use this functionality via the `.json_schema`-arguement of `openai()`. Instead of writing out the schema in pure json give the model an R list version of the schema:
+
+```{r schema_example, eval=FALSE}
+# Creating an llm_message with the document analysis task
+msg <- llm_message('Please analyze this document and provide the following details:
+    1. Title: The full title of the paper.
+    2. Authors: List of all authors.
+    3. Suggested new filename: A filename for the document in the format "ReleaseYear_Author_etal_ShortTitle.pdf"
+    4. Type: Is this a (brief) policy report or a research paper? Answer with either "Policy" or "Research"
+    5. Answer these four  questions based on the document. Each answer should be roughly one 100 words long:
+        Q1. What empirical methods are used in this work?
+        Q2. What theoretical framework is applied or discussed?
+        Q3. What is the main point or argument presented?
+        Q4. What is the key contribution of this work?
+    6. Key citations: List the four most important references that the document uses in describing its own contribution.
+
+Please provide the answers only as JSON in the following format:', .pdf = files[[8]])
+
+# Define a JSON schema for the expected output format with 'name' and 'schema' fields
+json_schema <- list(
+  name = "DocumentAnalysisSchema",  # Name of the schema
+  schema = list(                    # The actual schema definition
+    type = "object",
+    properties = list(
+      Title = list(type = "string"),
+      Authors = list(type = "array", items = list(type = "string")),
+      SuggestedFilename = list(type = "string"),
+      Type = list(type = "string", enum = c("Policy", "Research")),
+      Answers = list(
+        type = "object",
+        properties = list(
+          Q1 = list(type = "string"),
+          Q2 = list(type = "string"),
+          Q3 = list(type = "string"),
+          Q4 = list(type = "string")
+        ),
+        required = c("Q1", "Q2", "Q3", "Q4")
+      ),
+      KeyCitations = list(type = "array", items = list(type = "string"))
+    ),
+    required = c("Title", "Authors", "SuggestedFilename", "Type", "Answers", "KeyCitations")
+  )
+)
+
+# Call the OpenAI function with the message and JSON schema
+result <- openai(
+  .llm = msg,
+  .json_schema = json_schema
+)
+```
+
 
 Another potential fix is to modify the prompt to ensure the model outputs in a non-nested *JSON* format, which often simplifies prompt adherence and downstream handling. In workflows like this, it’s common to need several iterations to refine the structure of the output, especially when working with complex queries. For example, in this case, defining how citations should be formatted might also improve consistency, since the `key_citation` field varies between responses. Additionally, it may be beneficial to run a separate pass just for citations, perhaps asking the model to output BibTeX keys for the four most important references together with a reason why each citation is important in the note-field of the bibtex.
 

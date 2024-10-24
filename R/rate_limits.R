@@ -114,7 +114,7 @@ ratelimit_from_header <- function(.response_headers, .api) {
                format="%Y-%m-%dT%H:%M:%SZ", tz="UTC")
            )
          },
-         "chatgpt" = {
+         "openai" = {
            request_time <- strptime(.response_headers["date"]$date, 
                                     format="%a, %d %b %Y %H:%M:%S", tz="GMT")
            ratelimit_requests_reset_dt <- parse_duration_to_seconds(

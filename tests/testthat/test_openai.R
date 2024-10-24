@@ -1,14 +1,14 @@
 testthat::skip_if_not_installed("httptest2")
 library(httptest2)
 
-test_that("chatgpt function constructs a correct request and dry runs it", {
+test_that("openai function constructs a correct request and dry runs it", {
   # Create a mock LLMMessage object
   llm <- LLMMessage$new()
-  llm$add_message("user", "Write a poem about a parrot")
+  llm$add_message("user", "Write a poem about a (stochastic) parrot")
   
   # Call chatgpt with .dry_run = TRUE and perform the dry run
   request <- llm |>
-    chatgpt(.dry_run = TRUE) 
+    openai(.dry_run = TRUE) 
   
   dry_run <- request |>
     httr2::req_dry_run(redact_headers = TRUE, quiet = TRUE)
@@ -37,32 +37,30 @@ test_that("chatgpt function constructs a correct request and dry runs it", {
   # Now check the body content to ensure the JSON is constructed as expected
   body_json <- request$body |> jsonlite::toJSON() |> as.character()
   
-  expected_json <- "{\"data\":{\"model\":[\"gpt-4o\"],\"max_tokens\":[1024],\"messages\":[{\"role\":[\"system\"],\"content\":[\"You are a helpful assistant \"]},{\"role\":[\"user\"],\"content\":[\"Write a poem about a parrot \"]}],\"stream\":[false]},\"type\":[\"json\"],\"content_type\":[\"application/json\"],\"params\":{\"auto_unbox\":[true],\"digits\":[22],\"null\":[\"null\"]}}"
+  expected_json <- "{\"data\":{\"model\":[\"gpt-4o\"],\"messages\":[{\"role\":[\"system\"],\"content\":[\"You are a helpful assistant \"]},{\"role\":[\"user\"],\"content\":[\"Write a poem about a (stochastic) parrot \"]}],\"logprobs\":[false],\"service_tier\":[\"auto\"],\"stream\":[false]},\"type\":[\"json\"],\"content_type\":[\"application/json\"],\"params\":{\"auto_unbox\":[true],\"digits\":[22],\"null\":[\"null\"]}}"
   # Check if the JSON matches the expected JSON
   expect_equal(body_json, expected_json)
   
 })
 
 
-test_that("chatgpt returns expected response", {
-  with_mock_dir("chatgpt",expr = {
+test_that("openai returns expected response", {
+  with_mock_dir("openai",expr = {
     
     # Make sure the environment starts clean
-    if (exists("chatgpt", envir = .tidyllm_rate_limit_env)) {
-      .tidyllm_rate_limit_env[["chatgpt"]] <- NULL
+    if (exists("openai", envir = .tidyllm_rate_limit_env)) {
+      .tidyllm_rate_limit_env[["openai"]] <- NULL
     }
     
     llm <- llm_message("user", "Hello, world")
     
-    result <- chatgpt(
+    result <- openai(
       .llm = llm,
-      .max_tokens = 1024,
       .temperature = 0,
       .stream = FALSE
     )
     
-    # Assertions based on the message in the captured mock response
-    # Assertions based on the message in the captured mock response
+    ## Assertions based on the message in the captured mock response
     expect_true(inherits(result, "LLMMessage"))
     expect_equal(
       result$message_history[[length(result$message_history)]]$content,
@@ -71,14 +69,14 @@ test_that("chatgpt returns expected response", {
     expect_equal(result$message_history[[length(result$message_history)]]$role, "assistant")
     
     # Now, check that the rate limit environment has been populated with correct values
-    expect_true(exists("chatgpt", envir = .tidyllm_rate_limit_env))
+    expect_true(exists("openai", envir = .tidyllm_rate_limit_env))
     
-    # Retrieve rate limit info for chatgpt
-    rl_info <- rate_limit_info("chatgpt")
-    
-    # Assertions for rate limit values based on the mocked response
+    ## Retrieve rate limit info for chatgpt
+    rl_info <- rate_limit_info("openai")
+    #
+    ## Assertions for rate limit values based on the mocked response
     expect_equal(rl_info$requests_remaining, 4999)
-    expect_equal(rl_info$tokens_remaining, 798962)
+    expect_equal(rl_info$tokens_remaining, 799970)
   },simplify = FALSE)
 })
 
