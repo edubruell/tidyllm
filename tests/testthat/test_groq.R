@@ -2,6 +2,11 @@ testthat::skip_if_not_installed("httptest2")
 library(httptest2)
 
 test_that("groq function constructs a correct request and dry runs it", {
+  # Make sure the environment starts clean
+  if (exists("groq", envir = .tidyllm_rate_limit_env)) {
+    .tidyllm_rate_limit_env[["groq"]] <- NULL
+  }
+
   # Call groq with .dry_run = TRUE and perform the dry run
   request <- llm_message("Write a poem about meerkats") |> groq(.dry_run = TRUE)
   
@@ -32,7 +37,7 @@ test_that("groq function constructs a correct request and dry runs it", {
   # Now check the body content to ensure the JSON is constructed as expected
   body_json <- request$body |> jsonlite::toJSON() |> as.character()
   
-  expected_json <- "{\"data\":{\"model\":[\"llama-3.2-11b-vision-preview\"],\"max_tokens\":[1024],\"messages\":[{\"role\":[\"user\"],\"content\":[\"Write a poem about meerkats \"]}]},\"type\":[\"json\"],\"content_type\":[\"application/json\"],\"params\":{\"auto_unbox\":[true],\"digits\":[22],\"null\":[\"null\"]}}"
+  expected_json <- "{\"data\":{\"model\":[\"llama-3.2-11b-vision-preview\"],\"max_tokens\":[1024],\"messages\":[{\"role\":[\"user\"],\"content\":[\"Write a poem about meerkats \"]}],\"stream\":[false]},\"type\":[\"json\"],\"content_type\":[\"application/json\"],\"params\":{\"auto_unbox\":[true],\"digits\":[22],\"null\":[\"null\"]}}"
   # Check if the JSON matches the expected JSON
   expect_equal(body_json, expected_json)
 })

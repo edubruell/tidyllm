@@ -273,9 +273,13 @@ Different API functions support different model parameters like  how determinist
                 .role="assistant")
 ```
 
+### Embeddings
+
+Embedding models in **tidyllm** transform textual inputs into vector representations, capturing semantic information that can enhance similarity comparisons, clustering, and retrieval tasks. You can generate embeddings using functions like `openai_embedding()`, `mistral_embedding()`, and `ollama_embedding()` which each interface with their respective APIs. These functions create vector representations for texts.  These functions return vector representations either for each message in a message history or, more typically for this application, for each entry in a character vector. 
+
 ### Streaming back responses (Experimental)
 
-At the moment `ollama()`, `openai()`, `mistral()` and `claude()` support real-time streaming of reply tokens to the console while the model works with the `.stream=TRUE` argument.  While this feature offers slightly better feedback on model behavior in real-time, it’s not particularly useful for data-analysis workflows. We consider this feature experimental and recommend using non-streaming responses for production tasks. Note that error handling in streaming callbacks varies by API and differs in quality at this time.
+All chat API-functions support real-time streaming of reply tokens to the console while the model works with the `.stream=TRUE` argument.  While this feature offers slightly better feedback on model behavior in real-time, it’s not particularly useful for data-analysis workflows. We consider this feature experimental and recommend using non-streaming responses for production tasks. Note that error handling in streaming callbacks varies by API and differs in quality at this time.
 
 ### Choosing the Right Model and API
 

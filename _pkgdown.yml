@@ -14,6 +14,7 @@ reference:
       - last_user_message
       - get_reply
       - get_user_message
+      - tidyllm_schema
 
   - title: "Core Chat-API Functions"
     contents:
@@ -25,11 +26,16 @@ reference:
       - azure_openai
       - chatgpt # Deprecated, use openai instead
 
+
   - title: "Embedding API Functions"
     contents:
     - ollama_embedding
     - openai_embedding
     - mistral_embedding
+    
+  - title: "Other API Functions"
+    contents:
+    - groq_transcribe
 
   - title: "Ollama Functions"
     contents:

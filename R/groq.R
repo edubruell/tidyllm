@@ -141,6 +141,11 @@ groq <- function(.llm,
     .dry_run = .dry_run
   )
   
+  # Return only the request object in a dry run.
+  if (.dry_run) {
+    return(response)  
+  }
+  
   # Extract assistant reply and rate limiting info from response headers
   assistant_reply <- response$assistant_reply
   rl <- ratelimit_from_header(response$headers,"groq")
@@ -172,5 +177,145 @@ groq <- function(.llm,
 
 
 
-
+#' Transcribe an Audio File Using Groq transcription API 
+#'
+#' @description
+#' This function reads an audio file and sends it to the Groq transcription API for transcription.
+#'
+#' @param .audio_file The path to the audio file (required). Supported formats include flac, mp3, mp4, mpeg, mpga, m4a, ogg, wav, or webm.
+#' @param .model The model to use for transcription (default: "whisper-large-v3").
+#' @param .language The language of the input audio, in ISO-639-1 format (optional).
+#' @param .prompt A prompt to guide the transcription style. It should match the audio language (optional).
+#' @param .temperature Sampling temperature, between 0 and 1, with higher values producing more randomness (default: 0).
+#' @param .api_url Base URL for the API (default: "https://api.groq.com/openai/v1/audio/transcriptions").
+#' @param .verbose Logical; if TRUE, outputs additional information (default: FALSE).
+#' @param .min_seconds_reset Wait at a specified  number of available audio file seconds till the rate limit is triggered. In batches this should be roughly the max duration of a single audio file. (default: 360)  
+#' @param .dry_run Logical; if TRUE, performs a dry run and returns the request object without making the API call (default: FALSE).
+#' @param .verbose Logical; if TRUE, rate limiting info is displayed after the API request (default: FALSE).
+#' @param .wait Should we wait for rate limits if necessary? (default: TRUE).
+#' @examples
+#' \dontrun{
+#' # Basic usage
+#' groq_transcribe(.audio_file = "example.mp3")
+#' }
+#'
+#' @return A character vector containing the transcription.
+#' @export
+groq_transcribe <- function(
+    .audio_file,
+    .model = "whisper-large-v3",
+    .language = NULL,
+    .prompt = NULL,
+    .temperature = 0,
+    .api_url = "https://api.groq.com/openai/v1/audio/transcriptions",
+    .dry_run = FALSE,
+    .min_seconds_reset = 360,
+    .wait=TRUE,
+    .verbose = FALSE
+) {
+  # Validate audio file path
+  if (!file.exists(.audio_file)) stop("Audio file does not exist.")
+  
+  # Validate inputs
+  c(
+    "Input .model must be a character vector" = is.character(.model),
+    "Input .language must be a character vector if specified" = is.null(.language) || is.character(.language),
+    "Input .prompt must be a character vector if specified" = is.null(.prompt) || is.character(.prompt),
+    "Input .temperature" = is.numeric(.temperature) && .temperature >= 0 && .temperature <= 1
+  ) |>
+    validate_inputs()
+  
+  # Build the request
+  request <- httr2::request(.api_url) |>
+    httr2::req_headers(
+      Authorization = sprintf("Bearer %s", Sys.getenv("GROQ_API_KEY"))
+    ) |>
+    httr2::req_body_multipart(
+      file = curl::form_file(.audio_file),
+      model = .model,
+      prompt = .prompt,
+      response_format ="json",
+      language = .language,
+      temperature = as.character(.temperature)
+    )
+  
+  # Handle dry run
+  if (.dry_run) return(request)
+  
+  # Wait for the rate-limit if necessary
+  if (.wait == TRUE & !is.null(.tidyllm_rate_limit_audio_env[["groq"]])) {
+    rle_reset_req  <- .tidyllm_rate_limit_audio_env[["groq"]]$rl_reset_req 
+    rle_reset_sec  <- .tidyllm_rate_limit_audio_env[["groq"]]$rl_reset_sec 
+    rle_remaining_req <- .tidyllm_rate_limit_audio_env[["groq"]]$rl_remaining_req 
+    rle_remaining_sec <- .tidyllm_rate_limit_audio_env[["groq"]]$rl_remaining_sec 
+    
+    requests_reset_difftime <- as.numeric(difftime(rle_reset_req, lubridate::now(tzone = "UTC"), units = "secs"))
+    seconds_reset_difftime <- as.numeric(difftime(rle_reset_sec, lubridate::now(tzone = "UTC"), units = "secs"))
+    
+    #Wait if rate limit is likely to be hit
+    if(rle_remaining_req  == 1){
+      req_reset_wait_time <- round(requests_reset_difftime,2)
+      glue::glue("Waiting till requests rate limit is reset: {req_reset_wait_time}") |> message()
+      Sys.sleep(req_reset_wait_time)
+    }
+    if(seconds_reset_difftime > 0 & .min_seconds_reset>0 & rle_remaining_sec<.min_seconds_reset){
+      sec_reset_wait_time <- round(seconds_reset_difftime,2)
+      glue::glue("Waiting till the token rate limit is reset: {sec_reset_wait_time} seconds") |> message()
+      Sys.sleep(sec_reset_wait_time)
+    }
+  }
+  
+  #Perform the request
+  response <- request |>
+               httr2::req_error(is_error = function(resp) FALSE) |>
+               httr2::req_perform()
+  
+  content <- httr2::resp_body_json(response)
+  if("error" %in% names(content)){
+    sprintf("Groq API returned an Error:\nCode: %s\nMessage: %s",
+            content$error$code,
+            content$error$message) |>
+      stop()
+  }
+  
+  groq_audio_headers <- httr2::resp_headers(response)
+  
+  #Parse the headers from the response
+  request_time <- strptime(groq_audio_headers[["date"]], 
+                           format="%a, %d %b %Y %H:%M:%S", tz="GMT")
+  rl_total_sec     <- as.integer(groq_audio_headers[["x-ratelimit-limit-audio-seconds"]])
+  rl_total_req     <- as.integer(groq_audio_headers[["x-ratelimit-limit-requests"]])
+  rl_remaining_sec <- as.integer(groq_audio_headers[["x-ratelimit-remaining-audio-seconds"]])
+  rl_remaining_req <- as.integer(groq_audio_headers[["x-ratelimit-remaining-requests"]])
+  rl_durartion_sec <- parse_duration_to_seconds(groq_audio_headers[["x-ratelimit-reset-audio-seconds"]])
+  rl_durartion_req <- parse_duration_to_seconds(groq_audio_headers[["x-ratelimit-reset-requests"]])
+  
+  #Compute reset times
+  rl_reset_req <- request_time + rl_durartion_req
+  rl_reset_sec <- request_time + rl_durartion_sec
+  
+  # Show rate limit info if verbose
+  if (.verbose == TRUE) {
+    glue::glue(
+     "Groq Transcribe API answer received at {request_time}.
+      Remaining requests rate limit: {rl_remaining_req}/{rl_total_req}
+      Requests rate limit reset at: {rl_reset_req}
+      Remaining Audio seconds rate limit: {rl_remaining_sec}/{rl_total_sec}
+      Audio seconds rate limit reset at: {rl_reset_sec}\n"
+    ) |> cat("\n")
+  }
+  
+  #Initialize an audio rate limiting env
+  if (!exists("groq", envir = .tidyllm_rate_limit_audio_env)) {
+    .tidyllm_rate_limit_audio_env[["groq"]] <- new.env()
+  }
+  
+  .tidyllm_rate_limit_audio_env[["groq"]]$rl_reset_req <- rl_reset_req
+  .tidyllm_rate_limit_audio_env[["groq"]]$rl_reset_sec <- rl_reset_sec
+  .tidyllm_rate_limit_audio_env[["groq"]]$rl_remaining_req <- rl_remaining_req
+  .tidyllm_rate_limit_audio_env[["groq"]]$rl_remaining_sec <- rl_remaining_sec
+  
+  
+  return(content$text)
+}
 

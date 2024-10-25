@@ -8,7 +8,7 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 ```
-> ⚠️ **Note:** This article discusses code that uses features from the development version 0.1.8 of **tidyllm** that are not in the last CRAN release. You can install the development version with:
+> ⚠️ **Note:** This article discusses code that uses features from the development version 0.1.9 of **tidyllm** that are not in the last CRAN release. You can install the development version with:
 
 ```{r, eval=FALSE}
 devtools::install_github("edubruell/tidyllm")
@@ -194,7 +194,10 @@ pdf_responses |>
     citations
   })
 ```
-A better solution is to check at the start whether the model adheres to the schema we requested. Many newer APIs, such as the most recent [OpenAI API](https://platform.openai.com/docs/guides/structured-outputs), now offer the ability to pre-specify a valid output schema. This means you can enforce strict formatting rules before the model generates a response, reducing the need for post-processing corrections. You can use this functionality via the `.json_schema`-arguement of `openai()`. Instead of writing out the schema in pure json give the model an R list version of the schema:
+
+## Schema Support
+
+A better solution is to check at the start whether the model adheres to the schema we requested. Many newer APIs, such as the most recent [OpenAI API](https://platform.openai.com/docs/guides/structured-outputs), now offer the ability to pre-specify a valid output schema. This means you can enforce strict formatting rules before the model generates a response, reducing the need for post-processing corrections. You can use this functionality via the `.json_schema`-arguement of `openai()`. Instead of having to write out the complete schema as complex list structure os JSON **tidyllm** includes the `tidyllm_schema()` function, which allows you to define rules for fields:
 
 ```{r schema_example, eval=FALSE}
 # Creating an llm_message with the document analysis task
@@ -212,41 +215,62 @@ msg <- llm_message('Please analyze this document and provide the following detai
 
 Please provide the answers only as JSON in the following format:', .pdf = files[[8]])
 
-# Define a JSON schema for the expected output format with 'name' and 'schema' fields
-json_schema <- list(
-  name = "DocumentAnalysisSchema",  # Name of the schema
-  schema = list(                    # The actual schema definition
-    type = "object",
-    properties = list(
-      Title = list(type = "string"),
-      Authors = list(type = "array", items = list(type = "string")),
-      SuggestedFilename = list(type = "string"),
-      Type = list(type = "string", enum = c("Policy", "Research")),
-      Answers = list(
-        type = "object",
-        properties = list(
-          Q1 = list(type = "string"),
-          Q2 = list(type = "string"),
-          Q3 = list(type = "string"),
-          Q4 = list(type = "string")
-        ),
-        required = c("Q1", "Q2", "Q3", "Q4")
-      ),
-      KeyCitations = list(type = "array", items = list(type = "string"))
-    ),
-    required = c("Title", "Authors", "SuggestedFilename", "Type", "Answers", "KeyCitations")
-  )
+#Use the helper function tidyllm_schema to define a schema 
+schema <- tidyllm_schema(
+  name = "DocumentAnalysisSchema",
+  Title = "character",
+  Authors = "character[]",
+  SuggestedFilename = "character",
+  Type = "factor(Policy, Research)",
+  Answer_Q1 = "character",
+  Answer_Q2 = "character",
+  Answer_Q3 = "character",
+  Answer_Q4 = "character",
+  KeyCitations = "character[]"
 )
-
 # Call the OpenAI function with the message and JSON schema
 result <- openai(
   .llm = msg,
-  .json_schema = json_schema
+  .json_schema = schema
 )
 ```
 
+Here for example in `tidyllm_schema()`, we begin by naming your schema with a character vector (which is required by the API), then list each field along with its data type. Supported types include `character` (where `string` is also allowed as a synonym), `logical`, and `numeric`, with the option to define `factor()` for categorical fields where you want to limit the options for text answers. Vector outputs can be indicated by appending `[]` to the type. For example, `factor(Policy, Research)` creates a categorical field with two options, while `Authors = character[]` defines that Authors should be formatted as character vector with multiple entries.
 
-Another potential fix is to modify the prompt to ensure the model outputs in a non-nested *JSON* format, which often simplifies prompt adherence and downstream handling. In workflows like this, it’s common to need several iterations to refine the structure of the output, especially when working with complex queries. For example, in this case, defining how citations should be formatted might also improve consistency, since the `key_citation` field varies between responses. Additionally, it may be beneficial to run a separate pass just for citations, perhaps asking the model to output BibTeX keys for the four most important references together with a reason why each citation is important in the note-field of the bibtex.
+`tidyllm_schema()` tries to prevent too much nesting. In fact the best option is to use singular output fields without `[]` because they can more easily be converted to tibbles:
+
+```{r tidy_schema_example, eval=FALSE}
+
+#Use the helper function tidyllm_schema to define a schema 
+schema <- tidyllm_schema(
+  name = "DocumentAnalysisSchema",
+  Title = "character",
+  Authors = "character",
+  SuggestedFilename = "character",
+  Type = "factor(Policy, Research)",
+  Answer_Q1 = "character",
+  Answer_Q2 = "character",
+  Answer_Q3 = "character",
+  Answer_Q4 = "character",
+  KeyCitations = "character"
+)
+# Call the OpenAI function with the message and JSON schema
+result <- openai(
+  .llm = msg,
+  .json_schema = schema
+)
+
+reply <- results |> 
+  last_reply()
+
+as_tibble(reply$parsed_content) 
+```
+```{r schema_hidden, echo=FALSE, eval=TRUE}
+read_rds("schema_example.rds")
+```
+## Final Notes
+
+In workflows like this, it’s common to need several iterations to refine the structure of the output, especially when working with complex queries. For example, in this case, defining how citations should be formatted might also improve consistency, since the `key_citation` field varies between responses. Additionally, it may be beneficial to run a separate pass just for citations, perhaps asking the model to output BibTeX keys for the four most important references together with a reason why each citation is important in the note-field of the bibtex.
 
 But for now, we have the processing steps we wanted for answers and citations and can proceed to the file names we got to structure our folder:
 ```{r filenames, eval=FALSE}

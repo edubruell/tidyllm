@@ -8,6 +8,10 @@
   if (!exists(".tidyllm_stream_env", envir = .GlobalEnv)) {
     .GlobalEnv$.tidyllm_stream_env <- new.env(parent = emptyenv())
   }
+  # Initialize the parent environment for rate limits for audio APIs on package load
+  if (!exists(".tidyllm_rate_limit_audio_env", envir = .GlobalEnv)) {
+    .GlobalEnv$.tidyllm_rate_limit_audio_env <- new.env(parent = emptyenv())
+  }
 }
 
 #' @export
@@ -19,5 +23,9 @@
   #Initialize the parent environment for streaming backups on package load
   if (!exists(".tidyllm_stream_env", envir = .GlobalEnv)) {
     .GlobalEnv$.tidyllm_stream_env <- new.env(parent = emptyenv())
+  }
+  # Initialize the parent environment for rate limits for audio APIs on package load
+  if (!exists(".tidyllm_rate_limit_audio_env", envir = .GlobalEnv)) {
+    .GlobalEnv$.tidyllm_rate_limit_audio_env <- new.env(parent = emptyenv())
   }
 }

@@ -20,6 +20,7 @@
 <url><loc>https://edubruell.github.io/tidyllm/reference/get_reply.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/get_user_message.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/groq.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/groq_transcribe.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/index.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/initialize_api_env.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/last_reply.html</loc></url>
@@ -39,6 +40,7 @@
 <url><loc>https://edubruell.github.io/tidyllm/reference/rate_limit_info.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/ratelimit_from_header.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/tidyllm-package.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/tidyllm_schema.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/update_rate_limit.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/wait_rate_limit.html</loc></url>
 </urlset>

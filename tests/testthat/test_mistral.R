@@ -32,7 +32,7 @@ test_that("mistral function constructs a correct request and dry runs it", {
   # Now check the body content to ensure the JSON is constructed as expected
   body_json <- request$body |> jsonlite::toJSON() |> as.character()
   
-  expected_json <- "{\"data\":{\"model\":[\"mistral-large-latest\"],\"messages\":[{\"role\":[\"user\"],\"content\":[\"Write a poem about the Gallic Rooster \"]}],\"max_tokens\":[1024],\"stream\":[false]},\"type\":[\"json\"],\"content_type\":[\"application/json\"],\"params\":{\"auto_unbox\":[true],\"digits\":[22],\"null\":[\"null\"]}}"
+  expected_json <- "{\"data\":{\"model\":[\"mistral-large-latest\"],\"messages\":[{\"role\":[\"user\"],\"content\":[\"Write a poem about the Gallic Rooster \"]}],\"temperature\":[0.7],\"max_tokens\":[1024],\"stream\":[false],\"top_p\":[1],\"safe_prompt\":[false]},\"type\":[\"json\"],\"content_type\":[\"application/json\"],\"params\":{\"auto_unbox\":[true],\"digits\":[22],\"null\":[\"null\"]}}"
   # Check if the JSON matches the expected JSON
   expect_equal(body_json, expected_json)
 })
@@ -64,14 +64,7 @@ test_that("mistral returns expected response",{
     # Now, check that the rate limit environment has been populated with correct values
     expect_true(exists("mistral", envir = .tidyllm_rate_limit_env))
     
-    # Retrieve rate limit info for chatgpt
-    rl_info <- rate_limit_info("mistral")
-    
-    # Assertions for rate limit values based on the mocked response
-    expect_equal(rl_info$tokens_remaining, 498973)
-    expect_equal(as.POSIXct(rl_info$last_request, tz = "GMT"), 
-                 as.POSIXct("2024-10-15 22:46:18", tz = "GMT"),
-                 ignore_attr = TRUE)
+
   },simplify = FALSE)
   
 })

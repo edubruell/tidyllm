@@ -69,7 +69,7 @@ azure_openai <- function(
 ) {
   
   #Check enpoint
-  if (.endpoint == ""){
+  if (.endpoint_url == ""){
    stop("No valid Azure endpoint defined. Please set it either as input to this function or with: Sys.setenv(AZURE_ENDPOINT_URL = \"endpoint.url\")")
   }
   
@@ -153,7 +153,7 @@ azure_openai <- function(
   request_body <- base::Filter(Negate(is.null), request_body)
   
   # Build the request
-  full_endpoint <- paste0(.endpoint, "openai/deployments/", .deployment,
+  full_endpoint <- paste0(.endpoint_url, "openai/deployments/", .deployment,
                           "/chat/completions?api-version=", .api_version)
   
   request <- httr2::request(full_endpoint) |>
