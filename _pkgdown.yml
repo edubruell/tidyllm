@@ -22,6 +22,7 @@ reference:
       - groq
       - mistral
       - ollama
+      - azure_openai
       - chatgpt # Deprecated, use openai instead
 
   - title: "Embedding API Functions"

@@ -2,6 +2,7 @@
 
 export(.onAttach)
 export(.onLoad)
+export(azure_openai)
 export(chatgpt)
 export(claude)
 export(df_llm_message)

@@ -42,9 +42,11 @@
 <h2 class="pkg-version" data-toc-text="0.1.9" id="version-019-current-development-version">Version 0.1.9 (Current Development Version)<a class="anchor" aria-label="anchor" href="#version-019-current-development-version"></a></h2>
 <div class="section level3">
 <h3 id="major-features-0-1-9">Major Features<a class="anchor" aria-label="anchor" href="#major-features-0-1-9"></a></h3>
-<ul><li><p><strong>Enhanced Input Validation</strong>: Functions like <code><a href="../reference/ollama.html">ollama()</a></code>, <code><a href="../reference/claude.html">claude()</a></code>, and <code><a href="../reference/openai.html">openai()</a></code> now have improved input validation, ensuring better alignment with API documentation and providing more human-readable error messages.</p></li>
+<ul><li><p><strong>Enhanced Input Validation</strong>: All API functions now have improved input validation, ensuring better alignment with API documentation</p></li>
+<li><p><strong>Improved error handling</strong> More human-readable error messages for failed requests from the API</p></li>
 <li><p><strong>Advanced JSON Mode in <code><a href="../reference/openai.html">openai()</a></code></strong>: The <code><a href="../reference/openai.html">openai()</a></code> function now supports advanced <code>.json_schemas</code>, allowing structured output in JSON mode for more precise responses.</p></li>
 <li><p><strong>Reasoning Models Support</strong>: Support for O1 reasoning models has been added, with better handling of system prompts in the <code><a href="../reference/openai.html">openai()</a></code> function.</p></li>
+<li><p><strong>Streaming callback functions refactored:</strong> Given that the streaming callback format for Open AI, Mistral and Groq is nearly identical the three now rely on the same callback function.</p></li>
 </ul></div>
 <div class="section level3">
 <h3 id="breaking-changes-0-1-9">Breaking Changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-1-9"></a></h3>

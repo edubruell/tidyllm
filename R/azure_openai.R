@@ -1,11 +1,13 @@
 #' Send LLM Messages to an OpenAI Chat Completions endpoint on Azure 
 #'
 #' @description
-#' This function sends a message history to the Azure OpenAI Chat Completions API and returns the assistant's reply. It is work in progress and not fully tested
+#' This function sends a message history to the Azure OpenAI Chat Completions API and returns the assistant's reply. 
+#' This function is work in progress and not fully tested
 #'
 #' @param .llm An `LLMMessage` object containing the conversation history.
 #' @param .endpoint_url Base URL for the API (default:  Sys.getenv("AZURE_ENDPOINT_URL")).
 #' @param .deployment The identifier of the model that is deployed (default: "gpt-4o-mini").
+#' @param .api_version Which version of the API is deployed (default: "2024-08-01-preview")
 #' @param .max_completion_tokens An upper bound for the number of tokens that can be generated for a completion, including visible output tokens and reasoning tokens.
 #' @param .frequency_penalty Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far.
 #' @param .logit_bias A named list modifying the likelihood of specified tokens appearing in the completion.
