@@ -50,7 +50,7 @@ wait_rate_limit <- function(.api_name,.min_tokens_reset){
   #Wait if rate limit is likely to be hit
   if(requests_remaining  == 1){
     req_reset_wait_time <- round(requests_reset_difftime,2)
-    glue::glue("Waiting till requests rate limit is reset: {req_reset_wait_time}")
+    glue::glue("Waiting till requests rate limit is reset: {req_reset_wait_time}") |> message()
     Sys.sleep(requests_reset_difftime)
   }
   if(tokens_reset_difftime > 0 & .min_tokens_reset>0 & tokens_remaining<.min_tokens_reset){
@@ -153,6 +153,32 @@ ratelimit_from_header <- function(.response_headers, .api) {
              ratelimit_tokens              = as.integer(.response_headers["x-ratelimit-limit-tokens"]),
              ratelimit_tokens_remaining    = as.integer(.response_headers["x-ratelimit-remaining-tokens"]),
              ratelimit_tokens_reset_time   = ratelimit_tokens_reset_time
+           )
+         },
+         "azure_openai" = {
+           request_time <- strptime(.response_headers["date"]$date, 
+                                    format="%a, %d %b %Y %H:%M:%S", tz="GMT")
+           
+           # Extract remaining requests and tokens
+           ratelimit_requests_remaining <- as.integer(
+             .response_headers["x-ratelimit-remaining-requests"]$`x-ratelimit-remaining-requests`)
+           ratelimit_tokens_remaining <- as.integer(
+             .response_headers["x-ratelimit-remaining-tokens"]$`x-ratelimit-remaining-tokens`)
+           
+           # Assuming reset occurs every 60 seconds (at least I got minutes in my azure console)
+           reset_interval <- 60         
+           
+           ratelimit_requests_reset_time <- request_time + reset_interval
+           ratelimit_tokens_reset_time <- request_time + reset_interval
+           
+           list(
+             this_request_time = request_time,
+             ratelimit_requests = NA,
+             ratelimit_requests_remaining = ratelimit_requests_remaining,
+             ratelimit_requests_reset_time = ratelimit_requests_reset_time,
+             ratelimit_tokens = NA,
+             ratelimit_tokens_remaining = ratelimit_tokens_remaining,
+             ratelimit_tokens_reset_time = ratelimit_tokens_reset_time
            )
          },
          stop(sprintf("Unsupported API type: %s", .api))

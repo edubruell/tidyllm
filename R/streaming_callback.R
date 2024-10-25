@@ -81,7 +81,7 @@ generate_callback_function <- function(.api) {
       utils::flush.console()
       TRUE
       }
-  } else if (.api %in% c("openai","mistral","groq")) {
+  } else if (.api %in% c("openai","mistral","groq","azure_openai")) {
       callback_fn <- function(.data) {
         # Read the stream content and split into lines
         lines <- .data |>
@@ -112,11 +112,13 @@ generate_callback_function <- function(.api) {
             )
             
             if (!is.null(parsed_event)) {
-              delta_content <- parsed_event$choices[[1]]$delta$content
-              if (!is.null(delta_content)) {
-                .tidyllm_stream_env$stream <- paste0(.tidyllm_stream_env$stream, delta_content)
-                cat(delta_content)
-                utils::flush.console()
+              if(length(parsed_event$choices)>=1){
+                delta_content <- parsed_event$choices[[1]]$delta$content
+                if (!is.null(delta_content)) {
+                  .tidyllm_stream_env$stream <- paste0(.tidyllm_stream_env$stream, delta_content)
+                  cat(delta_content)
+                  utils::flush.console()
+                }
               }
             }
           } else {
