@@ -90,7 +90,9 @@ claude <- function(.llm,
   
   # Retrieve API key from environment variables
   api_key <- base::Sys.getenv("ANTHROPIC_API_KEY")
-  if (api_key == "") stop("API key is not set. Please set it with: Sys.setenv(ANTHROPIC_API_KEY = \"YOUR-KEY-GOES-HERE\").")
+  if ((api_key == "") & .dry_run==FALSE){
+    stop("API key is not set. Please set it with: Sys.setenv(ANTHROPIC_API_KEY = \"YOUR-KEY-GOES-HERE\").")
+  }
   
   # If the rate limit environment is set, wait for the rate limit
   if(.wait==TRUE & !is.null(.tidyllm_rate_limit_env[["claude"]])){

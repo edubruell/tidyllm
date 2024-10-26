@@ -108,7 +108,9 @@ openai <- function(
   
   # Get the OpenAI API key
   api_key <- Sys.getenv("OPENAI_API_KEY")
-  if (api_key == "") stop("API key is not set. Please set it with: Sys.setenv(OPENAI_API_KEY = \"YOUR-KEY-GOES-HERE\")")
+  if ((api_key == "") & .dry_run==FALSE){
+    stop("API key is not set. Please set it with: Sys.setenv(OPENAI_API_KEY = \"YOUR-KEY-GOES-HERE\")")
+  }
   
   # Wait for the rate-limit if necessary
   if (.wait == TRUE & !is.null(.tidyllm_rate_limit_env[["openai"]])) {
@@ -348,7 +350,9 @@ openai_embedding <- function(.llm,
   
   # Get the OpenAI API key
   api_key <- Sys.getenv("OPENAI_API_KEY")
-  if (api_key == "") stop("API key is not set. Please set it with: Sys.setenv(OPENAI_API_KEY = \"YOUR-KEY-GOES-HERE\")")
+  if ((api_key == "") & .dry_run==FALSE){
+    stop("API key is not set. Please set it with: Sys.setenv(OPENAI_API_KEY = \"YOUR-KEY-GOES-HERE\")")
+  }
   
   # Validate the inputs
   c(

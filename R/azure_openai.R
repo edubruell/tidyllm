@@ -69,8 +69,8 @@ azure_openai <- function(
 ) {
   
   #Check enpoint
-  if (.endpoint_url == ""){
-   stop("No valid Azure endpoint defined. Please set it either as input to this function or with: Sys.setenv(AZURE_ENDPOINT_URL = \"endpoint.url\")")
+  if (.endpoint_url == ""& .dry_run==FALSE){
+   stop("No valid Azure endpoint defined. Please set it either as input to this function or with: Sys.setenv(AZURE_ENDPOINT_URL = \"https://endpoint.openai.azure.com/\")")
   }
   
   # Validate inputs
@@ -112,7 +112,9 @@ azure_openai <- function(
   
   # Get the OpenAI API key
   api_key <- Sys.getenv("AZURE_OPENAI_API_KEY")
-  if (api_key == "") stop("API key is not set. Please set it with: Sys.setenv(AZURE_OPENAI_API_KEY = \"YOUR-KEY-GOES-HERE\")")
+  if ((api_key == "")& .dry_run==FALSE){
+    stop("API key is not set. Please set it with: Sys.setenv(AZURE_OPENAI_API_KEY = \"YOUR-KEY-GOES-HERE\")")
+  }
   
   # Wait for the rate-limit if necessary
   if (.wait == TRUE & !is.null(.tidyllm_rate_limit_env[["azure_openai"]])) {

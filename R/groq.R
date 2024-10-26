@@ -81,7 +81,9 @@ groq <- function(.llm,
   
   # Retrieve API key from environment variables
   api_key <- Sys.getenv("GROQ_API_KEY")
-  if (api_key == "") stop("API key is not set. Please set it with: Sys.setenv(GROQ_API_KEY = \"YOUR-KEY-GOES-HERE\")")
+  if ((api_key == "")& .dry_run==FALSE){
+    stop("API key is not set. Please set it with: Sys.setenv(GROQ_API_KEY = \"YOUR-KEY-GOES-HERE\")")
+  }
   
   # Fill the request body
   request_body <- list(
@@ -215,6 +217,10 @@ groq_transcribe <- function(
 ) {
   # Validate audio file path
   if (!file.exists(.audio_file)) stop("Audio file does not exist.")
+  
+  if ((api_key == "")& .dry_run==FALSE){
+    stop("API key is not set. Please set it with: Sys.setenv(GROQ_API_KEY = \"YOUR-KEY-GOES-HERE\")")
+  }
   
   # Validate inputs
   c(

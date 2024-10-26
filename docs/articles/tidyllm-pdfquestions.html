@@ -229,11 +229,17 @@ multiple papers with different queries. See details about <a href="https://opena
 also try open-source local models, paid remote models like
 <code>gpt-4o</code> typically handle longer documents much more
 effectively. Smaller local models, such as <code>gemma2:9B</code> in
-<code><a href="../reference/ollama.html">ollama()</a></code>, often struggle with such extensive content even
-though their context window is large. To use them, you might need to
-reduce the number of processed pages or simplify your queries.
-Alternatively, larger local models like <code>llama3::70B</code> could
-work, but they require significant hardware resources to run
+<code><a href="../reference/ollama.html">ollama()</a></code>, often struggle with such extensive content and
+multiple questions in a structured response even though their context
+window is large. To use them, you might need to reduce the number of
+processed pages or simplify your queries. In addition, with
+<code><a href="../reference/ollama.html">ollama()</a></code> you will need to increase the context length from
+the ollama-default of 2,048 tokens to a higher number with the
+<code><a href="../reference/ollama.html">ollama()</a></code>-option <code>.num_ctx</code>. Since context length
+is directly related to memory usage, this would likely be slower than a
+small context query. Alternatively, even larger local models like
+<code>llama3::70B</code> could work for more complicated queries than
+smaller models, but they require significant hardware resources to run
 effectively.</p>
 <blockquote>
 <p>⚠️ <strong>Note:</strong> When using paid remote models, it’s

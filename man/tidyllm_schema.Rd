@@ -2,7 +2,7 @@
 % Please edit documentation in R/tidyllm_schema.R
 \name{tidyllm_schema}
 \alias{tidyllm_schema}
-\title{Generate a JSON Schema with Tidy Data Principles}
+\title{This function creates a JSON schema suitable for use with the API functions in tidyllm, enforcing tidy data principles by disallowing nested structures.}
 \usage{
 tidyllm_schema(name, ...)
 }
@@ -11,25 +11,25 @@ tidyllm_schema(name, ...)
 
 \item{...}{Named arguments where each name represents a field in the schema and each value specifies the type. Supported types include R data types:
 \itemize{
-\item \code{"character"}: Represents a charcater type
-\item \code{"string"}: Allowed shorthand for charachter type
-\item \code{"factor(...)"}: A string with specific allowable values, represented as \code{enum} in JSON. Specify options as \code{factor(option1, option2)}.
-\item \code{"logical"}: Represents a boolean.
-\item \code{"numeric"}: Represents a number.
-\item \code{"type[]"}: Appending \verb{[]} allows for vector of a given type, e.g., \code{"character[]"}.
+\item "character": Represents a charcater type
+\item "string": Allowed shorthand for charachter type
+\item "factor(...)": A string with specific allowable values, represented as enum in JSON. Specify options as factor(option1, option2).
+\item "logical": Represents a boolean.
+\item "numeric": Represents a number.
+\item "type[]": Appending [] allows for vector of a given type, e.g., "character[]".
 }}
 }
 \value{
-A list representing the JSON schema with the specified fields and types, suitable for passing to \code{openai()}'s \code{.json_schema} parameter.
+A list representing the JSON schema with the specified fields and types, suitable for passing to openai()'s .json_schema parameter.
 }
 \description{
-This function creates a JSON schema suitable for use with the API functions in \code{tidyllm}, enforcing tidy data principles by disallowing nested structures.
+This function creates a JSON schema suitable for use with the API functions in tidyllm, enforcing tidy data principles by disallowing nested structures.
 }
 \details{
-The \code{tidyllm_schema()} function is designed to make defining JSON schemas for \code{tidyllm} more concise and user-friendly. It maps R-like types to JSON schema types and validates inputs to enforce tidy data principles. Nested structures are not allowed to maintain compatibility with tidy data conventions.
+The tidyllm_schema() function is designed to make defining JSON schemas for tidyllm more concise and user-friendly. It maps R-like types to JSON schema types and validates inputs to enforce tidy data principles. Nested structures are not allowed to maintain compatibility with tidy data conventions.
 }
 \note{
-Factor types (\code{factor(...)}) are treated as enumerations in JSON and are limited to a set of allowable string values. Arrays of a given type can be specified by appending \verb{[]} to the type.
+Factor types (factor(...)) are treated as enumerations in JSON and are limited to a set of allowable string values. Arrays of a given type can be specified by appending [] to the type.
 }
 \examples{
 \dontrun{

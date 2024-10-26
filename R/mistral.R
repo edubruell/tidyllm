@@ -81,8 +81,9 @@ mistral <- function(.llm,
   
   # Retrieve API key from environment variables
   api_key <- Sys.getenv("MISTRAL_API_KEY")
-  if (api_key == "") stop("API key is not set. Please set it with: Sys.setenv(GROQ_API_KEY = \"YOUR-KEY-GOES-HERE\")")
-  
+  if ((api_key == "")& .dry_run==FALSE){
+    stop("API key is not set. Please set it with: Sys.setenv(GROQ_API_KEY = \"YOUR-KEY-GOES-HERE\")")
+  }
   
   # Wait for the rate limit if necessary
   if (.wait == TRUE & !is.null(.tidyllm_rate_limit_env[["mistral"]])) {
@@ -187,8 +188,9 @@ mistral_embedding <- function(.llm,
   
   # Retrieve API key from environment variables
   api_key <- Sys.getenv("MISTRAL_API_KEY")
-  if (api_key == "") stop("API key is not set. Please set it with: Sys.setenv(GROQ_API_KEY = \"YOUR-KEY-GOES-HERE\")")
-  
+  if ((api_key == "")& .dry_run==FALSE){
+    stop("API key is not set. Please set it with: Sys.setenv(GROQ_API_KEY = \"YOUR-KEY-GOES-HERE\")")
+  }
   # Validate the inputs
   c(
     "Input .llm must be an LLMMessage object or a character vector" = inherits(.llm, "LLMMessage") | is.character(.llm),

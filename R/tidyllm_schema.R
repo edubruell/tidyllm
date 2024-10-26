@@ -1,17 +1,15 @@
-#' Generate a JSON Schema with Tidy Data Principles
-#'
-#' This function creates a JSON schema suitable for use with the API functions in `tidyllm`, enforcing tidy data principles by disallowing nested structures. 
+#' This function creates a JSON schema suitable for use with the API functions in tidyllm, enforcing tidy data principles by disallowing nested structures. 
 #'
 #' @param name A character vector specifying the schema name. This serves as an identifier for the schema.
 #' @param ... Named arguments where each name represents a field in the schema and each value specifies the type. Supported types include R data types:
-#'   - `"character"`: Represents a charcater type
-#'   - `"string"`: Allowed shorthand for charachter type
-#'   - `"factor(...)"`: A string with specific allowable values, represented as `enum` in JSON. Specify options as `factor(option1, option2)`.
-#'   - `"logical"`: Represents a boolean.
-#'   - `"numeric"`: Represents a number.
-#'   - `"type[]"`: Appending `[]` allows for vector of a given type, e.g., `"character[]"`.
+#'   - "character": Represents a charcater type
+#'   - "string": Allowed shorthand for charachter type
+#'   - "factor(...)": A string with specific allowable values, represented as enum in JSON. Specify options as factor(option1, option2).
+#'   - "logical": Represents a boolean.
+#'   - "numeric": Represents a number.
+#'   - "type[]": Appending [] allows for vector of a given type, e.g., "character[]".
 #'
-#' @return A list representing the JSON schema with the specified fields and types, suitable for passing to `openai()`'s `.json_schema` parameter.
+#' @return A list representing the JSON schema with the specified fields and types, suitable for passing to openai()'s .json_schema parameter.
 #'
 #' @examples
 #' \dontrun{
@@ -36,9 +34,9 @@
 #' )
 #'}
 #' @details
-#' The `tidyllm_schema()` function is designed to make defining JSON schemas for `tidyllm` more concise and user-friendly. It maps R-like types to JSON schema types and validates inputs to enforce tidy data principles. Nested structures are not allowed to maintain compatibility with tidy data conventions.
+#' The tidyllm_schema() function is designed to make defining JSON schemas for tidyllm more concise and user-friendly. It maps R-like types to JSON schema types and validates inputs to enforce tidy data principles. Nested structures are not allowed to maintain compatibility with tidy data conventions.
 #'
-#' @note Factor types (`factor(...)`) are treated as enumerations in JSON and are limited to a set of allowable string values. Arrays of a given type can be specified by appending `[]` to the type.
+#' @note Factor types (factor(...)) are treated as enumerations in JSON and are limited to a set of allowable string values. Arrays of a given type can be specified by appending [] to the type.
 #'
 #' @export
 tidyllm_schema <- function(name, ...) {
@@ -72,8 +70,11 @@ tidyllm_schema <- function(name, ...) {
     
     if (grepl("^factor\\(.*\\)$", base_field)) {
       # Enum type for factors
-      enums <- strsplit(sub("^factor\\((.*)\\)$", "\\1", base_field), ",")[[1]]
-      enums <- trimws(enums)
+      enums <- base_field |>
+        stringr::str_replace("^factor\\((.*)\\)$", "\\1") |>
+        stringr::str_split(",") |>
+        (\(x) x[[1]])()
+      enums <- stringr::str_trim(enums)
       json_type <- list(type = "string", enum = enums)
     } else if (base_field %in% names(type_map)) {
       # Simple type
