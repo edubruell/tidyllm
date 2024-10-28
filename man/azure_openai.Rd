@@ -89,7 +89,7 @@ result <- azure_openai(msg)
 
 # With custom parameters
 result2 <- azure_openai(msg, 
-                 .model "gpt-4o-mini",
+                 .deployment = "gpt-4o-mini",
                  .temperature = 0.7, 
                  .max_tokens = 1000)
 }

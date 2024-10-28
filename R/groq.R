@@ -217,7 +217,7 @@ groq_transcribe <- function(
 ) {
   # Validate audio file path
   if (!file.exists(.audio_file)) stop("Audio file does not exist.")
-  
+  api_key <- Sys.getenv("GROQ_API_KEY")
   if ((api_key == "")& .dry_run==FALSE){
     stop("API key is not set. Please set it with: Sys.setenv(GROQ_API_KEY = \"YOUR-KEY-GOES-HERE\")")
   }
