@@ -37,7 +37,7 @@
 #' 
 #' # With custom parameters
 #' result2 <- azure_openai(msg, 
-#'                  .model "gpt-4o-mini",
+#'                  .deployment = "gpt-4o-mini",
 #'                  .temperature = 0.7, 
 #'                  .max_tokens = 1000)
 #' }
@@ -155,13 +155,12 @@ azure_openai <- function(
   request_body <- base::Filter(Negate(is.null), request_body)
   
   # Build the request
-  full_endpoint <- paste0(.endpoint_url, "openai/deployments/", .deployment,
-                          "/chat/completions?api-version=", .api_version)
-  
-  request <- httr2::request(full_endpoint) |>
+  request <- httr2::request(.endpoint_url) |>
+    httr2::req_url_path(paste0("openai/deployments/", .deployment,"/chat/completions")) |>
+    httr2::req_url_query(`api-version` = .api_version) |>
     httr2::req_headers(
       `Content-Type` = "application/json",
-      `api-key` = api_key
+      `api-key` = api_key,
     )  |>
     httr2::req_body_json(data = request_body)
   
