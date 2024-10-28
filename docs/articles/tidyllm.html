@@ -238,26 +238,16 @@ you run it.</p>
 <p>In addition you can use <code>.caputre_plot</code> to send the last
 plot pane to a model.</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tidyverse.tidyverse.org" class="external-link">tidyverse</a></span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## ── <span style="font-weight: bold;">Attaching core tidyverse packages</span> ──────────────────────── tidyverse 2.0.0 ──</span></span>
-<span><span class="co">## <span style="color: #00BB00;">✔</span> <span style="color: #0000BB;">dplyr    </span> 1.1.4     <span style="color: #00BB00;">✔</span> <span style="color: #0000BB;">readr    </span> 2.1.5</span></span>
-<span><span class="co">## <span style="color: #00BB00;">✔</span> <span style="color: #0000BB;">forcats  </span> 1.0.0     <span style="color: #00BB00;">✔</span> <span style="color: #0000BB;">stringr  </span> 1.5.1</span></span>
-<span><span class="co">## <span style="color: #00BB00;">✔</span> <span style="color: #0000BB;">ggplot2  </span> 3.5.1     <span style="color: #00BB00;">✔</span> <span style="color: #0000BB;">tibble   </span> 3.2.1</span></span>
-<span><span class="co">## <span style="color: #00BB00;">✔</span> <span style="color: #0000BB;">lubridate</span> 1.9.3     <span style="color: #00BB00;">✔</span> <span style="color: #0000BB;">tidyr    </span> 1.3.1</span></span>
-<span><span class="co">## <span style="color: #00BB00;">✔</span> <span style="color: #0000BB;">purrr    </span> 1.0.2     </span></span>
-<span><span class="co">## ── <span style="font-weight: bold;">Conflicts</span> ────────────────────────────────────────── tidyverse_conflicts() ──</span></span>
-<span><span class="co">## <span style="color: #BB0000;">✖</span> <span style="color: #0000BB;">dplyr</span>::<span style="color: #00BB00;">filter()</span> masks <span style="color: #0000BB;">stats</span>::filter()</span></span>
-<span><span class="co">## <span style="color: #BB0000;">✖</span> <span style="color: #0000BB;">dplyr</span>::<span style="color: #00BB00;">lag()</span>    masks <span style="color: #0000BB;">stats</span>::lag()</span></span>
-<span><span class="co">## <span style="color: #00BBBB;">ℹ</span> Use the conflicted package (<span style="color: #0000BB; font-style: italic;">&lt;http://conflicted.r-lib.org/&gt;</span>) to force all conflicts to become errors</span></span></code></pre>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Create a plot for the mtcars example data</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tidyverse.tidyverse.org" class="external-link">tidyverse</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Create a plot for the mtcars example data</span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">mtcars</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">wt</span>, <span class="va">mpg</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_smooth.html" class="external-link">geom_smooth</a></span><span class="op">(</span>method <span class="op">=</span> <span class="st">"lm"</span>, formula <span class="op">=</span> <span class="st">'y ~ x'</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>x<span class="op">=</span><span class="st">"Weight"</span>,y<span class="op">=</span><span class="st">"Miles per gallon"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tidyllm_files/figure-html/routputs_base-1.png" width="700"></p>
 <p>Now we can send the plot and data summary to a language model:</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tidyverse.tidyverse.org" class="external-link">tidyverse</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Analyze this plot and data summary:"</span>, </span>
 <span>                  .capture_plot <span class="op">=</span> <span class="cn">TRUE</span>, <span class="co">#Send the plot pane to a model</span></span>
@@ -326,7 +316,7 @@ detected, using the <code>.raw</code> argument.</p>
 <div class="section level5">
 <h5 id="example-1-getting-standard-text-replies">Example 1: Getting standard text replies<a class="anchor" aria-label="anchor" href="#example-1-getting-standard-text-replies"></a>
 </h5>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">reply_text</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Imagine a German adress."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>     <span class="fu"><a href="../reference/groq.html">groq</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>     <span class="fu"><a href="../reference/last_reply.html">last_reply</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
@@ -351,7 +341,7 @@ detected, using the <code>.raw</code> argument.</p>
 <div class="section level5">
 <h5 id="example-2-getting-structured-replies-from-apis-in-json-mode">Example 2: Getting structured replies from APIs in JSON mode<a class="anchor" aria-label="anchor" href="#example-2-getting-structured-replies-from-apis-in-json-mode"></a>
 </h5>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">address</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">'Imagine a German adress in JSON format. Reply only with JSON.'</span><span class="op">)</span> </span>
 <span></span>
 <span><span class="va">address</span><span class="op">|&gt;</span></span>
@@ -374,6 +364,53 @@ JSON-mode. Note that <code><a href="../reference/claude.html">claude()</a></code
 JSON-mode in the API-request but you need to specify that you want only
 JSON-output and ideally your shema in the prompt to the assistant.</p>
 </div>
+<div class="section level5">
+<h5 id="example-3-getting-structured-replies-based-on-a-reply-schema">Example 3: Getting structured replies based on a reply schema<a class="anchor" aria-label="anchor" href="#example-3-getting-structured-replies-based-on-a-reply-schema"></a>
+</h5>
+<p>Currently, <code><a href="../reference/openai.html">openai()</a></code> is the only API function in
+<strong>tidyllm</strong> that supports enforcing a pre-specified schema
+for replies. By specifying a schema in the <code>.json_schema</code>
+argument, you ensure structured responses in a defined format:</p>
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">address_schema</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tidyllm_schema.html">tidyllm_schema</a></span><span class="op">(</span></span>
+<span>  name <span class="op">=</span> <span class="st">"AddressSchema"</span>,</span>
+<span>  street <span class="op">=</span> <span class="st">"character"</span>,</span>
+<span>  houseNumber <span class="op">=</span> <span class="st">"numeric"</span>,</span>
+<span>  postcode <span class="op">=</span> <span class="st">"character"</span>,</span>
+<span>  city <span class="op">=</span> <span class="st">"character"</span>,</span>
+<span>  region <span class="op">=</span> <span class="st">"character"</span>,</span>
+<span>  country <span class="op">=</span> <span class="st">"factor(Germany,France)"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">address</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Imagine an address in JSON format that matches the schema."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>        <span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.json_schema <span class="op">=</span> <span class="va">address_schema</span><span class="op">)</span></span></code></pre></div>
+<p>The <code><a href="../reference/tidyllm_schema.html">tidyllm_schema()</a></code> function is a helper for defining
+JSON schemas. It disallows nested structures and ensures flat,
+predictable JSON outputs. It works with the following syntax:</p>
+<ul>
+<li>
+<strong><code>name</code></strong>: A name identifier for the
+schema.</li>
+<li>
+<strong><code>...</code> (fields)</strong>: Named arguments
+representing field names and their data types.
+<ul>
+<li>
+<code>"character"</code> or <code>"string"</code>: Text fields.</li>
+<li>
+<code>"factor(...)"</code>: Enumerations with allowable values, like
+<code>factor(Germany, France)</code>.</li>
+<li>
+<code>"logical"</code>: <code>TRUE</code> or <code>FALSE</code>
+</li>
+<li>
+<code>"numeric"</code>: Numbers.</li>
+<li>
+<code>"type[]"</code>: Lists of a given type, such as
+<code>"character[]"</code>.</li>
+</ul>
+</li>
+</ul>
+</div>
 </div>
 <div class="section level4">
 <h4 id="api-parameters">API parameters<a class="anchor" aria-label="anchor" href="#api-parameters"></a>
@@ -382,7 +419,7 @@ JSON-output and ideally your shema in the prompt to the assistant.</p>
 deterministic the response should be via parameters like temperature.
 Please read API-documentation and the documentation of the model
 functions for specific examples.</p>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span>  <span class="va">temp_example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Explain how temperature parameters work in large language models  and why temperature 0 gives you deterministic outputs in one sentence."</span><span class="op">)</span></span>
 <span>  </span>
 <span>  <span class="co">#per default it is non-zero</span></span>
@@ -394,7 +431,7 @@ functions for specific examples.</p>
 <span><span class="co">## --------------------------------------------------------------</span></span>
 <span><span class="co">## assistant: In large language models, temperature parameters control the randomness of generated text by scaling the output probabilities, with higher temperatures introducing more uncertainty and lower temperatures favoring more likely outcomes; specifically, setting temperature to 0 effectively eliminates all randomness, resulting in deterministic outputs because it sets the probability of each token to its maximum likelihood value.</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span></code></pre>
-<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span>  <span class="co">#Retrying with .temperature=0</span></span>
 <span>  <span class="va">temp_example</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/ollama.html">ollama</a></span><span class="op">(</span>.temperature<span class="op">=</span><span class="fl">0</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Message History:</span></span>
@@ -453,7 +490,9 @@ API</a>, particularly the GPT-4o model, are extremely versatile and
 perform well across a wide range of tasks, including text generation,
 code completion, and multimodal analysis. In addition the o1-reasoning
 models offer very good performance for a set of specific task (at a
-relatively high price).</p></li>
+relatively high price). There is also an <code><a href="../reference/azure_openai.html">azure_openai()</a></code>
+function if you prefer to use the OpenAI API on Microsoft
+Azure.</p></li>
 <li><p><strong><code><a href="../reference/mistral.html">mistral()</a></code> (EU-based):</strong> <a href="https://docs.mistral.ai/" class="external-link">Mistral</a> offers lighter-weight,
 open-source models developed and hosted in the EU, making it
 particularly appealing if data protection (e.g., GDPR compliance) is a
