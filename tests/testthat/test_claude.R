@@ -60,6 +60,11 @@ test_that("claude returns expected response", {
     llm <- LLMMessage$new()
     llm$add_message("user", "Hello, world")
     
+    # Store the current API key and set a dummy key if none exists
+    if (Sys.getenv("ANTHROPIC_API_KEY") == "") {
+      Sys.setenv(ANTHROPIC_API_KEY = "DUMMY_KEY_FOR_TESTING")
+    }
+    
     result <- claude(
       .llm = llm,
       .model = "claude-3-5-sonnet-20240620",
@@ -67,6 +72,11 @@ test_that("claude returns expected response", {
       .temperature = 0,
       .stream = FALSE
     )
+    
+    # Store the current API key and set a dummy key if none exists
+    if (Sys.getenv("ANTHROPIC_API_KEY") == "DUMMY_KEY_FOR_TESTING") {
+      Sys.setenv(ANTHROPIC_API_KEY = "")
+    }
     
     # Assertions based on the message in the captured mock response
     expect_true(inherits(result, "LLMMessage"))

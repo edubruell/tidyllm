@@ -40,18 +40,28 @@ test_that("mistral function constructs a correct request and dry runs it", {
 test_that("mistral returns expected response",{ 
   with_mock_dir("mistral",expr = {
     
+    # Store the current API key and set a dummy key if none exists
+    if (Sys.getenv("MISTRAL_API_KEY") == "") {
+      Sys.setenv(MISTRAL_API_KEY = "DUMMY_KEY_FOR_TESTING")
+    }
+    
     # Make sure the environment starts clean
     if (exists("mistral", envir = .tidyllm_rate_limit_env)) {
       .tidyllm_rate_limit_env[["mistral"]] <- NULL
     }
     
-    llm <- llm_message("user", "Hello, world")
+    llm <- llm_message("Hello, world")
     
     result <- mistral(
       .llm = llm,
       .max_tokens = 1024,
       .temperature = 0,
     )
+    
+
+    if (Sys.getenv("MISTRAL_API_KEY") == "DUMMY_KEY_FOR_TESTING") {
+      Sys.setenv(MISTRAL_API_KEY = "")
+    }
     
     # Assertions based on the message in the captured mock response
     expect_true(inherits(result, "LLMMessage"))
@@ -73,11 +83,21 @@ test_that("mistral returns expected response",{
 test_that("mistral_embedding returns expected response", {
   with_mock_dir("mistral_embedding",expr = {
     
+    # Store the current API key and set a dummy key if none exists
+    if (Sys.getenv("MISTRAL_API_KEY") == "") {
+      Sys.setenv(MISTRAL_API_KEY = "DUMMY_KEY_FOR_TESTING")
+    }
+    
+    
     result <- c("It is not that I am mad, it is only that my head is different from yours",
                 "A man can do as he wills, but not will as he wills",
                 "Whereof one cannot speak, thereof one must be silent",
                 "The limits of my language mean the limits of my world") |>
       mistral_embedding() 
+    
+    if (Sys.getenv("MISTRAL_API_KEY") == "DUMMY_KEY_FOR_TESTING") {
+      Sys.setenv(MISTRAL_API_KEY = "")
+    }
     
     expect_equal(dim(result),c(1024,4))
     

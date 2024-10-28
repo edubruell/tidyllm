@@ -52,6 +52,11 @@ test_that("openai returns expected response", {
       .tidyllm_rate_limit_env[["openai"]] <- NULL
     }
     
+    # Store the current API key and set a dummy key if none exists
+    if (Sys.getenv("OPENAI_API_KEY") == "") {
+      Sys.setenv(OPENAI_API_KEY = "DUMMY_KEY_FOR_TESTING")
+    }
+    
     llm <- llm_message("user", "Hello, world")
     
     result <- openai(
@@ -59,6 +64,11 @@ test_that("openai returns expected response", {
       .temperature = 0,
       .stream = FALSE
     )
+    
+
+    if (Sys.getenv("OPENAI_API_KEY") == "DUMMY_KEY_FOR_TESTING") {
+      Sys.setenv(OPENAI_API_KEY = "")
+    }
     
     ## Assertions based on the message in the captured mock response
     expect_true(inherits(result, "LLMMessage"))
@@ -83,11 +93,20 @@ test_that("openai returns expected response", {
 test_that("openai_embedding returns expected response", {
   with_mock_dir("openai_embedding",expr = {
     
+    # Set a dummy key if none exists
+    if (Sys.getenv("OPENAI_API_KEY") == "") {
+      Sys.setenv(OPENAI_API_KEY = "DUMMY_KEY_FOR_TESTING")
+    }
+    
     result <- c("It is not that I am mad, it is only that my head is different from yours",
                 "A man can do as he wills, but not will as he wills",
                 "Whereof one cannot speak, thereof one must be silent",
                 "The limits of my language mean the limits of my world") |>
       openai_embedding() 
+    
+    if (Sys.getenv("OPENAI_API_KEY") == "DUMMY_KEY_FOR_TESTING") {
+      Sys.setenv(OPENAI_API_KEY = "")
+    }
     
     expect_equal(dim(result),c(1536,4))
     

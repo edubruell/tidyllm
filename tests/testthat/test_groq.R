@@ -6,7 +6,7 @@ test_that("groq function constructs a correct request and dry runs it", {
   if (exists("groq", envir = .tidyllm_rate_limit_env)) {
     .tidyllm_rate_limit_env[["groq"]] <- NULL
   }
-
+  
   # Call groq with .dry_run = TRUE and perform the dry run
   request <- llm_message("Write a poem about meerkats") |> groq(.dry_run = TRUE)
   
@@ -50,13 +50,23 @@ test_that("groq returns expected response", {
       .tidyllm_rate_limit_env[["groq"]] <- NULL
     }
     
-    llm <- llm_message("user", "Hello, world")
+    llm <- llm_message("Hello, world")
+    
+    # Set a dummy key if none exists
+    if (Sys.getenv("GROQ_API_KEY") == "") {
+      Sys.setenv(GROQ_API_KEY = "DUMMY_KEY_FOR_TESTING")
+    }
     
     result <- groq(
       .llm = llm,
       .max_tokens = 1024,
       .temperature = 0,
     )
+    
+    # Set a dummy key if none exists
+    if (Sys.getenv("GROQ_API_KEY") == "DUMMY_KEY_FOR_TESTING") {
+      Sys.setenv(GROQ_API_KEY = "")
+    }
     
     # Assertions based on the message in the captured mock response
     expect_true(inherits(result, "LLMMessage"))
