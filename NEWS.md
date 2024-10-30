@@ -9,7 +9,19 @@ The development version of `tidyllm` reflects the ongoing updates in the GitHub 
 
 ---
 
-# Version 0.1.9 (Current Development Version)
+# Version 0.1.10 (Current Development Version)
+
+## Breaking Changes
+
+- `get_reply()` was split into two type-stable functions: `get_reply()` for text and `get_reply_data()` for structured outputs.
+
+- This is the first step towards a more long-term plan to move schema definitions into user requests instead of API-functions which might also be reasonable for later batch-API functions
+
+## Improvements
+
+- **Rate limiting updated to use `httr2::req_retry()`**: Rate limiting now uses the right 429 headers where they come. 
+
+# Version 0.1.9 
 
 ## Major Features
 

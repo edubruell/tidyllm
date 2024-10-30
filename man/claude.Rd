@@ -16,10 +16,8 @@ claude(
   .tools = NULL,
   .api_url = "https://api.anthropic.com/",
   .verbose = FALSE,
-  .wait = TRUE,
-  .min_tokens_reset = 1000L,
+  .max_tries = 3,
   .timeout = 60,
-  .json = FALSE,
   .stream = FALSE,
   .dry_run = FALSE
 )
@@ -47,13 +45,9 @@ claude(
 
 \item{.verbose}{Logical; if TRUE, displays additional information about the API call (default: FALSE).}
 
-\item{.wait}{Logical; if TRUE, respects rate limits by waiting when necessary (default: TRUE).}
-
-\item{.min_tokens_reset}{Integer specifying the minimum token threshold before waiting for reset (default:1000).}
+\item{.max_tries}{Maximum retries to peform request}
 
 \item{.timeout}{Integer specifying the request timeout in seconds (default: 60).}
-
-\item{.json}{Logical; if TRUE, instructs Claude to return responses in JSON format (default: FALSE).}
 
 \item{.stream}{Logical; if TRUE, streams the response piece by piece (default: FALSE).}
 

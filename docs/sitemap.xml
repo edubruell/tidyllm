@@ -2,6 +2,7 @@
 <url><loc>https://edubruell.github.io/tidyllm/404.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/LICENSE-text.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/LICENSE.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/articles/articles/tidyllm-pdfquestions.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/articles/getting-started.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/articles/index.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/articles/tidyllm-pdfquestions.html</loc></url>
@@ -18,12 +19,14 @@
 <url><loc>https://edubruell.github.io/tidyllm/reference/df_llm_message.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/generate_callback_function.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/get_reply.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/get_reply_data.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/get_user_message.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/groq.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/groq_transcribe.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/index.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/initialize_api_env.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/last_reply.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/last_reply_data.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/last_user_message.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/llm_message.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/mistral.html</loc></url>

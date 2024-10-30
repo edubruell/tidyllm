@@ -26,7 +26,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.9</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.10</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -41,7 +41,6 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/tidyllm_classifiers.html">Classifying Texts with tidyllm</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm-pdfquestions.html">Structured Question Answering from PDFs</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm-synthetic-data.html">Generate Synthetic Data with tidyllm</a></li>
   </ul>
 </li>
@@ -296,7 +295,7 @@ output, helping us build a more accurate ground truth:</p>
 <span>    <span class="co"># Get the assistant's reply</span></span>
 <span>    <span class="va">assistant_reply</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="va">prompt</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>      <span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"claude-3-5-sonnet-20240620"</span>, .temperature <span class="op">=</span> <span class="fl">0</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>      <span class="fu"><a href="../reference/last_reply.html">last_reply</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>      <span class="fu"><a href="../reference/get_reply.html">get_reply</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>      <span class="fu"><a href="https://stringr.tidyverse.org/reference/str_trim.html" class="external-link">str_squish</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>    </span>
 <span>    <span class="co"># Validate the assistant's reply</span></span>
@@ -335,7 +334,7 @@ spaces:</p></li>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="va">prompt</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>      <span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"claude-3-5-sonnet-20240620"</span>, .temperature <span class="op">=</span> <span class="fl">0</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>      <span class="fu"><a href="../reference/last_reply.html">last_reply</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>      <span class="fu"><a href="../reference/get_reply.html">get_reply</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>      <span class="fu"><a href="https://stringr.tidyverse.org/reference/str_trim.html" class="external-link">str_squish</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <ol start="3" style="list-style-type: decimal">
 <li><p><strong>Error Handling</strong>: The function uses
@@ -406,21 +405,23 @@ identifying unclear responses as missing, such as “Doin’ the numbers” or
 <code>98</code>) instead of missing (code <code>99</code>), which
 suggests it correctly avoided making an incorrect guess, rather than
 misclassifying the occupations outright.</p>
-<p>While we could likely proceed with classifying the rest of the
-dataset using the <code><a href="../reference/claude.html">claude()</a></code>-based classifier, given its
-strong performance, we now have a solid ground truth to work with. This
-allows us to experiment with different models and prompts to determine
-if simpler alternatives or small local models would perform just as
-well.</p>
+<p>At this point we could stop and proceed to classify the entire data
+with the <code><a href="../reference/claude.html">claude()</a></code>-based classifier, given its strong
+performance and manual validation on unseen data and that scaling up to
+the data would cost less than 3$. However, to illustrate the general
+principle how to find good llm classifiers when you are less sure, we
+will use the initial ground truth we have built as a base to experiment
+with different models and prompts. For example, we could try to
+determine if simpler alternatives or small local models would perform
+just as well.</p>
 </div>
 </div>
 <div class="section level2">
 <h2 id="optimizing-and-testing-the-classifiers">Optimizing and Testing the Classifiers<a class="anchor" aria-label="anchor" href="#optimizing-and-testing-the-classifiers"></a>
 </h2>
-<p>Now that we have a reliable ground-truth dataset, it’s time to
-optimize and experiment with different model configurations. We’ll split
-the dataset into training and test sets using <code>rsample</code> to
-ensure that we can experiment with different prompts and setups on
+<p>To optimize and experiment with different model configurations, we’ll
+split the dataset into training and test sets using <code>rsample</code>
+to ensure that we can experiment with different prompts and setups on
 training data but only evaluate our final model performance on unseen
 data.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
@@ -482,7 +483,7 @@ arguments:</p>
 <span>    <span class="co"># Get the assistant's reply using the dynamically provided API function and model</span></span>
 <span>    <span class="va">assistant_reply</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="va">prompt</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>      <span class="fu">api_function</span><span class="op">(</span>.model <span class="op">=</span> <span class="va">model</span>, .temperature <span class="op">=</span> <span class="fl">0</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>      <span class="fu"><a href="../reference/last_reply.html">last_reply</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>      <span class="fu"><a href="../reference/get_reply.html">get_reply</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>      <span class="fu"><a href="https://stringr.tidyverse.org/reference/str_trim.html" class="external-link">str_squish</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>    </span>
 <span>    <span class="co"># Validate the assistant's reply</span></span>
@@ -744,7 +745,7 @@ reasoning and an output step:</p>
 <span>      <span class="fu">api_function</span><span class="op">(</span>.model <span class="op">=</span> <span class="va">model</span>, .temperature <span class="op">=</span> <span class="fl">0</span>, .stream<span class="op">=</span><span class="va">stream</span><span class="op">)</span> </span>
 <span>    </span>
 <span>    <span class="va">conversation</span> <span class="op">|&gt;</span></span>
-<span>      <span class="fu"><a href="../reference/last_reply.html">last_reply</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>      <span class="fu"><a href="../reference/get_reply.html">get_reply</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>  <span class="op">}</span>, error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span><span class="op">{</span></span>
 <span>    <span class="va">conversation</span> <span class="op">&lt;&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Please classify this occupation response: {occupation}"</span><span class="op">)</span></span>
 <span>    <span class="st">"Error in reasoning step."</span></span>
@@ -760,7 +761,7 @@ reasoning and an output step:</p>
 <span>    <span class="va">conversation</span> <span class="op">|&gt;</span></span>
 <span>    <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="va">prompt_final</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>      <span class="fu">api_function</span><span class="op">(</span>.model <span class="op">=</span> <span class="va">model</span>, .temperature <span class="op">=</span> <span class="fl">0</span>, .stream<span class="op">=</span><span class="va">stream</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>      <span class="fu"><a href="../reference/last_reply.html">last_reply</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>      <span class="fu"><a href="../reference/get_reply.html">get_reply</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>      <span class="fu"><a href="https://stringr.tidyverse.org/reference/str_trim.html" class="external-link">str_squish</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>  <span class="op">}</span>, error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span><span class="op">{</span></span>
 <span>    <span class="st">"97"</span></span>
@@ -844,21 +845,18 @@ probably, there is still some way to get a better final result out of
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>              <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> FALSE                 19 0.061<span style="text-decoration: underline;">5</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> TRUE                 290 0.939</span></span></code></pre></div>
-<p>Yet it likely is not worth to invest more time into trying to get
-good results out of a local model for this use-case. Thus, it looks like
-we still have a clear favorite final choice without even needing to do
-further testing. We already know test performance for Claude Sonnet 3.5
-on the original split, since we manually checked it. Paying the roughly
-2,50$ for the Anthropic API and use Claude Sonnet to classify the whole
-sample at 98% accuracy is probably worth it in this case. So the final
-step is to use the initial <code>classify_occupation()</code> based on
-<code><a href="../reference/claude.html">claude()</a></code> on all data.</p>
+<p>In our specific case we already have a clear favorite final choice
+without even needing to do further testing, because we already know test
+performance for Claude Sonnet 3.5, since we manually checked it. So no
+further check of prompt or models on the test data is needed here.</p>
 </div>
 </div>
 <div class="section level2">
 <h2 id="scaling-up-to-the-full-dataset">Scaling Up to the Full Dataset<a class="anchor" aria-label="anchor" href="#scaling-up-to-the-full-dataset"></a>
 </h2>
-<p>So we choose Claude 3.5 sonnet, our original prompt and apply it to
+<p>The only question is how to best scale up the original classification
+to all data.</p>
+<p>Here we choose Claude 3.5 sonnet, our original prompt and apply it to
 our data-set:</p>
 <div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">full_occupations_classified</span> <span class="op">&lt;-</span> <span class="va">distinct_occupations</span><span class="op">$</span><span class="va">occupation</span> <span class="op">|&gt;</span></span>

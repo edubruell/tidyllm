@@ -12,6 +12,7 @@ perform_api_request <- function(.request,
                                 .api, 
                                 .stream = FALSE, 
                                 .timeout = 60, 
+                                .max_tries = 3,
                                 .parse_response_fn = NULL,
                                 .dry_run =FALSE) {
 
@@ -49,6 +50,9 @@ perform_api_request <- function(.request,
     response <- .request |>
       httr2::req_timeout(.timeout) |>
       httr2::req_error(is_error = function(resp) FALSE) |>
+      httr2::req_retry(max_tries = .max_tries,  
+                      retry_on_failure = TRUE,
+                      is_transient = \(resp) httr2::resp_status(resp) %in% c(429, 503)) |>
       httr2::req_perform()
     
     # Parse the response body as JSON when not streaming

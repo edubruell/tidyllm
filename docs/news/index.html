@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.9</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.10</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -20,7 +20,6 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/tidyllm_classifiers.html">Classifying Texts with tidyllm</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm-pdfquestions.html">Structured Question Answering from PDFs</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm-synthetic-data.html">Generate Synthetic Data with tidyllm</a></li>
   </ul></li>
 <li class="active nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -39,7 +38,20 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.1.9" id="version-019-current-development-version">Version 0.1.9 (Current Development Version)<a class="anchor" aria-label="anchor" href="#version-019-current-development-version"></a></h2>
+<h2 class="pkg-version" data-toc-text="0.1.10" id="version-0110-current-development-version">Version 0.1.10 (Current Development Version)<a class="anchor" aria-label="anchor" href="#version-0110-current-development-version"></a></h2>
+<div class="section level3">
+<h3 id="breaking-changes-0-1-10">Breaking Changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-1-10"></a></h3>
+<ul><li><p><code><a href="../reference/get_reply.html">get_reply()</a></code> was split into two type-stable functions: <code><a href="../reference/get_reply.html">get_reply()</a></code> for text and <code><a href="../reference/get_reply_data.html">get_reply_data()</a></code> for structured outputs.</p></li>
+<li><p>This is the first step towards a more long-term plan to move schema definitions into user requests instead of API-functions which might also be reasonable for later batch-API functions</p></li>
+</ul></div>
+<div class="section level3">
+<h3 id="improvements-0-1-10">Improvements<a class="anchor" aria-label="anchor" href="#improvements-0-1-10"></a></h3>
+<ul><li>
+<strong>Rate limiting updated to use <code><a href="https://httr2.r-lib.org/reference/req_retry.html" class="external-link">httr2::req_retry()</a></code></strong>: Rate limiting now uses the right 429 headers where they come.</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.1.9" id="version-019">Version 0.1.9<a class="anchor" aria-label="anchor" href="#version-019"></a></h2>
 <div class="section level3">
 <h3 id="major-features-0-1-9">Major Features<a class="anchor" aria-label="anchor" href="#major-features-0-1-9"></a></h3>
 <ul><li><p><strong>Enhanced Input Validation</strong>: All API functions now have improved input validation, ensuring better alignment with API documentation</p></li>

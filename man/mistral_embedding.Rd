@@ -8,6 +8,7 @@ mistral_embedding(
   .llm,
   .model = "mistral-embed",
   .timeout = 120,
+  .max_tries = 3,
   .dry_run = FALSE
 )
 }
@@ -17,6 +18,8 @@ mistral_embedding(
 \item{.model}{The embedding model identifier (default: "mistral-embed").}
 
 \item{.timeout}{Timeout for the API request in seconds (default: 120).}
+
+\item{.max_tries}{Maximum retries to peform request}
 
 \item{.dry_run}{If TRUE, perform a dry run and return the request object.}
 }

@@ -21,10 +21,9 @@
 #' @param .top_p An alternative to sampling with temperature, called nucleus sampling.
 #' @param .timeout Request timeout in seconds (default: 60).
 #' @param .verbose Should additional information be shown after the API call (default: FALSE).
-#' @param .wait Should we wait for rate limits if necessary? (default: TRUE).
 #' @param .json Should output be in JSON mode (default: FALSE).
+#' @param .max_tries Maximum retries to perform request
 #' @param .json_schema A JSON schema object as R list to enforce the output structure (If defined has precedence over JSON mode).
-#' @param .min_tokens_reset How many tokens should be remaining to wait until we wait for token reset? (default: 200L).
 #' @param .dry_run If TRUE, perform a dry run and return the request object (default: FALSE).
 #'
 #'
@@ -61,11 +60,10 @@ azure_openai <- function(
     .top_p = NULL,
     .timeout = 60,
     .verbose = FALSE,
-    .wait = TRUE,
     .json = FALSE,
     .json_schema = NULL,
-    .min_tokens_reset = 200L,
-    .dry_run = FALSE
+    .dry_run = FALSE,
+    .max_tries = 3
 ) {
   
   #Check enpoint
@@ -89,10 +87,8 @@ azure_openai <- function(
     "Input .top_p must be numeric or NULL" = is.null(.top_p) | is.numeric(.top_p),
     "Input .timeout must be integer-valued numeric" = is_integer_valued(.timeout),
     "Input .verbose must be logical" = is.logical(.verbose),
-    "Input .wait must be logical" = is.logical(.wait),
     "Input .json must be logical" = is.logical(.json),
     "Input .json_schema must be NULL or a list" = is.null(.json_schema) | is.list(.json_schema),
-    "Input .min_tokens_reset must be integer-valued numeric" = is_integer_valued(.min_tokens_reset),
     "Input .dry_run must be logical" = is.logical(.dry_run)
   ) |> validate_inputs()
   
@@ -114,11 +110,6 @@ azure_openai <- function(
   api_key <- Sys.getenv("AZURE_OPENAI_API_KEY")
   if ((api_key == "")& .dry_run==FALSE){
     stop("API key is not set. Please set it with: Sys.setenv(AZURE_OPENAI_API_KEY = \"YOUR-KEY-GOES-HERE\")")
-  }
-  
-  # Wait for the rate-limit if necessary
-  if (.wait == TRUE & !is.null(.tidyllm_rate_limit_env[["azure_openai"]])) {
-    wait_rate_limit("azure_openai", .min_tokens_reset)
   }
   
   # Handle JSON schema and JSON mode
@@ -170,6 +161,7 @@ azure_openai <- function(
     .api = "azure_openai",
     .stream = .stream,
     .timeout = .timeout,
+    .max_tries = .max_tries,
     .parse_response_fn = function(body_json) {
       if ("error" %in% names(body_json)) {
         sprintf("Azure Openai API returned an Error Message: %s",
@@ -197,21 +189,18 @@ azure_openai <- function(
   assistant_reply <- response$assistant_reply
   rl <- ratelimit_from_header(response$headers,"azure_openai")
   
-  # Initialize an environment to store rate-limit info
-  initialize_api_env("azure_openai")
-  
   # Update the rate-limit environment with info from rl
   update_rate_limit("azure_openai", rl)
   
   # Show rate limit info if verbose
   if (.verbose == TRUE) {
     glue::glue(
-      "Azure OpenAI API answer received at {rl$this_request_time}.
+      "\nAzure OpenAI API answer received at {rl$this_request_time}.
       Remaining requests rate limit: {rl$ratelimit_requests_remaining}/{rl$ratelimit_requests}
       Requests rate limit reset at: {rl$ratelimit_requests_reset_time}
       Remaining tokens rate limit: {rl$ratelimit_tokens_remaining}/{rl$ratelimit_tokens}
       Tokens rate limit reset at: {rl$ratelimit_tokens_reset_time}\n"
-    ) |> cat()
+    ) |> cat("\n")
   }
   
   # Create a deep copy of the LLMMessage object and add the assistant's reply

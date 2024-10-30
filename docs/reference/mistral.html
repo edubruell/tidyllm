@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.9</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.10</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -20,7 +20,6 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/tidyllm_classifiers.html">Classifying Texts with tidyllm</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm-pdfquestions.html">Structured Question Answering from PDFs</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm-synthetic-data.html">Generate Synthetic Data with tidyllm</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -56,8 +55,7 @@
 <span>  .stop <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .safe_prompt <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  .timeout <span class="op">=</span> <span class="fl">120</span>,</span>
-<span>  .wait <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  .min_tokens_reset <span class="op">=</span> <span class="fl">1000L</span>,</span>
+<span>  .max_tries <span class="op">=</span> <span class="fl">3</span>,</span>
 <span>  .max_tokens <span class="op">=</span> <span class="fl">1024</span>,</span>
 <span>  .min_tokens <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .dry_run <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -109,12 +107,8 @@
 <dd><p>When should our connection time out in seconds (default: <code>120</code>).</p></dd>
 
 
-<dt id="arg--wait">.wait<a class="anchor" aria-label="anchor" href="#arg--wait"></a></dt>
-<dd><p>Should we wait for rate limits if necessary? (default: <code>TRUE</code>)</p></dd>
-
-
-<dt id="arg--min-tokens-reset">.min_tokens_reset<a class="anchor" aria-label="anchor" href="#arg--min-tokens-reset"></a></dt>
-<dd><p>How many tokens should be remaining until we wait for token reset? (default: <code>1000</code>)</p></dd>
+<dt id="arg--max-tries">.max_tries<a class="anchor" aria-label="anchor" href="#arg--max-tries"></a></dt>
+<dd><p>Maximum retries to peform request</p></dd>
 
 
 <dt id="arg--max-tokens">.max_tokens<a class="anchor" aria-label="anchor" href="#arg--max-tokens"></a></dt>

@@ -7,7 +7,7 @@
 rate_limit_info(.api_name = NULL)
 }
 \arguments{
-\item{.api_name}{(Optional) The name of the API whose rate limit info you want to print.
+\item{.api_name}{(Optional) The name of the API whose rate limit info you want to get
 If not provided, the rate limit info for all APIs in the environment will be returned}
 }
 \value{

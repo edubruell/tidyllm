@@ -12,9 +12,8 @@ groq_transcribe(
   .temperature = 0,
   .api_url = "https://api.groq.com/openai/v1/audio/transcriptions",
   .dry_run = FALSE,
-  .min_seconds_reset = 360,
-  .wait = TRUE,
-  .verbose = FALSE
+  .verbose = FALSE,
+  .max_tries = 3
 )
 }
 \arguments{
@@ -31,10 +30,6 @@ groq_transcribe(
 \item{.api_url}{Base URL for the API (default: "https://api.groq.com/openai/v1/audio/transcriptions").}
 
 \item{.dry_run}{Logical; if TRUE, performs a dry run and returns the request object without making the API call (default: FALSE).}
-
-\item{.min_seconds_reset}{Wait at a specified  number of available audio file seconds till the rate limit is triggered. In batches this should be roughly the max duration of a single audio file. (default: 360)}
-
-\item{.wait}{Should we wait for rate limits if necessary? (default: TRUE).}
 
 \item{.verbose}{Logical; if TRUE, rate limiting info is displayed after the API request (default: FALSE).}
 }

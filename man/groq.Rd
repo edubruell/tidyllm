@@ -18,10 +18,9 @@ groq(
   .json = FALSE,
   .timeout = 60,
   .verbose = FALSE,
-  .wait = TRUE,
-  .min_tokens_reset = 1000L,
   .stream = FALSE,
-  .dry_run = FALSE
+  .dry_run = FALSE,
+  .max_tries = 3
 )
 }
 \arguments{
@@ -51,13 +50,11 @@ groq(
 
 \item{.verbose}{If TRUE, displays additional information after the API call, including rate limit details (default: FALSE).}
 
-\item{.wait}{If TRUE, waits for rate limits to reset if necessary before sending the request (default: TRUE).}
-
-\item{.min_tokens_reset}{The number of tokens remaining when the system should wait for token reset (default: 1000L).}
-
 \item{.stream}{Logical; if TRUE, streams the response piece by piece (default: FALSE).}
 
 \item{.dry_run}{If TRUE, performs a dry run and returns the constructed request object without executing it (default: FALSE).}
+
+\item{.max_tries}{Maximum retries to peform request}
 }
 \value{
 A new \code{LLMMessage} object containing the original messages plus the assistant's response.

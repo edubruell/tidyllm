@@ -91,7 +91,7 @@ conversation <- conversation |>
   llm_message("What's a famous landmark in this city?") |>
   openai()
 
-last_reply(conversation)
+get_reply(conversation)
 ```
 ```{r convo2_out,  eval=TRUE, echo=FALSE}
 c("A famous landmark in Paris is the Eiffel Tower.")
@@ -113,7 +113,7 @@ image_description <- llm_message("Describe this picture? Can you guess where it 
   openai(.model = "gpt-4o")
 
 # Get the last reply
-last_reply(image_description)
+get_reply(image_description)
 ```
 ```{r images_out,  eval=TRUE, echo=FALSE}
 c("The picture shows a beautiful landscape with a lake, mountains, and a town nestled below. The sun is shining brightly, casting a serene glow over the water. The area appears lush and green, with agricultural fields visible. \n\nThis type of scenery is reminiscent of northern Italy, particularly around Lake Garda, which features similar large mountains, picturesque water, and charming towns.")
@@ -195,57 +195,41 @@ llm_message("Analyze this plot and data summary:",
   llm_message("Based on the plot and data summary provided, here's an analysis:\n\n1. Relationship between Weight and MPG:\n   The scatter plot shows a clear negative correlation between weight (wt) and miles per gallon (mpg). As the weight of the car increases, the fuel efficiency (mpg) decreases.\n\n2. Linear Trend:\n   The blue line in the plot represents a linear regression fit. The downward slope confirms the negative relationship between weight and mpg.\n\n3. Data Distribution:\n   - The weight of cars in the dataset ranges from 1.513 to 5.424 (likely in thousands of pounds).\n   - The mpg values range from 10.40 to 33.90.\n\n4. Variability:\n   There's some scatter around the regression line, indicating that while weight is a strong predictor of mpg, other factors also influence fuel efficiency.\n\n5. Other Variables:\n   While not shown in the plot, the summary statistics provide information on other variables:\n   - Cylinder count (cyl) ranges from 4 to 8, with a median of 6.\n   - Horsepower (hp) ranges from 52 to 335, with a mean of 146.7.\n   - Transmission type (am) is binary (0 or 1), likely indicating automatic vs. manual.\n\n6. Model Fit:\n   The grey shaded area around the regression line represents the confidence interval. It widens at the extremes of the weight range, indicating less certainty in predictions for very light or very heavy vehicles.\n\n7. Outliers:\n   There are a few potential outliers, particularly at the lower and higher ends of the weight spectrum, that deviate from the general trend.\n\nIn conclusion, this analysis strongly suggests that weight is a significant factor in determining a car's fuel efficiency, with heavier cars generally having lower mpg. However, the presence of scatter in the data indicates that other factors (possibly related to engine characteristics, transmission type, or aerodynamics) also play a role in determining fuel efficiency.",.role="assistant")
 ```
 
-### Getting the last reply (as raw text or structured data)
+### Getting  replies from the API 
 
-You can retrieve the last assistant reply from a message history with `last_reply()`. Typically, it returns a character vector with the text of the assistant's reply. However, if API functions have requested replies in [JSON](https://de.wikipedia.org/wiki/JavaScript_Object_Notation) mode, it can directly validate and return them as structured output. The function handles these different response types automatically.
+You can retrieve an assistant reply as a text from a message history with `get_reply()`. By specifying an index in `get_reply()` you can decide which assistant message to get from a list. It defaults to the last available reply.  However, you have requested structured data from an API there is also a function called `get_reply_data()`, that directly gives you structured output in the format you asked for.
 
-If a JSON reply is detected, it returns a list with the following fields:
-
-  - `parsed_content`: The parsed JSON content (or `NULL` in case of parsing errors).
-  - `raw_response`: The direct string format of the reply.
-  - `is_parsed`: A flag set to `TRUE` if JSON parsing was successful, or `FALSE` otherwise.
-
-You can also force standard raw text replies, even when JSON mode is detected, using the `.raw` argument.
-
-#### Example 1: Getting standard text replies
-
-```{r standard_last_reply,  eval=FALSE, echo=TRUE}
-reply_text <- llm_message("Imagine a German adress.") |>
+```{r eval=FALSE,echo=TRUE}
+conversation <- llm_message("Imagine a German adress.") |>
      groq() |>
-     last_reply()
+     llm_message("Imagine another address") |>
+     groq()
+
+conversation
 ```
-```{r standard_last_reply_out,  eval=TRUE, echo=FALSE}
-llm_message("Imagine a German adress.") |>
-  llm_message("Let's imagine a German address. \n\nHerr Müller\nMusterstraße 12\n53111 Bonn\n\nThis address is formatted according to German conventions:\n\n- 'Herr Müller' is the recipient's name (Mr. Müller).\n- 'Musterstraße 12' is the street name and number.\n- '53111 Bonn' is the postal code and city (Bonn).",
-              .role="assistant")
+```{r eval=TRUE,echo=FALSE}
+conversation <-  llm_message("Imagine a German adress.") |>
+  llm_message("Let's imagine a German address: \n\nHerr Müller\nMusterstraße 12\n53111 Bonn",
+              .role="assistant") |>
+  llm_message("Imagine another address") |>
+  llm_message("Let's imagine another German address:\n\nFrau Schmidt\nFichtenweg 78\n42103 Wuppertal",
+            .role="assistant")
+conversation
 ```
 
-#### Example 2: Getting structured replies from APIs in JSON mode
+We can get assistant messages from the conversation with `get_reply()` or `last_reply()`:
 
-```{r jsonmode,  eval=FALSE, echo=TRUE}
-address <- llm_message('Imagine a German adress in JSON format. Reply only with JSON.') 
-
-address|>
-  ollama(.json = TRUE) |>  # API is asked to return JSON
-  last_reply()
-
-str(address)
+```{r standard_last_reply,  eval=TRUE, echo=TRUE}
+#Getting the first 
+conversation |> get_reply(1)
+#By default it gets the last reply
+conversation |> get_reply()
+#Or if you can more easily remember last_reply this works too
+conversation |> last_reply()
 ```
-```{r jsonmode_out,  eval=TRUE, echo=FALSE}
-  address <- llm_message('Imagine a German adress in JSON format. Reply only with JSON.') 
-  address$add_message("assistant",'{
-   "street": "Kurfürstenstraße",
-   "houseNumber": 23,
-   "postcode": "10785",
-   "city": "Berlin",
-   "region": "Berlin",
-   "country": "Deutschland"
-}',json=TRUE)
-last_reply(address) |> str()
-```
-All API functions have a `.json`-argument that enables JSON-mode. Note that `claude()` does not have an explicit JSON-mode in the API-request but you need to specify that you want only JSON-output and ideally your shema in the prompt to the assistant.
 
-#### Example 3: Getting structured replies based on a reply schema
+
+### Working with structured model outputs
 
 Currently, `openai()` is the only API function in **tidyllm** that supports enforcing a pre-specified schema for replies. By specifying a schema in the `.json_schema` argument, you ensure structured responses in a defined format:
 

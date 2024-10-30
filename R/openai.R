@@ -20,26 +20,13 @@
 #' @param .api_url Base URL for the API (default: "https://api.openai.com/").
 #' @param .timeout Request timeout in seconds (default: 60).
 #' @param .verbose Should additional information be shown after the API call (default: FALSE).
-#' @param .wait Should we wait for rate limits if necessary? (default: TRUE).
 #' @param .json Should output be in JSON mode (default: FALSE).
 #' @param .json_schema A JSON schema object as R list to enforce the output structure (If defined has precedence over JSON mode).
-#' @param .min_tokens_reset How many tokens should be remaining to wait until we wait for token reset? (default: 1000L).
+#' @param .max_tries Maximum retries to peform request
 #' @param .dry_run If TRUE, perform a dry run and return the request object (default: FALSE).
 #'
 #'
 #' @return A new `LLMMessage` object containing the original messages plus the assistant's response.
-#' @examples
-#' \dontrun{
-#' # Basic usage
-#' msg <- llm_message("What is R programming?")
-#' result <- openai(msg)
-#' 
-#' # With custom parameters
-#' result2 <- openai(msg, 
-#'                  .model "gpt-4o-mini",
-#'                  .temperature = 0.7, 
-#'                  .max_tokens = 1000)
-#' }
 #'
 #' @export
 openai <- function(
@@ -60,10 +47,9 @@ openai <- function(
     .api_url = "https://api.openai.com/",
     .timeout = 60,
     .verbose = FALSE,
-    .wait = TRUE,
     .json = FALSE,
     .json_schema = NULL,
-    .min_tokens_reset = 1000L,
+    .max_tries = 3,
     .dry_run = FALSE
 ) {
   
@@ -85,10 +71,9 @@ openai <- function(
     "Input .api_url must be a string" = is.character(.api_url),
     "Input .timeout must be integer-valued numeric" = is_integer_valued(.timeout),
     "Input .verbose must be logical" = is.logical(.verbose),
-    "Input .wait must be logical" = is.logical(.wait),
     "Input .json must be logical" = is.logical(.json),
     "Input .json_schema must be NULL or a list" = is.null(.json_schema) | is.list(.json_schema),
-    "Input .min_tokens_reset must be integer-valued numeric" = is_integer_valued(.min_tokens_reset),
+    "Input .max_tries must be integer-valued numeric" = is_integer_valued(.max_tries),
     "Input .dry_run must be logical" = is.logical(.dry_run)
   ) |> validate_inputs()
   
@@ -113,9 +98,9 @@ openai <- function(
   }
   
   # Wait for the rate-limit if necessary
-  if (.wait == TRUE & !is.null(.tidyllm_rate_limit_env[["openai"]])) {
-    wait_rate_limit("openai", .min_tokens_reset)
-  }
+  #if (.wait == TRUE & !is.null(.tidyllm_rate_limit_env[["openai"]])) {
+  #  wait_rate_limit("openai", .min_tokens_reset)
+  #}
   
   # Handle JSON schema and JSON mode
   response_format <- NULL
@@ -166,6 +151,7 @@ openai <- function(
     .api = "openai",
     .stream = .stream,
     .timeout = .timeout,
+    .max_tries = .max_tries,
     .parse_response_fn = function(body_json) {
       if ("error" %in% names(body_json)) {
         sprintf("Openai API returned an Error:\nType: %s\nMessage: %s",
@@ -239,9 +225,7 @@ openai <- function(
 #'   OpenAI API endpoint.
 #' @param .timeout An integer specifying the request timeout in seconds. This is
 #' @param .verbose Will print additional information about the request (default: false)
-#' @param .wait Logical, if `TRUE`, will wait for rate limits to reset (default: true)
 #' @param .json Should json-mode be used? (detault: false)
-#' @param .min_tokens_reset An integer specifying the minimum tokens before a rate limit reset is taken into account.
 #' @param .stream Should the response  be processed as a stream (default: false)
 #' @param .dry_run Shouldthe request is constructed but not actually sent. Useful for debugging and testing. (default: false)
 #' 
@@ -275,9 +259,7 @@ chatgpt <- function(
     .api_url = "https://api.openai.com/",
     .timeout = 60,
     .verbose = FALSE,
-    .wait = TRUE,
     .json = FALSE,
-    .min_tokens_reset = 0L,
     .stream = FALSE,
     .dry_run = FALSE
 ) {
@@ -319,10 +301,8 @@ chatgpt <- function(
     .api_url = .api_url,
     .timeout = .timeout,
     .verbose = .verbose,
-    .wait = .wait,
     .json = .json,
     .json_schema = .json_schema,
-    .min_tokens_reset = .min_tokens_reset,
     .dry_run = .dry_run
   )
   
@@ -345,8 +325,7 @@ openai_embedding <- function(.llm,
                              .truncate = TRUE,
                              .timeout = 120,
                              .dry_run = FALSE,
-                             .min_tokens_reset = 0L,
-                             .wait=TRUE) {
+                             .max_tries = 3) {
   
   # Get the OpenAI API key
   api_key <- Sys.getenv("OPENAI_API_KEY")
@@ -360,9 +339,7 @@ openai_embedding <- function(.llm,
     "Input .model must be a string" = is.character(.model),
     "Input .truncate must be logical" = is.logical(.truncate),
     "Input .timeout must be an integer-valued numeric (seconds till timeout)" = is.numeric(.timeout) && .timeout > 0,
-    ".dry_run must be logical" = is.logical(.dry_run),
-    ".wait must be logical" = is.logical(.wait),
-    ".min_tokens_reset must be an integer" = is_integer_valued(.min_tokens_reset)
+    ".dry_run must be logical" = is.logical(.dry_run)
   ) |> validate_inputs()
   
   if (!is.character(.llm)) {
@@ -396,9 +373,9 @@ openai_embedding <- function(.llm,
   )
   
   # If the rate limit environment is set, wait for the rate limit
-  if(.wait==TRUE & !is.null(.tidyllm_rate_limit_env[["openai"]])){
-    wait_rate_limit("openai", .min_tokens_reset)
-  }  
+  #if(.wait==TRUE & !is.null(.tidyllm_rate_limit_env[["openai"]])){
+  #  wait_rate_limit("openai", .min_tokens_reset)
+  #}  
   
   
   # Build the request
@@ -418,6 +395,9 @@ openai_embedding <- function(.llm,
   response <- request |>
     httr2::req_timeout(.timeout) |>
     httr2::req_error(is_error = function(resp) FALSE) |>
+    httr2::req_retry(max_tries = .max_tries,  
+                     retry_on_failure = TRUE,
+                     is_transient = \(resp) httr2::resp_status(resp) %in% c(429, 503)) |>
     httr2::req_perform()
   
   # Check for API errors

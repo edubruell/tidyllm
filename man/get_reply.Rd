@@ -2,40 +2,18 @@
 % Please edit documentation in R/message_retrieval.R
 \name{get_reply}
 \alias{get_reply}
-\title{Retrieve an Assistant Reply by Index}
+\title{Get Assistant Reply as Text}
 \usage{
-get_reply(.llm, .index = NULL, .raw = FALSE)
+get_reply(.llm, .index = NULL)
 }
 \arguments{
-\item{.llm}{A \code{LLMMessage} object containing the history of messages exchanged with the assistant.
-This parameter must be a valid \code{LLMMessage} object; otherwise, the function will throw an error.}
+\item{.llm}{An \code{LLMMessage} object containing the message history.}
 
-\item{.index}{A positive integer indicating which assistant reply to retrieve. Defaults to \code{NULL}, which retrieves the last reply.}
-
-\item{.raw}{A logical value indicating whether to return the raw text even if the message is marked as JSON.
-Defaults to \code{FALSE}, meaning the function will attempt to parse the JSON.}
+\item{.index}{A positive integer for the assistant reply index to retrieve, defaulting to the last reply.}
 }
 \value{
-Returns the content of the assistant's reply at the specified index, based on the following conditions:
-\itemize{
-\item If there are no assistant replies, \code{NULL} is returned.
-\item If the reply is marked as JSON and parsing is successful, a list containing:
-\itemize{
-\item \code{parsed_content}: The parsed JSON content.
-\item \code{raw_response}: The original raw content.
-\item \code{json}: A flag indicating successful JSON parsing (\code{TRUE}).
-}
-\item If JSON parsing fails, a list containing:
-\itemize{
-\item \code{parsed_content}: \code{NULL}.
-\item \code{raw_response}: The original raw content.
-\item \code{json}: \code{FALSE}.
-}
-\item If \code{.raw} is \code{TRUE} or the message is not marked as JSON, returns the raw text content directly.
-}
+Plain text content of the assistant's reply, or \code{NA_character_} if no reply is available.
 }
 \description{
-Extracts the content of an assistant's reply from an \code{LLMMessage} object at a specific index.
-This function can handle replies that are expected to be in JSON format by attempting to parse them.
-If parsing fails or if the user opts for raw text, the function will gracefully return the original content.
+Retrieves the assistant's reply as plain text from an \code{LLMMessage} object at a specified index.
 }

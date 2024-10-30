@@ -9,7 +9,7 @@ This function is work in progress and not fully tested"><meta property="og:image
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.9</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.10</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -22,7 +22,6 @@ This function is work in progress and not fully tested"><meta property="og:image
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/tidyllm_classifiers.html">Classifying Texts with tidyllm</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm-pdfquestions.html">Structured Question Answering from PDFs</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm-synthetic-data.html">Generate Synthetic Data with tidyllm</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -66,11 +65,10 @@ This function is work in progress and not fully tested</p>
 <span>  .top_p <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .timeout <span class="op">=</span> <span class="fl">60</span>,</span>
 <span>  .verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  .wait <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  .json <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  .json_schema <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  .min_tokens_reset <span class="op">=</span> <span class="fl">200L</span>,</span>
-<span>  .dry_run <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  .dry_run <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  .max_tries <span class="op">=</span> <span class="fl">3</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -146,10 +144,6 @@ This function is work in progress and not fully tested</p>
 <dd><p>Should additional information be shown after the API call (default: FALSE).</p></dd>
 
 
-<dt id="arg--wait">.wait<a class="anchor" aria-label="anchor" href="#arg--wait"></a></dt>
-<dd><p>Should we wait for rate limits if necessary? (default: TRUE).</p></dd>
-
-
 <dt id="arg--json">.json<a class="anchor" aria-label="anchor" href="#arg--json"></a></dt>
 <dd><p>Should output be in JSON mode (default: FALSE).</p></dd>
 
@@ -158,12 +152,12 @@ This function is work in progress and not fully tested</p>
 <dd><p>A JSON schema object as R list to enforce the output structure (If defined has precedence over JSON mode).</p></dd>
 
 
-<dt id="arg--min-tokens-reset">.min_tokens_reset<a class="anchor" aria-label="anchor" href="#arg--min-tokens-reset"></a></dt>
-<dd><p>How many tokens should be remaining to wait until we wait for token reset? (default: 200L).</p></dd>
-
-
 <dt id="arg--dry-run">.dry_run<a class="anchor" aria-label="anchor" href="#arg--dry-run"></a></dt>
 <dd><p>If TRUE, perform a dry run and return the request object (default: FALSE).</p></dd>
+
+
+<dt id="arg--max-tries">.max_tries<a class="anchor" aria-label="anchor" href="#arg--max-tries"></a></dt>
+<dd><p>Maximum retries to perform request</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -173,7 +167,18 @@ This function is work in progress and not fully tested</p>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span>
+<span><span class="co"># Basic usage</span></span>
+<span><span class="va">msg</span> <span class="op">&lt;-</span> <span class="fu"><a href="llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"What is R programming?"</span><span class="op">)</span></span>
+<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">azure_openai</span><span class="op">(</span><span class="va">msg</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># With custom parameters</span></span>
+<span><span class="va">result2</span> <span class="op">&lt;-</span> <span class="fu">azure_openai</span><span class="op">(</span><span class="va">msg</span>, </span>
+<span>                 .deployment <span class="op">=</span> <span class="st">"gpt-4o-mini"</span>,</span>
+<span>                 .temperature <span class="op">=</span> <span class="fl">0.7</span>, </span>
+<span>                 .max_tokens <span class="op">=</span> <span class="fl">1000</span><span class="op">)</span></span>
+<span><span class="op">}</span> <span class="co"># }</span></span>
+<span></span></code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

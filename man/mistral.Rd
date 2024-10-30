@@ -15,8 +15,7 @@ mistral(
   .stop = NULL,
   .safe_prompt = FALSE,
   .timeout = 120,
-  .wait = TRUE,
-  .min_tokens_reset = 1000L,
+  .max_tries = 3,
   .max_tokens = 1024,
   .min_tokens = NULL,
   .dry_run = FALSE,
@@ -44,9 +43,7 @@ mistral(
 
 \item{.timeout}{When should our connection time out in seconds (default: \code{120}).}
 
-\item{.wait}{Should we wait for rate limits if necessary? (default: \code{TRUE})}
-
-\item{.min_tokens_reset}{How many tokens should be remaining until we wait for token reset? (default: \code{1000})}
+\item{.max_tries}{Maximum retries to peform request}
 
 \item{.max_tokens}{The maximum number of tokens to generate in the completion. Must be \verb{>= 0} (default: \code{1024}).}
 

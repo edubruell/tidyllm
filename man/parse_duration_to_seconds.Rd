@@ -2,7 +2,7 @@
 % Please edit documentation in R/rate_limits.R
 \name{parse_duration_to_seconds}
 \alias{parse_duration_to_seconds}
-\title{An internal function to parse the duration strings that OpenAI APIs return for ratelimit resets}
+\title{This internal function parses duration strings as returned by the OpenAI API}
 \usage{
 parse_duration_to_seconds(.duration_str)
 }

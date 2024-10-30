@@ -26,7 +26,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.9</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.10</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -41,7 +41,6 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/tidyllm_classifiers.html">Classifying Texts with tidyllm</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm-pdfquestions.html">Structured Question Answering from PDFs</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm-synthetic-data.html">Generate Synthetic Data with tidyllm</a></li>
   </ul>
 </li>
@@ -162,7 +161,7 @@ different language models:</p>
 <span>  <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"What's a famous landmark in this city?"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/last_reply.html">last_reply</a></span><span class="op">(</span><span class="va">conversation</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/get_reply.html">get_reply</a></span><span class="op">(</span><span class="va">conversation</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## [1] "A famous landmark in Paris is the Eiffel Tower."</span></span></code></pre>
 </div>
 <div class="section level4">
@@ -178,7 +177,7 @@ this picture here: <img src="picture.jpeg" width="70%"></p>
 <span>  <span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-4o"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Get the last reply</span></span>
-<span><span class="fu"><a href="../reference/last_reply.html">last_reply</a></span><span class="op">(</span><span class="va">image_description</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/get_reply.html">get_reply</a></span><span class="op">(</span><span class="va">image_description</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## [1] "The picture shows a beautiful landscape with a lake, mountains, and a town nestled below. The sun is shining brightly, casting a serene glow over the water. The area appears lush and green, with agricultural fields visible. \n\nThis type of scenery is reminiscent of northern Italy, particularly around Lake Garda, which features similar large mountains, picturesque water, and charming towns."</span></span></code></pre>
 </div>
 <div class="section level4">
@@ -290,88 +289,64 @@ plot pane to a model.</p>
 <span><span class="co">## --------------------------------------------------------------</span></span></code></pre>
 </div>
 <div class="section level4">
-<h4 id="getting-the-last-reply-as-raw-text-or-structured-data">Getting the last reply (as raw text or structured data)<a class="anchor" aria-label="anchor" href="#getting-the-last-reply-as-raw-text-or-structured-data"></a>
+<h4 id="getting-replies-from-the-api">Getting replies from the API<a class="anchor" aria-label="anchor" href="#getting-replies-from-the-api"></a>
 </h4>
-<p>You can retrieve the last assistant reply from a message history with
-<code><a href="../reference/last_reply.html">last_reply()</a></code>. Typically, it returns a character vector with
-the text of the assistant’s reply. However, if API functions have
-requested replies in <a href="https://de.wikipedia.org/wiki/JavaScript_Object_Notation" class="external-link">JSON</a>
-mode, it can directly validate and return them as structured output. The
-function handles these different response types automatically.</p>
-<p>If a JSON reply is detected, it returns a list with the following
-fields:</p>
-<ul>
-<li>
-<code>parsed_content</code>: The parsed JSON content (or
-<code>NULL</code> in case of parsing errors).</li>
-<li>
-<code>raw_response</code>: The direct string format of the
-reply.</li>
-<li>
-<code>is_parsed</code>: A flag set to <code>TRUE</code> if JSON
-parsing was successful, or <code>FALSE</code> otherwise.</li>
-</ul>
-<p>You can also force standard raw text replies, even when JSON mode is
-detected, using the <code>.raw</code> argument.</p>
-<div class="section level5">
-<h5 id="example-1-getting-standard-text-replies">Example 1: Getting standard text replies<a class="anchor" aria-label="anchor" href="#example-1-getting-standard-text-replies"></a>
-</h5>
+<p>You can retrieve an assistant reply as a text from a message history
+with <code><a href="../reference/get_reply.html">get_reply()</a></code>. By specifying an index in
+<code><a href="../reference/get_reply.html">get_reply()</a></code> you can decide which assistant message to get
+from a list. It defaults to the last available reply. However, you have
+requested structured data from an API there is also a function called
+<code><a href="../reference/get_reply_data.html">get_reply_data()</a></code>, that directly gives you structured output
+in the format you asked for.</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">reply_text</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Imagine a German adress."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<code class="sourceCode R"><span><span class="va">conversation</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Imagine a German adress."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>     <span class="fu"><a href="../reference/groq.html">groq</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>     <span class="fu"><a href="../reference/last_reply.html">last_reply</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<span>     <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Imagine another address"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>     <span class="fu"><a href="../reference/groq.html">groq</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">conversation</span></span></code></pre></div>
 <pre><code><span><span class="co">## Message History:</span></span>
 <span><span class="co">## system: You are a helpful assistant</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span>
 <span><span class="co">## user: Imagine a German adress.</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span>
-<span><span class="co">## assistant: Let's imagine a German address. </span></span>
+<span><span class="co">## assistant: Let's imagine a German address: </span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Herr Müller</span></span>
 <span><span class="co">## Musterstraße 12</span></span>
 <span><span class="co">## 53111 Bonn</span></span>
+<span><span class="co">## --------------------------------------------------------------</span></span>
+<span><span class="co">## user: Imagine another address</span></span>
+<span><span class="co">## --------------------------------------------------------------</span></span>
+<span><span class="co">## assistant: Let's imagine another German address:</span></span>
 <span><span class="co">## </span></span>
-<span><span class="co">## This address is formatted according to German conventions:</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## - 'Herr Müller' is the recipient's name (Mr. Müller).</span></span>
-<span><span class="co">## - 'Musterstraße 12' is the street name and number.</span></span>
-<span><span class="co">## - '53111 Bonn' is the postal code and city (Bonn).</span></span>
+<span><span class="co">## Frau Schmidt</span></span>
+<span><span class="co">## Fichtenweg 78</span></span>
+<span><span class="co">## 42103 Wuppertal</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span></code></pre>
-</div>
-<div class="section level5">
-<h5 id="example-2-getting-structured-replies-from-apis-in-json-mode">Example 2: Getting structured replies from APIs in JSON mode<a class="anchor" aria-label="anchor" href="#example-2-getting-structured-replies-from-apis-in-json-mode"></a>
-</h5>
+<p>We can get assistant messages from the conversation with
+<code><a href="../reference/get_reply.html">get_reply()</a></code> or <code><a href="../reference/last_reply.html">last_reply()</a></code>:</p>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">address</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">'Imagine a German adress in JSON format. Reply only with JSON.'</span><span class="op">)</span> </span>
-<span></span>
-<span><span class="va">address</span><span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/ollama.html">ollama</a></span><span class="op">(</span>.json <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">|&gt;</span>  <span class="co"># API is asked to return JSON</span></span>
-<span>  <span class="fu"><a href="../reference/last_reply.html">last_reply</a></span><span class="op">(</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">address</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## List of 3</span></span>
-<span><span class="co">##  $ raw_response  : chr "{\n   \"street\": \"Kurfürstenstraße\",\n   \"houseNumber\": 23,\n   \"postcode\": \"10785\",\n   \"city\": \"B"| __truncated__</span></span>
-<span><span class="co">##  $ parsed_content:List of 6</span></span>
-<span><span class="co">##   ..$ street     : chr "Kurfürstenstraße"</span></span>
-<span><span class="co">##   ..$ houseNumber: int 23</span></span>
-<span><span class="co">##   ..$ postcode   : chr "10785"</span></span>
-<span><span class="co">##   ..$ city       : chr "Berlin"</span></span>
-<span><span class="co">##   ..$ region     : chr "Berlin"</span></span>
-<span><span class="co">##   ..$ country    : chr "Deutschland"</span></span>
-<span><span class="co">##  $ is_parsed     : logi TRUE</span></span></code></pre>
-<p>All API functions have a <code>.json</code>-argument that enables
-JSON-mode. Note that <code><a href="../reference/claude.html">claude()</a></code> does not have an explicit
-JSON-mode in the API-request but you need to specify that you want only
-JSON-output and ideally your shema in the prompt to the assistant.</p>
+<code class="sourceCode R"><span><span class="co">#Getting the first </span></span>
+<span><span class="va">conversation</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/get_reply.html">get_reply</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## [1] "Let's imagine a German address: \n\nHerr Müller\nMusterstraße 12\n53111 Bonn"</span></span></code></pre>
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co">#By default it gets the last reply</span></span>
+<span><span class="va">conversation</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/get_reply.html">get_reply</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## [1] "Let's imagine another German address:\n\nFrau Schmidt\nFichtenweg 78\n42103 Wuppertal"</span></span></code></pre>
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co">#Or if you can more easily remember last_reply this works too</span></span>
+<span><span class="va">conversation</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/last_reply.html">last_reply</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## [1] "Let's imagine another German address:\n\nFrau Schmidt\nFichtenweg 78\n42103 Wuppertal"</span></span></code></pre>
 </div>
-<div class="section level5">
-<h5 id="example-3-getting-structured-replies-based-on-a-reply-schema">Example 3: Getting structured replies based on a reply schema<a class="anchor" aria-label="anchor" href="#example-3-getting-structured-replies-based-on-a-reply-schema"></a>
-</h5>
+<div class="section level4">
+<h4 id="working-with-structured-model-outputs">Working with structured model outputs<a class="anchor" aria-label="anchor" href="#working-with-structured-model-outputs"></a>
+</h4>
 <p>Currently, <code><a href="../reference/openai.html">openai()</a></code> is the only API function in
 <strong>tidyllm</strong> that supports enforcing a pre-specified schema
 for replies. By specifying a schema in the <code>.json_schema</code>
 argument, you ensure structured responses in a defined format:</p>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">address_schema</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tidyllm_schema.html">tidyllm_schema</a></span><span class="op">(</span></span>
 <span>  name <span class="op">=</span> <span class="st">"AddressSchema"</span>,</span>
 <span>  street <span class="op">=</span> <span class="st">"character"</span>,</span>
@@ -411,7 +386,6 @@ representing field names and their data types.
 </li>
 </ul>
 </div>
-</div>
 <div class="section level4">
 <h4 id="api-parameters">API parameters<a class="anchor" aria-label="anchor" href="#api-parameters"></a>
 </h4>
@@ -419,7 +393,7 @@ representing field names and their data types.
 deterministic the response should be via parameters like temperature.
 Please read API-documentation and the documentation of the model
 functions for specific examples.</p>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span>  <span class="va">temp_example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Explain how temperature parameters work in large language models  and why temperature 0 gives you deterministic outputs in one sentence."</span><span class="op">)</span></span>
 <span>  </span>
 <span>  <span class="co">#per default it is non-zero</span></span>
@@ -431,7 +405,7 @@ functions for specific examples.</p>
 <span><span class="co">## --------------------------------------------------------------</span></span>
 <span><span class="co">## assistant: In large language models, temperature parameters control the randomness of generated text by scaling the output probabilities, with higher temperatures introducing more uncertainty and lower temperatures favoring more likely outcomes; specifically, setting temperature to 0 effectively eliminates all randomness, resulting in deterministic outputs because it sets the probability of each token to its maximum likelihood value.</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span></code></pre>
-<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span>  <span class="co">#Retrying with .temperature=0</span></span>
 <span>  <span class="va">temp_example</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/ollama.html">ollama</a></span><span class="op">(</span>.temperature<span class="op">=</span><span class="fl">0</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Message History:</span></span>

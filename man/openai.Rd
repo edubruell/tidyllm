@@ -22,10 +22,9 @@ openai(
   .api_url = "https://api.openai.com/",
   .timeout = 60,
   .verbose = FALSE,
-  .wait = TRUE,
   .json = FALSE,
   .json_schema = NULL,
-  .min_tokens_reset = 1000L,
+  .max_tries = 3,
   .dry_run = FALSE
 )
 }
@@ -64,13 +63,11 @@ openai(
 
 \item{.verbose}{Should additional information be shown after the API call (default: FALSE).}
 
-\item{.wait}{Should we wait for rate limits if necessary? (default: TRUE).}
-
 \item{.json}{Should output be in JSON mode (default: FALSE).}
 
 \item{.json_schema}{A JSON schema object as R list to enforce the output structure (If defined has precedence over JSON mode).}
 
-\item{.min_tokens_reset}{How many tokens should be remaining to wait until we wait for token reset? (default: 1000L).}
+\item{.max_tries}{Maximum retries to peform request}
 
 \item{.dry_run}{If TRUE, perform a dry run and return the request object (default: FALSE).}
 }
@@ -79,18 +76,4 @@ A new \code{LLMMessage} object containing the original messages plus the assista
 }
 \description{
 This function sends a message history to the OpenAI Chat Completions API and returns the assistant's reply.
-}
-\examples{
-\dontrun{
-# Basic usage
-msg <- llm_message("What is R programming?")
-result <- openai(msg)
-
-# With custom parameters
-result2 <- openai(msg, 
-                 .model "gpt-4o-mini",
-                 .temperature = 0.7, 
-                 .max_tokens = 1000)
-}
-
 }

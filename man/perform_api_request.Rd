@@ -9,6 +9,7 @@ perform_api_request(
   .api,
   .stream = FALSE,
   .timeout = 60,
+  .max_tries = 3,
   .parse_response_fn = NULL,
   .dry_run = FALSE
 )

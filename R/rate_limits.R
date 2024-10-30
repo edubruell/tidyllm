@@ -22,6 +22,7 @@ initialize_api_env <- function(.api_name) {
 #' @param .response_object A preparsed response object cotaining info on remaining requests, tokens and rest times
 #' @export
 update_rate_limit <- function(.api_name,.response_object){
+  initialize_api_env(.api_name=.api_name)
   .tidyllm_rate_limit_env[[.api_name]]$last_request        <- .response_object$this_request_time
   .tidyllm_rate_limit_env[[.api_name]]$requests_remaining  <- .response_object$ratelimit_requests_remaining
   .tidyllm_rate_limit_env[[.api_name]]$requests_reset_time <- .response_object$ratelimit_requests_reset_time
@@ -30,37 +31,7 @@ update_rate_limit <- function(.api_name,.response_object){
   invisible(NULL)
 }
 
-#' Wait for ratelimit restore times to ellapse if necessary
-#'
-#' This function implements a standardized wait for rate limit resets
-#'
-#' @param .api_name The name of the API for which rate limit we want to wait
-#' @param .min_tokens_reset A token boundary at which we wish to reset (Typically should be larger than the size of the message)
-#' @export
-wait_rate_limit <- function(.api_name,.min_tokens_reset){
-  
-  #Read info from .tidyllm_rate_limit_env
-  requests_remaining  <- .tidyllm_rate_limit_env[[.api_name]]$requests_remaining
-  requests_reset_time <- .tidyllm_rate_limit_env[[.api_name]]$requests_reset_time
-  requests_reset_difftime <- as.numeric(difftime(requests_reset_time, lubridate::now(tzone = "UTC"), units = "secs"))
-  tokens_reset_time    <- .tidyllm_rate_limit_env[[.api_name]]$tokens_reset_time
-  tokens_remaining    <- .tidyllm_rate_limit_env[[.api_name]]$tokens_remaining
-  tokens_reset_difftime <- as.numeric(difftime(tokens_reset_time, lubridate::now(tzone = "UTC"), units = "secs"))
-  
-  #Wait if rate limit is likely to be hit
-  if(requests_remaining  == 1){
-    req_reset_wait_time <- round(requests_reset_difftime,2)
-    glue::glue("Waiting till requests rate limit is reset: {req_reset_wait_time}") |> message()
-    Sys.sleep(requests_reset_difftime)
-  }
-  if(tokens_reset_difftime > 0 & .min_tokens_reset>0 & tokens_remaining<.min_tokens_reset){
-    tk_reset_wait_time <- round(tokens_reset_difftime,2)
-    glue::glue("Waiting till the token rate limit is reset: {tk_reset_wait_time} seconds") |> message()
-    Sys.sleep(tokens_reset_difftime)
-  }
-}
 
-#' An internal function to parse the duration strings that OpenAI APIs return for ratelimit resets
 #'
 #'This internal function parses duration strings as returned by the OpenAI API
 #'
@@ -190,7 +161,7 @@ ratelimit_from_header <- function(.response_headers, .api) {
 #' This function retrieves the rate limit details for the specified API,
 #' or for all APIs stored in the .tidyllm_rate_limit_env if no API is specified.
 #'
-#' @param .api_name (Optional) The name of the API whose rate limit info you want to print.
+#' @param .api_name (Optional) The name of the API whose rate limit info you want to get
 #'                   If not provided, the rate limit info for all APIs in the environment will be returned
 #' @return A tibble containing the rate limit information.
 
@@ -200,7 +171,8 @@ rate_limit_info <- function(.api_name = NULL) {
   api_names <- ls(envir = .tidyllm_rate_limit_env)
   
   if (length(api_names) == 0) {
-    stop("No rate limit information available in .tidyllm_rate_limit_env.")
+    message("No rate limit information available in .tidyllm_rate_limit_env.")
+    return(tibble::tibble())
   }
   
   if (!is.null(.api_name)) {

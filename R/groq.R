@@ -17,8 +17,7 @@
 #' @param .timeout Request timeout in seconds (default: 60).
 #' @param .stream Logical; if TRUE, streams the response piece by piece (default: FALSE).
 #' @param .verbose If TRUE, displays additional information after the API call, including rate limit details (default: FALSE).
-#' @param .wait If TRUE, waits for rate limits to reset if necessary before sending the request (default: TRUE).
-#' @param .min_tokens_reset The number of tokens remaining when the system should wait for token reset (default: 1000L).
+#' @param .max_tries Maximum retries to peform request
 #' @param .dry_run If TRUE, performs a dry run and returns the constructed request object without executing it (default: FALSE).
 #'
 #' @return A new `LLMMessage` object containing the original messages plus the assistant's response.
@@ -50,10 +49,9 @@ groq <- function(.llm,
                  .json = FALSE,
                  .timeout = 60,
                  .verbose = FALSE,
-                 .wait = TRUE,
-                 .min_tokens_reset = 1000L,
                  .stream = FALSE,
-                 .dry_run = FALSE) {
+                 .dry_run = FALSE,
+                 .max_tries = 3) {
 
   # Validate inputs
   c(
@@ -70,8 +68,7 @@ groq <- function(.llm,
     "Input .seed must be an integer if provided" = is.null(.seed) | is_integer_valued(.seed),
     "Input .json must be logical" = is.logical(.json),
     "Input .verbose must be logical" = is.logical(.verbose),
-    "Input .wait must be logical" = is.logical(.wait),
-    "Input .min_tokens_reset must be an integer" = is_integer_valued(.min_tokens_reset) & .min_tokens_reset >= 0,
+    "Input .max_tries must be integer-valued numeric" = is_integer_valued(.max_tries),
     "Input .dry_run must be logical" = is.logical(.dry_run)
   ) |>
     validate_inputs()
@@ -105,11 +102,6 @@ groq <- function(.llm,
     request_body$response_format <- list(type = "json_object")
   }
   
-  # Wait for the rate-limit if necessary
-  if (.wait == TRUE & !is.null(.tidyllm_rate_limit_env[["groq"]])) {
-    wait_rate_limit("groq", .min_tokens_reset)
-  }
-  
   groq_request <- httr2::request(.api_url) |>
     httr2::req_url_path("/openai/v1/chat/completions") |>
     httr2::req_headers(
@@ -124,6 +116,7 @@ groq <- function(.llm,
     .api = "groq",
     .stream = .stream,
     .timeout = .timeout,
+    .max_tries = .max_tries,
     .parse_response_fn = function(body_json) {
       if ("error" %in% names(body_json)) {
         sprintf("Groq API returned an Error:\nType: %s\nMessage: %s",
@@ -152,9 +145,6 @@ groq <- function(.llm,
   assistant_reply <- response$assistant_reply
   rl <- ratelimit_from_header(response$headers,"groq")
   
-  # Initialize an environment to store rate-limit info
-  initialize_api_env("groq")
-  
   # Update the rate-limit environment with info from rl
   update_rate_limit("groq", rl)
   
@@ -165,7 +155,7 @@ groq <- function(.llm,
               Requests rate limit reset at: {rl$ratelimit_requests_reset_time} 
               Remaining tokens   rate limit: {rl$ratelimit_tokens_remaining}/{rl$ratelimit_tokens}
               Tokens rate limit reset at: {rl$ratelimit_tokens_reset_time} \n
-              ") |> cat()
+              ") |> cat("\n")
   }
   
   # Create a deep copy of the LLMMessage object
@@ -191,10 +181,8 @@ groq <- function(.llm,
 #' @param .temperature Sampling temperature, between 0 and 1, with higher values producing more randomness (default: 0).
 #' @param .api_url Base URL for the API (default: "https://api.groq.com/openai/v1/audio/transcriptions").
 #' @param .verbose Logical; if TRUE, outputs additional information (default: FALSE).
-#' @param .min_seconds_reset Wait at a specified  number of available audio file seconds till the rate limit is triggered. In batches this should be roughly the max duration of a single audio file. (default: 360)  
 #' @param .dry_run Logical; if TRUE, performs a dry run and returns the request object without making the API call (default: FALSE).
 #' @param .verbose Logical; if TRUE, rate limiting info is displayed after the API request (default: FALSE).
-#' @param .wait Should we wait for rate limits if necessary? (default: TRUE).
 #' @examples
 #' \dontrun{
 #' # Basic usage
@@ -211,10 +199,9 @@ groq_transcribe <- function(
     .temperature = 0,
     .api_url = "https://api.groq.com/openai/v1/audio/transcriptions",
     .dry_run = FALSE,
-    .min_seconds_reset = 360,
-    .wait=TRUE,
-    .verbose = FALSE
-) {
+    .verbose = FALSE,
+    .max_tries = 3) {
+
   # Validate audio file path
   if (!file.exists(.audio_file)) stop("Audio file does not exist.")
   api_key <- Sys.getenv("GROQ_API_KEY")
@@ -227,7 +214,8 @@ groq_transcribe <- function(
     "Input .model must be a character vector" = is.character(.model),
     "Input .language must be a character vector if specified" = is.null(.language) || is.character(.language),
     "Input .prompt must be a character vector if specified" = is.null(.prompt) || is.character(.prompt),
-    "Input .temperature" = is.numeric(.temperature) && .temperature >= 0 && .temperature <= 1
+    "Input .temperature" = is.numeric(.temperature) && .temperature >= 0 && .temperature <= 1,
+    "Input .max_tries must be integer-valued numeric" = is_integer_valued(.max_tries)
   ) |>
     validate_inputs()
   
@@ -248,32 +236,13 @@ groq_transcribe <- function(
   # Handle dry run
   if (.dry_run) return(request)
   
-  # Wait for the rate-limit if necessary
-  if (.wait == TRUE & !is.null(.tidyllm_rate_limit_audio_env[["groq"]])) {
-    rle_reset_req  <- .tidyllm_rate_limit_audio_env[["groq"]]$rl_reset_req 
-    rle_reset_sec  <- .tidyllm_rate_limit_audio_env[["groq"]]$rl_reset_sec 
-    rle_remaining_req <- .tidyllm_rate_limit_audio_env[["groq"]]$rl_remaining_req 
-    rle_remaining_sec <- .tidyllm_rate_limit_audio_env[["groq"]]$rl_remaining_sec 
-    
-    requests_reset_difftime <- as.numeric(difftime(rle_reset_req, lubridate::now(tzone = "UTC"), units = "secs"))
-    seconds_reset_difftime <- as.numeric(difftime(rle_reset_sec, lubridate::now(tzone = "UTC"), units = "secs"))
-    
-    #Wait if rate limit is likely to be hit
-    if(rle_remaining_req  == 1){
-      req_reset_wait_time <- round(requests_reset_difftime,2)
-      glue::glue("Waiting till requests rate limit is reset: {req_reset_wait_time}") |> message()
-      Sys.sleep(req_reset_wait_time)
-    }
-    if(seconds_reset_difftime > 0 & .min_seconds_reset>0 & rle_remaining_sec<.min_seconds_reset){
-      sec_reset_wait_time <- round(seconds_reset_difftime,2)
-      glue::glue("Waiting till the token rate limit is reset: {sec_reset_wait_time} seconds") |> message()
-      Sys.sleep(sec_reset_wait_time)
-    }
-  }
-  
+
   #Perform the request
   response <- request |>
                httr2::req_error(is_error = function(resp) FALSE) |>
+               httr2::req_retry(max_tries = .max_tries,  
+                                retry_on_failure = TRUE,
+                                 is_transient = \(resp) httr2::resp_status(resp) %in% c(429, 503)) |>
                httr2::req_perform()
   
   content <- httr2::resp_body_json(response)
@@ -310,16 +279,6 @@ groq_transcribe <- function(
       Audio seconds rate limit reset at: {rl_reset_sec}\n"
     ) |> cat("\n")
   }
-  
-  #Initialize an audio rate limiting env
-  if (!exists("groq", envir = .tidyllm_rate_limit_audio_env)) {
-    .tidyllm_rate_limit_audio_env[["groq"]] <- new.env()
-  }
-  
-  .tidyllm_rate_limit_audio_env[["groq"]]$rl_reset_req <- rl_reset_req
-  .tidyllm_rate_limit_audio_env[["groq"]]$rl_reset_sec <- rl_reset_sec
-  .tidyllm_rate_limit_audio_env[["groq"]]$rl_remaining_req <- rl_remaining_req
-  .tidyllm_rate_limit_audio_env[["groq"]]$rl_remaining_sec <- rl_remaining_sec
   
   
   return(content$text)

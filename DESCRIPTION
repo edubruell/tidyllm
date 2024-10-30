@@ -1,6 +1,6 @@
 Package: tidyllm
 Title: Tidy Integration of Large Language Models
-Version: 0.1.9
+Version: 0.1.10
 Authors@R: 
     person("Eduard", "Brüll", , "eduard.bruell@zew.de", role = c("aut", "cre"))
 Description: A tidy interface for integrating large language model (LLM) APIs such as 'Claude', 'Openai', 'Groq','Mistral' and local models via 'Ollama' into R workflows. The package supports text and media-based interactions, interactive message history, stateful rate limit handling, and a tidy, pipeline-oriented interface for streamlined integration into data workflows. Web services are available at <https://www.anthropic.com>, <https://openai.com>, <https://groq.com>, <https://mistral.ai/> and <https://ollama.com>.

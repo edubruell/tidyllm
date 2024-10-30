@@ -119,7 +119,7 @@ classify_occupation <- function(occupation){
     # Get the assistant's reply
     assistant_reply <- llm_message(prompt) |>
       claude(.model = "claude-3-5-sonnet-20240620", .temperature = 0) |>
-      last_reply() |>
+      get_reply() |>
       str_squish()
     
     # Validate the assistant's reply
@@ -150,7 +150,7 @@ classify_occupation <- function(occupation){
 ```{r, eval=FALSE, echo=TRUE}
 llm_message(prompt) |>
       claude(.model = "claude-3-5-sonnet-20240620", .temperature = 0) |>
-      last_reply() |>
+      get_reply() |>
       str_squish()
 ```
 
@@ -210,11 +210,11 @@ writexl::write_xlsx(classified_with_titles, "ground_truth_excel.xlsx")
 ```
 A manual review of the classifier’s output showed highly promising results. Out of 443 classifications, only 9 needed corrections, indicating an error rate of just 2% for the `claude()`-based classifier with our initial prompt. Most issues arose from not correctly identifying unclear responses as missing, such as "Doin' the numbers" or "Barster" (a potential mix of Barrister or Barkeeper). Interestingly, in 5 of the 9 error cases, the model returned an invalid response (code `98`) instead of missing (code `99`), which suggests it correctly avoided making an incorrect guess, rather than misclassifying the occupations outright.
 
-While we could likely proceed with classifying the rest of the dataset using the `claude()`-based classifier, given its strong performance, we now have a solid ground truth to work with. This allows us to experiment with different models and prompts to determine if simpler alternatives or small local models would perform just as well. 
+At this point we could stop and proceed to classify the entire data with the `claude()`-based classifier, given its strong performance and manual validation on unseen data and that scaling up to the data would cost less than 3$. However, to illustrate the general principle how to find good llm classifiers when you are less sure, we will use the initial ground truth we have built as a base to experiment with different models and prompts. For example, we could try to determine if simpler alternatives or small local models would perform just as well. 
 
 ## Optimizing and Testing the Classifiers
 
-Now that we have a reliable ground-truth dataset, it's time to optimize and experiment with different model configurations. We'll split the dataset into training and test sets using `rsample` to ensure that we can experiment with different prompts and setups on training data but only evaluate our final model performance on unseen data.
+To optimize and experiment with different model configurations, we'll split the dataset into training and test sets using `rsample` to ensure that we can experiment with different prompts and setups on training data but only evaluate our final model performance on unseen data.
 
 ```{r, eval=TRUE, echo=TRUE}
 ground_truth <- readxl:::read_xlsx("ground_truth_corrected.xlsx")
@@ -262,7 +262,7 @@ classify_occupation_grid <- function(occupation,
     # Get the assistant's reply using the dynamically provided API function and model
     assistant_reply <- llm_message(prompt) |>
       api_function(.model = model, .temperature = 0) |>
-      last_reply() |>
+      get_reply() |>
       str_squish()
     
     # Validate the assistant's reply
@@ -496,7 +496,7 @@ classify_occupation_cot <- function(occupation,
       api_function(.model = model, .temperature = 0, .stream=stream) 
     
     conversation |>
-      last_reply()
+      get_reply()
   }, error = function(e){
     conversation <<- llm_message("Please classify this occupation response: {occupation}")
     "Error in reasoning step."
@@ -512,7 +512,7 @@ classify_occupation_cot <- function(occupation,
     conversation |>
     llm_message(prompt_final) |>
       api_function(.model = model, .temperature = 0, .stream=stream) |>
-      last_reply() |>
+      get_reply() |>
       str_squish()
   }, error = function(e){
     "97"
@@ -589,11 +589,12 @@ results_cot %>%
 ```
 
 
-Yet it likely is not worth to invest more time into trying to get good results out of a local model for this use-case. Thus, it looks like we still have a clear favorite final choice without even needing to do further testing. We already know test performance for Claude Sonnet 3.5  on the original split, since we manually checked it. Paying the roughly 2,50$ for the Anthropic API and use Claude Sonnet to classify the whole sample at 98% accuracy is probably worth it in this case. So the final step is to use the initial `classify_occupation()` based on `claude()`  on all data.
+In our specific case we already  have a clear favorite final choice without even needing to do further testing, because we already know test performance for Claude Sonnet 3.5, since we manually checked it.  So no further check of prompt or models on the test data is needed here.
 
 ## Scaling Up to the Full Dataset
+The only question is how to best scale up the original classification to all data.
 
-So we choose Claude 3.5 sonnet, our original prompt and apply it to our data-set:
+Here we choose Claude 3.5 sonnet, our original prompt and apply it to our data-set:
 ```{r, eval=FALSE, echo=TRUE}
 full_occupations_classified <- distinct_occupations$occupation |>
   map_dfr(classify_occupation)

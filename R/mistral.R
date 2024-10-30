@@ -11,11 +11,10 @@
 #' @param .stop Stop generation if this token is detected, or if one of these tokens is detected when providing a list (optional).
 #' @param .json Whether the output should be in JSON mode(default: `FALSE`).
 #' @param .safe_prompt Whether to inject a safety prompt before all conversations (default: `FALSE`).
-#' @param .wait Should we wait for rate limits if necessary? (default: `TRUE`)
-#' @param .min_tokens_reset How many tokens should be remaining until we wait for token reset? (default: `1000`)
 #' @param .timeout When should our connection time out in seconds (default: `120`).
 #' @param .verbose Should additional information be shown after the API call? (default: `FALSE`)
 #' @param .dry_run If `TRUE`, perform a dry run and return the request object (default: `FALSE`).
+#' @param .max_tries Maximum retries to peform request
 #' @return Returns an updated `LLMMessage` object.
 #' @export
 mistral <- function(.llm,
@@ -28,8 +27,7 @@ mistral <- function(.llm,
                     .stop = NULL,
                     .safe_prompt = FALSE,
                     .timeout = 120,
-                    .wait = TRUE,
-                    .min_tokens_reset = 1000L,
+                    .max_tries = 3,
                     .max_tokens = 1024,
                     .min_tokens = NULL,
                     .dry_run = FALSE,
@@ -48,8 +46,7 @@ mistral <- function(.llm,
     "Input .stop must be a string or vector of strings if provided" = is.null(.stop) || (is.character(.stop)),
     "Input .json must be logical" = is.logical(.json) && length(.json) == 1,
     "Input .safe_prompt must be logical" = is.logical(.safe_prompt) && length(.safe_prompt) == 1,
-    "Input .wait must be logical" = is.logical(.wait) && length(.wait) == 1,
-    "Input .min_tokens_reset must be integer-valued numeric" = is_integer_valued(.min_tokens_reset),
+    "Input .max_tries must be integer-valued numeric" = is_integer_valued(.max_tries),
     "Input .timeout must be integer-valued numeric (seconds till timeout)" = is_integer_valued(.timeout),
     "Input .dry_run must be logical" = is.logical(.dry_run) && length(.dry_run) == 1,
     "Input .verbose must be logical" = is.logical(.verbose) && length(.verbose) == 1
@@ -85,17 +82,13 @@ mistral <- function(.llm,
     stop("API key is not set. Please set it with: Sys.setenv(GROQ_API_KEY = \"YOUR-KEY-GOES-HERE\")")
   }
   
-  # Wait for the rate limit if necessary
-  if (.wait == TRUE & !is.null(.tidyllm_rate_limit_env[["mistral"]])) {
-    wait_rate_limit("mistral", .min_tokens_reset) 
-  }
-  
   # Build the request
   request <- httr2::request("https://api.mistral.ai") |>
     httr2::req_url_path("/v1/chat/completions") |>
     httr2::req_headers(
       `Authorization` = sprintf("Bearer %s", api_key),
-      `Content-Type` = "application/json"
+      `Content-Type` = "application/json",
+      .redact = "Authorization"
     ) |>
     httr2::req_body_json(mistral_request_body)
   
@@ -105,6 +98,7 @@ mistral <- function(.llm,
     .api = "mistral",
     .stream = .stream,
     .timeout = .timeout,
+    .max_tries = .max_tries,
     .parse_response_fn = function(body_json) {
       if(body_json$object=="error"){
         sprintf("Mistral API returned an Error (code: %s)\nMessage: %s",
@@ -149,9 +143,6 @@ mistral <- function(.llm,
     ratelimit_tokens_reset_time = ratelimit_tokens_reset_time
   )
   
-  # Initialize an environment to store rate-limit info
-  initialize_api_env("mistral")
-  
   # Update the rate-limit environment with info from rl
   update_rate_limit("mistral", rl)
   
@@ -159,7 +150,7 @@ mistral <- function(.llm,
   if (.verbose == TRUE) {
     glue::glue("Mistral API answer received at {rl$this_request_time}.
                 Remaining tokens: {rl$ratelimit_tokens_remaining}/{ratelimit_tokens_limit}
-                Tokens rate limit resets at: {rl$ratelimit_tokens_reset_time}\n\n") |> cat()
+                Tokens rate limit resets at: {rl$ratelimit_tokens_reset_time}\n\n") |> cat("\n")
   }
   
   # Create a deep copy of the LLMMessage object
@@ -179,11 +170,13 @@ mistral <- function(.llm,
 #' @param .model The embedding model identifier (default: "mistral-embed").
 #' @param .timeout Timeout for the API request in seconds (default: 120).
 #' @param .dry_run If TRUE, perform a dry run and return the request object.
+#' @param .max_tries Maximum retries to peform request
 #' @return A matrix where each column corresponds to the embedding of a message in the message history.
 #' @export
 mistral_embedding <- function(.llm,
                               .model = "mistral-embed",
                               .timeout = 120,
+                              .max_tries = 3,
                               .dry_run = FALSE) {
   
   # Retrieve API key from environment variables
@@ -196,8 +189,7 @@ mistral_embedding <- function(.llm,
     "Input .llm must be an LLMMessage object or a character vector" = inherits(.llm, "LLMMessage") | is.character(.llm),
     "Input .model must be a string" = is.character(.model),
     "Input .timeout must be an integer-valued numeric (seconds till timeout)" = is.numeric(.timeout) && .timeout > 0,
-    ".dry_run must be logical" = is.logical(.dry_run),
-    ".mistral_api_key must be provided" = nzchar(api_key)
+    ".dry_run must be logical" = is.logical(.dry_run)
   ) |> validate_inputs()
   
   if (!is.character(.llm)) {
@@ -247,6 +239,9 @@ mistral_embedding <- function(.llm,
   response <- request |>
     httr2::req_timeout(.timeout) |>
     httr2::req_error(is_error = function(resp) FALSE) |>
+    httr2::req_retry(max_tries = .max_tries,  
+                     retry_on_failure = TRUE,
+                     is_transient = \(resp) httr2::resp_status(resp) %in% c(429, 503)) |>
     httr2::req_perform()
   
   # Check for API errors

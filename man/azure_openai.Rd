@@ -22,11 +22,10 @@ azure_openai(
   .top_p = NULL,
   .timeout = 60,
   .verbose = FALSE,
-  .wait = TRUE,
   .json = FALSE,
   .json_schema = NULL,
-  .min_tokens_reset = 200L,
-  .dry_run = FALSE
+  .dry_run = FALSE,
+  .max_tries = 3
 )
 }
 \arguments{
@@ -64,15 +63,13 @@ azure_openai(
 
 \item{.verbose}{Should additional information be shown after the API call (default: FALSE).}
 
-\item{.wait}{Should we wait for rate limits if necessary? (default: TRUE).}
-
 \item{.json}{Should output be in JSON mode (default: FALSE).}
 
 \item{.json_schema}{A JSON schema object as R list to enforce the output structure (If defined has precedence over JSON mode).}
 
-\item{.min_tokens_reset}{How many tokens should be remaining to wait until we wait for token reset? (default: 200L).}
-
 \item{.dry_run}{If TRUE, perform a dry run and return the request object (default: FALSE).}
+
+\item{.max_tries}{Maximum retries to perform request}
 }
 \value{
 A new \code{LLMMessage} object containing the original messages plus the assistant's response.

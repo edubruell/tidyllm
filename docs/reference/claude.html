@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.9</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.10</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -20,7 +20,6 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/tidyllm_classifiers.html">Classifying Texts with tidyllm</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm-pdfquestions.html">Structured Question Answering from PDFs</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm-synthetic-data.html">Generate Synthetic Data with tidyllm</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -57,10 +56,8 @@
 <span>  .tools <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .api_url <span class="op">=</span> <span class="st">"https://api.anthropic.com/"</span>,</span>
 <span>  .verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  .wait <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  .min_tokens_reset <span class="op">=</span> <span class="fl">1000L</span>,</span>
+<span>  .max_tries <span class="op">=</span> <span class="fl">3</span>,</span>
 <span>  .timeout <span class="op">=</span> <span class="fl">60</span>,</span>
-<span>  .json <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  .stream <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  .dry_run <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -114,20 +111,12 @@
 <dd><p>Logical; if TRUE, displays additional information about the API call (default: FALSE).</p></dd>
 
 
-<dt id="arg--wait">.wait<a class="anchor" aria-label="anchor" href="#arg--wait"></a></dt>
-<dd><p>Logical; if TRUE, respects rate limits by waiting when necessary (default: TRUE).</p></dd>
-
-
-<dt id="arg--min-tokens-reset">.min_tokens_reset<a class="anchor" aria-label="anchor" href="#arg--min-tokens-reset"></a></dt>
-<dd><p>Integer specifying the minimum token threshold before waiting for reset (default:1000).</p></dd>
+<dt id="arg--max-tries">.max_tries<a class="anchor" aria-label="anchor" href="#arg--max-tries"></a></dt>
+<dd><p>Maximum retries to peform request</p></dd>
 
 
 <dt id="arg--timeout">.timeout<a class="anchor" aria-label="anchor" href="#arg--timeout"></a></dt>
 <dd><p>Integer specifying the request timeout in seconds (default: 60).</p></dd>
-
-
-<dt id="arg--json">.json<a class="anchor" aria-label="anchor" href="#arg--json"></a></dt>
-<dd><p>Logical; if TRUE, instructs Claude to return responses in JSON format (default: FALSE).</p></dd>
 
 
 <dt id="arg--stream">.stream<a class="anchor" aria-label="anchor" href="#arg--stream"></a></dt>

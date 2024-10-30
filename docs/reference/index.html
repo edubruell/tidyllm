@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.9</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.10</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -20,7 +20,6 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/tidyllm_classifiers.html">Classifying Texts with tidyllm</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm-pdfquestions.html">Structured Question Answering from PDFs</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm-synthetic-data.html">Generate Synthetic Data with tidyllm</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -62,28 +61,40 @@
         <dd>Convert a Data Frame to an LLMMessage Object</dd>
       </dl><dl><dt>
 
-          <code><a href="last_reply.html">last_reply()</a></code>
-
-        </dt>
-        <dd>Retrieve the Last Assistant Reply</dd>
-      </dl><dl><dt>
-
-          <code><a href="last_user_message.html">last_user_message()</a></code>
-
-        </dt>
-        <dd>Retrieve the Last User Message</dd>
-      </dl><dl><dt>
-
           <code><a href="get_reply.html">get_reply()</a></code>
 
         </dt>
-        <dd>Retrieve an Assistant Reply by Index</dd>
+        <dd>Get Assistant Reply as Text</dd>
+      </dl><dl><dt>
+
+          <code><a href="get_reply_data.html">get_reply_data()</a></code>
+
+        </dt>
+        <dd>Get Data from an Assistant Reply by parsing structured JSON responses</dd>
       </dl><dl><dt>
 
           <code><a href="get_user_message.html">get_user_message()</a></code>
 
         </dt>
         <dd>Retrieve a User Message by Index</dd>
+      </dl><dl><dt>
+
+          <code><a href="last_reply.html">last_reply()</a></code>
+
+        </dt>
+        <dd>Get the Last Assistant Reply as Text</dd>
+      </dl><dl><dt>
+
+          <code><a href="last_reply_data.html">last_reply_data()</a></code>
+
+        </dt>
+        <dd>Get the Last Assistant Reply as Text</dd>
+      </dl><dl><dt>
+
+          <code><a href="last_user_message.html">last_user_message()</a></code>
+
+        </dt>
+        <dd>Retrieve the Last User Message</dd>
       </dl><dl><dt>
 
           <code><a href="tidyllm_schema.html">tidyllm_schema()</a></code>
@@ -261,16 +272,10 @@
         <dd>Update the standard API rate limit info in the hidden .tidyllm_rate_limit_env environment</dd>
       </dl><dl><dt>
 
-          <code><a href="wait_rate_limit.html">wait_rate_limit()</a></code>
-
-        </dt>
-        <dd>Wait for ratelimit restore times to ellapse if necessary</dd>
-      </dl><dl><dt>
-
           <code><a href="parse_duration_to_seconds.html">parse_duration_to_seconds()</a></code>
 
         </dt>
-        <dd>An internal function to parse the duration strings that OpenAI APIs return for ratelimit resets</dd>
+        <dd>This internal function parses duration strings as returned by the OpenAI API</dd>
       </dl><dl><dt>
 
           <code><a href="ratelimit_from_header.html">ratelimit_from_header()</a></code>

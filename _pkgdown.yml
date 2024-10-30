@@ -10,10 +10,12 @@ reference:
     contents:
       - llm_message
       - df_llm_message
-      - last_reply
-      - last_user_message
       - get_reply
+      - get_reply_data
       - get_user_message
+      - last_reply
+      - last_reply_data
+      - last_user_message
       - tidyllm_schema
 
   - title: "Core Chat-API Functions"
@@ -50,7 +52,6 @@ reference:
       - initialize_api_env
       - rate_limit_info
       - update_rate_limit
-      - wait_rate_limit
       - parse_duration_to_seconds
       - ratelimit_from_header
 
