@@ -294,10 +294,10 @@ plot pane to a model.</p>
 <p>You can retrieve an assistant reply as a text from a message history
 with <code><a href="../reference/get_reply.html">get_reply()</a></code>. By specifying an index in
 <code><a href="../reference/get_reply.html">get_reply()</a></code> you can decide which assistant message to get
-from a list. It defaults to the last available reply. However, you have
-requested structured data from an API there is also a function called
-<code><a href="../reference/get_reply_data.html">get_reply_data()</a></code>, that directly gives you structured output
-in the format you asked for.</p>
+from a list. It defaults to the last available reply. However,if you
+have requested structured data from an API there is also a function
+called <code><a href="../reference/get_reply_data.html">get_reply_data()</a></code>, that directly gives you structured
+output in the format you asked for.</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">conversation</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Imagine a German adress."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>     <span class="fu"><a href="../reference/groq.html">groq</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -342,22 +342,29 @@ in the format you asked for.</p>
 <div class="section level4">
 <h4 id="working-with-structured-model-outputs">Working with structured model outputs<a class="anchor" aria-label="anchor" href="#working-with-structured-model-outputs"></a>
 </h4>
+<p>To make model responses easy to interpret and integrate into your
+workflow, <strong>tidyllm</strong> supports defining schemas to ensure
+that models reply with structured outputs in <a href="https://de.wikipedia.org/wiki/JavaScript_Object_Notation" class="external-link">JSON
+(JavaScript Object Notation)</a> following your specifications. JSON is
+a standard format for organizing data in simple key-value pairs, which
+is both human-readable and machine-friendly.</p>
 <p>Currently, <code><a href="../reference/openai.html">openai()</a></code> is the only API function in
-<strong>tidyllm</strong> that supports enforcing a pre-specified schema
-for replies. By specifying a schema in the <code>.json_schema</code>
-argument of <code><a href="../reference/openai.html">openai()</a></code>, you ensure structured responses in a
-defined format.</p>
-<p>The <code><a href="../reference/tidyllm_schema.html">tidyllm_schema()</a></code> function is a helper for defining
-schemas and translating them to the <a href="https://json-schema.org/" class="external-link">JSON-schema format</a> that the API
-needs. It disallows nested structures and ensures flat, predictable JSON
-outputs. It works with the following syntax:</p>
+<strong>tidyllm</strong> that supports schema enforcement through the
+<code>.json_schema</code> argument. This ensures that replies conform to
+a pre-defined structure that you can rely on for consistent data
+formatting.</p>
+<p>To create schemas, you can use the <code><a href="../reference/tidyllm_schema.html">tidyllm_schema()</a></code>
+function, which translates your specifications into the <a href="https://json-schema.org/" class="external-link">JSON-schema format</a> the API requires.
+This helper function standardizes the data layout by ensuring flat
+(non-nested) JSON structures with defined data types. Here’s how to
+define a schema:</p>
 <ul>
 <li>
 <strong><code>name</code></strong>: A name identifier for the schema
 (which is needed by the API).</li>
 <li>
-<strong><code>...</code> (fields)</strong>: Named arguments
-representing field names and their data types.
+<strong><code>...</code> (fields)</strong>: Named arguments for
+field names and their data types, including:
 <ul>
 <li>
 <code>"character"</code> or <code>"string"</code>: Text fields.</li>
@@ -368,13 +375,14 @@ representing field names and their data types.
 <code>"logical"</code>: <code>TRUE</code> or <code>FALSE</code>
 </li>
 <li>
-<code>"numeric"</code>: Numbers.</li>
+<code>"numeric"</code>: Numeric fields.</li>
 <li>
 <code>"type[]"</code>: Lists of a given type, such as
 <code>"character[]"</code>.</li>
 </ul>
 </li>
 </ul>
+<p>Here’s an example schema defining an address format:</p>
 <div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">address_schema</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tidyllm_schema.html">tidyllm_schema</a></span><span class="op">(</span></span>
 <span>  name <span class="op">=</span> <span class="st">"AddressSchema"</span>,</span>
@@ -395,12 +403,9 @@ representing field names and their data types.
 <span><span class="co">## --------------------------------------------------------------</span></span>
 <span><span class="co">## assistant: {"street":"Hauptstraße","houseNumber":123,"postcode":"10115","city":"Berlin","region":"Berlin","country":"Germany"}</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span></code></pre>
-<p>Note that the model answered with a text in <strong>JSON</strong> (<a href="https://de.wikipedia.org/wiki/JavaScript_Object_Notation" class="external-link">JavaScript
-Object Notation</a>) format. This is a lightweight, text-based format
-that is commonly used for transmitting data between a server and web
-application. The JSON response consists of key-value pairs, that can
-easily be converted to an R list with the <code><a href="../reference/get_reply_data.html">get_reply_data()</a></code>
-function:</p>
+<p>The model responded in JSON format, organizing data into key-value
+pairs like specified. You can then convert this JSON output into an R
+list for easier handling with <code><a href="../reference/get_reply_data.html">get_reply_data()</a></code>:</p>
 <div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">address</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/get_reply_data.html">get_reply_data</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## List of 6</span></span>
@@ -410,15 +415,17 @@ function:</p>
 <span><span class="co">##  $ city       : chr "Berlin"</span></span>
 <span><span class="co">##  $ region     : chr "Berlin"</span></span>
 <span><span class="co">##  $ country    : chr "Germany"</span></span></code></pre>
-<p>The <code><a href="../reference/ollama.html">ollama()</a></code>, <code><a href="../reference/groq.html">groq()</a></code>, and
-<code><a href="../reference/mistral.html">mistral()</a></code> functions also support structured outputs via a
-simpler JSON-mode, accessible through the <code>.json</code> argument.
-Since these APIs currently lack native schema enforcement, you’ll need
-to specify the desired JSON format directly in the prompt. Although
-<code><a href="../reference/get_reply_data.html">get_reply_data()</a></code> can extract structured data from these
-replies, the model may not fully adhere to the specified output format.
-<strong>tidyllm</strong> will integrate schema functionality for these
-APIs once they support it natively.</p>
+<p>Other API functions like <code><a href="../reference/ollama.html">ollama()</a></code>, <code><a href="../reference/groq.html">groq()</a></code>,
+and <code><a href="../reference/mistral.html">mistral()</a></code> also support structured outputs through a
+simpler JSON mode, accessible with the <code>.json</code> argument.
+Since these APIs do not currently support native schema enforcement,
+you’ll need to prompt the model to follow a specified format directly in
+your messages. Although <code><a href="../reference/get_reply_data.html">get_reply_data()</a></code> can help extract
+structured data from these responses when you set
+<code>.json=TRUE</code>, the model may not always adhere strictly to the
+specified structure. Once these APIs support native schema enforcement,
+<strong>tidyllm</strong> will integrate full schema functionality for
+them.</p>
 </div>
 <div class="section level4">
 <h4 id="api-parameters">API parameters<a class="anchor" aria-label="anchor" href="#api-parameters"></a>
@@ -453,9 +460,10 @@ functions for specific examples.</p>
 <div class="section level4">
 <h4 id="embeddings">Embeddings<a class="anchor" aria-label="anchor" href="#embeddings"></a>
 </h4>
-<p>Embedding models in <strong>tidyllm</strong> transform textual inputs
-into vector representations, capturing semantic information that can
-enhance similarity comparisons, clustering, and retrieval tasks. You can
+<p><a href="https://cohere.com/llmu/text-embeddings" class="external-link">Embedding
+models</a> in <strong>tidyllm</strong> transform textual inputs into
+vector representations, capturing semantic information that can enhance
+similarity comparisons, clustering, and retrieval tasks. You can
 generate embeddings using functions like
 <code><a href="../reference/openai_embedding.html">openai_embedding()</a></code>, <code><a href="../reference/mistral_embedding.html">mistral_embedding()</a></code>, and
 <code><a href="../reference/ollama_embedding.html">ollama_embedding()</a></code> which each interface with their
@@ -469,16 +477,16 @@ for each entry in a character vector.</p>
 </h4>
 <blockquote>
 <p>⚠️ <strong>Note:</strong> The batch functions for the OpenAI API are
-a work in progress. <code>fetch_openai_batch()</code> is no yet ready in
-the current version.</p>
+a work in progress. <code>fetch_openai_batch()</code> is not yet ready
+in the current version.</p>
 </blockquote>
 <p>Anthropic and OpenAI, offer batch request options that are around 50%
 cheaper than standard single-interaction APIs. Batch processing allows
 you to submit multiple message histories at once, which are then
-processed together, usually within a 24-hour period. In tidyllm, you can
-use the <code><a href="../reference/send_claude_batch.html">send_claude_batch()</a></code> or
-<code><a href="../reference/send_openai_batch.html">send_openai_batch()</a></code> functions to submit these batch
-requests.</p>
+processed together on the model providers servers, usually within a
+24-hour period. In <strong>tidyllm</strong>, you can use the
+<code><a href="../reference/send_claude_batch.html">send_claude_batch()</a></code> or <code><a href="../reference/send_openai_batch.html">send_openai_batch()</a></code>
+functions to submit these batch requests.</p>
 <p>Here’s an example of how to send a batch request to Claude’s batch
 API:</p>
 <div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
@@ -517,7 +525,9 @@ For example:</p>
 <span><span class="co">## <span style="color: #949494;"># ℹ 3 more variables: req_errored &lt;dbl&gt;, req_expired &lt;dbl&gt;, req_canceled &lt;dbl&gt;</span></span></span></code></pre>
 <p>The status output shows details such as the number of successful,
 errored, expired, and canceled requests in the batch, as well as the
-current status. Once the processing of a batch is completed you can
+current status. You can also see all your batch requests with
+<code><a href="../reference/list_claude_batches.html">list_claude_batches()</a></code> or in the batches dashboard of the
+Anthropic console. Once the processing of a batch is completed you can
 fetch its results with <code><a href="../reference/fetch_claude_batch.html">fetch_claude_batch()</a></code> or
 <code>fetch_openai_batch()</code>:</p>
 <div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
@@ -529,21 +539,21 @@ fetch its results with <code><a href="../reference/fetch_claude_batch.html">fetc
 assistant replies. You can further process these responses with
 <strong>tidyllm’s</strong> standard tools.Before launching a large batch
 operation, it’s good practice to run a few test requests and review
-outputs. This approach helps confirm that prompt settings and model
-configurations produce the desired responses, minimizing potential
-errors or resource waste.</p>
+outputs with the standard API fuctions. This approach helps confirm that
+prompt settings and model configurations produce the desired responses,
+minimizing potential errors or resource waste.</p>
 </div>
 <div class="section level4">
 <h4 id="streaming-back-responses-experimental">Streaming back responses (Experimental)<a class="anchor" aria-label="anchor" href="#streaming-back-responses-experimental"></a>
 </h4>
-<p>All chat API-functions support real-time streaming of reply tokens to
-the console while the model works with the <code>.stream=TRUE</code>
-argument. While this feature offers slightly better feedback on model
-behavior in real-time, it’s not particularly useful for data-analysis
-workflows. We consider this feature experimental and recommend using
-non-streaming responses for production tasks. Note that error handling
-in streaming callbacks varies by API and differs in quality at this
-time.</p>
+<p>All standard chat API-functions support real-time streaming of reply
+tokens to the console while the model works with the
+<code>.stream=TRUE</code> argument. While this feature offers slightly
+better feedback on model behavior in real-time, it’s not particularly
+useful for data-analysis workflows. We consider this feature
+experimental and recommend using non-streaming responses for production
+tasks. Note that error handling in streaming callbacks varies by API and
+differs in quality at this time.</p>
 </div>
 <div class="section level4">
 <h4 id="choosing-the-right-model-and-api">Choosing the Right Model and API<a class="anchor" aria-label="anchor" href="#choosing-the-right-model-and-api"></a>

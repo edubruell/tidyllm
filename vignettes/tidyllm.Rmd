@@ -197,7 +197,7 @@ llm_message("Analyze this plot and data summary:",
 
 ### Getting  replies from the API 
 
-You can retrieve an assistant reply as a text from a message history with `get_reply()`. By specifying an index in `get_reply()` you can decide which assistant message to get from a list. It defaults to the last available reply.  However, you have requested structured data from an API there is also a function called `get_reply_data()`, that directly gives you structured output in the format you asked for.
+You can retrieve an assistant reply as a text from a message history with `get_reply()`. By specifying an index in `get_reply()` you can decide which assistant message to get from a list. It defaults to the last available reply.  However,if  you have requested structured data from an API there is also a function called `get_reply_data()`, that directly gives you structured output in the format you asked for.
 
 ```{r eval=FALSE,echo=TRUE}
 conversation <- llm_message("Imagine a German adress.") |>
@@ -230,17 +230,21 @@ conversation |> last_reply()
 
 ### Working with structured model outputs
 
-Currently, `openai()` is the only API function in **tidyllm** that supports enforcing a pre-specified schema for replies. By specifying a schema in the `.json_schema` argument of `openai()`, you ensure structured responses in a defined format.
+To make model responses easy to interpret and integrate into your workflow, **tidyllm** supports defining schemas to ensure that models reply with structured outputs in [JSON (JavaScript Object Notation)](https://de.wikipedia.org/wiki/JavaScript_Object_Notation) following your specifications. JSON is a standard format for organizing data in simple key-value pairs, which is both human-readable and machine-friendly.
 
-The `tidyllm_schema()` function is a helper for defining schemas and translating them to the [JSON-schema format](https://json-schema.org/) that the API needs. It disallows nested structures and ensures flat, predictable JSON outputs. It works with the following syntax:
+Currently, `openai()` is the only API function in **tidyllm** that supports schema enforcement through the `.json_schema` argument. This ensures that replies conform to a pre-defined structure that you can rely on for consistent data formatting.
+
+To create schemas, you can use the `tidyllm_schema()` function, which translates your specifications into the  [JSON-schema format](https://json-schema.org/) the API requires. This helper function standardizes the data layout by ensuring flat (non-nested) JSON structures with defined data types. Here’s how to define a schema:
 
 - **`name`**: A name identifier for the schema (which is needed by the API).
-- **`...` (fields)**: Named arguments representing field names and their data types.
+- **`...` (fields)**: Named arguments for field names and their data types, including:
   - `"character"` or `"string"`: Text fields.
   - `"factor(...)"`: Enumerations with allowable values, like `factor(Germany, France)`.
   - `"logical"`: `TRUE` or `FALSE`
-  - `"numeric"`: Numbers.
+  - `"numeric"`: Numeric fields.
   - `"type[]"`: Lists of a given type, such as `"character[]"`.
+  
+Here’s an example schema defining an address format:
 
 ```{r schema,  eval=FALSE, echo=TRUE}
 address_schema <- tidyllm_schema(
@@ -266,12 +270,13 @@ address <- address_base$add_message(role = "assistant",
 address
 ```
 
-Note that the model answered with a text in **JSON** ([JavaScript Object Notation](https://de.wikipedia.org/wiki/JavaScript_Object_Notation)) format. This is a lightweight, text-based format that is commonly used for transmitting data between a server and web application. The JSON response consists of key-value pairs, that can easily be converted to an R list with the `get_reply_data()` function:
+The model responded in JSON format, organizing data into key-value pairs like specified. You can then convert this JSON output into an R list for easier handling with `get_reply_data()`:
+
 ```{r get_reply_data}
 address |> get_reply_data() |> str()
 ```
 
-The `ollama()`, `groq()`, and `mistral()` functions also support structured outputs via a simpler JSON-mode, accessible through the `.json` argument. Since these APIs currently lack native schema enforcement, you’ll need to specify the desired JSON format directly in the prompt. Although `get_reply_data()` can extract structured data from these replies, the model may not fully adhere to the specified output format. **tidyllm** will integrate schema functionality for these APIs once they support it natively.
+Other API functions like `ollama()`, `groq()`, and `mistral()` also support structured outputs through a simpler JSON mode, accessible with the `.json` argument. Since these APIs do not currently support native schema enforcement, you’ll need to prompt the model to follow a specified format directly in your messages. Although `get_reply_data()` can help extract structured data from these responses when you set `.json=TRUE`, the model may not always adhere strictly to the specified structure. Once these APIs support native schema enforcement, **tidyllm** will integrate full schema functionality for them.
 
 ### API parameters
 
@@ -303,13 +308,13 @@ Different API functions support different model parameters like  how determinist
 
 ### Embeddings
 
-Embedding models in **tidyllm** transform textual inputs into vector representations, capturing semantic information that can enhance similarity comparisons, clustering, and retrieval tasks. You can generate embeddings using functions like `openai_embedding()`, `mistral_embedding()`, and `ollama_embedding()` which each interface with their respective APIs. These functions create vector representations for texts.  These functions return vector representations either for each message in a message history or, more typically for this application, for each entry in a character vector. 
+[Embedding models](https://cohere.com/llmu/text-embeddings) in **tidyllm** transform textual inputs into vector representations, capturing semantic information that can enhance similarity comparisons, clustering, and retrieval tasks. You can generate embeddings using functions like `openai_embedding()`, `mistral_embedding()`, and `ollama_embedding()` which each interface with their respective APIs. These functions create vector representations for texts.  These functions return vector representations either for each message in a message history or, more typically for this application, for each entry in a character vector. 
 
 ### Batch requests
 
-> ⚠️ **Note:** The batch functions for the OpenAI API are a work in progress. `fetch_openai_batch()` is no yet ready in the current version.
+> ⚠️ **Note:** The batch functions for the OpenAI API are a work in progress. `fetch_openai_batch()` is not yet ready in the current version.
 
-Anthropic and OpenAI, offer batch request options that are around 50% cheaper than standard single-interaction APIs. Batch processing allows you to submit multiple message histories at once, which are then processed together, usually within a 24-hour period. In tidyllm, you can use the `send_claude_batch()` or `send_openai_batch()` functions to submit these batch requests.
+Anthropic and OpenAI, offer batch request options that are around 50% cheaper than standard single-interaction APIs. Batch processing allows you to submit multiple message histories at once, which are then processed together on the model providers servers, usually within a 24-hour period. In **tidyllm**, you can use the `send_claude_batch()` or `send_openai_batch()` functions to submit these batch requests.
 
 Here’s an example of how to send a batch request to Claude’s batch API:
 
@@ -343,7 +348,7 @@ tribble(
   "msgbatch_02A1B2C3D4E5F6G7H8I9J",  "ended", as.POSIXct("2024-11-01 10:30:00"), as.POSIXct("2024-11-02 10:30:00"), 3, 0, 0, 0
 )
 ```
-The status output shows details such as the number of successful, errored, expired, and canceled requests in the batch, as well as the current status.
+The status output shows details such as the number of successful, errored, expired, and canceled requests in the batch, as well as the current status. You can also see all your batch requests with `list_claude_batches()` or in the batches dashboard of the Anthropic console. 
 Once the processing of a batch is completed you can fetch its results with `fetch_claude_batch()` or `fetch_openai_batch()`:
 
 ```{r eval=FALSE}
@@ -352,11 +357,11 @@ conversations <- readRDS("claude_batch.rds") |>
 
 poems <- map_chr(conversations, get_reply)
 ```
-The output is a list of message histories, each now updated with new assistant replies. You can further process these responses with **tidyllm's** standard tools.Before launching a large batch operation, it’s good practice to run a few test requests and review outputs. This approach helps confirm that prompt settings and model configurations produce the desired responses, minimizing potential errors or resource waste.
+The output is a list of message histories, each now updated with new assistant replies. You can further process these responses with **tidyllm's** standard tools.Before launching a large batch operation, it’s good practice to run a few test requests and review outputs with the standard API fuctions. This approach helps confirm that prompt settings and model configurations produce the desired responses, minimizing potential errors or resource waste.
 
 ### Streaming back responses (Experimental)
 
-All chat API-functions support real-time streaming of reply tokens to the console while the model works with the `.stream=TRUE` argument.  While this feature offers slightly better feedback on model behavior in real-time, it’s not particularly useful for data-analysis workflows. We consider this feature experimental and recommend using non-streaming responses for production tasks. Note that error handling in streaming callbacks varies by API and differs in quality at this time.
+All standard chat API-functions support real-time streaming of reply tokens to the console while the model works with the `.stream=TRUE` argument.  While this feature offers slightly better feedback on model behavior in real-time, it’s not particularly useful for data-analysis workflows. We consider this feature experimental and recommend using non-streaming responses for production tasks. Note that error handling in streaming callbacks varies by API and differs in quality at this time.
 
 ### Choosing the Right Model and API
 
