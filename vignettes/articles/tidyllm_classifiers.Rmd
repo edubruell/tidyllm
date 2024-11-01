@@ -73,7 +73,7 @@ print(sub_sample, n = 5)
 ```
 By splitting the data, we now have a smaller sub-sample of 422 observations to work with during the initial classification stage. 
 
-### Classifying a sub-sample
+### Using a claude batch request
 
 To classify this sub-sample of occupation descriptions, we first generate prompts with a specific classification task for each occupation. Each prompt directs the model to classify the occupation based on a numerical code, ensuring that the output aligns with our coding system. We use `glue()` to create prompts for each occupation description to the prompt with `{occupation}` and `purrr::map()` to pass each prompt to `llm_message()`. The output is a list of messages ready for submission to a large language model.
 
@@ -170,7 +170,7 @@ tibble::tribble(
   "msgbatch_015JWDHzEPP8k7qzWNC9vCY3", "ended", as.POSIXct("2024-10-31 16:33:35"), as.POSIXct("2024-11-01 16:33:35"), 442, 0, 0, 0
 )
 ```
-We now see that our batch was created and its status is `ended`. All 442 requests succeeded. Batch results can be downloaded within  29 days after creation. You can see all available batches in the API with `list_claude_batches()`. To download the results of our batch we use the `fetch_claude_batch()` function:
+We now see that our batch was created and its status is `ended`. All 442 requests succeeded. Batch results can be downloaded within  29 days after creation. You can see all available batches in the API with `list_claude_batches()` or in the Anthropic console. To download the results of our batch we use the `fetch_claude_batch()` function:
 
 ```{r fetch_batch, eval=FALSE}
 occ2_codes <- read_rds("sub_sample_batch.rds")) |>
@@ -187,7 +187,7 @@ We get a list of messages with assistant replies from `fetch_claude_batch()` tha
 
 A manual review of the classifier’s output showed highly promising results. Out of 443 classifications, only 9 needed corrections, indicating an error rate of just 2% for the `claude()`-based classifier with our initial prompt. Most issues arose from not correctly identifying unclear responses as missing, such as "Doin' the numbers" or "Barster" (a potential mix of Barrister or Barkeeper). 
 
-At this point we could stop and proceed to classify the entire data with the `send_claude_batch()`, given its strong performance and manual validation on unseen data and that scaling up to the data would cost less than 1.50$. However, to illustrate the general principle how to find good llm classifiers when you are less sure, we will now use the initial ground truth we have built as a base to experiment with different models and prompts. For example, we could try to determine if simpler alternatives or small local models would perform just as well. 
+At this point we could stop and proceed to classify the entire data with the `send_claude_batch()`, given its strong performance and manual validation on unseen data and that scaling up to the data would cost less than 1.50$. However, to illustrate the general principle how to find good LLM-based classifiers when you are less sure, we will now use the initial ground truth we have built as a base to experiment with different models and prompts. For example, we could try to determine if simpler alternatives or small local models would perform just as well. 
 
 ## Optimizing and Testing Classifiers
 Next, we present a general approach to optimize and test different LLM-based classifiers. First, we split the dataset into training and test sets using `rsample` to ensure that we can experiment with different prompts and setups on training data but only evaluate our final model performance on unseen data.
@@ -206,7 +206,7 @@ test_data  <- testing(gt_split)
 print(train_data,n=5)
 ```
 ###  Writing a flexible classifier function
-To test different prompts and models systematically we need to create a flexible classifier function that can handle different prompts or models that can work with any api-function including local models that do not support batch requests.  This function can take the open occupation, our ground-truth for `occ2` a `prompt` and `prompt_id`, a `api_function` and a `model` as arguements allowing us to test each occupation classification across a grid of prompts and models.
+To test different prompts and models systematically we need to create a flexible classifier function that can handle different prompts or models that can work with any api-function including local models that do not support batch requests.  This function can take the open `occupation` question, our ground-truth for `occ2` a `prompt` and `prompt_id`, a `api_function` and a `model` as arguements allowing us to test each occupation classification across a grid of prompts and models.
 
 ```{r classify_occ2, eval=FALSE, echo=TRUE}
 # External numerical code list for reusability
@@ -356,12 +356,12 @@ cat(glue::glue("Classifying: {classifications}"), sep = "\n")
 ```
 > ⚠️ **Note:** Running an extensive classification grid like this, especially with large datasets or slow models, can take a significant amount of time. Therefore, it’s often reasonable to save intermediate results periodically, so that you don’t lose progress if something goes wrong (e.g., a crash or a network issue). By combining `pwalk()` with `save_rds()`, you can run each combination of the grid independently and store results incrementally. 
 
-After we run our grid we get some insights into how well models and prompts work on the train data. Here we can experiment with different models and parameters as much as we want and see what works here. 
+After we run our grid we get some insights into how well models and prompts work on the train data. Here we can experiment with different models and parameters as much as we want and see what works. 
 
 ### Accuracy estimates
 
-We will create an overview of prediction accuracy overview using the `yardstick` package.
-For many functions we use, we also need to encode the ground truth and the model predictions as factors:
+To create an overview of prediction accuracy overview we use the `yardstick` package.
+For some functions in  `yardstick`, we also need to encode the ground truth and the model predictions as factors:
 ```{r grid_results, eval=TRUE,echo=FALSE}
 grid_results <- bind_rows(
   read_rds(here::here("vignettes","articles","gemma_results.rds")),
@@ -412,7 +412,7 @@ autoplot(conf_mat, type = "heatmap") +
   theme_bw(22) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
-A lot of the miss-classifications are in management occupations and office services, missing occupations are again not classified well, but classified into other occupations. So nothing that seems like an immediate easy fix. There are other tricks that goes beyond simple one-shot classification. A common idea is to use multi-shot classifications (and give the model classification examples in the prompt, or even guide its output by letting it complete conversations where it answers the right way). The function `df_llm_message()` let's you easily built such message histories where you put some words into the mouth of the model. But there are other ways that can help you increase accuracy. A popular one is to first let the model reason in detail what the best candidates for classification would be to build a chain of thought before it gives the final answer. 
+A lot of the miss-classifications are in management occupations and office services, missing occupations are again not classified well, but classified into other occupations. So there is nothing here that seems like an immediate easy fix. Yet, there are other tricks to try that go beyond simple one-shot classification. A common idea is to use [multi-shot classifications](https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/multishot-prompting#example-analyzing-customer-feedback) (and give the model classification examples in the prompt, or even guide its output by letting it complete conversations where it answers the right way). The function `df_llm_message()` let's you easily built such message histories where you put some words into the mouth of the model. But there are other ways that can help you increase accuracy. A popular one is to first let the model reason in detail what the best candidates for classification would be to build a chain of thought before it gives the final answer. 
 
 ### Multistep Chain-of-Thought Prompting
 For this we need a major change in the classification function, because we send two messages to the model. A first one elicits a reasoning step, the second one asks for the final code, based on the answer to the first message. This is easily doable with the message-chaining abilities of **tidyllm**
@@ -507,7 +507,7 @@ classifications <- c(
 cat(glue::glue("Classifying with CoT: {classifications}"), sep = "\n")
 ```
 
-Did this work. It turns out in this case it did not!
+Did this work? It turns out in this case it did not!
 ```{r cot_hidden, eval=TRUE,echo=FALSE}
 results_cot <- read_rds("gemma_cot_results.rds")
 ```
@@ -534,9 +534,9 @@ results_cot |>
   mutate(pct=n/sum(n))
 ```
 
-In our specific case we already  had a clear favorite final choice without even needing to do further testing, because we already know test performance for Claude Sonnet 3.5, since we manually checked it.  So no further check of prompt or models on the test data is needed here. We can just run our entire sample through `claude_send_batch()`
+However, in our specific case we already  had a clear favorite final choice without even needing to do further testing. We already know the 98% test performance for Claude Sonnet 3.5, since we manually checked it. So no further check of prompt or models on the test data is needed. We can just run our entire sample through `claude_send_batch()`
 
 ## Conclusion
 
-In this article, we've demonstrated how `tidyllm` can be effectively used to tackle complex text classification tasks. By walking through the process step-by-step, from sample selection and prompt design to model testing and optimization, we've highlighted the flexibility of the package in dealing with real-world data. 
+In this article, we've demonstrated how `tidyllm` can be effectively used to tackle complex text classification tasks. By walking through a typical process step-by-step, from sample selection and prompt design to model testing and optimization, we've highlighted the flexibility of the package in dealing with real-world data. 
 
