@@ -155,12 +155,12 @@ To initiate a batch request, we use the `send_claude_batch()` function. This fun
 ```{r batch_send, eval=FALSE}
 classification_tasks |>
   send_claude_batch(.temperature = 0) |>
-  write_rds(here::here("sub_sample_batch.rds"))
+  write_rds("sub_sample_batch.rds")
 ```
 
 We can check the status of a batch with:
 ```{r check_batch, eval=FALSE}
-read_rds(here::here("local_wip","sub_sample_batch.rds")) |>
+read_rds("sub_sample_batch.rds") |>
   check_claude_batch()
 ```
 
@@ -173,7 +173,7 @@ tibble::tribble(
 We now see that our batch was created and its status is `ended`. All 442 requests succeeded. Batch results can be downloaded within  29 days after creation. You can see all available batches in the API with `list_claude_batches()`. To download the results of our batch we use the `fetch_claude_batch()` function:
 
 ```{r fetch_batch, eval=FALSE}
-occ2_codes <- read_rds(here::here("local_wip","sub_sample_batch.rds")) |>
+occ2_codes <- read_rds("sub_sample_batch.rds")) |>
   fetch_claude_batch() |>
   map_chr(get_reply) |>
   parse_number()
@@ -183,11 +183,11 @@ tibble(occupation_open = sub_sample$occupation,
   left_join(occ_codes, by="occ2") |>
   writexl::write_xlsx("ground_truth_excel.xlsx")
 ```
-We get a list of messages with assistant replies from `fetch_claude_batch()` that we pass into `map_chr(get_reply)` to get assistant replies from each message as a character vector. We then again parse the numeric code and merge occupation titles. To ensure that the output is correct, we can export the results to Excel with `write_xlsx` from the `writexl` package and manually fix miss-classifications. Running this initial batch on on this sub-sample cost us less than 50 cents. 
+We get a list of messages with assistant replies from `fetch_claude_batch()` that we pass into `map_chr(get_reply)` to get assistant replies from each message as a character vector. We then again parse the numeric code and merge occupation titles. To ensure that the output is correct, we can export the results to Excel with `write_xlsx` from the `writexl` package and manually fix miss-classifications. Running this initial batch on on this sub-sample cost us less than 30 cents. 
 
 A manual review of the classifier’s output showed highly promising results. Out of 443 classifications, only 9 needed corrections, indicating an error rate of just 2% for the `claude()`-based classifier with our initial prompt. Most issues arose from not correctly identifying unclear responses as missing, such as "Doin' the numbers" or "Barster" (a potential mix of Barrister or Barkeeper). 
 
-At this point we could stop and proceed to classify the entire data with the `send_claude_batch()`, given its strong performance and manual validation on unseen data and that scaling up to the data would cost less than 3$. However, to illustrate the general principle how to find good llm classifiers when you are less sure, we will now use the initial ground truth we have built as a base to experiment with different models and prompts. For example, we could try to determine if simpler alternatives or small local models would perform just as well. 
+At this point we could stop and proceed to classify the entire data with the `send_claude_batch()`, given its strong performance and manual validation on unseen data and that scaling up to the data would cost less than 1.50$. However, to illustrate the general principle how to find good llm classifiers when you are less sure, we will now use the initial ground truth we have built as a base to experiment with different models and prompts. For example, we could try to determine if simpler alternatives or small local models would perform just as well. 
 
 ## Optimizing and Testing Classifiers
 Next, we present a general approach to optimize and test different LLM-based classifiers. First, we split the dataset into training and test sets using `rsample` to ensure that we can experiment with different prompts and setups on training data but only evaluate our final model performance on unseen data.

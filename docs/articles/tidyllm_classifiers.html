@@ -391,10 +391,10 @@ session:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">classification_tasks</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/send_claude_batch.html">send_claude_batch</a></span><span class="op">(</span>.temperature <span class="op">=</span> <span class="fl">0</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://readr.tidyverse.org/reference/read_rds.html" class="external-link">write_rds</a></span><span class="op">(</span><span class="fu">here</span><span class="fu">::</span><span class="fu"><a href="https://here.r-lib.org//reference/here.html" class="external-link">here</a></span><span class="op">(</span><span class="st">"sub_sample_batch.rds"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu"><a href="https://readr.tidyverse.org/reference/read_rds.html" class="external-link">write_rds</a></span><span class="op">(</span><span class="st">"sub_sample_batch.rds"</span><span class="op">)</span></span></code></pre></div>
 <p>We can check the status of a batch with:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://readr.tidyverse.org/reference/read_rds.html" class="external-link">read_rds</a></span><span class="op">(</span><span class="fu">here</span><span class="fu">::</span><span class="fu"><a href="https://here.r-lib.org//reference/here.html" class="external-link">here</a></span><span class="op">(</span><span class="st">"local_wip"</span>,<span class="st">"sub_sample_batch.rds"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://readr.tidyverse.org/reference/read_rds.html" class="external-link">read_rds</a></span><span class="op">(</span><span class="st">"sub_sample_batch.rds"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/check_claude_batch.html">check_claude_batch</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
 <span><span class="co">#&gt;   batch_id          status created_at          expires_at          req_succeeded</span></span>
@@ -407,16 +407,15 @@ downloaded within 29 days after creation. You can see all available
 batches in the API with <code><a href="../reference/list_claude_batches.html">list_claude_batches()</a></code>. To download
 the results of our batch we use the <code><a href="../reference/fetch_claude_batch.html">fetch_claude_batch()</a></code>
 function:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">occ2_codes</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://readr.tidyverse.org/reference/read_rds.html" class="external-link">read_rds</a></span><span class="op">(</span><span class="fu">here</span><span class="fu">::</span><span class="fu"><a href="https://here.r-lib.org//reference/here.html" class="external-link">here</a></span><span class="op">(</span><span class="st">"local_wip"</span>,<span class="st">"sub_sample_batch.rds"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/fetch_claude_batch.html">fetch_claude_batch</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map_chr</a></span><span class="op">(</span><span class="va">get_reply</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://readr.tidyverse.org/reference/parse_number.html" class="external-link">parse_number</a></span><span class="op">(</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>occupation_open <span class="op">=</span> <span class="va">sub_sample</span><span class="op">$</span><span class="va">occupation</span>,</span>
-<span>       occ2 <span class="op">=</span> <span class="va">occ2_codes</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html" class="external-link">left_join</a></span><span class="op">(</span><span class="va">occ_codes</span>, by<span class="op">=</span><span class="st">"occ2"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">writexl</span><span class="fu">::</span><span class="fu"><a href="https://docs.ropensci.org/writexl/reference/write_xlsx.html" class="external-link">write_xlsx</a></span><span class="op">(</span><span class="st">"ground_truth_excel.xlsx"</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a>occ2_codes <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="st">"sub_sample_batch.rds"</span>)<span class="er">)</span> <span class="sc">|&gt;</span></span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a>  <span class="fu">fetch_claude_batch</span>() <span class="sc">|&gt;</span></span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a>  <span class="fu">map_chr</span>(get_reply) <span class="sc">|&gt;</span></span>
+<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a>  <span class="fu">parse_number</span>()</span>
+<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a></span>
+<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a><span class="fu">tibble</span>(<span class="at">occupation_open =</span> sub_sample<span class="sc">$</span>occupation,</span>
+<span id="cb12-7"><a href="#cb12-7" tabindex="-1"></a>       <span class="at">occ2 =</span> occ2_codes) <span class="sc">|&gt;</span></span>
+<span id="cb12-8"><a href="#cb12-8" tabindex="-1"></a>  <span class="fu">left_join</span>(occ_codes, <span class="at">by=</span><span class="st">"occ2"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb12-9"><a href="#cb12-9" tabindex="-1"></a>  writexl<span class="sc">::</span><span class="fu">write_xlsx</span>(<span class="st">"ground_truth_excel.xlsx"</span>)</span></code></pre></div>
 <p>We get a list of messages with assistant replies from
 <code><a href="../reference/fetch_claude_batch.html">fetch_claude_batch()</a></code> that we pass into
 <code>map_chr(get_reply)</code> to get assistant replies from each
@@ -424,7 +423,7 @@ message as a character vector. We then again parse the numeric code and
 merge occupation titles. To ensure that the output is correct, we can
 export the results to Excel with <code>write_xlsx</code> from the
 <code>writexl</code> package and manually fix miss-classifications.
-Running this initial batch on on this sub-sample cost us less than 50
+Running this initial batch on on this sub-sample cost us less than 30
 cents.</p>
 <p>A manual review of the classifier’s output showed highly promising
 results. Out of 443 classifications, only 9 needed corrections,
@@ -435,7 +434,7 @@ identifying unclear responses as missing, such as “Doin’ the numbers” or
 <p>At this point we could stop and proceed to classify the entire data
 with the <code><a href="../reference/send_claude_batch.html">send_claude_batch()</a></code>, given its strong performance
 and manual validation on unseen data and that scaling up to the data
-would cost less than 3$. However, to illustrate the general principle
+would cost less than 1.50$. However, to illustrate the general principle
 how to find good llm classifiers when you are less sure, we will now use
 the initial ground truth we have built as a base to experiment with
 different models and prompts. For example, we could try to determine if
