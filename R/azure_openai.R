@@ -92,19 +92,13 @@ azure_openai <- function(
     "Input .dry_run must be logical" = is.logical(.dry_run)
   ) |> validate_inputs()
   
-  # Get messages from llm object
-  messages <- .llm$to_api_format("openai")
-  
-  #This filters out the system prompt for reasoning models. There must be a better way to do this more robustly
+  #This filters out the system prompt for reasoning models.
+  no_system_prompt <- FALSE
   if(.deployment %in% c("o1-preview","o1-mini")){
     message("Note: Reasoning models do not support system prompts")
-    messages <- Filter(function(x){
-      if ("role" %in% names(x)) {
-        return(x$role %in% c("user","assistant"))
-      } else {
-        return(FALSE)
-      }},messages)
+    no_system_prompt <- TRUE
   }
+  messages <- .llm$to_api_format("openai",no_system=no_system_prompt)
   
   # Get the OpenAI API key
   api_key <- Sys.getenv("AZURE_OPENAI_API_KEY")

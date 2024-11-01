@@ -74,7 +74,7 @@ groq <- function(.llm,
     validate_inputs()
   
   # Get formatted message list for Groq models
-  messages <- .llm$to_api_format("groq")
+  messages <- .llm$to_api_format("openai",no_system=TRUE)
   
   # Retrieve API key from environment variables
   api_key <- Sys.getenv("GROQ_API_KEY")
@@ -183,6 +183,7 @@ groq <- function(.llm,
 #' @param .verbose Logical; if TRUE, outputs additional information (default: FALSE).
 #' @param .dry_run Logical; if TRUE, performs a dry run and returns the request object without making the API call (default: FALSE).
 #' @param .verbose Logical; if TRUE, rate limiting info is displayed after the API request (default: FALSE).
+#' @param .max_tries Maximum retries to peform request
 #' @examples
 #' \dontrun{
 #' # Basic usage

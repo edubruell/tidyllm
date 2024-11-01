@@ -26,7 +26,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.10</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.11</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -150,8 +150,7 @@ kind of task:</p>
 <li>
 <strong>Pick a Sample</strong>:Start by filtering the dataset to
 retain only distinct occupation descriptions. Then, randomly select a
-sample of distinct responses to work with. For this example, let’s
-select 20% of the dataset for manual classification and correction.</li>
+sample of distinct responses to work with.</li>
 <li>
 <strong>Initial Classification</strong>: Use a simple prompt to
 categorize these responses into occupation codes.</li>
@@ -242,22 +241,19 @@ correction and model training:</p>
 <p>By splitting the data, we now have a smaller sub-sample of 422
 observations to work with during the initial classification stage.</p>
 <div class="section level3">
-<h3 id="writing-an-initial-classifier-function">Writing an initial classifier function<a class="anchor" aria-label="anchor" href="#writing-an-initial-classifier-function"></a>
+<h3 id="classifying-a-sub-sample-1">Classifying a sub-sample<a class="anchor" aria-label="anchor" href="#classifying-a-sub-sample-1"></a>
 </h3>
-<p>To classify this sub-sample of occupation descriptions, we use a
-first function that wraps <code><a href="../reference/llm_message.html">llm_message()</a></code>. This function
-sends each occupation description to a large language model (LLM) and
-prompts it to assign one of the pre-defined occupation codes. For this
-first step, we choose a reliable commercial model to make our lives
-easier, as it requires fewer manual corrections due to its high-quality
-output, helping us build a more accurate ground truth:</p>
+<p>To classify this sub-sample of occupation descriptions, we first
+generate prompts with a specific classification task for each
+occupation. Each prompt directs the model to classify the occupation
+based on a numerical code, ensuring that the output aligns with our
+coding system. We use <code><a href="https://glue.tidyverse.org/reference/glue.html" class="external-link">glue()</a></code> to create prompts for each
+occupation description to the prompt with <code>{occupation}</code> and
+<code><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">purrr::map()</a></code> to pass each prompt to
+<code><a href="../reference/llm_message.html">llm_message()</a></code>. The output is a list of messages ready for
+submission to a large language model.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">classify_occupation</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">occupation</span><span class="op">)</span><span class="op">{</span></span>
-<span>  <span class="co"># Output what the model is currently doing to the console</span></span>
-<span>  <span class="fu"><a href="https://glue.tidyverse.org/reference/glue.html" class="external-link">glue</a></span><span class="op">(</span><span class="st">"Classifying: {occupation}\n"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n"</span><span class="op">)</span></span>
-<span>  </span>
-<span>  <span class="co"># Generate the prompt</span></span>
-<span>  <span class="va">prompt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://glue.tidyverse.org/reference/glue.html" class="external-link">glue</a></span><span class="op">(</span><span class="st">'</span></span>
+<code class="sourceCode R"><span><span class="va">prompts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://glue.tidyverse.org/reference/glue.html" class="external-link">glue</a></span><span class="op">(</span><span class="st">'</span></span>
 <span><span class="st">      Classify this occupation response from a survey: {occupation}</span></span>
 <span><span class="st">      </span></span>
 <span><span class="st">      Pick one of the following numerical codes from this list. </span></span>
@@ -284,147 +280,178 @@ output, helping us build a more accurate ground truth:</p>
 <span><span class="st">      49 = Installation, Maintenance, and Repair Occupations         </span></span>
 <span><span class="st">      51 = Production Occupations                                    </span></span>
 <span><span class="st">      53 = Transportation and Material Moving Occupations</span></span>
-<span><span class="st">      99 = Missing Occupation (No clear occupation)'</span></span>
-<span>  <span class="op">)</span></span>
-<span>  </span>
-<span>  <span class="co"># List of valid codes as strings</span></span>
-<span>  <span class="va">valid_codes</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">occ_codes</span><span class="op">$</span><span class="va">occ2</span><span class="op">)</span></span>
-<span>  </span>
-<span>  <span class="co"># Initialize classification_raw</span></span>
-<span>  <span class="va">classification</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="op">{</span></span>
-<span>    <span class="co"># Get the assistant's reply</span></span>
-<span>    <span class="va">assistant_reply</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="va">prompt</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>      <span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"claude-3-5-sonnet-20240620"</span>, .temperature <span class="op">=</span> <span class="fl">0</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>      <span class="fu"><a href="../reference/get_reply.html">get_reply</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>      <span class="fu"><a href="https://stringr.tidyverse.org/reference/str_trim.html" class="external-link">str_squish</a></span><span class="op">(</span><span class="op">)</span></span>
-<span>    </span>
-<span>    <span class="co"># Validate the assistant's reply</span></span>
-<span>    <span class="kw">if</span> <span class="op">(</span><span class="va">assistant_reply</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">valid_codes</span><span class="op">)</span> <span class="op">{</span></span>
-<span>      <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="va">assistant_reply</span><span class="op">)</span></span>
-<span>    <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
-<span>      <span class="co"># If the reply is not a valid code, set code 98</span></span>
-<span>      <span class="fl">98L</span></span>
-<span>    <span class="op">}</span></span>
-<span>  <span class="op">}</span>, error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span><span class="op">{</span></span>
-<span>    <span class="co"># If there's an error with the model, set code 97</span></span>
-<span>    <span class="fl">97L</span></span>
-<span>  <span class="op">}</span><span class="op">)</span></span>
-<span>  </span>
-<span>  <span class="co"># Output a tibble</span></span>
-<span>  <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
-<span>    occupation_open <span class="op">=</span> <span class="va">occupation</span>,</span>
-<span>    occ2            <span class="op">=</span> <span class="va">classification</span></span>
-<span>  <span class="op">)</span></span>
-<span><span class="op">}</span></span></code></pre></div>
-<p><strong>Here’s How It Works:</strong></p>
-<ol style="list-style-type: decimal">
-<li><p><strong>Prompt Generation</strong>: The function creates a
-detailed prompt that instructs the model to classify the occupation into
-one of the 22 SOC codes. This structured prompt ensures the model
-provides clear and accurate outputs. We use <code><a href="https://glue.tidyverse.org/reference/glue.html" class="external-link">glue()</a></code> to add
-the function input (i.e. a response in the open occupation question)
-into the prompt with <code>{occupation}</code>.</p></li>
-<li><p><strong>Calling the LLM</strong>: The model (in this case,
-Claude-3.5-Sonnet) is called using the <code><a href="../reference/claude.html">claude()</a></code> function
-with the <code>.temperature</code> parameter set to 0, ensuring
-deterministic (non-random) output. The model’s reply is retrieved and
-cleaned using <code><a href="https://stringr.tidyverse.org/reference/str_trim.html" class="external-link">str_squish()</a></code> to remove unnecessary
-spaces:</p></li>
-</ol>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="va">prompt</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>      <span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"claude-3-5-sonnet-20240620"</span>, .temperature <span class="op">=</span> <span class="fl">0</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>      <span class="fu"><a href="../reference/get_reply.html">get_reply</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>      <span class="fu"><a href="https://stringr.tidyverse.org/reference/str_trim.html" class="external-link">str_squish</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<ol start="3" style="list-style-type: decimal">
-<li><p><strong>Error Handling</strong>: The function uses
-<code>tryCatch</code> to handle any errors during the classification
-process. If the API call fails, the function returns occupation code
-<code>97</code> to flag the issue.</p></li>
-<li><p><strong>Validation of Model Output</strong>: The function checks
-whether the model’s response is a valid SOC code. If the response is
-invalid, it assigns code <code>98</code>. This validation ensures that
-any unexpected outputs are handled appropriately.</p></li>
-<li><p><strong>Returning the Result</strong>: The function outputs a
-<code>tibble</code> containing the original occupation description and
-the model’s classification or error code, providing a clean and
-structured result.</p></li>
-</ol>
-<p>A typical function outputs look like this:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">classify_occupation</span><span class="op">(</span><span class="st">"Software Engineer"</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 2</span></span></span>
-<span><span class="co">#&gt;   occupation_open    occ2</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> Software Engineer    15</span></span></code></pre>
-<p>Next, we apply our classifier to the entire sub-sample in one go
-using <code><a href="https://purrr.tidyverse.org/reference/map_dfr.html" class="external-link">map_dfr()</a></code> from the purrr package, efficiently
-generating a tibble that contains the classification results for each
-occupation description.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">sub_sample_classified</span> <span class="op">&lt;-</span> <span class="va">sub_sample</span><span class="op">$</span><span class="va">occupation</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://purrr.tidyverse.org/reference/map_dfr.html" class="external-link">map_dfr</a></span><span class="op">(</span><span class="va">classify_occupation</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; Classifying: Making sure everything runs</span></span>
-<span><span class="co">#&gt; Classifying: Bartender</span></span>
-<span><span class="co">#&gt; Classifying: Post-secondary health education</span></span>
-<span><span class="co">#&gt; Classifying: Food servin</span></span>
-<span><span class="co">#&gt; Classifying: Exectutive assistant</span></span>
-<span><span class="co">#&gt; Classifying: ...</span></span></code></pre>
-<p>Running the classifier on this sub-sample costs roughly 50 cents and
-takes 12 minutes. To ensure that the output is correct, we can export
-the results to Excel with <code>write_xlsx</code> from the
-<code>writexl</code> package and manually fix miss-classifications:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Step 1: Bind the sub-sample classifications with descriptive occupation titles</span></span>
-<span><span class="co"># We also include special codes for errors and invalid responses</span></span>
-<span><span class="va">classified_with_titles</span> <span class="op">&lt;-</span> <span class="va">sub_sample_classified</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html" class="external-link">left_join</a></span><span class="op">(</span></span>
-<span>    <span class="va">occ_codes</span> <span class="op">|&gt;</span> </span>
-<span>      <span class="co"># Add error codes and titles to the occupation code table</span></span>
-<span>      <span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span></span>
-<span>        <span class="fu"><a href="https://tibble.tidyverse.org/reference/tribble.html" class="external-link">tribble</a></span><span class="op">(</span></span>
-<span>          <span class="op">~</span><span class="va">occ2</span>, <span class="op">~</span><span class="va">occ_title</span>,</span>
-<span>          <span class="fl">97</span>, <span class="st">"API-Connection Failure"</span>,</span>
-<span>          <span class="fl">98</span>, <span class="st">"Invalid Response"</span>,</span>
-<span>          <span class="fl">99</span>, <span class="st">"Missing (No Clear Occupation)"</span></span>
-<span>        <span class="op">)</span></span>
-<span>      <span class="op">)</span>, </span>
-<span>    by <span class="op">=</span> <span class="st">"occ2"</span></span>
-<span>  <span class="op">)</span></span>
+<span><span class="st">      99 = Missing Occupation (No clear occupation)'</span>, occupation <span class="op">=</span> <span class="va">sub_sample</span><span class="op">$</span><span class="va">occupation</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Step 2: Save the results to an Excel file for manual review</span></span>
-<span><span class="co"># This allows us to inspect the classifications and any potential errors.</span></span>
-<span><span class="fu">writexl</span><span class="fu">::</span><span class="fu"><a href="https://docs.ropensci.org/writexl/reference/write_xlsx.html" class="external-link">write_xlsx</a></span><span class="op">(</span><span class="va">classified_with_titles</span>, <span class="st">"ground_truth_excel.xlsx"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">classification_tasks</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="va">prompts</span>,<span class="va">llm_message</span><span class="op">)</span></span></code></pre></div>
+<p>A typical message from this list of classification tasks looks like
+this:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">classification_tasks</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="co">#&gt; Message History:</span></span>
+<span><span class="co">#&gt; system: You are a helpful assistant</span></span>
+<span><span class="co">#&gt; --------------------------------------------------------------</span></span>
+<span><span class="co">#&gt; user: Classify this occupation response from a survey: Making sure everything runs</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Pick one of the following numerical codes from this list. </span></span>
+<span><span class="co">#&gt; Respond only with the code!</span></span>
+<span><span class="co">#&gt; 11 = Management Occupations                                    </span></span>
+<span><span class="co">#&gt; 13 = Business and Financial Operations Occupations             </span></span>
+<span><span class="co">#&gt; 15 = Computer and Mathematical Occupations                     </span></span>
+<span><span class="co">#&gt; 17 = Architecture and Engineering Occupations                  </span></span>
+<span><span class="co">#&gt; 19 = Life, Physical, and Social Science Occupations            </span></span>
+<span><span class="co">#&gt; 21 = Community and Social Service Occupations                  </span></span>
+<span><span class="co">#&gt; 23 = Legal Occupations                                         </span></span>
+<span><span class="co">#&gt; 25 = Educational Instruction and Library Occupations           </span></span>
+<span><span class="co">#&gt; 27 = Arts, Design, Entertainment, Sports, and Media Occupations</span></span>
+<span><span class="co">#&gt; 29 = Healthcare Practitioners and Technical Occupations        </span></span>
+<span><span class="co">#&gt; 31 = Healthcare Support Occupations                            </span></span>
+<span><span class="co">#&gt; 33 = Protective Service Occupations                            </span></span>
+<span><span class="co">#&gt; 35 = Food Preparation and Serving Related Occupations          </span></span>
+<span><span class="co">#&gt; 37 = Building and Grounds Cleaning and Maintenance Occupations </span></span>
+<span><span class="co">#&gt; 39 = Personal Care and Service Occupations                     </span></span>
+<span><span class="co">#&gt; 41 = Sales and Related Occupations                             </span></span>
+<span><span class="co">#&gt; 43 = Office and Administrative Support Occupations             </span></span>
+<span><span class="co">#&gt; 45 = Farming, Fishing, and Forestry Occupations                </span></span>
+<span><span class="co">#&gt; 47 = Construction and Extraction Occupations                   </span></span>
+<span><span class="co">#&gt; 49 = Installation, Maintenance, and Repair Occupations         </span></span>
+<span><span class="co">#&gt; 51 = Production Occupations                                    </span></span>
+<span><span class="co">#&gt; 53 = Transportation and Material Moving Occupations</span></span>
+<span><span class="co">#&gt; 99 = Missing Occupation (No clear occupation)</span></span>
+<span><span class="co">#&gt; --------------------------------------------------------------</span></span></code></pre></div>
+<p>To classify an initial subset, which will need to be manually
+verified later, it is beneficial to use a reliable commercial model, as
+its output typically requires fewer adjustments. Here, we choose
+Claude-3.5-Sonnet, setting <code>.temperature</code> to 0 to ensure
+deterministic (non-random) responses. Initially, we test our prompt with
+the standard sequential <code><a href="../reference/claude.html">claude()</a></code> function. This preliminary
+step allows us to verify that the model interprets the prompt accurately
+and produces output in the required format before running the full batch
+of classification tasks.</p>
+<p>To this end, we create a tibble containing the occupation
+descriptions from our sub-sample alongside the prepared classification
+tasks. We then randomly select 10 rows from this tibble. Each selected
+occupation is passed sequentially through the
+<code>classify_sequential()</code> function that passes each
+classification task through <code><a href="../reference/claude.html">claude()</a></code>, fetches the reply
+with <code><a href="../reference/get_reply.html">get_reply()</a></code> and converts the text output of the model
+to a numeric code with <code><a href="https://readr.tidyverse.org/reference/parse_number.html" class="external-link">parse_number()</a></code>. Finally, the results
+are joined with the <code>occ_codes</code> table to map the numeric
+occupation codes to their corresponding occupation labels, providing an
+interpretable output:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">classify_sequential</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">occupation_open</span>,<span class="va">message</span><span class="op">)</span><span class="op">{</span></span>
+<span>    <span class="va">raw_code</span> <span class="op">&lt;-</span> <span class="va">message</span> <span class="op">|&gt;</span></span>
+<span>        <span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span>.temperature <span class="op">=</span> <span class="fl">0</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>        <span class="fu"><a href="../reference/get_reply.html">get_reply</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>        <span class="fu"><a href="https://readr.tidyverse.org/reference/parse_number.html" class="external-link">parse_number</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>    </span>
+<span>    <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>occupation_open<span class="op">=</span><span class="va">occupation_open</span>, occ2<span class="op">=</span><span class="va">raw_code</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>occupation_open <span class="op">=</span> <span class="va">sub_sample</span><span class="op">$</span><span class="va">occupation</span>, message <span class="op">=</span> <span class="va">classification_tasks</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/slice.html" class="external-link">slice_sample</a></span><span class="op">(</span>n<span class="op">=</span><span class="fl">10</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://purrr.tidyverse.org/reference/map_dfr.html" class="external-link">pmap_dfr</a></span><span class="op">(</span><span class="va">classify_sequential</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html" class="external-link">left_join</a></span><span class="op">(</span><span class="va">occ_codes</span>, by<span class="op">=</span><span class="st">"occ2"</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 10 × 3</span></span></span>
+<span><span class="co">#&gt;    occupation_open                  occ2 occ_title                              </span></span>
+<span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                                  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> Fine Carpentry                     47 Construction and Extraction Occupations</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> Eyeglass makin'                    51 Production Occupations                 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> Layin' down shingles               47 Construction and Extraction Occupations</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> Handle construction budgets        13 Business and Financial Operations Occu…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> Bodyshop guy                       49 Installation, Maintenance, and Repair …</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> Hair dresser                       39 Personal Care and Service Occupations  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> Sort and deliver mail              43 Office and Administrative Support Occu…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> Ops oversight                      11 Management Occupations                 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> Oversee all cleaning operations    11 Management Occupations                 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> Systems administrator              15 Computer and Mathematical Occupations</span></span></code></pre>
+<p>This output demonstrates that the model accurately interprets the
+prompts, assigning each occupation description to a suitable category.
+With this confirmation, we can confidently leverage tidyllm’s built-in
+batch-processing functions to classify the entire set of messages in
+<code>classification_tasks</code> using Anthropic’s Claude-3.5-Sonnet
+model.</p>
+<p>Batch-processing offers a significant cost advantage over sequential
+classification. Anthropic charges half the price per token for batch
+requests compared to single requests, making it an efficient choice for
+large-scale tasks. While batch requests do not return results instantly,
+they are typically processed within 24 hours, often much faster. A
+Message Batch is limited to either 10,000 requests or 32 MB in size,
+whichever is reached first.</p>
+<p>To initiate a batch request, we use the
+<code><a href="../reference/send_claude_batch.html">send_claude_batch()</a></code> function. This function returns the
+same list of classification tasks that we sent, but marked with an
+attribute that contains a batch-id from the Claude API as well as unique
+names for each list element that can be used to stitch together messages
+with replies. If you supply a named list of messages, these names are
+used as identifiers (ensuring they are unique before submission). For
+convenient access later, we save the batch output locally, allowing us
+to resume processing from the batch even after closing the R
+session:</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">classification_tasks</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/send_claude_batch.html">send_claude_batch</a></span><span class="op">(</span>.temperature <span class="op">=</span> <span class="fl">0</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://readr.tidyverse.org/reference/read_rds.html" class="external-link">write_rds</a></span><span class="op">(</span><span class="fu">here</span><span class="fu">::</span><span class="fu"><a href="https://here.r-lib.org//reference/here.html" class="external-link">here</a></span><span class="op">(</span><span class="st">"sub_sample_batch.rds"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>We can check the status of a batch with:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://readr.tidyverse.org/reference/read_rds.html" class="external-link">read_rds</a></span><span class="op">(</span><span class="fu">here</span><span class="fu">::</span><span class="fu"><a href="https://here.r-lib.org//reference/here.html" class="external-link">here</a></span><span class="op">(</span><span class="st">"local_wip"</span>,<span class="st">"sub_sample_batch.rds"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/check_claude_batch.html">check_claude_batch</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
+<span><span class="co">#&gt;   batch_id          status created_at          expires_at          req_succeeded</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dttm&gt;</span>              <span style="color: #949494; font-style: italic;">&lt;dttm&gt;</span>                      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> msgbatch_015JWDH… ended  2024-10-31 <span style="color: #949494;">16:33:35</span> 2024-11-01 <span style="color: #949494;">16:33:35</span>           442</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 3 more variables: req_errored &lt;dbl&gt;, req_expired &lt;dbl&gt;, req_canceled &lt;dbl&gt;</span></span></span></code></pre>
+<p>We now see that our batch was created and its status is
+<code>ended</code>. All 442 requests succeeded. Batch results can be
+downloaded within 29 days after creation. You can see all available
+batches in the API with <code><a href="../reference/list_claude_batches.html">list_claude_batches()</a></code>. To download
+the results of our batch we use the <code><a href="../reference/fetch_claude_batch.html">fetch_claude_batch()</a></code>
+function:</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">occ2_codes</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://readr.tidyverse.org/reference/read_rds.html" class="external-link">read_rds</a></span><span class="op">(</span><span class="fu">here</span><span class="fu">::</span><span class="fu"><a href="https://here.r-lib.org//reference/here.html" class="external-link">here</a></span><span class="op">(</span><span class="st">"local_wip"</span>,<span class="st">"sub_sample_batch.rds"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/fetch_claude_batch.html">fetch_claude_batch</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map_chr</a></span><span class="op">(</span><span class="va">get_reply</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://readr.tidyverse.org/reference/parse_number.html" class="external-link">parse_number</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>occupation_open <span class="op">=</span> <span class="va">sub_sample</span><span class="op">$</span><span class="va">occupation</span>,</span>
+<span>       occ2 <span class="op">=</span> <span class="va">occ2_codes</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html" class="external-link">left_join</a></span><span class="op">(</span><span class="va">occ_codes</span>, by<span class="op">=</span><span class="st">"occ2"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">writexl</span><span class="fu">::</span><span class="fu"><a href="https://docs.ropensci.org/writexl/reference/write_xlsx.html" class="external-link">write_xlsx</a></span><span class="op">(</span><span class="st">"ground_truth_excel.xlsx"</span><span class="op">)</span></span></code></pre></div>
+<p>We get a list of messages with assistant replies from
+<code><a href="../reference/fetch_claude_batch.html">fetch_claude_batch()</a></code> that we pass into
+<code>map_chr(get_reply)</code> to get assistant replies from each
+message as a character vector. We then again parse the numeric code and
+merge occupation titles. To ensure that the output is correct, we can
+export the results to Excel with <code>write_xlsx</code> from the
+<code>writexl</code> package and manually fix miss-classifications.
+Running this initial batch on on this sub-sample cost us less than 50
+cents.</p>
 <p>A manual review of the classifier’s output showed highly promising
 results. Out of 443 classifications, only 9 needed corrections,
 indicating an error rate of just 2% for the <code><a href="../reference/claude.html">claude()</a></code>-based
 classifier with our initial prompt. Most issues arose from not correctly
 identifying unclear responses as missing, such as “Doin’ the numbers” or
-“Barster” (a potential mix of Barrister or Barkeeper). Interestingly, in
-5 of the 9 error cases, the model returned an invalid response (code
-<code>98</code>) instead of missing (code <code>99</code>), which
-suggests it correctly avoided making an incorrect guess, rather than
-misclassifying the occupations outright.</p>
+“Barster” (a potential mix of Barrister or Barkeeper).</p>
 <p>At this point we could stop and proceed to classify the entire data
-with the <code><a href="../reference/claude.html">claude()</a></code>-based classifier, given its strong
-performance and manual validation on unseen data and that scaling up to
-the data would cost less than 3$. However, to illustrate the general
-principle how to find good llm classifiers when you are less sure, we
-will use the initial ground truth we have built as a base to experiment
-with different models and prompts. For example, we could try to
-determine if simpler alternatives or small local models would perform
-just as well.</p>
+with the <code><a href="../reference/send_claude_batch.html">send_claude_batch()</a></code>, given its strong performance
+and manual validation on unseen data and that scaling up to the data
+would cost less than 3$. However, to illustrate the general principle
+how to find good llm classifiers when you are less sure, we will now use
+the initial ground truth we have built as a base to experiment with
+different models and prompts. For example, we could try to determine if
+simpler alternatives or small local models would perform just as
+well.</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="optimizing-and-testing-the-classifiers">Optimizing and Testing the Classifiers<a class="anchor" aria-label="anchor" href="#optimizing-and-testing-the-classifiers"></a>
+<h2 id="optimizing-and-testing-classifiers">Optimizing and Testing Classifiers<a class="anchor" aria-label="anchor" href="#optimizing-and-testing-classifiers"></a>
 </h2>
-<p>To optimize and experiment with different model configurations, we’ll
-split the dataset into training and test sets using <code>rsample</code>
-to ensure that we can experiment with different prompts and setups on
-training data but only evaluate our final model performance on unseen
-data.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<p>Next, we present a general approach to optimize and test different
+LLM-based classifiers. First, we split the dataset into training and
+test sets using <code>rsample</code> to ensure that we can experiment
+with different prompts and setups on training data but only evaluate our
+final model performance on unseen data.</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ground_truth</span> <span class="op">&lt;-</span> <span class="fu">readxl</span><span class="fu">:::</span><span class="fu"><a href="https://readxl.tidyverse.org/reference/read_excel.html" class="external-link">read_xlsx</a></span><span class="op">(</span><span class="st">"ground_truth_corrected.xlsx"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Split the ground-truth into training and testing sets</span></span>
@@ -446,14 +473,17 @@ data.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> Group fitness instructor       39 Personal Care and Service Occupations       </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 304 more rows</span></span></span></code></pre></div>
 <div class="section level3">
-<h3 id="modifying-the-classifier-function">Modifying the Classifier Function<a class="anchor" aria-label="anchor" href="#modifying-the-classifier-function"></a>
+<h3 id="writing-a-flexible-classifier-function">Writing a flexible classifier function<a class="anchor" aria-label="anchor" href="#writing-a-flexible-classifier-function"></a>
 </h3>
-<p>To test different prompts and models systematically we need to allow
-for a more flexible classifier function that can handle different
-prompts or models. For this we take the prompt-building logic out of the
-function and allow for different api-functions and models as function
-arguments:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<p>To test different prompts and models systematically we need to create
+a flexible classifier function that can handle different prompts or
+models that can work with any api-function including local models that
+do not support batch requests. This function can take the open
+occupation, our ground-truth for <code>occ2</code> a <code>prompt</code>
+and <code>prompt_id</code>, a <code>api_function</code> and a
+<code>model</code> as arguements allowing us to test each occupation
+classification across a grid of prompts and models.</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># External numerical code list for reusability</span></span>
 <span><span class="va">numerical_code_list</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'</span></span>
 <span><span class="st">      11 = Management Occupations                                    </span></span>
@@ -509,9 +539,9 @@ arguments:</p>
 <div class="section level3">
 <h3 id="defining-the-prompt-and-model-grid">Defining the Prompt and Model Grid<a class="anchor" aria-label="anchor" href="#defining-the-prompt-and-model-grid"></a>
 </h3>
-<p>We’ll define a set of prompts and models that we want to test. This
-will allow us to apply the classifier across different configurations
-and compare results. Here’s how the prompts and models are set up:</p>
+<p>We define a set of prompts and models that we want to test. This will
+allow us to apply the classifier across different configurations and
+compare results. Here’s how the prompts and models are set up:</p>
 <ol style="list-style-type: decimal">
 <li><strong>Prompts:</strong></li>
 </ol>
@@ -546,7 +576,7 @@ Lama3.2 and is therefore somewhat slower.</li>
 <code><a href="https://tidyr.tidyverse.org/reference/expand_grid.html" class="external-link">expand_grid()</a></code> function from the tidyverse is a useful tool
 here to create every possible combination of prompts and models, which
 we will use to evaluate the classifier:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">prompts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>prompt <span class="op">=</span> </span>
 <span>         <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span> <span class="co">#Original prompt</span></span>
 <span>            <span class="st">'Classify this occupation response from a survey: {occupation}</span></span>
@@ -575,7 +605,7 @@ we will use to evaluate the classifier:</p>
 <span>                    model <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"llama3.2"</span>, <span class="st">"gemma2"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html" class="external-link">arrange</a></span><span class="op">(</span><span class="va">model</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span> <span class="co"># Arrange by model so ollama does not reload them often</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/rename.html" class="external-link">rename</a></span><span class="op">(</span>occupation <span class="op">=</span> <span class="va">occupation_open</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/rowwise.html" class="external-link">rowwise</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span>  <span class="co"># Glue together prompts and occupation row-by-row</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/rowwise.html" class="external-link">rowwise</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span>  <span class="co"># Glue together prompts and occupation row-by-row</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>prompt <span class="op">=</span> <span class="fu"><a href="https://glue.tidyverse.org/reference/glue.html" class="external-link">glue</a></span><span class="op">(</span><span class="va">prompt</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">ungroup</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="co"># Ungroup after the rowwise operation</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">model</span>,<span class="va">occupation</span>,<span class="va">occ2</span>,<span class="va">prompt_id</span>,<span class="va">prompt</span><span class="op">)</span></span>
@@ -588,8 +618,8 @@ iterate over multiple arguments simultaneously. Each combination of
 occupation response, prompt, and model is passed into the
 <code>classify_occupation()</code> function, and the results are
 concatenated into a single tibble:</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">grid_results</span> <span class="op">&lt;-</span> <span class="va">grid</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">grid_results</span> <span class="op">&lt;-</span> <span class="va">grid</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://purrr.tidyverse.org/reference/map_dfr.html" class="external-link">pmap_dfr</a></span><span class="op">(</span><span class="va">classify_occupation_grid</span>,</span>
 <span>           api_function <span class="op">=</span> <span class="va">ollama</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; Classifying: gemma2 - 1 - Computer network technician</span></span>
@@ -616,7 +646,7 @@ models and parameters as much as we want and see what works here.</p>
 <p>We will create an overview of prediction accuracy overview using the
 <code>yardstick</code> package. For many functions we use, we also need
 to encode the ground truth and the model predictions as factors:</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/tidymodels/yardstick" class="external-link">yardstick</a></span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Attaching package: 'yardstick'</span></span>
@@ -631,19 +661,19 @@ to encode the ground truth and the model predictions as factors:</p>
 <span>                        labels<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">occ_codes</span><span class="op">$</span><span class="va">occ_title</span>,<span class="st">"APIFAIL"</span>,<span class="st">"INVALID"</span>,<span class="st">"MISSING"</span><span class="op">)</span></span>
 <span>                <span class="op">)</span><span class="op">)</span><span class="op">)</span> </span></code></pre></div>
 <p>First we just just calculate and plot the model accuracy:</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">accuracy</span> <span class="op">&lt;-</span> <span class="va">gr_factors</span>  <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">prompt_id</span>, <span class="va">model</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://yardstick.tidymodels.org/reference/accuracy.html" class="external-link">accuracy</a></span><span class="op">(</span>truth <span class="op">=</span> <span class="va">occ2_truth</span>, estimate <span class="op">=</span> <span class="va">occ2_predict</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">accuracy</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span><span class="va">accuracy</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">as.factor</a></span><span class="op">(</span><span class="va">prompt_id</span><span class="op">)</span>, y <span class="op">=</span> <span class="va">.estimate</span>, fill <span class="op">=</span> <span class="va">model</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_bar.html" class="external-link">geom_bar</a></span><span class="op">(</span>stat <span class="op">=</span> <span class="st">"identity"</span>, position <span class="op">=</span> <span class="st">"dodge"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Accuracy by Prompt and Model"</span>, x <span class="op">=</span> <span class="st">"Prompt ID"</span>, y <span class="op">=</span> <span class="st">"Accuracy"</span>, fill<span class="op">=</span><span class="st">""</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_bw</a></span><span class="op">(</span><span class="fl">22</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_continuous.html" class="external-link">scale_y_continuous</a></span><span class="op">(</span>labels <span class="op">=</span> <span class="fu">scales</span><span class="fu">::</span><span class="fu"><a href="https://scales.r-lib.org/reference/label_percent.html" class="external-link">label_percent</a></span><span class="op">(</span><span class="op">)</span>,limits <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_brewer.html" class="external-link">scale_fill_brewer</a></span><span class="op">(</span>palette <span class="op">=</span> <span class="st">"Set1"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="tidyllm_classifiers_files/figure-html/accuracy-1.png" width="1536"></p>
+<p><img src="tidyllm_classifiers_files/figure-html/accuracy-1.png" alt="Bar plot showing accuracy by prompt ID and model." width="1536"></p>
 <p>Here are the main insights of our classification experiment:</p>
 <ul>
 <li>
@@ -661,7 +691,7 @@ variations with far greater ease.</li>
 <p>Let’s look at the confusion matrix for the top
 <strong>gemma2</strong> performance to see whether any specific
 occupation category causes problems here:</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">conf_mat</span> <span class="op">&lt;-</span> <span class="va">gr_factors</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">prompt_id</span> <span class="op">==</span> <span class="fl">1</span>, <span class="va">model</span> <span class="op">==</span> <span class="st">"gemma2"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://yardstick.tidymodels.org/reference/conf_mat.html" class="external-link">conf_mat</a></span><span class="op">(</span>truth <span class="op">=</span> <span class="va">occ2_truth</span>, estimate <span class="op">=</span> <span class="va">occ2_predict</span><span class="op">)</span></span>
@@ -674,34 +704,12 @@ occupation category causes problems here:</p>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>axis.text.x <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_text</a></span><span class="op">(</span>angle <span class="op">=</span> <span class="fl">45</span>, hjust <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Scale for <span style="color: #00BB00;">fill</span> is already present.</span></span>
 <span><span class="co">#&gt; Adding another scale for <span style="color: #00BB00;">fill</span>, which will replace the existing scale.</span></span></code></pre></div>
-<p><img src="tidyllm_classifiers_files/figure-html/confmatrix-1.png" width="1536">
+<p><img src="tidyllm_classifiers_files/figure-html/confmatrix-1.png" alt="A plot of a confusion matrix for the occupation classification in the main tested model." width="1536">
 A lot of the miss-classifications are in management occupations and
 office services, missing occupations are again not classified well, but
 classified into other occupations. So nothing that seems like an
-immediate easy fix.</p>
-<p>Another thing worth trying are cheap, simple and fast chatgpt-4o mini
-models. Let’s try it on the initial prompt</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">chatgpt_grid</span> <span class="op">&lt;-</span> <span class="va">grid</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">model</span><span class="op">==</span><span class="st">"gemma2"</span>, <span class="va">prompt_id</span> <span class="op">==</span><span class="fl">1</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>model<span class="op">=</span><span class="st">"gpt-4o-mini"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://purrr.tidyverse.org/reference/map_dfr.html" class="external-link">pmap_dfr</a></span><span class="op">(</span><span class="va">classify_occupation_grid</span>,</span>
-<span>           api_function <span class="op">=</span> <span class="va">openai</span><span class="op">)</span> </span>
-<span></span>
-<span><span class="va">chatgpt_grid</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/across.html" class="external-link">across</a></span><span class="op">(</span><span class="fu"><a href="https://tidyselect.r-lib.org/reference/starts_with.html" class="external-link">starts_with</a></span><span class="op">(</span><span class="st">"occ2_"</span><span class="op">)</span>,</span>
-<span>                <span class="op">~</span><span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">.x</span>,</span>
-<span>                        levels<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">occ_codes</span><span class="op">$</span><span class="va">occ2</span>,<span class="fl">97</span>, <span class="fl">98</span>,<span class="fl">99</span><span class="op">)</span>,</span>
-<span>                        labels<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">occ_codes</span><span class="op">$</span><span class="va">occ_title</span>,<span class="st">"APIFAIL"</span>,<span class="st">"INVALID"</span>,<span class="st">"MISSING"</span><span class="op">)</span></span>
-<span>                <span class="op">)</span><span class="op">)</span><span class="op">)</span>  <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://yardstick.tidymodels.org/reference/accuracy.html" class="external-link">accuracy</a></span><span class="op">(</span>truth <span class="op">=</span> <span class="va">occ2_truth</span>, estimate <span class="op">=</span> <span class="va">occ2_predict</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 3</span></span></span>
-<span><span class="co">#&gt;   .metric  .estimator .estimate</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> accuracy multiclass     0.767</span></span></code></pre>
-<p>Still worse accuracy than Claude Sonnet and not much better than
-<strong>gemma2</strong>. But there is another trick that goes beyond
-simple one-shot classification. A common idea is to use multi-shot
+immediate easy fix. There are other tricks that goes beyond simple
+one-shot classification. A common idea is to use multi-shot
 classifications (and give the model classification examples in the
 prompt, or even guide its output by letting it complete conversations
 where it answers the right way). The function
@@ -722,7 +730,7 @@ answer to the first message. This is easily doable with the
 message-chaining abilities of <strong>tidyllm</strong></p>
 <p>Here is a modified chain of thought prompting function with a
 reasoning and an output step:</p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">classify_occupation_cot</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">occupation</span>,</span>
 <span>                                    <span class="va">occ2</span>,</span>
 <span>                                    <span class="va">api_function</span>,</span>
@@ -803,7 +811,7 @@ to first test the function and the prompting on single inputs before we
 scale it up to the whole data.</p>
 </blockquote>
 <p>Let’s run this function with <strong>gemma2</strong>:</p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">results_cot</span> <span class="op">&lt;-</span> <span class="va">grid</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">model</span><span class="op">==</span><span class="st">"gemma2"</span>, <span class="va">prompt_id</span> <span class="op">==</span><span class="fl">1</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="op">-</span><span class="va">prompt</span>,<span class="op">-</span><span class="va">prompt_id</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -813,13 +821,13 @@ scale it up to the whole data.</p>
 <span><span class="co">#&gt; Classifying with CoT: gemma2 - 3 - Fine Carpentry</span></span>
 <span><span class="co">#&gt; Classifying with CoT: ...</span></span></code></pre>
 <p>Did this work. It turns out in this case it did not!</p>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">results_cot</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">results_cot</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/across.html" class="external-link">across</a></span><span class="op">(</span><span class="fu"><a href="https://tidyselect.r-lib.org/reference/starts_with.html" class="external-link">starts_with</a></span><span class="op">(</span><span class="st">"occ2_"</span><span class="op">)</span>,</span>
 <span>                <span class="op">~</span><span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">.x</span>,</span>
 <span>                        levels<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">occ_codes</span><span class="op">$</span><span class="va">occ2</span>,<span class="fl">97</span>, <span class="fl">98</span>,<span class="fl">99</span><span class="op">)</span>,</span>
 <span>                        labels<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">occ_codes</span><span class="op">$</span><span class="va">occ_title</span>,<span class="st">"APIFAIL"</span>,<span class="st">"INVALID"</span>,<span class="st">"MISSING"</span><span class="op">)</span></span>
-<span>                <span class="op">)</span><span class="op">)</span><span class="op">)</span>  <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>                <span class="op">)</span><span class="op">)</span><span class="op">)</span>  <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://yardstick.tidymodels.org/reference/accuracy.html" class="external-link">accuracy</a></span><span class="op">(</span>truth <span class="op">=</span> <span class="va">occ2_truth</span>, estimate <span class="op">=</span> <span class="va">occ2_predict</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 3</span></span></span>
 <span><span class="co">#&gt;   .metric  .estimator .estimate</span></span>
@@ -830,39 +838,28 @@ interesting thing though is that the model has the right classification
 in one of its candidates in the reasoning step for 94% of the cases. So
 probably, there is still some way to get a better final result out of
 <strong>gemma2</strong>:</p>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">results_cot</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/rowwise.html" class="external-link">rowwise</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">results_cot</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/rowwise.html" class="external-link">rowwise</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>reasoning_classifications <span class="op">=</span> <span class="fu"><a href="https://stringr.tidyverse.org/reference/str_extract.html" class="external-link">str_extract_all</a></span><span class="op">(</span><span class="va">reasoning</span>,<span class="st">"\\d{2}"</span><span class="op">)</span>,</span>
 <span>         reasoning_classifications <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map_int</a></span><span class="op">(</span><span class="va">reasoning_classifications</span>, <span class="va">as.integer</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>         right_in_reasoning <span class="op">=</span> <span class="va">occ2_truth</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">reasoning_classifications</span></span>
-<span>         <span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">ungroup</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/count.html" class="external-link">count</a></span><span class="op">(</span><span class="va">right_in_reasoning</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>         <span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">ungroup</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/count.html" class="external-link">count</a></span><span class="op">(</span><span class="va">right_in_reasoning</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>pct<span class="op">=</span><span class="va">n</span><span class="op">/</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 3</span></span></span>
 <span><span class="co">#&gt;   right_in_reasoning     n    pct</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>              <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> FALSE                 19 0.061<span style="text-decoration: underline;">5</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> TRUE                 290 0.939</span></span></code></pre></div>
-<p>In our specific case we already have a clear favorite final choice
+<p>In our specific case we already had a clear favorite final choice
 without even needing to do further testing, because we already know test
 performance for Claude Sonnet 3.5, since we manually checked it. So no
-further check of prompt or models on the test data is needed here.</p>
+further check of prompt or models on the test data is needed here. We
+can just run our entire sample through
+<code>claude_send_batch()</code></p>
 </div>
-</div>
-<div class="section level2">
-<h2 id="scaling-up-to-the-full-dataset">Scaling Up to the Full Dataset<a class="anchor" aria-label="anchor" href="#scaling-up-to-the-full-dataset"></a>
-</h2>
-<p>The only question is how to best scale up the original classification
-to all data.</p>
-<p>Here we choose Claude 3.5 sonnet, our original prompt and apply it to
-our data-set:</p>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">full_occupations_classified</span> <span class="op">&lt;-</span> <span class="va">distinct_occupations</span><span class="op">$</span><span class="va">occupation</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://purrr.tidyverse.org/reference/map_dfr.html" class="external-link">map_dfr</a></span><span class="op">(</span><span class="va">classify_occupation</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">occ_data</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html" class="external-link">left_join</a></span><span class="op">(</span><span class="va">full_occupations_classified</span>, by<span class="op">=</span><span class="st">"occupation_open"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="conclusion">Conclusion<a class="anchor" aria-label="anchor" href="#conclusion"></a>

@@ -15,7 +15,7 @@ get_reply <- function(.llm, .index = NULL) {
   ))
   
   # Retrieve assistant replies
-  assistant_replies <- Filter(function(x) x$role == "assistant", .llm$message_history)
+  assistant_replies <-  filter_roles(.llm$message_history,"assistant")
   
   # Check if any assistant replies are available
   if (length(assistant_replies) == 0) {
@@ -59,8 +59,8 @@ get_reply_data <- function(.llm, .index = NULL) {
   ))
   
   # Retrieve assistant replies with JSON flag
-  assistant_replies <- Filter(function(x) x$role == "assistant", .llm$message_history)
-  
+  assistant_replies <-  filter_roles(.llm$message_history,"assistant")
+
   # Check if any assistant replies are available
   if (length(assistant_replies) == 0) {
     warning("No assistant replies available in the message history.")
@@ -122,7 +122,7 @@ get_user_message <- function(.llm, .index = NULL) {
   ) |> validate_inputs()
   
   # Filter to get all user messages
-  user_messages <- Filter(function(x) x$role == "user", .llm$message_history)
+  user_messages <- filter_roles(.llm$message_history,"user")
   
   # Return NULL if there are no user messages
   if (length(user_messages) == 0) {

@@ -4,6 +4,7 @@
 #' @param .api The API identifier (e.g., "claude", "openai").
 #' @param .stream Stream the response if TRUE.
 #' @param .timeout Request timeout in seconds.
+#' @param .max_tries Maximum retry attempts for requests (default: 3).
 #' @param .parse_response_fn A function to parse the assistant's reply.
 #' @param .dry_run If TRUE, perform a dry run and return the request object.
 #'

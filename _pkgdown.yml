@@ -27,7 +27,16 @@ reference:
       - ollama
       - azure_openai
       - chatgpt # Deprecated, use openai instead
-
+      
+  - title: "Bacth Request API Functions"
+    contents:
+    - send_claude_batch
+    - check_claude_batch
+    - fetch_claude_batch
+    - list_claude_batches
+    - send_openai_batch
+    - check_openai_batch
+    - list_openai_batches
 
   - title: "Embedding API Functions"
     contents:

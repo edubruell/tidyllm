@@ -15,8 +15,11 @@
 <url><loc>https://edubruell.github.io/tidyllm/reference/LLMMessage.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/azure_openai.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/chatgpt.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/check_claude_batch.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/check_openai_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/claude.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/df_llm_message.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/fetch_claude_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/generate_callback_function.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/get_reply.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/get_reply_data.html</loc></url>
@@ -28,6 +31,8 @@
 <url><loc>https://edubruell.github.io/tidyllm/reference/last_reply.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/last_reply_data.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/last_user_message.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/list_claude_batches.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/list_openai_batches.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/llm_message.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/mistral.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/mistral_embedding.html</loc></url>
@@ -42,6 +47,8 @@
 <url><loc>https://edubruell.github.io/tidyllm/reference/perform_api_request.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/rate_limit_info.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/ratelimit_from_header.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/send_claude_batch.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/send_openai_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/tidyllm-package.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/tidyllm_schema.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/update_rate_limit.html</loc></url>

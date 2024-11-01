@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.10</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.11</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -38,7 +38,14 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.1.10" id="version-0110-current-development-version">Version 0.1.10 (Current Development Version)<a class="anchor" aria-label="anchor" href="#version-0110-current-development-version"></a></h2>
+<h2 class="pkg-version" data-toc-text="0.1.11" id="version-0111-current-development-version">Version 0.1.11 (Current Development Version)<a class="anchor" aria-label="anchor" href="#version-0111-current-development-version"></a></h2>
+<div class="section level3">
+<h3 id="major-features-0-1-11">Major Features<a class="anchor" aria-label="anchor" href="#major-features-0-1-11"></a></h3>
+<ul><li>Support for both the Anthropic and the OpenAI batch request API</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.1.10" id="version-0110">Version 0.1.10<a class="anchor" aria-label="anchor" href="#version-0110"></a></h2>
 <div class="section level3">
 <h3 id="breaking-changes-0-1-10">Breaking Changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-1-10"></a></h3>
 <ul><li><p><code><a href="../reference/get_reply.html">get_reply()</a></code> was split into two type-stable functions: <code><a href="../reference/get_reply.html">get_reply()</a></code> for text and <code><a href="../reference/get_reply_data.html">get_reply_data()</a></code> for structured outputs.</p></li>
@@ -97,7 +104,7 @@
 <div class="section level3">
 <h3 id="major-features-0-1-7">Major Features<a class="anchor" aria-label="anchor" href="#major-features-0-1-7"></a></h3>
 <ul><li>
-<strong>PDF Page Batch Processing</strong>: Introduced the <code><a href="../reference/pdf_page_batch.html">pdf_page_batch()</a></code> function, which processes PDF files page by page, extracting text and converting each page into an image, allowing for a general prompt or page-specific prompts. The function generates a list of <code>LLMMessage</code> objects that can each be sent to an API.</li>
+<strong>PDF Page Batch Processing</strong>: Introduced the <code><a href="../reference/pdf_page_batch.html">pdf_page_batch()</a></code> function, which processes PDF files page by page, extracting text and converting each page into an image, allowing for a general prompt or page-specific prompts. The function generates a list of <code>LLMMessage</code> objects that can be sent to an API and work with the batch-API functions in <strong>tidyllm</strong>.</li>
 </ul><hr></div>
 </div>
     <div class="section level2">
@@ -125,8 +132,6 @@
 <div class="section level3">
 <h3 id="improvements-0-1-5">Improvements<a class="anchor" aria-label="anchor" href="#improvements-0-1-5"></a></h3>
 <ul><li>
-<strong>PDF Page Processing</strong>: Introduced the <code><a href="../reference/pdf_page_batch.html">pdf_page_batch()</a></code> function to process PDFs page by page, allowing for both general and page-specific prompts.</li>
-<li>
 <strong>Easier Troubleshooting in API-function</strong>: All API functions now support the <code>.dry_run</code> argument, allowing users to generate an <code>httr2</code>-request for easier debugging and inspection.</li>
 <li>
 <strong>API Function Tests:</strong> Implemented <code>httptest2</code>-based tests with mock responses for all API functions, covering both basic functionality and rate-limiting.</li>

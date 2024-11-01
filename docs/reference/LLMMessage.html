@@ -9,7 +9,7 @@ Large Language Model Message Class"><meta property="og:image" content="https://e
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.10</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.11</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -155,7 +155,11 @@ Convert to API format</p>
 
 <div class="section">
 <h4 id="usage-3">Usage<a class="anchor" aria-label="anchor" href="#usage-3"></a></h4>
-<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">LLMMessage</span><span class="op">$</span><span class="fu">to_api_format</span><span class="op">(</span><span class="va">api_type</span>, cgpt_image_detail <span class="op">=</span> <span class="st">"auto"</span><span class="op">)</span></span></code></pre></div><p></p></div>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">LLMMessage</span><span class="op">$</span><span class="fu">to_api_format</span><span class="op">(</span></span>
+<span>  <span class="va">api_type</span>,</span>
+<span>  cgpt_image_detail <span class="op">=</span> <span class="st">"auto"</span>,</span>
+<span>  no_system <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div>
 
 <div class="section">
@@ -166,6 +170,10 @@ Convert to API format</p>
 
 <dt><code>cgpt_image_detail</code></dt>
 <dd><p>Specific option for ChatGPT API (imagedetail - set to auto)</p></dd>
+
+
+<dt><code>no_system</code></dt>
+<dd><p>Without system prompt (default: FALSE)</p></dd>
 
 
 </dl><p></p></div>

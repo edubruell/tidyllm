@@ -32,6 +32,8 @@ groq_transcribe(
 \item{.dry_run}{Logical; if TRUE, performs a dry run and returns the request object without making the API call (default: FALSE).}
 
 \item{.verbose}{Logical; if TRUE, rate limiting info is displayed after the API request (default: FALSE).}
+
+\item{.max_tries}{Maximum retries to peform request}
 }
 \value{
 A character vector containing the transcription.

@@ -53,8 +53,8 @@ mistral <- function(.llm,
   ) |>
     validate_inputs()
   
-  # Mistral and groq have the same API format for messages!
-  mistral_messages <- .llm$to_api_format("groq")
+  # Mistral and groq have the same  OpenAI without a system prompt format
+  mistral_messages <- .llm$to_api_format("openai",no_system=TRUE)
   
   #set options
   mistral_request_body <- list(
@@ -102,7 +102,7 @@ mistral <- function(.llm,
     .parse_response_fn = function(body_json) {
       if(body_json$object=="error"){
         sprintf("Mistral API returned an Error (code: %s)\nMessage: %s",
-                body_json$code,
+                body_json$type,
                 body_json$message) |>
           stop()
       }

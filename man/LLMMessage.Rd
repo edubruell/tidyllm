@@ -107,7 +107,11 @@ Converts the message history to a format suitable for various API calls.}
 \if{latex}{\out{\hypertarget{method-LLMMessage-to_api_format}{}}}
 \subsection{Method \code{to_api_format()}}{
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{LLMMessage$to_api_format(api_type, cgpt_image_detail = "auto")}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{LLMMessage$to_api_format(
+  api_type,
+  cgpt_image_detail = "auto",
+  no_system = FALSE
+)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -116,6 +120,8 @@ Converts the message history to a format suitable for various API calls.}
 \item{\code{api_type}}{The type of API (e.g., "claude","groq","openai").}
 
 \item{\code{cgpt_image_detail}}{Specific option for ChatGPT API (imagedetail - set to auto)}
+
+\item{\code{no_system}}{Without system prompt (default: FALSE)}
 }
 \if{html}{\out{</div>}}
 }

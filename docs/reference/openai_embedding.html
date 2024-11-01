@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.10</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.11</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -50,8 +50,7 @@
 <span>  .truncate <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  .timeout <span class="op">=</span> <span class="fl">120</span>,</span>
 <span>  .dry_run <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  .min_tokens_reset <span class="op">=</span> <span class="fl">0L</span>,</span>
-<span>  .wait <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  .max_tries <span class="op">=</span> <span class="fl">3</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -79,12 +78,8 @@
 <dd><p>If TRUE, perform a dry run and return the request object.</p></dd>
 
 
-<dt id="arg--min-tokens-reset">.min_tokens_reset<a class="anchor" aria-label="anchor" href="#arg--min-tokens-reset"></a></dt>
-<dd><p>Integer specifying the minimum token threshold before waiting for reset.</p></dd>
-
-
-<dt id="arg--wait">.wait<a class="anchor" aria-label="anchor" href="#arg--wait"></a></dt>
-<dd><p>Logical; if TRUE, respects rate limits by waiting when necessary (default: TRUE).</p></dd>
+<dt id="arg--max-tries">.max_tries<a class="anchor" aria-label="anchor" href="#arg--max-tries"></a></dt>
+<dd><p>Maximum retry attempts for requests (default: 3).</p></dd>
 
 </dl></div>
     <div class="section level2">

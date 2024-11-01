@@ -40,3 +40,14 @@ validate_inputs <- function(.predicates) {
   })
 }
 
+# Helper function to filter mmessages by roles
+#'
+#' @param .message_hisotry A message history in the format used within LLMMessage
+#' @param .roles A vector of roles (default: `c("user", "assistant")`)
+#' @return A filtered message_history
+#' @noRd
+filter_roles = function(.message_history,
+                        .roles = c("user", "assistant")) {
+  Filter(function(x) "role" %in% names(x) && x$role %in% .roles, .message_history)
+}
+

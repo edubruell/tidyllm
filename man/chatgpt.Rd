@@ -16,9 +16,7 @@ chatgpt(
   .api_url = "https://api.openai.com/",
   .timeout = 60,
   .verbose = FALSE,
-  .wait = TRUE,
   .json = FALSE,
-  .min_tokens_reset = 0L,
   .stream = FALSE,
   .dry_run = FALSE
 )
@@ -49,11 +47,7 @@ OpenAI API endpoint.}
 
 \item{.verbose}{Will print additional information about the request (default: false)}
 
-\item{.wait}{Logical, if \code{TRUE}, will wait for rate limits to reset (default: true)}
-
 \item{.json}{Should json-mode be used? (detault: false)}
-
-\item{.min_tokens_reset}{An integer specifying the minimum tokens before a rate limit reset is taken into account.}
 
 \item{.stream}{Should the response  be processed as a stream (default: false)}
 

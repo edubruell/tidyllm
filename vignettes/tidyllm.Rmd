@@ -228,10 +228,19 @@ conversation |> get_reply()
 conversation |> last_reply()
 ```
 
-
 ### Working with structured model outputs
 
-Currently, `openai()` is the only API function in **tidyllm** that supports enforcing a pre-specified schema for replies. By specifying a schema in the `.json_schema` argument, you ensure structured responses in a defined format:
+Currently, `openai()` is the only API function in **tidyllm** that supports enforcing a pre-specified schema for replies. By specifying a schema in the `.json_schema` argument of `openai()`, you ensure structured responses in a defined format.
+
+The `tidyllm_schema()` function is a helper for defining schemas and translating them to the [JSON-schema format](https://json-schema.org/) that the API needs. It disallows nested structures and ensures flat, predictable JSON outputs. It works with the following syntax:
+
+- **`name`**: A name identifier for the schema (which is needed by the API).
+- **`...` (fields)**: Named arguments representing field names and their data types.
+  - `"character"` or `"string"`: Text fields.
+  - `"factor(...)"`: Enumerations with allowable values, like `factor(Germany, France)`.
+  - `"logical"`: `TRUE` or `FALSE`
+  - `"numeric"`: Numbers.
+  - `"type[]"`: Lists of a given type, such as `"character[]"`.
 
 ```{r schema,  eval=FALSE, echo=TRUE}
 address_schema <- tidyllm_schema(
@@ -245,18 +254,24 @@ address_schema <- tidyllm_schema(
 )
 address <- llm_message("Imagine an address in JSON format that matches the schema.") |>
         openai(.json_schema = address_schema)
+address
+```
+```{r schema_out,  eval=TRUE, echo=FALSE}
+address_base <- llm_message("Imagine an address in JSON format that matches the schema.") 
+address <- address_base$add_message(role = "assistant",
+                           content = '{"street":"Hauptstraße","houseNumber":123,"postcode":"10115","city":"Berlin","region":"Berlin","country":"Germany"}',
+                           media = NULL,
+                           json = TRUE) 
+
+address
 ```
 
-The `tidyllm_schema()` function is a helper for defining JSON schemas. It disallows nested structures and ensures flat, predictable JSON outputs. It works with the following syntax:
+Note that the model answered with a text in **JSON** ([JavaScript Object Notation](https://de.wikipedia.org/wiki/JavaScript_Object_Notation)) format. This is a lightweight, text-based format that is commonly used for transmitting data between a server and web application. The JSON response consists of key-value pairs, that can easily be converted to an R list with the `get_reply_data()` function:
+```{r get_reply_data}
+address |> get_reply_data() |> str()
+```
 
-- **`name`**: A name identifier for the schema.
-- **`...` (fields)**: Named arguments representing field names and their data types.
-  - `"character"` or `"string"`: Text fields.
-  - `"factor(...)"`: Enumerations with allowable values, like `factor(Germany, France)`.
-  - `"logical"`: `TRUE` or `FALSE`
-  - `"numeric"`: Numbers.
-  - `"type[]"`: Lists of a given type, such as `"character[]"`.
-
+The `ollama()`, `groq()`, and `mistral()` functions also support structured outputs via a simpler JSON-mode, accessible through the `.json` argument. Since these APIs currently lack native schema enforcement, you’ll need to specify the desired JSON format directly in the prompt. Although `get_reply_data()` can extract structured data from these replies, the model may not fully adhere to the specified output format. **tidyllm** will integrate schema functionality for these APIs once they support it natively.
 
 ### API parameters
 
@@ -290,6 +305,55 @@ Different API functions support different model parameters like  how determinist
 
 Embedding models in **tidyllm** transform textual inputs into vector representations, capturing semantic information that can enhance similarity comparisons, clustering, and retrieval tasks. You can generate embeddings using functions like `openai_embedding()`, `mistral_embedding()`, and `ollama_embedding()` which each interface with their respective APIs. These functions create vector representations for texts.  These functions return vector representations either for each message in a message history or, more typically for this application, for each entry in a character vector. 
 
+### Batch requests
+
+> ⚠️ **Note:** The batch functions for the OpenAI API are a work in progress. `fetch_openai_batch()` is no yet ready in the current version.
+
+Anthropic and OpenAI, offer batch request options that are around 50% cheaper than standard single-interaction APIs. Batch processing allows you to submit multiple message histories at once, which are then processed together, usually within a 24-hour period. In tidyllm, you can use the `send_claude_batch()` or `send_openai_batch()` functions to submit these batch requests.
+
+Here’s an example of how to send a batch request to Claude’s batch API:
+
+```{r, eval=FALSE}
+#Create a message batch and save it to disk to fetch it later
+glue("Write a poem about {x}", x=c("cats","dogs","hamsters")) |>
+  purrr::map(llm_message) |>
+  send_claude_batch() |>
+  saveRDS("claude_batch.rds")
+```
+The `send_claude_batch()` function returns the same list of message histories that was input, but marked with an attribute that contains a batch-id from the Claude API as well as unique names for each list element that can be used to stitch together messages with replies, once they are ready.  If you provide a named list of messages, tidyllm will use these names as identifiers in the batch, if these names are unique.
+
+**Tip:** Saving batch requests to a file allows you to persist them across R sessions, making it easier to manage large jobs and access results later.
+
+```{r, eval=FALSE}
+#Create a message batch and save it to disk to fetch it later
+glue("Write a poem about {x}", x=c("cats","dogs","hamsters")) |>
+  purrr::map(llm_message) |>
+  send_claude_batch() |>
+  saveRDS("claude_batch.rds")
+```
+After sending a batch request, you can check its status with `check_openai_batch()` or `check_claude_batch()` . For example:
+```{r, eval=FALSE}
+#Check the status of the batch
+readRDS("claude_batch.rds") |>
+   check_claude_batch()
+```
+```{r, echo=FALSE}
+tribble(
+  ~batch_id,                         ~status, ~created_at,           ~expires_at,           ~req_succeeded, ~req_errored, ~req_expired, ~req_canceled,
+  "msgbatch_02A1B2C3D4E5F6G7H8I9J",  "ended", as.POSIXct("2024-11-01 10:30:00"), as.POSIXct("2024-11-02 10:30:00"), 3, 0, 0, 0
+)
+```
+The status output shows details such as the number of successful, errored, expired, and canceled requests in the batch, as well as the current status.
+Once the processing of a batch is completed you can fetch its results with `fetch_claude_batch()` or `fetch_openai_batch()`:
+
+```{r eval=FALSE}
+conversations <- readRDS("claude_batch.rds") |>
+  fetch_claude_batch()
+
+poems <- map_chr(conversations, get_reply)
+```
+The output is a list of message histories, each now updated with new assistant replies. You can further process these responses with **tidyllm's** standard tools.Before launching a large batch operation, it’s good practice to run a few test requests and review outputs. This approach helps confirm that prompt settings and model configurations produce the desired responses, minimizing potential errors or resource waste.
+
 ### Streaming back responses (Experimental)
 
 All chat API-functions support real-time streaming of reply tokens to the console while the model works with the `.stream=TRUE` argument.  While this feature offers slightly better feedback on model behavior in real-time, it’s not particularly useful for data-analysis workflows. We consider this feature experimental and recommend using non-streaming responses for production tasks. Note that error handling in streaming callbacks varies by API and differs in quality at this time.
@@ -298,13 +362,14 @@ All chat API-functions support real-time streaming of reply tokens to the consol
 
 tidyllm supports multiple APIs, each offering distinct large language models with varying strengths. The choice of which model or API to use often depends on the specific task, cost considerations, and data privacy concerns.
 
-1. **`claude()` (Anthropic API):** [Claude](https://docs.anthropic.com/en/docs/welcome) is known for generating thoughtful, nuanced responses, making it ideal for tasks that require more human-like reasoning, such as summarization or creative writing. Claude Sonnet 3.5 currently is one of the top-performing models on many benchmarks. However, it can sometimes be more verbose than necessary, and it lacks direct JSON support, which requires additional prompting and validation to ensure structured output. 
+1. **`claude()` - Anthropic API:** [Claude](https://docs.anthropic.com/en/docs/welcome) is known for generating thoughtful, nuanced responses, making it ideal for tasks that require more human-like reasoning, such as summarization or creative writing. Claude Sonnet 3.5 currently is one of the top-performing models on many benchmarks. However, it can sometimes be more verbose than necessary, and it lacks direct JSON support, which requires additional prompting and validation to ensure structured output. 
+
 
 2. **`openai()` (OpenAI API):** Models on the [OpenAI API](https://platform.openai.com/docs/api-reference/chat), particularly the GPT-4o model, are extremely versatile and perform well across a wide range of tasks, including text generation, code completion, and multimodal analysis. In addition the o1-reasoning models offer very good performance for a set of specific task (at a relatively high price). There is also an `azure_openai()` function if you prefer to use the OpenAI API on Microsoft Azure. 
 
 3. **`mistral()` (EU-based):** [Mistral](https://docs.mistral.ai/) offers  lighter-weight, open-source models developed and hosted in the EU, making it particularly appealing if data protection (e.g., GDPR compliance) is a concern. While the models may not be as powerful as GPT-4o or Claude Sonnet, Mistral offers good performance for standard text generation tasks.
 
-4. **`groq()` (Fast):** [Groq](https://console.groq.com/docs/quickstart) offers a unique advantage with its custom AI accelerator hardware, that get you the fastest output available on any API. It delivers high performance at low costs, especially for tasks that require fast execution. It hosts many strong open-source models, like **lamma3:70b**.
+4. **`groq()` (Fast):** [Groq](https://console.groq.com/docs/quickstart) offers a unique advantage with its custom AI accelerator hardware, that get you the fastest output available on any API. It delivers high performance at low costs, especially for tasks that require fast execution. It hosts many strong open-source models, like **lamma3:70b**. There is also a `groq_transcribe()` function available that allows you to transcribe audio files with the Whipser-Large model on the Groq API.
 
 5. **`ollama()` (Local Models):** If data privacy is a priority, running open-source models like **gemma2::9B** locally via [ollama](https://ollama.com/) gives you full control over model execution and data. However, the trade-off is that local models require significant computational resources, and are often not quite as powerful as the large API-providers. The [ollama blog](https://ollama.com/blog) regularly has posts about new models and their advantages that you can download via `ollama_download_model()`.
 

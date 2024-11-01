@@ -65,207 +65,89 @@ LLMMessage <- R6::R6Class(
     #' Converts the message history to a format suitable for various API calls.
     #' @param api_type The type of API (e.g., "claude","groq","openai").
     #' @param cgpt_image_detail Specific option for ChatGPT API (imagedetail - set to auto)
+    #' @param no_system Without system prompt (default: FALSE)
     #' 
     #' @return A message history in the target API format
-    to_api_format = function(api_type,cgpt_image_detail="auto") {
-      switch(api_type,
-             "claude" = {
-               claude_history <- Filter(function(x){
-                 if ("role" %in% names(x)) {
-                   return(x$role %in% c("user","assistant"))
-                 } else {
-                   return(FALSE)
-                 }},self$message_history)
-               
-               lapply(claude_history, function(m){
-                 #The basic text content supplied with the prompt
-                 base_content <- m$content
-                 
-                 #Get the relevant media for the current message
-                 media_list <- m$media
-                 
-                 #Extract the text content in put it into tags that are put before 
-                 #the main text of the prompt
-                 text_media  <- extract_media(media_list,"text")
-                 image_media <- extract_media(media_list,"image")
-                 
-                 
-                 if(length(image_media)>0){
-                   
-                   image_file_type <- paste("image",
-                                            tools::file_ext(image_media[[1]]$filename), 
-                                            sep = "/")
-                   
-                   # Add image content to the user content
-                   output <- list(role = m$role,
-                                  content = list(
-                                    list(type = "image",
-                                         source = list(
-                                           type = "base64",
-                                           media_type = image_file_type,
-                                           data = image_media[[1]]$content
-                                         )),
-                                    list(type = "text", text = paste(base_content,text_media)))
-                   )
-                 } else {
-                   # Text only content
-                   output <- list(role = m$role, 
-                                  content = list(
-                                    list(type = "text", 
-                                         text = paste(base_content,text_media))
-                                  )
-                   )
-                 }
-                 
-                 output
-               }) 
-             },
-             "openai" = {
-               lapply(self$message_history, function(m) {
-                 # The basic text content supplied with the prompt
-                 base_content <- m$content
-                 
-                 # Get the relevant media for the current message
-                 media_list <- m$media
-                 
-                 # Extract the text content and put it into tags that are put before 
-                 # the main text of the prompt
-                 text_media <- extract_media(media_list, "text")
-                 image_media <- extract_media(media_list, "image")
-                 
-                 # Combine text content
-                 combined_text <- paste(base_content, text_media, sep=" ")
-                 
-                 if (length(image_media) > 0) {
-                   # Determine the MIME type based on file extension
-                   image_file_type <- paste("image", tools::file_ext(image_media[[1]]$filename), sep="/")
-                   
-                   # Use the pre-encoded base64 image content
-                   base64_image <- image_media[[1]]$content
-                   
-                   # Add image content to the user content
-                   output <- list(
-                     role = m$role,
-                     content = list(
-                       list(type = "text", text = combined_text),
-                       list(type = "image_url", image_url = list(
-                         url = glue::glue("data:{image_file_type};base64,{base64_image}")
-                       ))
-                     )
-                   )
-                 } else {
-                   # Text-only content
-                   output <- list(
-                     role = m$role,
-                     content = combined_text
-                   )
-                 }
-                 
-                 output
-               })
+    to_api_format = function(api_type, cgpt_image_detail = "auto", no_system = FALSE) {
+        
+        # Helper function within to_api_format
+        format_message <- function(message) {
+          base_content <- message$content
+          media_list <- message$media
+          text_media <- extract_media(media_list, "text")
+          image_media <- extract_media(media_list, "image")
+          
+          combined_text <- paste(base_content, text_media, sep = " ")
+          
+          if (length(image_media) > 0) {
+            image_file_type <- paste("image", tools::file_ext(image_media[[1]]$filename), sep = "/")
+            base64_image <- image_media[[1]]$content
             
-              },
-             "groq" = {
-               groq_history <- Filter(function(x){
-                 if ("role" %in% names(x)) {
-                   return(x$role %in% c("user","assistant"))
-                 } else {
-                   return(FALSE)
-                 }},self$message_history)
-               
-               
-               lapply(groq_history, function(m) {
-                 # The basic text content supplied with the prompt
-                 base_content <- m$content
-                 
-                 # Get the relevant media for the current message
-                 media_list <- m$media
-                 
-                 # Extract the text content and put it into tags that are put before 
-                 # the main text of the prompt
-                 text_media <- extract_media(media_list, "text")
-                 image_media <- extract_media(media_list, "image")
-                 
-                 # Combine text content
-                 combined_text <- paste(base_content, text_media, sep=" ")
-                 
-                 if (length(image_media) > 0) {
-                   # Determine the MIME type based on file extension
-                   image_file_type <- paste("image", tools::file_ext(image_media[[1]]$filename), sep="/")
-                   
-                   # Use the pre-encoded base64 image content
-                   base64_image <- image_media[[1]]$content
-                   
-                   # Add image content to the user content
-                   output <- list(
-                     role = m$role,
-                     content = list(
-                       list(type = "text", text = combined_text),
-                       list(type = "image_url", image_url = list(
-                         url = glue::glue("data:{image_file_type};base64,{base64_image}")
-                       ))
+            list(
+              content = combined_text,
+              image = list(type = "base64", media_type = image_file_type, data = base64_image)
+            )
+          } else {
+            list(content = combined_text)
+          }
+        }
+        
+        # Define specific message histories per API requirements
+        openai_history <- if (no_system) filter_roles(self$message_history, c("user", "assistant")) else self$message_history
+        claude_history <- filter_roles(self$message_history, c("user", "assistant"))
+        
+        # Switch logic for API types
+        switch(api_type,
+               "claude" = {
+                 lapply(claude_history, function(m) {
+                   formatted_message <- format_message(m)
+                   if (!is.null(formatted_message$image)) {
+                     list(role = m$role, content = list(
+                       list(type = "image", source = formatted_message$image),
+                       list(type = "text", text = formatted_message$content)
+                     ))
+                   } else {
+                     list(role = m$role, content = list(
+                       list(type = "text", text = formatted_message$content)
+                     ))
+                   }
+                 })
+               },
+               "openai" = {
+                 lapply(openai_history, function(m) {
+                   formatted_message <- format_message(m)
+                   if (!is.null(formatted_message$image)) {
+                     list(
+                       role = m$role,
+                       content = list(
+                         list(type = "text", text = formatted_message$content),
+                         list(type = "image_url", image_url = list(
+                           url = glue::glue("data:{formatted_message$image$media_type};base64,{formatted_message$image$data}")
+                         ))
+                       )
                      )
-                   )
-                 } else {
-                   # Text-only content
-                   output <- list(
-                     role = m$role,
-                     content = combined_text
-                   )
-                 }
-                 
-                 output
-               })
-              },
-             "ollama"={
-               ollama_history <- Filter(function(x){
-                 if ("role" %in% names(x)) {
-                   return(x$role %in% c("user","assistant"))
-                 } else {
-                   return(FALSE)
-                 }},self$message_history)
-               
-               lapply(ollama_history, function(m) {
-                 # The basic text content supplied with the prompt
-                 base_content <- m$content
-                 
-                 # Get the relevant media for the current message
-                 media_list <- m$media
-                 
-                 # Extract the text content and put it into tags that are put before 
-                 # the main text of the prompt
-                 text_media <- extract_media(media_list, "text")
-                 image_media <- extract_media(media_list, "image")
-                 
-                 # Combine text content
-                 combined_text <- paste(base_content, text_media, sep=" ")
-                 
-                 if (length(image_media) > 0) {
-                   # Determine the MIME type based on file extension
-                   image_file_type <- paste("image", tools::file_ext(image_media[[1]]$filename), sep="/")
-                   
-                   # Use the pre-encoded base64 image content
-                   base64_image <- image_media[[1]]$content
-                   
-                   # Add image content to the user content
-                   output <- list(
-                     role = m$role,
-                     content = combined_text,
-                     images  = list(glue::glue("{base64_image}"))
-                   )
-                 } else {
-                   # Text-only content
-                   output <- list(
-                     role = m$role,
-                     content = combined_text
-                   )
-                 }
-                 
-                 output
-               })
-             }
-             # Additional cases as needed
-      )
+                   } else {
+                     list(role = m$role, content = formatted_message$content)
+                   }
+                 })
+               },
+               "ollama" = {
+                 ollama_history <- filter_roles(self$message_history, c("user", "assistant"))
+                 lapply(ollama_history, function(m) {
+                   formatted_message <- format_message(m)
+                   if (!is.null(formatted_message$image)) {
+                     list(
+                       role = m$role,
+                       content = formatted_message$content,
+                       images = list(glue::glue("{formatted_message$image$data}"))
+                     )
+                   } else {
+                     list(role = m$role, content = formatted_message$content)
+                   }
+                 })
+               },
+               stop("Unknown API-Format specified")
+        )
     },
     
     #' Simple helper function to determine whether the message history contains 

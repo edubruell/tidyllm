@@ -10,8 +10,7 @@ openai_embedding(
   .truncate = TRUE,
   .timeout = 120,
   .dry_run = FALSE,
-  .min_tokens_reset = 0L,
-  .wait = TRUE
+  .max_tries = 3
 )
 }
 \arguments{
@@ -25,9 +24,7 @@ openai_embedding(
 
 \item{.dry_run}{If TRUE, perform a dry run and return the request object.}
 
-\item{.min_tokens_reset}{Integer specifying the minimum token threshold before waiting for reset.}
-
-\item{.wait}{Logical; if TRUE, respects rate limits by waiting when necessary (default: TRUE).}
+\item{.max_tries}{Maximum retry attempts for requests (default: 3).}
 }
 \value{
 A matrix where each column corresponds to the embedding of a message in the message history.

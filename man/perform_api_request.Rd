@@ -23,6 +23,8 @@ perform_api_request(
 
 \item{.timeout}{Request timeout in seconds.}
 
+\item{.max_tries}{Maximum retry attempts for requests (default: 3).}
+
 \item{.parse_response_fn}{A function to parse the assistant's reply.}
 
 \item{.dry_run}{If TRUE, perform a dry run and return the request object.}

@@ -9,7 +9,14 @@ The development version of `tidyllm` reflects the ongoing updates in the GitHub 
 
 ---
 
-# Version 0.1.10 (Current Development Version)
+# Version 0.1.11 (Current Development Version)
+
+## Major Features
+
+- Support for both the Anthropic and the OpenAI batch request API
+
+
+# Version 0.1.10
 
 ## Breaking Changes
 
@@ -65,7 +72,7 @@ The development version of `tidyllm` reflects the ongoing updates in the GitHub 
 
 ## Major Features
 
-- **PDF Page Batch Processing**: Introduced the `pdf_page_batch()` function, which processes PDF files page by page, extracting text and converting each page into an image, allowing for a general prompt or page-specific prompts. The function generates a list of `LLMMessage` objects that can each be sent to an API.
+- **PDF Page Batch Processing**: Introduced the `pdf_page_batch()` function, which processes PDF files page by page, extracting text and converting each page into an image, allowing for a general prompt or page-specific prompts. The function generates a list of `LLMMessage` objects that can  be sent to an API and work with the batch-API functions in **tidyllm**.
 
 ---
 
@@ -88,7 +95,6 @@ The development version of `tidyllm` reflects the ongoing updates in the GitHub 
 
 ## Improvements
 
-- **PDF Page Processing**: Introduced the `pdf_page_batch()` function to process PDFs page by page, allowing for both general and page-specific prompts.
 - **Easier Troubleshooting in API-function**: All API functions now support the `.dry_run` argument, allowing users to generate an `httr2`-request for easier debugging and inspection.
 - **API Function Tests:** Implemented `httptest2`-based tests with mock responses for all API functions, covering both basic functionality and rate-limiting.
 

@@ -9,7 +9,7 @@
 - **Multiple Model Support**: Seamlessly switch between various model providers like Claude, ChatGPT, Groq, Mistral or Ollama using the best of what each has to offer.
 - **Media Handling**: Extract and process text from PDFs and capture console outputs for messaging. Upload imagefiles or the last plotpane to multimodal models.
 - **Interactive Messaging History**: Manage an ongoing conversation with models, maintaining a structured history of messages and media interactions, which are automatically formatted for each API
-- **Stateful handling of rate limits:** API rate limits are handled statefully within each R Session and API functions can wait automatically for rate limits to reset
+- **Batch processing:** Efficiently handle large workloads with Anthropic and OpenAI batch processing APIs, reducing costs by up to 50%.
 - **Tidy Workflow**: Use R's functional programming features for a side-effect-free, pipeline-oriented operation style.
 
 ## Installation
