@@ -65,7 +65,6 @@ openai <- function(
     "Input .top_logprobs must be NULL or an integer between 0 and 20" = is.null(.top_logprobs) | (is_integer_valued(.top_logprobs) & .top_logprobs >= 0 & .top_logprobs <= 20),
     "Input .presence_penalty must be numeric or NULL" = is.null(.presence_penalty) | is.numeric(.presence_penalty),
     "Input .seed must be NULL or an integer" = is.null(.seed) | is_integer_valued(.seed),
-    "Input .service_tier must be NULL or a string" = is.null(.service_tier) | is.character(.service_tier),
     "Input .stop must be NULL or a character vector or string" = is.null(.stop) | is.character(.stop),
     "Input .stream must be logical or NULL" = is.null(.stream) | is.logical(.stream),
     "Input .temperature must be numeric or NULL" = is.null(.temperature) | is.numeric(.temperature),
@@ -278,7 +277,6 @@ chatgpt <- function(
   .top_logprobs <- NULL  # Not used in chatgpt(), set to NULL
   .logit_bias <- NULL  # Not used in chatgpt(), set to NULL
   .seed <- NULL  # Not used in chatgpt(), set to NULL
-  .service_tier <- NULL  # Not used in chatgpt(), set to NULL
   .stop <- NULL  # Not used in chatgpt(), set to NULL
   .json_schema <- NULL  # Not used in chatgpt(), set to NULL
   .frequency_penalty <- .frequency_penalty
@@ -295,7 +293,6 @@ chatgpt <- function(
     .top_logprobs = .top_logprobs,
     .presence_penalty = .presence_penalty,
     .seed = .seed,
-    .service_tier = .service_tier,
     .stop = .stop,
     .stream = .stream,
     .temperature = .temperature,
@@ -462,7 +459,6 @@ openai_embedding <- function(.llm,
 #' @param .top_logprobs An integer between 0 and 20 specifying the number of most likely tokens to return at each token position.
 #' @param .presence_penalty Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far.
 #' @param .seed If specified, the system will make a best effort to sample deterministically.
-#' @param .service_tier Specifies the latency tier to use for processing the request (default: "auto").
 #' @param .stop Up to 4 sequences where the API will stop generating further tokens.
 #' @param .temperature What sampling temperature to use, between 0 and 2. Higher values make the output more random.
 #' @param .top_p An alternative to sampling with temperature, called nucleus sampling.
@@ -486,7 +482,6 @@ send_openai_batch <- function(.llms,
                               .top_logprobs = NULL,
                               .presence_penalty = NULL,
                               .seed = NULL,
-                              .service_tier = "auto",
                               .stop = NULL,
                               .temperature = NULL,
                               .top_p = NULL,
@@ -508,7 +503,6 @@ send_openai_batch <- function(.llms,
     ".top_logprobs must be NULL or an integer between 0 and 20" = is.null(.top_logprobs) | (is_integer_valued(.top_logprobs) & .top_logprobs >= 0 & .top_logprobs <= 20),
     ".presence_penalty must be numeric or NULL" = is.null(.presence_penalty) | is.numeric(.presence_penalty),
     ".seed must be NULL or an integer" = is.null(.seed) | is_integer_valued(.seed),
-    ".service_tier must be NULL or a string" = is.null(.service_tier) | is.character(.service_tier),
     ".stop must be NULL or a character vector or string" = is.null(.stop) | is.character(.stop),
     ".temperature must be numeric or NULL" = is.null(.temperature) | is.numeric(.temperature),
     ".top_p must be numeric or NULL" = is.null(.top_p) | is.numeric(.top_p),
@@ -581,7 +575,6 @@ send_openai_batch <- function(.llms,
       presence_penalty = .presence_penalty,
       response_format = response_format,
       seed = .seed,
-      service_tier = .service_tier,
       stop = .stop,
       temperature = .temperature,
       top_p = .top_p
