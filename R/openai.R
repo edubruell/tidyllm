@@ -124,7 +124,6 @@ openai <- function(
     presence_penalty = .presence_penalty,
     response_format = response_format,
     seed = .seed,
-    service_tier = .service_tier,
     stop = .stop,
     stream = .stream,
     temperature = .temperature,
