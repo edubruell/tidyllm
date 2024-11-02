@@ -673,6 +673,8 @@ send_openai_batch <- function(.llms,
   # Attach batch_id as an attribute to .llms
   batch_id <- batch_response_body$id
   attr(.llms, "batch_id") <- batch_id
+  attr(.llms, "json") <- .json
+  
   
   # Optionally, remove the temporary file
   unlink(temp_file)
@@ -866,6 +868,9 @@ fetch_openai_batch <- function(.llms,
     }
   }
   
+  .json <- attr(.llms, "json")
+  if (is.null(.json)) {.json <- FALSE}
+  
   api_key <- Sys.getenv("OPENAI_API_KEY")
   if (api_key == "" && !.dry_run) {
     stop("API key is not set. Please set it with: Sys.setenv(OPENAI_API_KEY = \"YOUR-KEY-GOES-HERE\").")
@@ -947,7 +952,7 @@ fetch_openai_batch <- function(.llms,
     if (!is.null(result) && is.null(result$error) && result$response$status_code == 200) {
       assistant_reply <- result$response$body$choices$message$content
       llm_copy <- .llms[[custom_id]]$clone_deep()
-      llm_copy$add_message("assistant", assistant_reply)
+      llm_copy$add_message("assistant", assistant_reply,json=.json)
       return(llm_copy)
     } else {
       warning(sprintf("Result for custom_id %s was unsuccessful or not found", custom_id))
@@ -960,6 +965,8 @@ fetch_openai_batch <- function(.llms,
   
   # Remove batch_id attribute before returning to avoid reuse conflicts
   attr(updated_llms, "batch_id") <- NULL
+  attr(updated_llms, "json") <- NULL
+  
   
   return(updated_llms)
 }
