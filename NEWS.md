@@ -13,7 +13,12 @@ The development version of `tidyllm` reflects the ongoing updates in the GitHub 
 
 ## Major Features
 
-- Support for both the Anthropic and the OpenAI batch request API
+- Support for both the Anthropic and the OpenAI batch request API added
+- New `.compatible`-arguement in `openai()` to allow working with compatible third party APIs
+
+## Improvements
+
+- **Complete refactor of `to_api_format()`**: API format generation now has much less code duplication and is more maintainable.
 
 
 # Version 0.1.10
@@ -21,8 +26,6 @@ The development version of `tidyllm` reflects the ongoing updates in the GitHub 
 ## Breaking Changes
 
 - `get_reply()` was split into two type-stable functions: `get_reply()` for text and `get_reply_data()` for structured outputs.
-
-- This is the first step towards a more long-term plan to move schema definitions into user requests instead of API-functions which might also be reasonable for later batch-API functions
 
 ## Improvements
 

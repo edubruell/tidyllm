@@ -16,7 +16,7 @@ devtools::install_github("edubruell/tidyllm")
 
 As large language models (LLMs) evolve, their potential to simulate human-like behavior offers an exciting opportunity for researchers in various fields. Inspired by the work of [Horton et al (2023)](https://arxiv.org/abs/2301.07543) on running behivoural econonomics lab experiments with  a "homo silicus", LLMs acting as computational models of humans, this article explores how synthetic data generated from LLMs can be used to pretest survey designs before going into the field.
 
-Pretesting with synthetic data enables quick iterations on survey questions, helping you spot potential issues early and save time during actual data collection. For example, if you're preparing a survey for lawyers on automation, you can use **tidyllm** to simulate survey responses based on real profiles. This allows you to write analysis code and identify ambiguities in question phrasing or logic flow, ensuring a smoother deployment when surveying real participants.
+Pretesting with synthetic data enables quick iterations on survey questions, helping you spot potential issues early on and save time during actual data collection. For example, if you're preparing a survey for lawyers on automation, you can use **tidyllm** to simulate survey responses based on real profiles. This allows you to write analysis code and identify ambiguities in question phrasing or logic flow, ensuring a smoother deployment when surveying real participants.
 
 Imagine for example that you are a researcher who just got contact info for many lawyers you want to invite to a survey on automation, provided by the bar association. You have already enriched this data with information from web-based sources, such as advertising taglines from law firm websites. Here is what such data could look like:
 
@@ -31,7 +31,7 @@ lawyers
 
 To generate synthetic survey responses based on real profiles, we first need to format the lawyer profiles into a human-readable prompt that the language model can use to simulate responses. This step involves transforming the data to create a synthetic "person" that the model will assume when responding to the survey.
 
-The following code prepares the second lawyer profile as a role for the language model. So as a first step we get each individual profile into list ofsingle-row tibbles that we can modify with further functions:
+The following code prepares the second lawyer profile as a role for the language model. So as a first step we get each individual profile into list of single-row tibbles that we can modify with further functions:
 
 ```{r rowwise_op}
 profiles <- lawyers %>%

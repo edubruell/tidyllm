@@ -41,15 +41,21 @@
 <h2 class="pkg-version" data-toc-text="0.1.11" id="version-0111-current-development-version">Version 0.1.11 (Current Development Version)<a class="anchor" aria-label="anchor" href="#version-0111-current-development-version"></a></h2>
 <div class="section level3">
 <h3 id="major-features-0-1-11">Major Features<a class="anchor" aria-label="anchor" href="#major-features-0-1-11"></a></h3>
-<ul><li>Support for both the Anthropic and the OpenAI batch request API</li>
+<ul><li>Support for both the Anthropic and the OpenAI batch request API added</li>
+<li>New <code>.compatible</code>-arguement in <code><a href="../reference/openai.html">openai()</a></code> to allow working with compatible third party APIs</li>
+</ul></div>
+<div class="section level3">
+<h3 id="improvements-0-1-11">Improvements<a class="anchor" aria-label="anchor" href="#improvements-0-1-11"></a></h3>
+<ul><li>
+<strong>Complete refactor of <code>to_api_format()</code></strong>: API format generation now has much less code duplication and is more maintainable.</li>
 </ul></div>
 </div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.10" id="version-0110">Version 0.1.10<a class="anchor" aria-label="anchor" href="#version-0110"></a></h2>
 <div class="section level3">
 <h3 id="breaking-changes-0-1-10">Breaking Changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-1-10"></a></h3>
-<ul><li><p><code><a href="../reference/get_reply.html">get_reply()</a></code> was split into two type-stable functions: <code><a href="../reference/get_reply.html">get_reply()</a></code> for text and <code><a href="../reference/get_reply_data.html">get_reply_data()</a></code> for structured outputs.</p></li>
-<li><p>This is the first step towards a more long-term plan to move schema definitions into user requests instead of API-functions which might also be reasonable for later batch-API functions</p></li>
+<ul><li>
+<code><a href="../reference/get_reply.html">get_reply()</a></code> was split into two type-stable functions: <code><a href="../reference/get_reply.html">get_reply()</a></code> for text and <code><a href="../reference/get_reply_data.html">get_reply_data()</a></code> for structured outputs.</li>
 </ul></div>
 <div class="section level3">
 <h3 id="improvements-0-1-10">Improvements<a class="anchor" aria-label="anchor" href="#improvements-0-1-10"></a></h3>

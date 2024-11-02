@@ -14,7 +14,6 @@ openai(
   .top_logprobs = NULL,
   .presence_penalty = NULL,
   .seed = NULL,
-  .service_tier = "auto",
   .stop = NULL,
   .stream = FALSE,
   .temperature = NULL,
@@ -25,7 +24,9 @@ openai(
   .json = FALSE,
   .json_schema = NULL,
   .max_tries = 3,
-  .dry_run = FALSE
+  .dry_run = FALSE,
+  .compatible = FALSE,
+  .api_path = "/v1/chat/completions"
 )
 }
 \arguments{
@@ -46,8 +47,6 @@ openai(
 \item{.presence_penalty}{Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far.}
 
 \item{.seed}{If specified, the system will make a best effort to sample deterministically.}
-
-\item{.service_tier}{Specifies the latency tier to use for processing the request (default: "auto").}
 
 \item{.stop}{Up to 4 sequences where the API will stop generating further tokens.}
 
@@ -70,6 +69,10 @@ openai(
 \item{.max_tries}{Maximum retries to peform request}
 
 \item{.dry_run}{If TRUE, perform a dry run and return the request object (default: FALSE).}
+
+\item{.compatible}{If TRUE, skip API and rate-limit checks for OpenAI compatible APIs (default: FALSE).}
+
+\item{.api_path}{The path relative to the base \code{.api_url} for the API (default: "/v1/chat/completions").}
 }
 \value{
 A new \code{LLMMessage} object containing the original messages plus the assistant's response.

@@ -12,9 +12,9 @@ get_reply_data(.llm, .index = NULL)
 \item{.index}{A positive integer for the assistant reply index to retrieve, defaulting to the last reply.}
 }
 \value{
-Parsed data content of the assistant's reply, or \code{NULL} if the reply is not JSON or if parsing fails.
+Parsed data content of the assistant's reply, or \code{NULL} if parsing fails.
 }
 \description{
 Retrieves and parses the assistant's reply as JSON from an \code{LLMMessage} object at a specified index.
-Only attempts to parse if the reply is marked as JSON; otherwise, returns \code{NULL}.
+If the reply is not marked as JSON, attempts to extract JSON content from text.
 }

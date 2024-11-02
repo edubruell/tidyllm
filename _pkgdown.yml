@@ -36,6 +36,7 @@ reference:
     - list_claude_batches
     - send_openai_batch
     - check_openai_batch
+    - fetch_openai_batch
     - list_openai_batches
 
   - title: "Embedding API Functions"

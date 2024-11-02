@@ -43,14 +43,15 @@ last_reply <- function(.llm) {
 }
 
 
+
 #' Get Data from an Assistant Reply by parsing structured JSON responses
 #'
 #' Retrieves and parses the assistant's reply as JSON from an `LLMMessage` object at a specified index.
-#' Only attempts to parse if the reply is marked as JSON; otherwise, returns `NULL`.
+#' If the reply is not marked as JSON, attempts to extract JSON content from text.
 #'
 #' @param .llm An `LLMMessage` object containing the message history.
 #' @param .index A positive integer for the assistant reply index to retrieve, defaulting to the last reply.
-#' @return Parsed data content of the assistant's reply, or `NULL` if the reply is not JSON or if parsing fails.
+#' @return Parsed data content of the assistant's reply, or `NULL` if parsing fails.
 #' @export
 get_reply_data <- function(.llm, .index = NULL) {
   # Validate inputs for .llm and .index
@@ -59,8 +60,8 @@ get_reply_data <- function(.llm, .index = NULL) {
   ))
   
   # Retrieve assistant replies with JSON flag
-  assistant_replies <-  filter_roles(.llm$message_history,"assistant")
-
+  assistant_replies <- filter_roles(.llm$message_history, "assistant")
+  
   # Check if any assistant replies are available
   if (length(assistant_replies) == 0) {
     warning("No assistant replies available in the message history.")
@@ -77,21 +78,31 @@ get_reply_data <- function(.llm, .index = NULL) {
     selected_reply <- assistant_replies[[.index]]
   }
   
-  # Check if the selected reply is marked as JSON
-  if (!isTRUE(selected_reply$json)) {
-    warning("The selected reply is not marked as JSON. Returning NULL.")
-    return(NULL)
+  # Regular expression to detect and extract JSON content across multiple lines
+  json_extract_pattern <- "\\{[\\s\\S]*\\}|\\[[\\s\\S]*\\]"
+  
+  # Check if the selected reply is marked as JSON or contains JSON-like structure
+  if (selected_reply$json) {
+    json_content <- selected_reply$content
+  } else {
+    warning("The reply is not explicitly marked as JSON. Trying to extract JSON.")
+    json_content <- stringr::str_extract(selected_reply$content, json_extract_pattern)
+    if (is.na(json_content)) {
+      warning("The selected reply does not appear to contain valid JSON. Returning NULL.")
+      return(NULL)
+    }
   }
   
-  # Attempt to parse JSON content
+  # Attempt to parse extracted JSON content
   tryCatch(
-    jsonlite::fromJSON(selected_reply$content),
+    jsonlite::fromJSON(json_content),
     error = function(e) {
       warning("Failed to parse JSON content. Returning NULL.")
       NULL
     }
   )
 }
+
 
 #' Get the Last Assistant Reply as Text
 #'

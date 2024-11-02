@@ -88,12 +88,12 @@ LLMs acting as computational models of humans, this article explores how
 synthetic data generated from LLMs can be used to pretest survey designs
 before going into the field.</p>
 <p>Pretesting with synthetic data enables quick iterations on survey
-questions, helping you spot potential issues early and save time during
-actual data collection. For example, if you’re preparing a survey for
-lawyers on automation, you can use <strong>tidyllm</strong> to simulate
-survey responses based on real profiles. This allows you to write
-analysis code and identify ambiguities in question phrasing or logic
-flow, ensuring a smoother deployment when surveying real
+questions, helping you spot potential issues early on and save time
+during actual data collection. For example, if you’re preparing a survey
+for lawyers on automation, you can use <strong>tidyllm</strong> to
+simulate survey responses based on real profiles. This allows you to
+write analysis code and identify ambiguities in question phrasing or
+logic flow, ensuring a smoother deployment when surveying real
 participants.</p>
 <p>Imagine for example that you are a researcher who just got contact
 info for many lawyers you want to invite to a survey on automation,
@@ -130,7 +130,7 @@ involves transforming the data to create a synthetic “person” that the
 model will assume when responding to the survey.</p>
 <p>The following code prepares the second lawyer profile as a role for
 the language model. So as a first step we get each individual profile
-into list ofsingle-row tibbles that we can modify with further
+into list of single-row tibbles that we can modify with further
 functions:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">profiles</span> <span class="op">&lt;-</span> <span class="va">lawyers</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>

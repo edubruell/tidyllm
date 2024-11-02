@@ -12,7 +12,6 @@
 #' @param .top_logprobs An integer between 0 and 20 specifying the number of most likely tokens to return at each token position.
 #' @param .presence_penalty Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far.
 #' @param .seed If specified, the system will make a best effort to sample deterministically.
-#' @param .service_tier Specifies the latency tier to use for processing the request (default: "auto").
 #' @param .stop Up to 4 sequences where the API will stop generating further tokens.
 #' @param .stream If set to TRUE, the answer will be streamed to console as it comes (default: FALSE).
 #' @param .temperature What sampling temperature to use, between 0 and 2. Higher values make the output more random.
@@ -24,6 +23,8 @@
 #' @param .json_schema A JSON schema object as R list to enforce the output structure (If defined has precedence over JSON mode).
 #' @param .max_tries Maximum retries to peform request
 #' @param .dry_run If TRUE, perform a dry run and return the request object (default: FALSE).
+#' @param .compatible If TRUE, skip API and rate-limit checks for OpenAI compatible APIs (default: FALSE).
+#' @param .api_path  The path relative to the base `.api_url` for the API (default: "/v1/chat/completions").
 #'
 #'
 #' @return A new `LLMMessage` object containing the original messages plus the assistant's response.
@@ -39,7 +40,6 @@ openai <- function(
     .top_logprobs = NULL,
     .presence_penalty = NULL,
     .seed = NULL,
-    .service_tier = "auto",
     .stop = NULL,
     .stream = FALSE,
     .temperature = NULL,
@@ -50,7 +50,9 @@ openai <- function(
     .json = FALSE,
     .json_schema = NULL,
     .max_tries = 3,
-    .dry_run = FALSE
+    .dry_run = FALSE,
+    .compatible = FALSE,
+    .api_path = "/v1/chat/completions"
 ) {
   
   # Validate inputs
@@ -74,7 +76,9 @@ openai <- function(
     "Input .json must be logical" = is.logical(.json),
     "Input .json_schema must be NULL or a list" = is.null(.json_schema) | is.list(.json_schema),
     "Input .max_tries must be integer-valued numeric" = is_integer_valued(.max_tries),
-    "Input .dry_run must be logical" = is.logical(.dry_run)
+    "Input .dry_run must be logical" = is.logical(.dry_run),
+    "Input .compatible must be logical" = is.logical(.compatible),
+    "Input .api_path must be a string" = is.character(.api_path)
   ) |> validate_inputs()
   
   #This filters out the system prompt for reasoning models.
@@ -85,16 +89,14 @@ openai <- function(
   }
   messages <- .llm$to_api_format("openai",no_system=no_system_prompt)
   
-  # Get the OpenAI API key
-  api_key <- Sys.getenv("OPENAI_API_KEY")
-  if ((api_key == "") & .dry_run==FALSE){
-    stop("API key is not set. Please set it with: Sys.setenv(OPENAI_API_KEY = \"YOUR-KEY-GOES-HERE\")")
+
+  if (!.compatible) {
+    api_key <- Sys.getenv("OPENAI_API_KEY")
+    if ((api_key == "") & .dry_run == FALSE) {
+      stop("API key is not set. Please set it with: Sys.setenv(OPENAI_API_KEY = \"YOUR-KEY-GOES-HERE\")")
+    }
   }
   
-  # Wait for the rate-limit if necessary
-  #if (.wait == TRUE & !is.null(.tidyllm_rate_limit_env[["openai"]])) {
-  #  wait_rate_limit("openai", .min_tokens_reset)
-  #}
   
   # Handle JSON schema and JSON mode
   response_format <- NULL
@@ -129,15 +131,21 @@ openai <- function(
     top_p = .top_p
   )
   request_body <- base::Filter(Negate(is.null), request_body)
-  
-  # Build the request
+
+  # Build the request, omitting Authorization header if .compatible is TRUE
   request <- httr2::request(.api_url) |>
-    httr2::req_url_path("/v1/chat/completions") |>
-    httr2::req_headers(
+    httr2::req_url_path(.api_path) |>
+    httr2::req_body_json(data = request_body)
+  
+  if (!.compatible) {
+    request <- request |> httr2::req_headers(
       Authorization = sprintf("Bearer %s", api_key),
       `Content-Type` = "application/json"
-    ) |>
-    httr2::req_body_json(data = request_body)
+    )
+  } else {
+    request <- request |> httr2::req_headers(`Content-Type` = "application/json")
+  }
+  
   
   # Perform the API request using perform_api_request
   response <- perform_api_request(
@@ -174,21 +182,22 @@ openai <- function(
   assistant_reply <- response$assistant_reply
   rl <- ratelimit_from_header(response$headers,"openai")
   
-  # Initialize an environment to store rate-limit info
-  initialize_api_env("openai")
-  
-  # Update the rate-limit environment with info from rl
-  update_rate_limit("openai", rl)
-  
-  # Show rate limit info if verbose
-  if (.verbose == TRUE) {
-    glue::glue(
-      "OpenAI API answer received at {rl$this_request_time}.
-      Remaining requests rate limit: {rl$ratelimit_requests_remaining}/{rl$ratelimit_requests}
-      Requests rate limit reset at: {rl$ratelimit_requests_reset_time}
-      Remaining tokens rate limit: {rl$ratelimit_tokens_remaining}/{rl$ratelimit_tokens}
-      Tokens rate limit reset at: {rl$ratelimit_tokens_reset_time}\n"
-    ) |> cat()
+  # Skip rate-limit environment handling if .compatible is set
+  if (!.compatible) {
+    rl <- ratelimit_from_header(response$headers, "openai")
+    initialize_api_env("openai")
+    update_rate_limit("openai", rl)
+    
+    # Show rate limit info if verbose
+    if (.verbose == TRUE) {
+      glue::glue(
+        "OpenAI API answer received at {rl$this_request_time}.
+        Remaining requests rate limit: {rl$ratelimit_requests_remaining}/{rl$ratelimit_requests}
+        Requests rate limit reset at: {rl$ratelimit_requests_reset_time}
+        Remaining tokens rate limit: {rl$ratelimit_tokens_remaining}/{rl$ratelimit_tokens}
+        Tokens rate limit reset at: {rl$ratelimit_tokens_reset_time}\n"
+      ) |> cat()
+    }
   }
   
   # Create a deep copy of the LLMMessage object and add the assistant's reply
@@ -825,4 +834,143 @@ list_openai_batches <- function(.limit = 20,
   
   return(batch_tibble)
 }
+
+#' Fetch Results for an OpenAI Batch
+#'
+#' This function retrieves the results of a completed OpenAI batch and updates
+#' the provided list of `LLMMessage` objects with the responses. It aligns each
+#' response with the original request using the `custom_id`s generated in `send_openai_batch()`.
+#'
+#' @param .llms A list of `LLMMessage` objects that were part of the batch.
+#' @param .batch_id Character; the unique identifier for the batch. By default this is NULL
+#'                  and the function will attempt to use the `batch_id` attribute from `.llms`.
+#' @param .dry_run Logical; if `TRUE`, returns the constructed request without executing it (default: `FALSE`).
+#' @param .max_tries Integer; maximum number of retries if the request fails (default: `3`).
+#' @param .timeout Integer; request timeout in seconds (default: `60`).
+#'
+#' @return A list of updated `LLMMessage` objects, each with the assistant's response added if successful.
+#' @export
+fetch_openai_batch <- function(.llms,
+                               .batch_id = NULL,
+                               .dry_run = FALSE,
+                               .max_tries = 3,
+                               .timeout = 60) {
+  c(
+    ".llms must be a list of LLMMessage objects with names as custom IDs" = is.list(.llms) && all(sapply(.llms, inherits, "LLMMessage")),
+    ".batch_id must be a non-empty character string or NULL" = is.null(.batch_id) || (is.character(.batch_id) && nzchar(.batch_id)),
+    ".dry_run must be logical" = is.logical(.dry_run),
+    ".max_tries must be integer-valued numeric" = is_integer_valued(.max_tries),
+    ".timeout must be integer-valued numeric" = is_integer_valued(.timeout)
+  ) |> validate_inputs()
+  
+  # Preserve original names
+  original_names <- names(.llms)
+  
+  # Retrieve batch_id from .llms if not provided
+  if (is.null(.batch_id)) {
+    .batch_id <- attr(.llms, "batch_id")
+    if (is.null(.batch_id)) {
+      stop("No batch_id provided and no batch_id attribute found in the provided list.")
+    }
+  }
+  
+  api_key <- Sys.getenv("OPENAI_API_KEY")
+  if (api_key == "" && !.dry_run) {
+    stop("API key is not set. Please set it with: Sys.setenv(OPENAI_API_KEY = \"YOUR-KEY-GOES-HERE\").")
+  }
+  
+  # Construct request URL to get batch details
+  batch_details_url <- paste0("https://api.openai.com/v1/batches/", .batch_id)
+  
+  request <- httr2::request(batch_details_url) |>
+    httr2::req_headers(
+      Authorization = sprintf("Bearer %s", api_key),
+      `Content-Type` = "application/json"
+    )
+  
+  # If .dry_run is TRUE, return the request object for inspection
+  if (.dry_run) {
+    return(request)
+  }
+  
+  response <- request |>
+    httr2::req_timeout(.timeout) |>
+    httr2::req_error(is_error = function(resp) FALSE) |>
+    httr2::req_retry(
+      max_tries = .max_tries,
+      retry_on_failure = TRUE,
+      is_transient = function(resp) httr2::resp_status(resp) %in% c(429, 503)
+    ) |>
+    httr2::req_perform()
+  
+  response_body <- httr2::resp_body_json(response)
+  if ("error" %in% names(response_body)) {
+    sprintf("OpenAI API returned an Error:\nType: %s\nMessage: %s",
+            response_body$error$type,
+            response_body$error$message) |>
+      stop()  
+  }
+  
+  # Check if batch has completed processing
+  if (response_body$status != "completed") {
+    stop("Batch processing has not completed yet. Please check again later.")
+  }
+  
+  # Retrieve the output_file_id
+  output_file_id <- response_body$output_file_id
+  if (is.null(output_file_id)) {
+    stop("No output_file_id found in the batch details.")
+  }
+  
+  # Download the output file
+  results_url <- paste0("https://api.openai.com/v1/files/", output_file_id, "/content")
+  results_request <- httr2::request(results_url) |>
+    httr2::req_headers(
+      Authorization = sprintf("Bearer %s", api_key)
+    )
+  
+  results_response <- results_request |>
+    httr2::req_timeout(.timeout) |>
+    httr2::req_error(is_error = function(resp) FALSE) |>
+    httr2::req_retry(
+      max_tries = .max_tries,
+      retry_on_failure = TRUE,
+      is_transient = function(resp) httr2::resp_status(resp) %in% c(429, 503)
+    ) |>
+    httr2::req_perform()
+  
+  # Parse JSONL response and map results by custom_id
+  results_lines <- strsplit(httr2::resp_body_string(results_response), "\n")[[1]]
+  results_list <- lapply(results_lines, function(line) {
+    if (nzchar(line)) jsonlite::fromJSON(line) else NULL
+  })
+  results_list <- Filter(Negate(is.null), results_list)
+  
+  results_by_custom_id <- setNames(results_list, sapply(results_list, function(x) x$custom_id))
+  
+  # Map results back to the original .llms list using names as custom IDs
+  updated_llms <- lapply(names(.llms), function(custom_id) {
+    result <- results_by_custom_id[[custom_id]]
+    
+    if (!is.null(result) && is.null(result$error) && result$response$status_code == 200) {
+      assistant_reply <- result$response$body$choices$message$content
+      llm_copy <- .llms[[custom_id]]$clone_deep()
+      llm_copy$add_message("assistant", assistant_reply)
+      return(llm_copy)
+    } else {
+      warning(sprintf("Result for custom_id %s was unsuccessful or not found", custom_id))
+      return(.llms[[custom_id]])
+    }
+  })
+  
+  # Restore original names
+  names(updated_llms) <- original_names
+  
+  # Remove batch_id attribute before returning to avoid reuse conflicts
+  attr(updated_llms, "batch_id") <- NULL
+  
+  return(updated_llms)
+}
+
+
 

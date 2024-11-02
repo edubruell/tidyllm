@@ -2,7 +2,7 @@
 % Please edit documentation in R/tidyllm_schema.R
 \name{tidyllm_schema}
 \alias{tidyllm_schema}
-\title{This function creates a JSON schema suitable for use with the API functions in tidyllm, enforcing tidy data principles by disallowing nested structures.}
+\title{Create a JSON schema for structured outputs}
 \usage{
 tidyllm_schema(name, ...)
 }
@@ -23,7 +23,7 @@ tidyllm_schema(name, ...)
 A list representing the JSON schema with the specified fields and types, suitable for passing to openai()'s .json_schema parameter.
 }
 \description{
-This function creates a JSON schema suitable for use with the API functions in tidyllm, enforcing tidy data principles by disallowing nested structures.
+This function creates a JSON schema suitable for use with the API functions in tidyllm.
 }
 \details{
 The tidyllm_schema() function is designed to make defining JSON schemas for tidyllm more concise and user-friendly. It maps R-like types to JSON schema types and validates inputs to enforce tidy data principles. Nested structures are not allowed to maintain compatibility with tidy data conventions.

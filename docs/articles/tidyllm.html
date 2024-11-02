@@ -75,17 +75,18 @@
 <div class="section level2">
 <h2 id="introduction-to-tidyllm">Introduction to tidyllm<a class="anchor" aria-label="anchor" href="#introduction-to-tidyllm"></a>
 </h2>
-<p>tidyllm is an R package designed to provide a unified interface for
-interacting with various large language model APIs. This vignette will
-guide you through the basic setup and usage of tidyllm.</p>
+<p><strong>tidyllm</strong> is an R package providing a unified
+interface for interacting with various large language model APIs. This
+vignette will guide you through the basic setup and usage of
+<strong>tidyllm</strong>.</p>
 <div class="section level3">
 <h3 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h3>
-<p>To install <strong>tidyllm</strong> from CRAN , use:</p>
+<p>To install <strong>tidyllm</strong> from CRAN, use:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"tidyllm"</span><span class="op">)</span></span></code></pre></div>
-<p>Or install a current development version directly from GitHub using
-devtools:</p>
+<p>Or, to install the current development version directly from GitHub
+using devtools:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Install devtools if not already installed</span></span>
 <span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"devtools"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
@@ -97,8 +98,9 @@ devtools:</p>
 <div class="section level4">
 <h4 id="setting-up-api-keys-or-ollama">Setting up API Keys or ollama<a class="anchor" aria-label="anchor" href="#setting-up-api-keys-or-ollama"></a>
 </h4>
-<p>Before using tidyllm, you need to set up API keys for the services
-you plan to use. Here’s how to set them up for different providers:</p>
+<p>Before using <strong>tidyllm</strong>, set up API keys for the
+services you plan to use. Here’s how to set them up for different
+providers:</p>
 <ol style="list-style-type: decimal">
 <li>For Claude models you can get an API key in the <a href="https://console.anthropic.com/settings/keys" class="external-link">Anthropic
 Console</a>:</li>
@@ -106,7 +108,7 @@ Console</a>:</li>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Sys.setenv.html" class="external-link">Sys.setenv</a></span><span class="op">(</span>ANTHROPIC_API_KEY <span class="op">=</span> <span class="st">"YOUR-ANTHROPIC-API-KEY"</span><span class="op">)</span></span></code></pre></div>
 <ol start="2" style="list-style-type: decimal">
-<li>For ChatGPT you can obtain an API key by signing up at <a href="https://platform.openai.com/account/api-keys" class="external-link">OpenAI</a> and set
+<li>For OpenAI you can obtain an API key by signing up at <a href="https://platform.openai.com/account/api-keys" class="external-link">OpenAI</a> and set
 it with:</li>
 </ol>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
@@ -123,10 +125,10 @@ can setup you API keys in the <a href="https://console.groq.com/playground" clas
 </ol>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Sys.setenv.html" class="external-link">Sys.setenv</a></span><span class="op">(</span>GROQ_API_KEY <span class="op">=</span> <span class="st">"YOUR-GROQ-API-KEY"</span><span class="op">)</span></span></code></pre></div>
-<p>Alternatively, you can set these keys in your <code>.Renviron</code>
-file for persistent storage. For this, execute
-<code><a href="https://usethis.r-lib.org/reference/edit.html" class="external-link">usethis::edit_r_environ()</a></code>, and add a line with with an API
-key in this file, for example:</p>
+<p>Alternatively, for persistent storage, add these keys to your
+<code>.Renviron</code> file:</p>
+<p>For this, run <code><a href="https://usethis.r-lib.org/reference/edit.html" class="external-link">usethis::edit_r_environ()</a></code>, and add a line
+with with an API key in this file, for example:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ANTHROPIC_API_KEY</span><span class="op">=</span><span class="st">"YOUR-ANTHROPIC-API-KEY"</span></span></code></pre></div>
 <p>If you want to work with local large lange models via
@@ -167,8 +169,9 @@ different language models:</p>
 <div class="section level4">
 <h4 id="sending-images-to-models">Sending Images to Models<a class="anchor" aria-label="anchor" href="#sending-images-to-models"></a>
 </h4>
-<p>tidyllm also supports sending images to multimodal models. Let’s send
-this picture here: <img src="picture.jpeg" width="70%"></p>
+<p><strong>tidyllm</strong> also supports sending images to multimodal
+models. Let’s send this picture here:
+<img src="picture.jpeg" width="70%"></p>
 <p>Here we let ChatGPT guess where the picture was made:</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Describe an image using a llava model on ollama</span></span>
@@ -234,7 +237,7 @@ Extracted text from the PDF file...
 which you can specify a (anonymous) function, which will be run and
 which console output will be captured and appended to the message when
 you run it.</p>
-<p>In addition you can use <code>.caputre_plot</code> to send the last
+<p>In addition you can use <code>.capture_plot</code> to send the last
 plot pane to a model.</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tidyverse.tidyverse.org" class="external-link">tidyverse</a></span><span class="op">)</span></span>
@@ -291,13 +294,9 @@ plot pane to a model.</p>
 <div class="section level4">
 <h4 id="getting-replies-from-the-api">Getting replies from the API<a class="anchor" aria-label="anchor" href="#getting-replies-from-the-api"></a>
 </h4>
-<p>You can retrieve an assistant reply as a text from a message history
-with <code><a href="../reference/get_reply.html">get_reply()</a></code>. By specifying an index in
-<code><a href="../reference/get_reply.html">get_reply()</a></code> you can decide which assistant message to get
-from a list. It defaults to the last available reply. However,if you
-have requested structured data from an API there is also a function
-called <code><a href="../reference/get_reply_data.html">get_reply_data()</a></code>, that directly gives you structured
-output in the format you asked for.</p>
+<p>Retrieve an assistant reply as text from a message history with
+<code><a href="../reference/get_reply.html">get_reply()</a></code>. Specify an index to choose which assistant
+message to get:</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">conversation</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Imagine a German adress."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>     <span class="fu"><a href="../reference/groq.html">groq</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -324,8 +323,9 @@ output in the format you asked for.</p>
 <span><span class="co">## Fichtenweg 78</span></span>
 <span><span class="co">## 42103 Wuppertal</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span></code></pre>
-<p>We can get assistant messages from the conversation with
-<code><a href="../reference/get_reply.html">get_reply()</a></code> or <code><a href="../reference/last_reply.html">last_reply()</a></code>:</p>
+<p>By default <code><a href="../reference/get_reply.html">get_reply()</a></code> gets the last assistant message.
+Alternatively you can also use <code><a href="../reference/last_reply.html">last_reply()</a></code> as a shortcut
+for the latest response.</p>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">#Getting the first </span></span>
 <span><span class="va">conversation</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/get_reply.html">get_reply</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span></code></pre></div>
@@ -351,10 +351,9 @@ is both human-readable and machine-friendly.</p>
 <p>Currently, <code><a href="../reference/openai.html">openai()</a></code> is the only API function in
 <strong>tidyllm</strong> that supports schema enforcement through the
 <code>.json_schema</code> argument. This ensures that replies conform to
-a pre-defined structure that you can rely on for consistent data
-formatting.</p>
+a pre-defined consistent data formatting.</p>
 <p>To create schemas, you can use the <code><a href="../reference/tidyllm_schema.html">tidyllm_schema()</a></code>
-function, which translates your specifications into the <a href="https://json-schema.org/" class="external-link">JSON-schema format</a> the API requires.
+function, which translates your data format specifications into the <a href="https://json-schema.org/" class="external-link">JSON-schema format</a> the API requires.
 This helper function standardizes the data layout by ensuring flat
 (non-nested) JSON structures with defined data types. Here’s how to
 define a schema:</p>
@@ -422,15 +421,15 @@ Since these APIs do not currently support native schema enforcement,
 you’ll need to prompt the model to follow a specified format directly in
 your messages. Although <code><a href="../reference/get_reply_data.html">get_reply_data()</a></code> can help extract
 structured data from these responses when you set
-<code>.json=TRUE</code>, the model may not always adhere strictly to the
-specified structure. Once these APIs support native schema enforcement,
-<strong>tidyllm</strong> will integrate full schema functionality for
-them.</p>
+<code>.json=TRUE</code> in each of the API functions, the model may not
+always adhere strictly to the specified structure. Once these APIs
+support native schema enforcement, <strong>tidyllm</strong> will
+integrate full schema functionality for them.</p>
 </div>
 <div class="section level4">
 <h4 id="api-parameters">API parameters<a class="anchor" aria-label="anchor" href="#api-parameters"></a>
 </h4>
-<p>Different API functions support different model parameters like how
+<p>Different API functions support different model parameters like, how
 deterministic the response should be via parameters like temperature.
 Please read API-documentation and the documentation of the model
 functions for specific examples.</p>
@@ -475,11 +474,6 @@ for each entry in a character vector.</p>
 <div class="section level4">
 <h4 id="batch-requests">Batch requests<a class="anchor" aria-label="anchor" href="#batch-requests"></a>
 </h4>
-<blockquote>
-<p>⚠️ <strong>Note:</strong> The batch functions for the OpenAI API are
-a work in progress. <code>fetch_openai_batch()</code> is not yet ready
-in the current version.</p>
-</blockquote>
 <p>Anthropic and OpenAI, offer batch request options that are around 50%
 cheaper than standard single-interaction APIs. Batch processing allows
 you to submit multiple message histories at once, which are then
@@ -529,7 +523,7 @@ current status. You can also see all your batch requests with
 <code><a href="../reference/list_claude_batches.html">list_claude_batches()</a></code> or in the batches dashboard of the
 Anthropic console. Once the processing of a batch is completed you can
 fetch its results with <code><a href="../reference/fetch_claude_batch.html">fetch_claude_batch()</a></code> or
-<code>fetch_openai_batch()</code>:</p>
+<code><a href="../reference/fetch_openai_batch.html">fetch_openai_batch()</a></code>:</p>
 <div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">conversations</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"claude_batch.rds"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/fetch_claude_batch.html">fetch_claude_batch</a></span><span class="op">(</span><span class="op">)</span></span>
@@ -571,8 +565,7 @@ top-performing models on many benchmarks. However, it can sometimes be
 more verbose than necessary, and it lacks direct JSON support, which
 requires additional prompting and validation to ensure structured
 output.</p></li>
-<li><p><strong><code><a href="../reference/openai.html">openai()</a></code> (OpenAI API):</strong> Models on
-the <a href="https://platform.openai.com/docs/api-reference/chat" class="external-link">OpenAI
+<li><p><strong><code><a href="../reference/openai.html">openai()</a></code> (OpenAI API):</strong> Models by <a href="https://platform.openai.com/docs/api-reference/chat" class="external-link">OpenAI
 API</a>, particularly the GPT-4o model, are extremely versatile and
 perform well across a wide range of tasks, including text generation,
 code completion, and multimodal analysis. In addition the o1-reasoning
@@ -602,6 +595,17 @@ significant computational resources, and are often not quite as powerful
 as the large API-providers. The <a href="https://ollama.com/blog" class="external-link">ollama
 blog</a> regularly has posts about new models and their advantages that
 you can download via <code><a href="../reference/ollama_download_model.html">ollama_download_model()</a></code>.</p></li>
+<li><p><strong>Other OpenAI-compatible Local Models:</strong> Besides
+ollama, there are many solutions to run local models that are mostly
+compatible to the OpenAI API like <a href="https://github.com/ggerganov/llama.cpp/blob/master/examples/server/README.md" class="external-link">llama.cpp</a>,
+<a href="https://github.com/vllm-project/vllm" class="external-link">vllm</a> and <a href="https://www.reddit.com/r/LocalLLaMA/comments/16csz5n/best_openai_api_compatible_application_server/" class="external-link">many
+more</a>. To use such an API you can set the base url of the api with
+<code>.api_url</code> as well as the path to the model-endpoint with
+<code>.api_path</code> argument in the <code><a href="../reference/openai.html">openai()</a></code> function.
+Set <code>.compatible=TRUE</code> to skip api-key checks and rate-limit
+tracking. Compatibility with local models solutions may vary depending
+on the specific API’s implementation, and full functionality cannot be
+guaranteed.</p></li>
 </ol>
 </div>
 </div>

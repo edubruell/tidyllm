@@ -1,4 +1,6 @@
-#' This function creates a JSON schema suitable for use with the API functions in tidyllm, enforcing tidy data principles by disallowing nested structures. 
+#' Create a JSON schema for structured outputs
+#'
+#' This function creates a JSON schema suitable for use with the API functions in tidyllm. 
 #'
 #' @param name A character vector specifying the schema name. This serves as an identifier for the schema.
 #' @param ... Named arguments where each name represents a field in the schema and each value specifies the type. Supported types include R data types:
