@@ -66,7 +66,7 @@ openai(
 
 \item{.json_schema}{A JSON schema object as R list to enforce the output structure (If defined has precedence over JSON mode).}
 
-\item{.max_tries}{Maximum retries to peform request}
+\item{.max_tries}{Maximum retries to perform request}
 
 \item{.dry_run}{If TRUE, perform a dry run and return the request object (default: FALSE).}
 

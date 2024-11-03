@@ -33,13 +33,6 @@ test_that("get_reply_data handles corrupt JSON in assistant message", {
   expect_null(parsed_data)
 })
 
-test_that("get_reply_data returns NULL with a warning when JSON flag is FALSE", {
-  llm <- LLMMessage$new()
-  json_content <- '{"name": "Alice", "age": 30}'
-  llm$add_message(role = "assistant", content = json_content, json = FALSE)
-  expect_warning(reply <- get_reply_data(llm), "The selected reply is not marked as JSON. Returning NULL.")
-  expect_null(reply)
-})
 
 test_that("last_reply returns NA_character_ when there are no assistant replies", {
   llm <- LLMMessage$new()

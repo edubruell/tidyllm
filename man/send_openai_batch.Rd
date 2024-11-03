@@ -14,7 +14,6 @@ send_openai_batch(
   .top_logprobs = NULL,
   .presence_penalty = NULL,
   .seed = NULL,
-  .service_tier = "auto",
   .stop = NULL,
   .temperature = NULL,
   .top_p = NULL,
@@ -45,8 +44,6 @@ send_openai_batch(
 \item{.presence_penalty}{Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far.}
 
 \item{.seed}{If specified, the system will make a best effort to sample deterministically.}
-
-\item{.service_tier}{Specifies the latency tier to use for processing the request (default: "auto").}
 
 \item{.stop}{Up to 4 sequences where the API will stop generating further tokens.}
 

@@ -21,7 +21,7 @@
 #' @param .verbose Should additional information be shown after the API call (default: FALSE).
 #' @param .json Should output be in JSON mode (default: FALSE).
 #' @param .json_schema A JSON schema object as R list to enforce the output structure (If defined has precedence over JSON mode).
-#' @param .max_tries Maximum retries to peform request
+#' @param .max_tries Maximum retries to perform request
 #' @param .dry_run If TRUE, perform a dry run and return the request object (default: FALSE).
 #' @param .compatible If TRUE, skip API and rate-limit checks for OpenAI compatible APIs (default: FALSE).
 #' @param .api_path  The path relative to the base `.api_url` for the API (default: "/v1/chat/completions").
@@ -943,7 +943,7 @@ fetch_openai_batch <- function(.llms,
   })
   results_list <- Filter(Negate(is.null), results_list)
   
-  results_by_custom_id <- setNames(results_list, sapply(results_list, function(x) x$custom_id))
+  results_by_custom_id <- purrr::set_names(results_list, sapply(results_list, function(x) x$custom_id))
   
   # Map results back to the original .llms list using names as custom IDs
   updated_llms <- lapply(names(.llms), function(custom_id) {
