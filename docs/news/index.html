@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.11</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -39,7 +39,32 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.1.11" id="version-0111-current-development-version">Version 0.1.11 (Current Development Version)<a class="anchor" aria-label="anchor" href="#version-0111-current-development-version"></a></h2>
+<h2 class="pkg-version" data-toc-text="0.2.0" id="version-020">Version 0.2.0<a class="anchor" aria-label="anchor" href="#version-020"></a></h2><p class="text-muted">CRAN release: 2024-11-07</p>
+<p>New CRAN release. Largest changes compared to <strong>0.1.0</strong>:</p>
+<p><strong>Major Features:</strong></p>
+<ul><li>Batch Request Support: Added support for batch requests with both Anthropic and OpenAI APIs, enabling large-scale request handling.</li>
+<li>Schema Support: Improved structured outputs in JSON mode with advanced <code>.json_schema</code> handling in <code><a href="../reference/openai.html">openai()</a></code>, enhancing support for well-defined JSON responses.</li>
+<li>Azure OpenAI Integration: Introduced <code><a href="../reference/azure_openai.html">azure_openai()</a></code> function for accessing the Azure OpenAI service, with full support for rate-limiting and batch operations tailored to Azure’s API structure.</li>
+<li>Embedding Model Support: Added embedding generation functions for the OpenAI, Ollama, and Mistral APIs, supporting message content and media embedding.</li>
+<li>Mistral API Integration: New <code><a href="../reference/mistral.html">mistral()</a></code> function provides full support for Mistral models hosted in the EU, including rate-limiting and streaming capabilities.</li>
+<li>PDF Batch Processing: Introduced the <code><a href="../reference/pdf_page_batch.html">pdf_page_batch()</a></code> function, which processes PDFs page by page, allowing users to define page-specific prompts for detailed analysis.</li>
+<li>Support for OpenAI-compatible APIs: Introduced a <code>.compatible</code> argument (and flexible url and path) in <code><a href="../reference/openai.html">openai()</a></code> to allow compatibility with third-party OpenAI-compatible APIs.</li>
+</ul><p><strong>Improvements:</strong></p>
+<ul><li>API Format Refactoring: Complete refactor of <code>to_api_format()</code> to reduce code duplication, simplify API format generation, and improve maintainability.</li>
+<li>Improved Error Handling: Enhanced input validation and error messaging for all API-functions functions, making troubleshooting easier.</li>
+<li>Rate-Limiting Enhancements: Updated rate limiting to use <code><a href="https://httr2.r-lib.org/reference/req_retry.html" class="external-link">httr2::req_retry()</a></code> in addition to the rate-limit tracking functions in tidyllm, using 429 headers to wait for rate limit resets.</li>
+<li>Expanded Testing: Added comprehensive tests for API functions using <code>httptest2</code>
+</li>
+</ul><p><strong>Breaking Changes:</strong></p>
+<ul><li>Redesigned Reply Functions: <code><a href="../reference/get_reply.html">get_reply()</a></code> was split into <code><a href="../reference/get_reply.html">get_reply()</a></code> for text outputs and <code><a href="../reference/get_reply_data.html">get_reply_data()</a></code> for structured outputs, improving type stability compared to an earlier function that had different outputs based on a <code>.json</code>-arguement.</li>
+<li>Deprecation of <code><a href="../reference/chatgpt.html">chatgpt()</a></code>: The <code><a href="../reference/chatgpt.html">chatgpt()</a></code> function has been deprecated in favor of <code><a href="../reference/openai.html">openai()</a></code> for feature alignment and improved consistency.</li>
+</ul><p><strong>Minor Updates and Bug Fixes:</strong></p>
+<ul><li>Expanded PDF Support in <code><a href="../reference/llm_message.html">llm_message()</a></code>: Allows extraction of specific page ranges from PDFs, improving flexibility in document handling.</li>
+<li>New <code><a href="../reference/ollama_download_model.html">ollama_download_model()</a></code> function to download models from the Ollama API</li>
+<li>All sequential chat API functions now support streaming</li>
+</ul></div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.1.11" id="version-0111">Version 0.1.11<a class="anchor" aria-label="anchor" href="#version-0111"></a></h2>
 <div class="section level3">
 <h3 id="major-features-0-1-11">Major Features<a class="anchor" aria-label="anchor" href="#major-features-0-1-11"></a></h3>
 <ul><li>Support for both the Anthropic and the OpenAI batch request API added</li>

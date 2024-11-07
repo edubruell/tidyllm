@@ -13,7 +13,6 @@ A tidy interface for integrating large language model (LLM) APIs such as 'Claude
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://github.com/edubruell/tidyllm}
   \item \url{https://edubruell.github.io/tidyllm/}
   \item Report bugs at \url{https://github.com/edubruell/tidyllm/issues}
 }

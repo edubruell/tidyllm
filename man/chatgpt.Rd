@@ -51,7 +51,7 @@ OpenAI API endpoint.}
 
 \item{.stream}{Should the response  be processed as a stream (default: false)}
 
-\item{.dry_run}{Shouldthe request is constructed but not actually sent. Useful for debugging and testing. (default: false)}
+\item{.dry_run}{Should the request is constructed but not actually sent. Useful for debugging and testing. (default: false)}
 }
 \value{
 An \code{LLMMessage} object with the assistant's reply.

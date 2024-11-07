@@ -9,7 +9,39 @@ The development version of `tidyllm` reflects the ongoing updates in the GitHub 
 
 ---
 
-# Version 0.1.11 (Current Development Version)
+# Version 0.2.0
+
+New CRAN release. Largest changes compared to **0.1.0**:
+
+**Major Features:**
+
+- Batch Request Support: Added support for batch requests with both Anthropic and OpenAI APIs, enabling large-scale request handling.
+- Schema Support: Improved structured outputs in JSON mode with advanced `.json_schema` handling in `openai()`, enhancing support for well-defined JSON responses.
+- Azure OpenAI Integration: Introduced `azure_openai()` function for accessing the Azure OpenAI service, with full support for rate-limiting and batch operations tailored to Azure’s API structure.
+- Embedding Model Support: Added embedding generation functions for the OpenAI, Ollama, and Mistral APIs, supporting message content and media embedding.
+- Mistral API Integration: New `mistral()` function provides full support for Mistral models hosted in the EU, including rate-limiting and streaming capabilities.
+- PDF Batch Processing: Introduced the `pdf_page_batch()` function, which processes PDFs page by page, allowing users to define page-specific prompts for detailed analysis.
+- Support for OpenAI-compatible APIs: Introduced a `.compatible` argument (and flexible url and path) in `openai()` to allow compatibility with third-party OpenAI-compatible APIs.
+
+**Improvements:**
+
+- API Format Refactoring: Complete refactor of `to_api_format()` to reduce code duplication, simplify API format generation, and improve maintainability.
+- Improved Error Handling: Enhanced input validation and error messaging for all API-functions functions, making troubleshooting easier.
+- Rate-Limiting Enhancements: Updated rate limiting to use `httr2::req_retry()` in addition to the rate-limit tracking functions in tidyllm, using 429 headers to wait for rate limit resets.
+- Expanded Testing: Added comprehensive tests for API functions using `httptest2`
+
+**Breaking Changes:**
+
+- Redesigned Reply Functions: `get_reply()` was split into `get_reply()` for text outputs and `get_reply_data()` for structured outputs, improving type stability compared to an earlier function that had different outputs based on a `.json`-arguement.
+- Deprecation of `chatgpt()`: The `chatgpt()` function has been deprecated in favor of `openai()` for feature alignment and improved consistency.
+
+**Minor Updates and Bug Fixes:**
+
+- Expanded PDF Support in `llm_message()`: Allows extraction of specific page ranges from PDFs, improving flexibility in document handling.
+- New `ollama_download_model()` function to download models from the Ollama API
+- All sequential chat API functions now support streaming
+
+# Version 0.1.11 
 
 ## Major Features
 

@@ -228,7 +228,7 @@ openai <- function(
 #' @param .verbose Will print additional information about the request (default: false)
 #' @param .json Should json-mode be used? (detault: false)
 #' @param .stream Should the response  be processed as a stream (default: false)
-#' @param .dry_run Shouldthe request is constructed but not actually sent. Useful for debugging and testing. (default: false)
+#' @param .dry_run Should the request is constructed but not actually sent. Useful for debugging and testing. (default: false)
 #' 
 #' @return An `LLMMessage` object with the assistant's reply.
 #'
@@ -467,7 +467,7 @@ openai_embedding <- function(.llm,
 #' @param .max_tries Maximum number of retries to perform the request (default: 3).
 #' @param .timeout Integer specifying the request timeout in seconds (default: 60).
 #' @param .json_schema A JSON schema  as R list to enforce the output structure (default: NULL).
-#' @param .verbose Logical; if TRUE, additionaly info about the requests is printed (default: FALSE).
+#' @param .verbose Logical; if TRUE, additional info about the requests is printed (default: FALSE).
 #' @param .json_schema A JSON schema object as R list to enforce the output structure (default: NULL).
 #' @param .id_prefix Character string to specify a prefix for generating custom IDs when names in `.llms` are missing (default: "tidyllm_openai_req_").
 #' 

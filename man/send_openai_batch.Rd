@@ -61,7 +61,7 @@ send_openai_batch(
 
 \item{.timeout}{Integer specifying the request timeout in seconds (default: 60).}
 
-\item{.verbose}{Logical; if TRUE, additionaly info about the requests is printed (default: FALSE).}
+\item{.verbose}{Logical; if TRUE, additional info about the requests is printed (default: FALSE).}
 
 \item{.id_prefix}{Character string to specify a prefix for generating custom IDs when names in \code{.llms} are missing (default: "tidyllm_openai_req_").}
 }

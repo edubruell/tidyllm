@@ -8,11 +8,6 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 ```
-> ⚠️ **Note:** This article discusses code that uses features from the development version 0.1.11 of **tidyllm** that are not in the last CRAN release. You can install the development version with:
-
-```{r, eval=FALSE}
-devtools::install_github("edubruell/tidyllm")
-```
 
 Navigating through a large collection of academic papers can be time-consuming, especially when you're trying to extract specific insights or determine the relevance of each document to your research. With **tidyllm**, you can streamline this process by automating the extraction of structured answers directly from PDF documents using large language models.
 
