@@ -54,7 +54,6 @@ openai <- function(
     .compatible = FALSE,
     .api_path = "/v1/chat/completions"
 ) {
-  
   # Validate inputs
   c(
     "Input .llm must be an LLMMessage object" = inherits(.llm, "LLMMessage"),
@@ -180,6 +179,7 @@ openai <- function(
   assistant_reply <- response$assistant_reply
   rl <- ratelimit_from_header(response$headers,"openai")
   
+  
   # Skip rate-limit environment handling if .compatible is set
   if (!.compatible) {
     rl <- ratelimit_from_header(response$headers, "openai")
@@ -200,7 +200,10 @@ openai <- function(
   
   # Create a deep copy of the LLMMessage object and add the assistant's reply
   llm_copy <- .llm$clone_deep()
-  llm_copy$add_message("assistant", assistant_reply, json = .json)
+  llm_copy$add_message(role = "assistant", 
+                       content = assistant_reply , 
+                       json    = .json,
+                       meta    = response$meta)
   
   return(llm_copy)
 }
@@ -544,8 +547,9 @@ send_openai_batch <- function(.llms,
   
   # Handle JSON schema and JSON mode
   response_format <- NULL
+  .json <- FALSE
   if (!is.null(.json_schema)) {
-    .json=TRUE
+    .json<-TRUE
     response_format <- list(
       type = "json_schema",
       json_schema = .json_schema
@@ -951,8 +955,12 @@ fetch_openai_batch <- function(.llms,
     
     if (!is.null(result) && is.null(result$error) && result$response$status_code == 200) {
       assistant_reply <- result$response$body$choices$message$content
+      meta_data <- extract_response_metadata(result$response$body)
       llm_copy <- .llms[[custom_id]]$clone_deep()
-      llm_copy$add_message("assistant", assistant_reply,json=.json)
+      llm_copy$add_message(role = "assistant", 
+                           content =  assistant_reply,
+                           json = .json,
+                           meta = meta_data)
       return(llm_copy)
     } else {
       warning(sprintf("Result for custom_id %s was unsuccessful or not found", custom_id))

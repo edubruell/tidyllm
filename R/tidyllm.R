@@ -51,10 +51,18 @@ LLMMessage <- R6::R6Class(
     #' @param content The textual content of the message.
     #' @param media Optional; media content to attach to the message.
     #' @param json Is the message a raw string that contains a json response?
-    add_message = function(role, content, media = NULL,json=FALSE) {
+    #' @param meta Optional, metadata returned by an API
+    add_message = function(role, 
+                           content, 
+                           media = NULL,
+                           json  = FALSE,
+                           meta  = NULL) {
       message_details <- list(role = role, content = content,json=json)
       if (!is.null(media)) {
         message_details$media <- media
+      }
+      if (!is.null(meta)) {
+        message_details$meta <- meta
       }
       self$message_history <- c(self$message_history, list(message_details))
       invisible(self)
@@ -189,20 +197,50 @@ LLMMessage <- R6::R6Class(
     },
     #' @description
     #' Prints the current message history in a structured format.
-    print = function() {
+    #'
+    #' By default, this function respects the `tidyllm_print_metadata` option. 
+    #' If the option is set to `TRUE`, metadata for each message (if available) will be printed.
+    #' 
+    #' Users can override the default behavior by explicitly passing a value to the `.meta` parameter.
+    #'
+    #' @param .meta Logical; if `TRUE`, prints metadata for each message. 
+    #' Defaults to the value of `getOption("tidyllm_print_metadata", FALSE)`.
+    print = function(.meta = getOption("tidyllm_print_metadata", FALSE)) {
       cat("Message History:\n")
-      lapply(self$message_history, function(message) {
-        #Print role and content
+      
+      lapply(seq_along(self$message_history), function(i) {
+        message <- self$message_history[[i]]
+        
+        # Print role and content
         cat(sprintf("%s: %s\n", message$role, message$content))
-        #Print attachments
+        
+        # Print media details if available
         if (!is.null(message$media)) {
           media_files <- sapply(message$media, function(media) media$filename)
-          if(length(media_files)!=0){
-            cat(" -> Attached Media Files: ", paste(media_files, collapse=", "), "\n")
+          if (length(media_files) != 0) {
+            cat(" -> Attached Media Files: ", paste(media_files, collapse = ", "), "\n")
           }
         }
-        #Print message separator
-        cat("--------------------------------------------------------------\n") 
+        
+        # Print metadata if .meta is TRUE and metadata is available
+        if (.meta && !is.null(message$meta)) {
+          cat("\n  Metadata:\n")
+          lapply(names(message$meta), function(key) {
+            meta_value <- message$meta[[key]]
+            
+            # Ensure proper formatting of timestamp
+            if (inherits(meta_value, "POSIXct")) {
+              meta_value <- format(meta_value, "%Y-%m-%d %H:%M:%S")
+            } else if (key == "timestamp" && is.numeric(meta_value)) {
+              meta_value <- format(as.POSIXct(meta_value, origin = "1970-01-01", tz = "UTC"), "%Y-%m-%d %H:%M:%S")
+            }
+            
+            cat(sprintf("    %s: %s\n", key, ifelse(is.null(meta_value), "NA", meta_value)))
+          })
+        }
+        
+        # Print message separator
+        cat("--------------------------------------------------------------\n")
       })
     }
   )

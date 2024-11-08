@@ -1,5 +1,7 @@
 #' @export
 .onLoad <- function(libname, pkgname) {
+  options(tidyllm_print_metadata = FALSE) # Default is to not print metadata
+  
   # Initialize the parent environment for rate limits on package load
   if (!exists(".tidyllm_rate_limit_env", envir = .GlobalEnv)) {
     .GlobalEnv$.tidyllm_rate_limit_env <- new.env(parent = emptyenv())

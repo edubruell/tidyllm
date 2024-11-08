@@ -9,6 +9,32 @@ The development version of `tidyllm` reflects the ongoing updates in the GitHub 
 
 ---
 
+# Development Version 0.2.1
+
+**Major Features:**
+
+- Added `get_metadata()` function to retrieve and format metadata from `LLMMessage` objects.
+- Enhanced the `print` method for `LLMMessage` to support printing metadata, controlled via the new `tidyllm_print_metadata` option or a new `.meta`-arguement for the print method.
+
+
+```r
+conversation <- llm_message("Write a short poem about software development") |>
+  claude()
+  
+#Get metdata on token usage and model as tibble  
+get_metadata(conversation)
+
+#or print it with the message
+print(conversation,.meta=TRUE)
+
+#Or allways print it
+options(tidyllm_print_metadata=TRUE)
+```
+
+**Improvements:**
+
+- Fixed a bug in `send_openai_batch()` caused by  a missing `.json`-arguement not being passed for messages without schema
+
 # Version 0.2.0
 
 New CRAN release. Largest changes compared to **0.1.0**:

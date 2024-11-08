@@ -169,7 +169,10 @@ claude <- function(.llm,
   
   # Return the updated LLMMessage object
   llm_copy <- .llm$clone_deep()
-  llm_copy$add_message("assistant", assistant_reply, json = FALSE)
+  llm_copy$add_message(role    = "assistant", 
+                       content = assistant_reply, 
+                       json    = FALSE,
+                       meta    = response$meta)
   
   return(llm_copy)
 }
@@ -520,7 +523,9 @@ fetch_claude_batch <- function(.llms,
     if (!is.null(result) && result$result$type == "succeeded") {
       assistant_reply <- result$result$message$content$text
       llm_copy <- .llms[[custom_id]]$clone_deep()
-      llm_copy$add_message("assistant", assistant_reply)
+      llm_copy$add_message(role = "assistant", 
+                           content = assistant_reply,
+                           meta = extract_response_metadata(result$result$message))
       return(llm_copy)
     } else {
       warning(sprintf("Result for custom_id %s was unsuccessful or not found", custom_id))

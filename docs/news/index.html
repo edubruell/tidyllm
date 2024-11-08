@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -38,6 +38,26 @@
       <small>Source: <a href="https://github.com/edubruell/tidyllm/blob/HEAD/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.1" id="development-version-021">Development Version 0.2.1<a class="anchor" aria-label="anchor" href="#development-version-021"></a></h2>
+<p><strong>Major Features:</strong></p>
+<ul><li>Added <code><a href="../reference/get_metadata.html">get_metadata()</a></code> function to retrieve and format metadata from <code>LLMMessage</code> objects.</li>
+<li>Enhanced the <code>print</code> method for <code>LLMMessage</code> to support printing metadata, controlled via the new <code>tidyllm_print_metadata</code> option or a new <code>.meta</code>-arguement for the print method.</li>
+</ul><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">conversation</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Write a short poem about software development"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>  </span>
+<span><span class="co">#Get metdata on token usage and model as tibble  </span></span>
+<span><span class="fu"><a href="../reference/get_metadata.html">get_metadata</a></span><span class="op">(</span><span class="va">conversation</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co">#or print it with the message</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">conversation</span>,.meta<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co">#Or allways print it</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>tidyllm_print_metadata<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<p><strong>Improvements:</strong></p>
+<ul><li>Fixed a bug in <code><a href="../reference/send_openai_batch.html">send_openai_batch()</a></code> caused by a missing <code>.json</code>-arguement not being passed for messages without schema</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.0" id="version-020">Version 0.2.0<a class="anchor" aria-label="anchor" href="#version-020"></a></h2><p class="text-muted">CRAN release: 2024-11-07</p>
 <p>New CRAN release. Largest changes compared to <strong>0.1.0</strong>:</p>

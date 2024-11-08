@@ -103,6 +103,51 @@ get_reply_data <- function(.llm, .index = NULL) {
   )
 }
 
+#' Get Metadata from Assistant Replies
+#'
+#' Extracts metadata from assistant replies in an `LLMMessage` object and returns it as a tibble.
+#'
+#' @param .llm An `LLMMessage` object containing the message history.
+#' @param .index A positive integer indicating which assistant reply's metadata to extract.
+#'               If `NULL` (default), metadata for all replies is returned.
+#' @return A tibble with metadata for the specified assistant reply, or all replies if `.index` is `NULL`.
+#' @export
+get_metadata <- function(.llm, .index = NULL) {
+  # Validate input
+  validate_inputs(c(
+    "Input .llm must be an LLMMessage object" = inherits(.llm, "LLMMessage"),
+    "Index must be a positive integer within bounds" = is.null(.index) || 
+      (is.numeric(.index) && .index > 0 && .index <= length(filter_roles(.llm$message_history, "assistant")))
+  ))
+  
+  # Extract assistant replies
+  assistant_replies <- filter_roles(.llm$message_history, "assistant")
+  
+  # Check if any assistant replies are available
+  if (length(assistant_replies) == 0) {
+    warning("No assistant replies available in the message history.")
+    return(tibble::tibble())
+  }
+  
+  # Select the specified reply or all replies
+  selected_replies <- if (is.null(.index)) assistant_replies else list(assistant_replies[[.index]])
+  
+  # Extract metadata
+  metadata <- lapply(selected_replies, function(reply) {
+    meta <- reply$meta
+    
+    list(
+      model = if (!is.null(meta$model)) meta$model else NA_character_,
+      timestamp = if (!is.null(meta$timestamp)) meta$timestamp else NA_character_,
+      prompt_tokens = if (!is.null(meta$prompt_tokens)) meta$prompt_tokens else NA_integer_,
+      completion_tokens = if (!is.null(meta$completion_tokens)) meta$completion_tokens else NA_integer_,
+      total_tokens = if (!is.null(meta$total_tokens)) meta$total_tokens else NA_integer_
+    )
+  })
+  
+  # Convert metadata to a tibble
+  tibble::as_tibble(do.call(rbind, lapply(metadata, as.data.frame)))
+}
 
 #' Get the Last Assistant Reply as Text
 #'

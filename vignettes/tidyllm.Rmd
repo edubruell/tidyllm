@@ -203,7 +203,7 @@ Retrieve an assistant reply as text from a message history with `get_reply()`. S
 conversation <- llm_message("Imagine a German adress.") |>
      groq() |>
      llm_message("Imagine another address") |>
-     groq()
+     claude()
 
 conversation
 ```
@@ -227,6 +227,23 @@ conversation |> get_reply()
 #Or if you can more easily remember last_reply this works too
 conversation |> last_reply()
 ```
+
+In the current development version, you can use the `get_metadata()` function to retrieve metadata from assistant replies: 
+```{r get_metadata,  eval=FALSE, echo=TRUE}
+conversation |> get_metadata()
+```
+```{r get_metadata_out,  eval=TRUE, echo=FALSE}
+tibble::tibble(
+  model = c("groq-lamma3-11b", "claude-3-5-sonnet"),
+  timestamp = as.POSIXct(c("2024-11-08 14:25:43", "2024-11-08 14:26:02")),
+  prompt_tokens = c(20, 80),
+  completion_tokens = c(45, 40),
+  total_tokens = prompt_tokens + completion_tokens
+) |>
+  print(width=60)
+```
+
+By default it collects metadata for the whole message history, but you can also set an `.index` to only get metadata for a specific reply. Alternatively you can print out metadata with the standard print method with the `.meta`-argument in `print()` or via the `tidyllm_print_metadata` option.
 
 ### Working with structured model outputs
 

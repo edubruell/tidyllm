@@ -70,7 +70,9 @@ perform_api_request <- function(.request,
     response_headers <- httr2::resp_headers(response)
   }
   
-  return(list(assistant_reply = assistant_reply, headers = response_headers))
+  list(assistant_reply  = assistant_reply, 
+       headers          = response_headers,
+       meta             = extract_response_metadata(body_json))
 }
 
 

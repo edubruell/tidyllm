@@ -82,7 +82,7 @@ Adds a message to the history. Optionally includes media.
 \if{latex}{\out{\hypertarget{method-LLMMessage-add_message}{}}}
 \subsection{Method \code{add_message()}}{
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{LLMMessage$add_message(role, content, media = NULL, json = FALSE)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{LLMMessage$add_message(role, content, media = NULL, json = FALSE, meta = NULL)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -94,7 +94,9 @@ Adds a message to the history. Optionally includes media.
 
 \item{\code{media}}{Optional; media content to attach to the message.}
 
-\item{\code{json}}{Is the message a raw string that contains a json response?
+\item{\code{json}}{Is the message a raw string that contains a json response?}
+
+\item{\code{meta}}{Optional, metadata returned by an API
 Convert to API format
 
 Converts the message history to a format suitable for various API calls.}
@@ -173,10 +175,23 @@ The \code{LLMMessage} object, invisibly.
 \if{latex}{\out{\hypertarget{method-LLMMessage-print}{}}}
 \subsection{Method \code{print()}}{
 Prints the current message history in a structured format.
+
+By default, this function respects the \code{tidyllm_print_metadata} option.
+If the option is set to \code{TRUE}, metadata for each message (if available) will be printed.
+
+Users can override the default behavior by explicitly passing a value to the \code{.meta} parameter.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{LLMMessage$print()}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{LLMMessage$print(.meta = getOption("tidyllm_print_metadata", FALSE))}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{.meta}}{Logical; if \code{TRUE}, prints metadata for each message.
+Defaults to the value of \code{getOption("tidyllm_print_metadata", FALSE)}.}
+}
+\if{html}{\out{</div>}}
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-LLMMessage-clone"></a>}}

@@ -51,3 +51,45 @@ filter_roles = function(.message_history,
   Filter(function(x) "role" %in% names(x) && x$role %in% .roles, .message_history)
 }
 
+
+#' Extract Response Metadata
+#'
+#' This helper function extracts and formats metadata from LLM API responses.
+#' It standardizes the model used, timestamp of the response, and token usage statistics 
+#' (prompt, completion, and total tokens) across various LLM API providers.
+#'
+#' @param .response A list containing the response object from an LLM API call.
+#'                  The structure of this list may vary depending on the provider 
+#' @return A named list containing the standardized metadata: model, timestamp, prompt tokens, 
+#'         completion tokens, and total tokens.
+#' @importFrom lubridate as_datetime
+#' @importFrom rlang %||%
+#' @noRd
+extract_response_metadata <- function(.response) {
+  timestamp <- .response$created_at %||% .response$created %||% NA
+  timestamp <- if (is.numeric(timestamp)) {
+    lubridate::as_datetime(timestamp)
+  } else if (is.character(timestamp)) {
+    lubridate::as_datetime(timestamp, format = "%Y-%m-%dT%H:%M:%OSZ")
+  } else {
+    NA
+  }
+  
+  prompt_tokens <- .response$usage$prompt_tokens %||% .response$usage$input_tokens %||% NA
+  completion_tokens <- .response$usage$completion_tokens %||% .response$usage$output_tokens %||% NA
+  
+  total_tokens <- .response$usage$total_tokens %||% 
+    if (!is.na(prompt_tokens) && !is.na(completion_tokens)) {
+      prompt_tokens + completion_tokens
+    } else {
+      NA
+    }
+  
+  list(
+    model = .response$model %||% NA,
+    timestamp = timestamp,
+    prompt_tokens = prompt_tokens,
+    completion_tokens = completion_tokens,
+    total_tokens = total_tokens
+  )
+}

@@ -162,7 +162,10 @@ groq <- function(.llm,
   llm_copy <- .llm$clone_deep()
   
   # Add model's message to the history of the LLMMessage object
-  llm_copy$add_message("assistant", assistant_reply , json = .json)
+  llm_copy$add_message(role = "assistant", 
+                       content = assistant_reply , 
+                       json    = .json,
+                       meta    = response$meta)
   
   return(llm_copy)
 }

@@ -199,7 +199,10 @@ azure_openai <- function(
   
   # Create a deep copy of the LLMMessage object and add the assistant's reply
   llm_copy <- .llm$clone_deep()
-  llm_copy$add_message("assistant", assistant_reply, json = .json)
+  llm_copy$add_message(role = "assistant", 
+                       content = assistant_reply , 
+                       json    = .json,
+                       meta    = response$meta)
   
   return(llm_copy)
 }

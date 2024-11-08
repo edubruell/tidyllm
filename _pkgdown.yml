@@ -13,6 +13,7 @@ reference:
       - get_reply
       - get_reply_data
       - get_user_message
+      - get_metadata
       - last_reply
       - last_reply_data
       - last_user_message

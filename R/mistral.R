@@ -53,7 +53,7 @@ mistral <- function(.llm,
   ) |>
     validate_inputs()
   
-  # Mistral and groq have the same  OpenAI without a system prompt format
+  # Mistral and groq have the same OpenAI like format without a system prompt 
   mistral_messages <- .llm$to_api_format("openai",no_system=TRUE)
   
   #set options
@@ -157,8 +157,10 @@ mistral <- function(.llm,
   llm_copy <- .llm$clone_deep()
   
   # Add model's message to the history of the LLMMessage object
-  llm_copy$add_message("assistant", assistant_reply,json=.json)
-  
+  llm_copy$add_message(role = "assistant", 
+                       content = assistant_reply , 
+                       json    = .json,
+                       meta    = response$meta)  
   return(llm_copy)
 }
 

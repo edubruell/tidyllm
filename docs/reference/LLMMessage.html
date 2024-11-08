@@ -9,7 +9,7 @@ Large Language Model Message Class"><meta property="og:image" content="https://e
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -125,7 +125,7 @@ Add a message</p>
 
 <div class="section">
 <h4 id="usage-2">Usage<a class="anchor" aria-label="anchor" href="#usage-2"></a></h4>
-<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">LLMMessage</span><span class="op">$</span><span class="fu">add_message</span><span class="op">(</span><span class="va">role</span>, <span class="va">content</span>, media <span class="op">=</span> <span class="cn">NULL</span>, json <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div><p></p></div>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">LLMMessage</span><span class="op">$</span><span class="fu">add_message</span><span class="op">(</span><span class="va">role</span>, <span class="va">content</span>, media <span class="op">=</span> <span class="cn">NULL</span>, json <span class="op">=</span> <span class="cn">FALSE</span>, meta <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div>
 
 <div class="section">
@@ -143,7 +143,11 @@ Add a message</p>
 
 
 <dt><code>json</code></dt>
-<dd><p>Is the message a raw string that contains a json response?
+<dd><p>Is the message a raw string that contains a json response?</p></dd>
+
+
+<dt><code>meta</code></dt>
+<dd><p>Optional, metadata returned by an API
 Convert to API format</p>
 <p>Converts the message history to a format suitable for various API calls.</p></dd>
 
@@ -227,11 +231,23 @@ Remove a Message by Index</p>
 
 </div><p></p><hr><a id="method-LLMMessage-print"></a><div class="section">
 <h3 id="method-print-">Method <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code><a class="anchor" aria-label="anchor" href="#method-print-"></a></h3>
-<p>Prints the current message history in a structured format.</p><div class="section">
+<p>Prints the current message history in a structured format.</p>
+<p>By default, this function respects the <code>tidyllm_print_metadata</code> option.
+If the option is set to <code>TRUE</code>, metadata for each message (if available) will be printed.</p>
+<p>Users can override the default behavior by explicitly passing a value to the <code>.meta</code> parameter.</p><div class="section">
 <h4 id="usage-6">Usage<a class="anchor" aria-label="anchor" href="#usage-6"></a></h4>
-<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">LLMMessage</span><span class="op">$</span><span class="fu">print</span><span class="op">(</span><span class="op">)</span></span></code></pre></div><p></p></div>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">LLMMessage</span><span class="op">$</span><span class="fu">print</span><span class="op">(</span>.meta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"tidyllm_print_metadata"</span>, <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div>
 
+<div class="section">
+<h4 id="arguments-4">Arguments<a class="anchor" aria-label="anchor" href="#arguments-4"></a></h4>
+<p></p><div class="arguments"><dl><dt><code>.meta</code></dt>
+<dd><p>Logical; if <code>TRUE</code>, prints metadata for each message.
+Defaults to the value of <code>getOption("tidyllm_print_metadata", FALSE)</code>.</p></dd>
+
+
+</dl><p></p></div>
+</div>
 
 </div><p></p><hr><a id="method-LLMMessage-clone"></a><div class="section">
 <h3 id="method-clone-">Method <code>clone()</code><a class="anchor" aria-label="anchor" href="#method-clone-"></a></h3>
@@ -241,7 +257,7 @@ Remove a Message by Index</p>
 </div>
 
 <div class="section">
-<h4 id="arguments-4">Arguments<a class="anchor" aria-label="anchor" href="#arguments-4"></a></h4>
+<h4 id="arguments-5">Arguments<a class="anchor" aria-label="anchor" href="#arguments-5"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>deep</code></dt>
 <dd><p>Whether to make a deep clone.</p></dd>
 
