@@ -16,7 +16,6 @@ perform_api_request <- function(.request,
                                 .max_tries = 3,
                                 .parse_response_fn = NULL,
                                 .dry_run =FALSE) {
-
   # Return the request object if test mode is enabled
   if (.dry_run) {
     return(.request)
@@ -70,9 +69,12 @@ perform_api_request <- function(.request,
     response_headers <- httr2::resp_headers(response)
   }
   
+  if(.stream == FALSE) metadata <- extract_response_metadata(body_json)
+  if(.stream == TRUE)  metadata <- NULL
+  
   list(assistant_reply  = assistant_reply, 
        headers          = response_headers,
-       meta             = extract_response_metadata(body_json))
+       meta             = metadata)
 }
 
 
