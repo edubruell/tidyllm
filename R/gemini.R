@@ -215,6 +215,7 @@ gemini_upload_file <- function(.file_path) {
       `X-Goog-Upload-Command` = "upload, finalize"
     ) |>
     httr2::req_body_raw(readBin(.file_path, "raw", num_bytes)) |>
+    httr2::req_progress(type = "up") |>
     httr2::req_perform() |>
     httr2::resp_body_json()
   

@@ -30,7 +30,7 @@ reference:
       - azure_openai
       - chatgpt # Deprecated, use openai instead
       
-  - title: "Bacth Request API Functions"
+  - title: "Batch Request API Functions"
     contents:
     - send_claude_batch
     - check_claude_batch
