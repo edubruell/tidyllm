@@ -8,7 +8,7 @@ generate_callback_function(.api)
 }
 \arguments{
 \item{.api}{A character string indicating the API type. Supported values are
-\code{"claude"}, \code{"ollama"}, \code{"mistral"}, \code{"groq"} and \code{"openai"}.}
+\code{"claude"}, \code{"ollama"}, \code{"mistral"}, \code{"groq"}, \code{"openai"},\code{"gemini"}  and \code{"azure_openai"}.}
 }
 \value{
 A function that serves as a callback to handle streaming responses
@@ -20,7 +20,7 @@ streaming is finished.
 \description{
 This function generates a callback function that processes streaming responses
 from different language model APIs. The callback function is specific to the
-API provided (\code{claude}, \code{ollama}, \code{"mistral"}, or \code{openai}) and processes incoming data streams,
+API provided and processes incoming data streams,
 printing the content to the console and updating a global environment for further use.
 }
 \details{

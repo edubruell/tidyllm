@@ -1,13 +1,15 @@
 # tidyllm <a href="https://edubruell.github.io/tidyllm/"><img src="man/figures/logo.png" align="right" height="139" alt="tidyllm website" /></a>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![CRAN Status](https://www.r-pkg.org/badges/version/tidyllm)](https://cran.r-project.org/package=tidyllm)
 
-**tidyllm** is an R package designed to access various large language model APIs, including **Claude**, **ChatGPT**, **Groq**, **Mistral**, and local models via **Ollama**. Built for simplicity and functionality, it helps you generate text, analyze media, and integrate model feedback into your data workflows with ease.
+
+**tidyllm** is an R package designed to access various large language model APIs, including **Anthropic Claude**, **OpenAI**,**Google Gemini**, **Groq**, **Mistral**, and local models via **Ollama** or OpenAI-compatible APIS. Built for simplicity and functionality, it helps you generate text, analyze media, and integrate model feedback into your data workflows with ease.
 
 ## Features
 
-- **Multiple Model Support**: Seamlessly switch between various model providers like Claude, ChatGPT, Groq, Mistral or Ollama using the best of what each has to offer.
-- **Media Handling**: Extract and process text from PDFs and capture console outputs for messaging. Upload imagefiles or the last plotpane to multimodal models.
+- **Multiple Model Support**: Seamlessly switch between various model providers using the best of what each has to offer.
+- **Media Handling**: Extract and process text from PDFs and capture console outputs for messaging. Upload imagefiles or the last plotpane to multimodal models. For the Gemini API even video and audio inputs are supported.
 - **Interactive Messaging History**: Manage an ongoing conversation with models, maintaining a structured history of messages and media interactions, which are automatically formatted for each API
 - **Batch processing:** Efficiently handle large workloads with Anthropic and OpenAI batch processing APIs, reducing costs by up to 50%.
 - **Tidy Workflow**: Use R's functional programming features for a side-effect-free, pipeline-oriented operation style.

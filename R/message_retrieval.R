@@ -105,13 +105,25 @@ get_reply_data <- function(.llm, .index = NULL) {
 
 #' Get Metadata from Assistant Replies
 #'
-#' Extracts metadata from assistant replies in an `LLMMessage` object and returns it as a tibble.
+#' This function retrieves metadata from assistant replies within an `LLMMessage` object. 
+#' It returns the metadata as a tibble.
 #'
-#' @param .llm An `LLMMessage` object containing the message history.
-#' @param .index A positive integer indicating which assistant reply's metadata to extract.
+#' Metadata columns may include:
+#' - `model`: The model used for generating the reply.
+#' - `timestamp`: The time when the reply was generated.
+#' - `prompt_tokens`: The number of tokens in the input prompt.
+#' - `completion_tokens`: The number of tokens in the assistant's reply.
+#' - `total_tokens`: The total number of tokens (prompt + completion).
+#'
+#' @param .llm An `LLMMessage` object containing the message history. 
+#'             This object should include metadata for assistant replies.
+#' @param .index A positive integer specifying which assistant reply's metadata to extract.
 #'               If `NULL` (default), metadata for all replies is returned.
-#' @return A tibble with metadata for the specified assistant reply, or all replies if `.index` is `NULL`.
-#' @export
+#'
+#' @return A tibble containing metadata for the specified assistant reply if `.index` is provided,
+#'         or metadata for all replies if `.index` is `NULL`. Returns an empty tibble if no 
+#'         assistant replies are found.
+#'
 get_metadata <- function(.llm, .index = NULL) {
   # Validate input
   validate_inputs(c(

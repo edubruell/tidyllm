@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -39,11 +39,135 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.2.1" id="development-version-021">Development Version 0.2.1<a class="anchor" aria-label="anchor" href="#development-version-021"></a></h2>
-<p><strong>Major Features:</strong></p>
+<h2 class="pkg-version" data-toc-text="0.2.2" id="development-version-022">Development Version 0.2.2<a class="anchor" aria-label="anchor" href="#development-version-022"></a></h2>
+<div class="section level3">
+<h3 id="major-features-0-2-2">Major Features<a class="anchor" aria-label="anchor" href="#major-features-0-2-2"></a></h3>
+<ul><li>Added functions to work with the Google Gemini API, with the new <code><a href="../reference/gemini.html">gemini()</a></code> main API-function</li>
+<li>Support for the file upload workflows for Gemini:</li>
+</ul><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co">#Upload a file for use with gemini</span></span>
+<span><span class="va">upload_info</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gemini_upload_file.html">gemini_upload_file</a></span><span class="op">(</span><span class="st">"example.mp3"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co">#Make the file available during a Gemini API call</span></span>
+<span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Summarize this speech"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/gemini.html">gemini</a></span><span class="op">(</span>.fileid <span class="op">=</span> <span class="va">upload_info</span><span class="op">$</span><span class="va">name</span><span class="op">)</span></span>
+<span>  </span>
+<span><span class="co">#Delte the file from the Google servers</span></span>
+<span><span class="fu"><a href="../reference/gemini_delete_file.html">gemini_delete_file</a></span><span class="op">(</span><span class="va">upload_info</span><span class="op">$</span><span class="va">name</span><span class="op">)</span></span></code></pre></div>
+<ul><li>Brings video and audio support to tidyllm</li>
+<li>Google Gemini is the second API to fully support <code><a href="../reference/tidyllm_schema.html">tidyllm_schema()</a></code>
+</li>
+<li>
+<code><a href="../reference/gemini.html">gemini()</a></code>-requests allow for a wide range of file types that can be used for context in messages</li>
+<li>Supported document formats for <code><a href="../reference/gemini.html">gemini()</a></code> file workflows:
+<ul><li>
+<strong>PDF</strong>: <code>application/pdf</code>
+</li>
+<li>
+<strong>TXT</strong>: <code>text/plain</code>
+</li>
+<li>
+<strong>HTML</strong>: <code>text/html</code>
+</li>
+<li>
+<strong>CSS</strong>: <code>text/css</code>
+</li>
+<li>
+<strong>Markdown</strong>: <code>text/md</code>
+</li>
+<li>
+<strong>CSV</strong>: <code>text/csv</code>
+</li>
+<li>
+<strong>XML</strong>: <code>text/xml</code>
+</li>
+<li>
+<strong>RTF</strong>: <code>text/rtf</code>
+</li>
+</ul></li>
+<li>Supported code formats for <code><a href="../reference/gemini.html">gemini()</a></code> file workflows:
+<ul><li>
+<strong>JavaScript</strong>: <code>application/x-javascript</code>, <code>text/javascript</code>
+</li>
+<li>
+<strong>Python</strong>: <code>application/x-python</code>, <code>text/x-python</code>
+</li>
+</ul></li>
+<li>Supported image formats for <code><a href="../reference/gemini.html">gemini()</a></code> file workflows:
+<ul><li>
+<strong>PNG</strong>: <code>image/png</code>
+</li>
+<li>
+<strong>JPEG</strong>: <code>image/jpeg</code>
+</li>
+<li>
+<strong>WEBP</strong>: <code>image/webp</code>
+</li>
+<li>
+<strong>HEIC</strong>: <code>image/heic</code>
+</li>
+<li>
+<strong>HEIF</strong>: <code>image/heif</code>
+</li>
+</ul></li>
+<li>Supported video formats for <code><a href="../reference/gemini.html">gemini()</a></code> file workflows:
+<ul><li>
+<strong>MP4</strong>: <code>video/mp4</code>
+</li>
+<li>
+<strong>MPEG</strong>: <code>video/mpeg</code>
+</li>
+<li>
+<strong>MOV</strong>: <code>video/mov</code>
+</li>
+<li>
+<strong>AVI</strong>: <code>video/avi</code>
+</li>
+<li>
+<strong>FLV</strong>: <code>video/x-flv</code>
+</li>
+<li>
+<strong>MPG</strong>: <code>video/mpg</code>
+</li>
+<li>
+<strong>WEBM</strong>: <code>video/webm</code>
+</li>
+<li>
+<strong>WMV</strong>: <code>video/wmv</code>
+</li>
+<li>
+<strong>3GPP</strong>: <code>video/3gpp</code>
+</li>
+</ul></li>
+<li>Supported audio formats for <code><a href="../reference/gemini.html">gemini()</a></code> file workflows:
+<ul><li>
+<strong>WAV</strong>: <code>audio/wav</code>
+</li>
+<li>
+<strong>MP3</strong>: <code>audio/mp3</code>
+</li>
+<li>
+<strong>AIFF</strong>: <code>audio/aiff</code>
+</li>
+<li>
+<strong>AAC</strong>: <code>audio/aac</code>
+</li>
+<li>
+<strong>OGG Vorbis</strong>: <code>audio/ogg</code>
+</li>
+<li>
+<strong>FLAC</strong>: <code>audio/flac</code>
+</li>
+</ul></li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.1" id="version-021">Version 0.2.1<a class="anchor" aria-label="anchor" href="#version-021"></a></h2>
+<div class="section level3">
+<h3 id="major-features-0-2-1">Major Features:<a class="anchor" aria-label="anchor" href="#major-features-0-2-1"></a></h3>
 <ul><li>Added <code><a href="../reference/get_metadata.html">get_metadata()</a></code> function to retrieve and format metadata from <code>LLMMessage</code> objects.</li>
 <li>Enhanced the <code>print</code> method for <code>LLMMessage</code> to support printing metadata, controlled via the new <code>tidyllm_print_metadata</code> option or a new <code>.meta</code>-arguement for the print method.</li>
-</ul><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+</ul><div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">conversation</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Write a short poem about software development"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>  </span>
@@ -55,9 +179,12 @@
 <span></span>
 <span><span class="co">#Or allways print it</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>tidyllm_print_metadata<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<p><strong>Improvements:</strong></p>
+</div>
+<div class="section level3">
+<h3 id="bug-fixes-0-2-1">Bug-fixes:<a class="anchor" aria-label="anchor" href="#bug-fixes-0-2-1"></a></h3>
 <ul><li>Fixed a bug in <code><a href="../reference/send_openai_batch.html">send_openai_batch()</a></code> caused by a missing <code>.json</code>-arguement not being passed for messages without schema</li>
 </ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.0" id="version-020">Version 0.2.0<a class="anchor" aria-label="anchor" href="#version-020"></a></h2><p class="text-muted">CRAN release: 2024-11-07</p>
 <p>New CRAN release. Largest changes compared to <strong>0.1.0</strong>:</p>

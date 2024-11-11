@@ -42,11 +42,17 @@ Sys.setenv(ANTHROPIC_API_KEY = "YOUR-ANTHROPIC-API-KEY")
 ```{r, eval= FALSE, echo=TRUE}
 Sys.setenv(OPENAI_API_KEY = "YOUR-OPENAI-API-KEY")
 ```
-3. For Mistral you can set the API key on the [Mistral console page](https://console.mistral.ai/api-keys/) and set it by
+
+3. In the latest development version Google Gemini is also supported. Setup an API-key in the [Google AI Studio](https://aistudio.google.com/app/apikey)
 ``` r
-Sys.setenv(MISTRAL_API_KEY = "MISTRAL-API-KEY-GOES-HERE")
+Sys.setenv(GOOGLE_API_KEY = 'YOUR-GOOGLE-API-KEY')
 ```
-4. For groq (not be confused with [grok](https://x.ai/)) you can setup you API keys in the [Groq Console](https://console.groq.com/playground):
+
+4. For Mistral you can set the API key on the [Mistral console page](https://console.mistral.ai/api-keys/) and set it by
+``` r
+Sys.setenv(MISTRAL_API_KEY = "YOUR-MISTRAL-API-KEY")
+```
+5. For groq (not be confused with [grok](https://x.ai/)) you can setup you API keys in the [Groq Console](https://console.groq.com/playground):
 ```{r, eval= FALSE, echo=TRUE}
 Sys.setenv(GROQ_API_KEY = "YOUR-GROQ-API-KEY")
 ```

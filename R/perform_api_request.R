@@ -57,7 +57,6 @@ perform_api_request <- function(.request,
     
     # Parse the response body as JSON when not streaming
     body_json <- httr2::resp_body_json(response)
-    
     # Use the parsing function provided
     if (!is.null(.parse_response_fn)) {
       assistant_reply <- .parse_response_fn(body_json)

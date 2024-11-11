@@ -7,14 +7,28 @@
 get_metadata(.llm, .index = NULL)
 }
 \arguments{
-\item{.llm}{An \code{LLMMessage} object containing the message history.}
+\item{.llm}{An \code{LLMMessage} object containing the message history.
+This object should include metadata for assistant replies.}
 
-\item{.index}{A positive integer indicating which assistant reply's metadata to extract.
+\item{.index}{A positive integer specifying which assistant reply's metadata to extract.
 If \code{NULL} (default), metadata for all replies is returned.}
 }
 \value{
-A tibble with metadata for the specified assistant reply, or all replies if \code{.index} is \code{NULL}.
+A tibble containing metadata for the specified assistant reply if \code{.index} is provided,
+or metadata for all replies if \code{.index} is \code{NULL}. Returns an empty tibble if no
+assistant replies are found.
 }
 \description{
-Extracts metadata from assistant replies in an \code{LLMMessage} object and returns it as a tibble.
+This function retrieves metadata from assistant replies within an \code{LLMMessage} object.
+It returns the metadata as a tibble.
+}
+\details{
+Metadata columns may include:
+\itemize{
+\item \code{model}: The model used for generating the reply.
+\item \code{timestamp}: The time when the reply was generated.
+\item \code{prompt_tokens}: The number of tokens in the input prompt.
+\item \code{completion_tokens}: The number of tokens in the assistant's reply.
+\item \code{total_tokens}: The total number of tokens (prompt + completion).
+}
 }

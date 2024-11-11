@@ -2,11 +2,11 @@
 #'
 #' This function generates a callback function that processes streaming responses
 #' from different language model APIs. The callback function is specific to the
-#' API provided (`claude`, `ollama`, `"mistral"`, or `openai`) and processes incoming data streams,
+#' API provided and processes incoming data streams,
 #' printing the content to the console and updating a global environment for further use.
 #'
 #' @param .api A character string indicating the API type. Supported values are
-#'   `"claude"`, `"ollama"`, `"mistral"`, `"groq"` and `"openai"`.
+#'   `"claude"`, `"ollama"`, `"mistral"`, `"groq"`, `"openai"`,`"gemini"`  and `"azure_openai"`.
 #' @return A function that serves as a callback to handle streaming responses
 #'   from the specified API. The callback function processes the raw data, updates
 #'   the `.tidyllm_stream_env$stream` object, and prints the streamed content to the console.
@@ -129,10 +129,43 @@ generate_callback_function <- function(.api) {
         
         return(continue_processing)
       }
+  } else if (.api == "gemini") {
+      callback_fn <- function(.data) {
+        #Dirty little parser for only the text lines in the json object google returns piece by piece
+        text_data <- rawToChar(.data, multiple = FALSE)
+        if(stringr::str_detect(text_data,"\"text\":")){
+          text_content <- stringr::str_match(text_data, 
+                                              "\"text\":\\s*\"(.*?)\"")[, 2]
+          lines <- stringr::str_split(text_content, "\n") |> unlist()
+          purrr::walk(lines, function(delta_content) {
+            delta_content <- stringr::str_replace_all(delta_content,"\\\\n","\n")
+           .tidyllm_stream_env$stream <- paste0(.tidyllm_stream_env$stream, delta_content)
+           cat(delta_content)
+           utils::flush.console()
+          })
+        }
+        return(TRUE)  # Continue streaming
+      }
+  } else if (.api == "testing") {    
+    #A callback function for testing to show what's in each chunk an API sends
+    callback_fn <- function(.data) {
+    # Initialize a testing chunk list 
+    if (is.null(.tidyllm_stream_env$testing_chunck_list)) {
+      .tidyllm_stream_env$testing_chunck_list <- list()
+    }
+    
+    # Append new data to the buffer
+    new_data <- rawToChar(.data, multiple = FALSE)
+    .tidyllm_stream_env$testing_chunck_list <- append(.tidyllm_stream_env$testing_chunck_list, new_data)
+    length(.tidyllm_stream_env$testing_chunck_list) |> cat("\n")
+    utils::flush.console()
+    TRUE
+    }
   } else {  
     stop("Unknown API for callback function.")
   }
-  
   return(callback_fn)
 }
+
+
 

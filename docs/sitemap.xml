@@ -20,6 +20,12 @@
 <url><loc>https://edubruell.github.io/tidyllm/reference/df_llm_message.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/fetch_claude_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/fetch_openai_batch.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/gemini.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/gemini_delete_file.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/gemini_embedding.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/gemini_file_metadata.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/gemini_list_files.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/gemini_upload_file.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/generate_callback_function.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/get_metadata.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/get_reply.html</loc></url>

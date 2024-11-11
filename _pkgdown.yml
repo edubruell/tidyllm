@@ -23,6 +23,7 @@ reference:
     contents:
       - openai
       - claude
+      - gemini
       - groq
       - mistral
       - ollama
@@ -44,12 +45,17 @@ reference:
     contents:
     - ollama_embedding
     - openai_embedding
+    - gemini_embedding
     - mistral_embedding
     
   - title: "Other API Functions"
     contents:
     - groq_transcribe
-
+    - gemini_upload_file
+    - gemini_file_metadata
+    - gemini_list_files
+    - gemini_delete_file
+    
   - title: "Ollama Functions"
     contents:
       - ollama_download_model

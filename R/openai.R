@@ -58,7 +58,8 @@ openai <- function(
   c(
     "Input .llm must be an LLMMessage object" = inherits(.llm, "LLMMessage"),
     "Input .model must be a string" = is.character(.model),
-    "Input .max_completion_tokens must be NULL or a positive integer" = is.null(.max_completion_tokens) | (is_integer_valued(.max_completion_tokens) & .max_completion_tokens > 0),    ".frequency_penalty must be numeric or NULL" = is.null(.frequency_penalty) | is.numeric(.frequency_penalty),
+    "Input .max_completion_tokens must be NULL or a positive integer" = is.null(.max_completion_tokens) | (is_integer_valued(.max_completion_tokens) & .max_completion_tokens > 0),    
+    "Input .frequency_penalty must be numeric or NULL" = is.null(.frequency_penalty) | is.numeric(.frequency_penalty),
     "Input .logit_bias must be a list or NULL" = is.null(.logit_bias) | is.list(.logit_bias),
     "Input .logprobs must be logical or NULL" = is.null(.logprobs) | is.logical(.logprobs),
     "Input .top_logprobs must be NULL or an integer between 0 and 20" = is.null(.top_logprobs) | (is_integer_valued(.top_logprobs) & .top_logprobs >= 0 & .top_logprobs <= 20),

@@ -75,10 +75,16 @@ extract_response_metadata <- function(.response) {
     NA
   }
   
-  prompt_tokens <- .response$usage$prompt_tokens %||% .response$usage$input_tokens %||% NA
-  completion_tokens <- .response$usage$completion_tokens %||% .response$usage$output_tokens %||% NA
+  prompt_tokens <- .response$usage$prompt_tokens %||% 
+                   .response$usage$input_tokens %||% 
+                   .response$usageMetadata$promptTokenCount %||% NA
+  
+  completion_tokens <- .response$usage$completion_tokens %||% 
+                       .response$usage$output_tokens %||% 
+                       .response$usageMetadata$candidatesTokenCount %||% NA
   
   total_tokens <- .response$usage$total_tokens %||% 
+    .response$usageMetadata$totalTokenCount %||% 
     if (!is.na(prompt_tokens) && !is.na(completion_tokens)) {
       prompt_tokens + completion_tokens
     } else {
@@ -86,7 +92,7 @@ extract_response_metadata <- function(.response) {
     }
   
   list(
-    model = .response$model %||% NA,
+    model = .response$model %||% .response$modelVersion %||%  NA,
     timestamp = timestamp,
     prompt_tokens = prompt_tokens,
     completion_tokens = completion_tokens,

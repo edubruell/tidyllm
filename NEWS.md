@@ -1,17 +1,63 @@
-# tidyllm Development Version Overview
+# Development Version 0.2.2
 
-The development version of `tidyllm` reflects the ongoing updates in the GitHub repository. Milestone versions are incremented when significant new features, improvements, or breaking changes are introduced.
+## Major Features
 
-## Versioning Policy
-- **0.1.x**: Minor updates and feature additions.
-- **0.x.0**: Releases (will be sent to CRAN)
-- **0.1.0**: First CRAN release and the beginning of versioning.
+- Added functions to work with the Google Gemini API, with the new  `gemini()` main API-function
+- Support for the file upload workflows for Gemini:
+```r
+#Upload a file for use with gemini
+upload_info <- gemini_upload_file("example.mp3")
 
----
+#Make the file available during a Gemini API call
+llm_message("Summarize this speech") |>
+  gemini(.fileid = upload_info$name)
+  
+#Delte the file from the Google servers
+gemini_delete_file(upload_info$name)
+```
 
-# Development Version 0.2.1
+- Brings video and audio support to tidyllm
+- Google Gemini is the second API to fully support `tidyllm_schema()`
+- `gemini()`-requests allow for a wide range of  file types  that can be used for context in messages
+- Supported document formats for `gemini()` file workflows:
+  - **PDF**: `application/pdf`
+  - **TXT**: `text/plain`
+  - **HTML**: `text/html`
+  - **CSS**: `text/css`
+  - **Markdown**: `text/md`
+  - **CSV**: `text/csv`
+  - **XML**: `text/xml`
+  - **RTF**: `text/rtf`
+- Supported code formats for `gemini()` file workflows:
+  - **JavaScript**: `application/x-javascript`, `text/javascript`
+  - **Python**: `application/x-python`, `text/x-python`
+- Supported image formats for `gemini()` file workflows:
+  - **PNG**: `image/png`
+  - **JPEG**: `image/jpeg`
+  - **WEBP**: `image/webp`
+  - **HEIC**: `image/heic`
+  - **HEIF**: `image/heif`
+- Supported video formats for `gemini()` file workflows:
+  - **MP4**: `video/mp4`
+  - **MPEG**: `video/mpeg`
+  - **MOV**: `video/mov`
+  - **AVI**: `video/avi`
+  - **FLV**: `video/x-flv`
+  - **MPG**: `video/mpg`
+  - **WEBM**: `video/webm`
+  - **WMV**: `video/wmv`
+  - **3GPP**: `video/3gpp`
+- Supported audio formats for `gemini()` file workflows:
+  - **WAV**: `audio/wav`
+  - **MP3**: `audio/mp3`
+  - **AIFF**: `audio/aiff`
+  - **AAC**: `audio/aac`
+  - **OGG Vorbis**: `audio/ogg`
+  - **FLAC**: `audio/flac`
+  
+# Version 0.2.1
 
-**Major Features:**
+## Major Features:
 
 - Added `get_metadata()` function to retrieve and format metadata from `LLMMessage` objects.
 - Enhanced the `print` method for `LLMMessage` to support printing metadata, controlled via the new `tidyllm_print_metadata` option or a new `.meta`-arguement for the print method.
@@ -31,7 +77,7 @@ print(conversation,.meta=TRUE)
 options(tidyllm_print_metadata=TRUE)
 ```
 
-**Improvements:**
+## Bug-fixes:
 
 - Fixed a bug in `send_openai_batch()` caused by  a missing `.json`-arguement not being passed for messages without schema
 

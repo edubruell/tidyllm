@@ -100,13 +100,11 @@ LLMMessage <- R6::R6Class(
           }
         }
         
-        # Define specific message histories per API requirements
-        openai_history <- if (no_system) filter_roles(self$message_history, c("user", "assistant")) else self$message_history
-        claude_history <- filter_roles(self$message_history, c("user", "assistant"))
-        
+
         # Switch logic for API types
         switch(api_type,
                "claude" = {
+                 claude_history <- filter_roles(self$message_history, c("user", "assistant"))
                  lapply(claude_history, function(m) {
                    formatted_message <- format_message(m)
                    if (!is.null(formatted_message$image)) {
@@ -122,6 +120,7 @@ LLMMessage <- R6::R6Class(
                  })
                },
                "openai" = {
+                 openai_history <- if (no_system) filter_roles(self$message_history, c("user", "assistant")) else self$message_history
                  lapply(openai_history, function(m) {
                    formatted_message <- format_message(m)
                    if (!is.null(formatted_message$image)) {
@@ -151,6 +150,35 @@ LLMMessage <- R6::R6Class(
                      )
                    } else {
                      list(role = m$role, content = formatted_message$content)
+                   }
+                 })
+               },
+              "gemini" = {
+                 # Filter to only include user and assistant messages
+                 gemini_history <- filter_roles(self$message_history, c("user", "assistant"))
+                 
+                 # Map each message to the expected Gemini format
+                 lapply(gemini_history, function(m) {
+                   
+                   formatted_message <- format_message(m)
+                   if (!is.null(formatted_message$image)) {
+                     list(
+                       role = ifelse(m$role == "user", "user", "model"), 
+                       parts = list(
+                                list(text = formatted_message$content),
+                                list(
+                                    inline_data = list(
+                                            mime_type = formatted_message$image$media_type,
+                                            data      = formatted_message$image$data
+                                      )
+                                    )
+                               )
+                     )
+                   } else {
+                     list(
+                       role = ifelse(m$role == "user", "user", "model"), 
+                       parts = list(text = formatted_message$content)
+                     )
                    }
                  })
                },
