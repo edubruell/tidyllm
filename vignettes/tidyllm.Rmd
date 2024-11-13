@@ -6,6 +6,7 @@ vignette: >
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
+> ⚠️ **Note:**  This vignette refers to the development version 0.2.3. of **tidyllm**, which introduced a major interface change. I you are using the CRAN-version 0.2.0 please refer to the installed vignette by using `vignette("tidyllm")`. Version 0.2.3 is fully backward compatible to the old interface, but will throw deprecation warnings. 
 
 # Introduction to tidyllm
 **tidyllm** is an R package providing a unified interface for interacting with various large language model APIs. This vignette will guide you through the basic setup and usage of **tidyllm**.
@@ -43,12 +44,12 @@ Sys.setenv(ANTHROPIC_API_KEY = "YOUR-ANTHROPIC-API-KEY")
 Sys.setenv(OPENAI_API_KEY = "YOUR-OPENAI-API-KEY")
 ```
 
-3. In the latest development version Google Gemini is also supported. Setup an API-key in the [Google AI Studio](https://aistudio.google.com/app/apikey)
+3. For Google Gemini you can setup an API key in the [Google AI Studio](https://aistudio.google.com/app/apikey)
 ``` r
 Sys.setenv(GOOGLE_API_KEY = 'YOUR-GOOGLE-API-KEY')
 ```
 
-4. For Mistral you can set the API key on the [Mistral console page](https://console.mistral.ai/api-keys/) and set it by
+4. For Mistral you can set an API key on the [Mistral console page](https://console.mistral.ai/api-keys/) and set it by
 ``` r
 Sys.setenv(MISTRAL_API_KEY = "YOUR-MISTRAL-API-KEY")
 ```
@@ -77,7 +78,7 @@ library(tidyllm)
 
 # Start a conversation with Claude
 conversation <- llm_message("What is the capital of France?") |>
-  claude()
+  chat(claude())
 
 #Standard way that llm_messages are printed
 conversation
@@ -95,7 +96,7 @@ conversation
 # Continue the conversation with ChatGPT
 conversation <- conversation |>
   llm_message("What's a famous landmark in this city?") |>
-  openai()
+  chat(openai())
 
 get_reply(conversation)
 ```
@@ -103,11 +104,17 @@ get_reply(conversation)
 c("A famous landmark in Paris is the Eiffel Tower.")
 ```
 
+**tidyllm** is built around a **message-centric** interface design, where most interactions work with a message history, that is created by functions like `llm_message()` or modified by API-functions like `chat()`. These API-functions always work with a combination of verbs and providers:
+
+ - **Verbs** (e.g., `chat()`, `embed()`, `send_batch()`) define the type of action you want to perform.
+ - **Providers** (e.g., `openai()`, `claude()`, `ollama()`) specify the API or service to handle the action.
+ 
+Alternatively there are also provider-specific functions like `openai_chat()` or `claude_chat()` that do the work in the background of the main verbs that you can also call directly.  The documentation for these provider-specific functions offers a comprehensive overview of the full range of actions and input types supported for each API.
 
 ### Sending Images to Models
 
 **tidyllm** also supports sending images to multimodal models. Let's send this picture here:
-```{r, echo=FALSE, out.width="70%"}
+```{r, echo=FALSE, out.width="70%", fig.alt="A photograhp showing lake Garda and the scenery near Torbole, Italy."}
 knitr::include_graphics("picture.jpeg")
 ```
 
@@ -116,7 +123,7 @@ Here we let ChatGPT guess where the picture was made:
 # Describe an image using a llava model on ollama
 image_description <- llm_message("Describe this picture? Can you guess where it was made?",
                                  .imagefile = "picture.jpeg") |>
-  openai(.model = "gpt-4o")
+  chat(openai(.model = "gpt-4o"))
 
 # Get the last reply
 get_reply(image_description)
@@ -140,7 +147,7 @@ To include text from a PDF in your prompt, simply pass the file path to the `.pd
 ```{r pdf,  eval=FALSE, echo=TRUE}
 llm_message("Please summarize the key points from the provided PDF document.", 
      .pdf = "die_verwandlung.pdf") |>
-     openai(.model = "gpt-4o-mini")
+     chat(openai(.model = "gpt-4o-mini"))
 ```
 ```{r pdf_out,  eval=TRUE, echo=FALSE}
   llm_message("Please summarize the key points from the provided PDF document.", 
@@ -190,7 +197,7 @@ library(tidyverse)
 llm_message("Analyze this plot and data summary:", 
                   .capture_plot = TRUE, #Send the plot pane to a model
                   .f = ~{summary(mtcars)}) |> #Run summary(data) and send the output
-  claude()
+  chat(claude())
 ```
 ```{r routputs_base_rq,  eval=TRUE, echo=FALSE}
 # Create a plot for the mtcars example data
@@ -207,9 +214,9 @@ Retrieve an assistant reply as text from a message history with `get_reply()`. S
 
 ```{r eval=FALSE,echo=TRUE}
 conversation <- llm_message("Imagine a German adress.") |>
-     groq() |>
+     chat(groq()) |>
      llm_message("Imagine another address") |>
-     claude()
+     chat(claude())
 
 conversation
 ```
@@ -234,7 +241,7 @@ conversation |> get_reply()
 conversation |> last_reply()
 ```
 
-In the current development version, you can use the `get_metadata()` function to retrieve metadata from assistant replies: 
+You can use the `get_metadata()` function to retrieve metadata on models and token usage from assistant replies: 
 ```{r get_metadata,  eval=FALSE, echo=TRUE}
 conversation |> get_metadata()
 ```
@@ -255,7 +262,7 @@ By default it collects metadata for the whole message history, but you can also 
 
 To make model responses easy to interpret and integrate into your workflow, **tidyllm** supports defining schemas to ensure that models reply with structured outputs in [JSON (JavaScript Object Notation)](https://de.wikipedia.org/wiki/JavaScript_Object_Notation) following your specifications. JSON is a standard format for organizing data in simple key-value pairs, which is both human-readable and machine-friendly.
 
-Currently, `openai()` is the only API function in **tidyllm** that supports schema enforcement through the `.json_schema` argument. This ensures that replies conform to a pre-defined consistent data formatting.
+Currently, `openai()` and `gemini()` are the only API provider functions in **tidyllm** that support schema enforcement through the `.json_schema` argument. This ensures that replies conform to a pre-defined consistent data formatting.
 
 To create schemas, you can use the `tidyllm_schema()` function, which translates your data format specifications into the  [JSON-schema format](https://json-schema.org/) the API requires. This helper function standardizes the data layout by ensuring flat (non-nested) JSON structures with defined data types. Here’s how to define a schema:
 
@@ -280,7 +287,7 @@ address_schema <- tidyllm_schema(
   country = "factor(Germany,France)"
 )
 address <- llm_message("Imagine an address in JSON format that matches the schema.") |>
-        openai(.json_schema = address_schema)
+        chat(openai(.json_schema = address_schema))
 address
 ```
 ```{r schema_out,  eval=TRUE, echo=FALSE}
@@ -299,20 +306,22 @@ The model responded in JSON format, organizing data into key-value pairs like sp
 address |> get_reply_data() |> str()
 ```
 
-Other API functions like `ollama()`, `groq()`, and `mistral()` also support structured outputs through a simpler JSON mode, accessible with the `.json` argument. Since these APIs do not currently support native schema enforcement, you’ll need to prompt the model to follow a specified format directly in your messages. Although `get_reply_data()` can help extract structured data from these responses when you set `.json=TRUE` in each of the API functions, the model may not always adhere strictly to the specified structure. Once these APIs support native schema enforcement, **tidyllm** will integrate full schema functionality for them.
+The OpenAI and the Google Gemini API work with a schema provided by `tidyllm_schema()`. Other API providers like `ollama()`, `groq()`, and `mistral()` also support structured outputs through a simpler JSON mode, accessible with the `.json` argument. Since these APIs do not currently support native schema enforcement, you’ll need to prompt the model to follow a specified format directly in your messages. Although `get_reply_data()` can help extract structured data from these responses when you set `.json=TRUE` in each of the API functions, the model may not always adhere strictly to the specified structure. Once these APIs support native schema enforcement, **tidyllm** will integrate full schema functionality for them.
 
 ### API parameters
 
 Different API functions support different model parameters like, how deterministic the response should be via parameters like temperature. Please read API-documentation and the documentation of the model functions for specific examples.
 
 ```{r temperature,  eval=FALSE, echo=TRUE}
-  temp_example <- llm_message("Explain how temperature parameters work in large language models  and why temperature 0 gives you deterministic outputs in one sentence.")
+  temp_example <- llm_message("Explain how temperature parameters work in large language models 
+                               and why temperature 0 gives you deterministic outputs in one sentence.")
   
   #per default it is non-zero
-  temp_example |> ollama(.temperature=0)
+  temp_example |> chat(ollama(.temperature=0))
 ```
 ```{r temperature_out,  eval=TRUE, echo=FALSE}
-  temp_example <- llm_message("Explain how temperature parameters work in large language models  and why temperature 0 gives you deterministic outputs in one sentence.")
+  temp_example <- llm_message("Explain how temperature parameters work in large language models  
+                               and why temperature 0 gives you deterministic outputs in one sentence.")
 
   temp_example |>
     llm_message("In large language models, temperature parameters control the randomness of generated text by scaling the output probabilities, with higher temperatures introducing more uncertainty and lower temperatures favoring more likely outcomes; specifically, setting temperature to 0 effectively eliminates all randomness, resulting in deterministic outputs because it sets the probability of each token to its maximum likelihood value.",
@@ -321,7 +330,7 @@ Different API functions support different model parameters like, how determinist
 
 ```{r temp2,  eval=FALSE, echo=TRUE}
   #Retrying with .temperature=0
-  temp_example |> ollama(.temperature=0)
+  temp_example |> chat(ollama(.temperature=0))
 ```
 ```{r temp2_out,  eval=TRUE, echo=FALSE}
   temp_example |>
@@ -331,11 +340,24 @@ Different API functions support different model parameters like, how determinist
 
 ### Embeddings
 
-[Embedding models](https://cohere.com/llmu/text-embeddings) in **tidyllm** transform textual inputs into vector representations, capturing semantic information that can enhance similarity comparisons, clustering, and retrieval tasks. You can generate embeddings using functions like `openai_embedding()`, `mistral_embedding()`, and `ollama_embedding()` which each interface with their respective APIs. These functions create vector representations for texts.  These functions return vector representations either for each message in a message history or, more typically for this application, for each entry in a character vector. 
+[Embedding models](https://cohere.com/llmu/text-embeddings) in **tidyllm** transform textual inputs into vector representations, capturing semantic information that can enhance similarity comparisons, clustering, and retrieval tasks. You can generate embeddings with the `embed()`-function. These functions return a semantic vector representation either for each message in a message history or, more typically for this application, for each entry in a character vector:
+
+```{r embed, eval=FALSE, echo=TRUE}
+c("What is the meaning of life?",
+  "How much wood would a woodchuck chuck?",
+  "How does the brain work?") |>
+  embed(ollama())
+```
+```{r embed_output, eval=TRUE, echo=FALSE}
+mock_embedding <- runif(min = -1,max=1,n=400*3)
+dim(mock_embedding)<-c(400,3)
+print(mock_embedding,max = 20)
+```
+Each column in the output matrix is a semantic vector representation of the three texts sent to the model
 
 ### Batch requests
 
-Anthropic and OpenAI, offer batch request options that are around 50% cheaper than standard single-interaction APIs. Batch processing allows you to submit multiple message histories at once, which are then processed together on the model providers servers, usually within a 24-hour period. In **tidyllm**, you can use the `send_claude_batch()` or `send_openai_batch()` functions to submit these batch requests.
+Anthropic and OpenAI, offer batch request options that are around 50% cheaper than standard single-interaction APIs. Batch processing allows you to submit multiple message histories at once, which are then processed together on the model providers servers, usually within a 24-hour period. In **tidyllm**, you can use the `send_batch()` function to submit these batch requests to either API.
 
 Here’s an example of how to send a batch request to Claude’s batch API:
 
@@ -343,25 +365,18 @@ Here’s an example of how to send a batch request to Claude’s batch API:
 #Create a message batch and save it to disk to fetch it later
 glue("Write a poem about {x}", x=c("cats","dogs","hamsters")) |>
   purrr::map(llm_message) |>
-  send_claude_batch() |>
+  send_batch(claude()) |>
   saveRDS("claude_batch.rds")
 ```
-The `send_claude_batch()` function returns the same list of message histories that was input, but marked with an attribute that contains a batch-id from the Claude API as well as unique names for each list element that can be used to stitch together messages with replies, once they are ready.  If you provide a named list of messages, tidyllm will use these names as identifiers in the batch, if these names are unique.
+The `send_batch()` function returns the same list of message histories that was input, but marked with an attribute that contains a batch-id from the Claude API as well as unique names for each list element that can be used to stitch together messages with replies, once they are ready.  If you provide a named list of messages, tidyllm will use these names as identifiers in the batch, if these names are unique.
 
 **Tip:** Saving batch requests to a file allows you to persist them across R sessions, making it easier to manage large jobs and access results later.
 
-```{r, eval=FALSE}
-#Create a message batch and save it to disk to fetch it later
-glue("Write a poem about {x}", x=c("cats","dogs","hamsters")) |>
-  purrr::map(llm_message) |>
-  send_claude_batch() |>
-  saveRDS("claude_batch.rds")
-```
-After sending a batch request, you can check its status with `check_openai_batch()` or `check_claude_batch()` . For example:
+After sending a batch request, you can check its status with `check_batch()`. For example:
 ```{r, eval=FALSE}
 #Check the status of the batch
 readRDS("claude_batch.rds") |>
-   check_claude_batch()
+   check_batch(claude())
 ```
 ```{r, echo=FALSE}
 tribble(
@@ -369,36 +384,108 @@ tribble(
   "msgbatch_02A1B2C3D4E5F6G7H8I9J",  "ended", as.POSIXct("2024-11-01 10:30:00"), as.POSIXct("2024-11-02 10:30:00"), 3, 0, 0, 0
 )
 ```
-The status output shows details such as the number of successful, errored, expired, and canceled requests in the batch, as well as the current status. You can also see all your batch requests with `list_claude_batches()` or in the batches dashboard of the Anthropic console. 
-Once the processing of a batch is completed you can fetch its results with `fetch_claude_batch()` or `fetch_openai_batch()`:
+The status output shows details such as the number of successful, errored, expired, and canceled requests in the batch, as well as the current status. You can also see all your batch requests with `list_batches()` (or in the batches dashboard of the your API provider). 
+Once the processing of a batch is completed you can fetch its results with `fetch_batch()`:
 
 ```{r eval=FALSE}
 conversations <- readRDS("claude_batch.rds") |>
-  fetch_claude_batch()
+  fetch_batch(claude())
 
 poems <- map_chr(conversations, get_reply)
 ```
-The output is a list of message histories, each now updated with new assistant replies. You can further process these responses with **tidyllm's** standard tools.Before launching a large batch operation, it’s good practice to run a few test requests and review outputs with the standard API fuctions. This approach helps confirm that prompt settings and model configurations produce the desired responses, minimizing potential errors or resource waste.
+The output is a list of message histories, each now updated with new assistant replies. You can further process these responses with **tidyllm's** standard tools.Before launching a large batch operation, it’s good practice to run a few test requests and review outputs with the standard `chat()` fuction. This approach helps confirm that prompt settings and model configurations produce the desired responses, minimizing potential errors or resource waste.
 
 ### Streaming back responses (Experimental)
 
-All standard chat API-functions support real-time streaming of reply tokens to the console while the model works with the `.stream=TRUE` argument.  While this feature offers slightly better feedback on model behavior in real-time, it’s not particularly useful for data-analysis workflows. We consider this feature experimental and recommend using non-streaming responses for production tasks. Note that error handling in streaming callbacks varies by API and differs in quality at this time.
+`chat()` supports real-time streaming of reply tokens to the console while the model works with the `.stream=TRUE` argument in the api provider, for most api providers. 
+```{r, eval=FALSE}
+llm_message("Write a lengthy maagzine advertisement for an R package called tidyllm") |>
+  chat(claude(.stream=TRUE))
+```
+While this feature offers slightly better feedback on model behavior in real-time, it’s not particularly useful for data-analysis workflows. We consider this feature experimental and recommend using non-streaming responses for production tasks. Note that error handling in streaming callbacks varies by API and differs in quality at this time.
 
 ### Choosing the Right Model and API
 
 tidyllm supports multiple APIs, each offering distinct large language models with varying strengths. The choice of which model or API to use often depends on the specific task, cost considerations, and data privacy concerns.
 
-1. **`claude()` - Anthropic API:** [Claude](https://docs.anthropic.com/en/docs/welcome) is known for generating thoughtful, nuanced responses, making it ideal for tasks that require more human-like reasoning, such as summarization or creative writing. Claude Sonnet 3.5 currently is one of the top-performing models on many benchmarks. However, it can sometimes be more verbose than necessary, and it lacks direct JSON support, which requires additional prompting and validation to ensure structured output. 
+1. **Anthropic API:** [Claude](https://docs.anthropic.com/en/docs/welcome) is known for generating thoughtful, nuanced responses, making it ideal for tasks that require more human-like reasoning, such as summarization or creative writing. Claude Sonnet 3.5 currently is one of the top-performing models on many benchmarks. However, it can sometimes be more verbose than necessary, and it lacks direct JSON support, which requires additional prompting and validation to ensure structured output. 
 
 
-2. **`openai()` (OpenAI API):** Models by [OpenAI API](https://platform.openai.com/docs/api-reference/chat), particularly the GPT-4o model, are extremely versatile and perform well across a wide range of tasks, including text generation, code completion, and multimodal analysis. In addition the o1-reasoning models offer very good performance for a set of specific task (at a relatively high price). There is also an `azure_openai()` function if you prefer to use the OpenAI API on Microsoft Azure. 
+2. **OpenAI API:** Models by [OpenAI API](https://platform.openai.com/docs/api-reference/chat), particularly the GPT-4o model, are extremely versatile and perform well across a wide range of tasks, including text generation, code completion, and multimodal analysis. In addition the o1-reasoning models offer very good performance for a set of specific task (at a relatively high price). There is also an `azure_openai()` provider function if you prefer to use the OpenAI API on Microsoft Azure. 
 
-3. **`mistral()` (EU-based):** [Mistral](https://docs.mistral.ai/) offers lighter-weight, open-source models developed and hosted in the EU, making it particularly appealing if data protection (e.g., GDPR compliance) is a concern. While the models may not be as powerful as GPT-4o or Claude Sonnet, Mistral offers good performance for standard text generation tasks.
+3. **Google Gemini API:**  Google Gemini is great for long-context tasks — it can handle up to a million tokens! Moreover, with the Gemini API you are able to upload a wide range of media files and use them in the prompts of your models with functions like `gemini_upload_file()`. Using this, Gemini models can be used to process video and audio together with your messages. Here is an example of summarizing a speech:
+```{r, eval=FALSE}
+#Upload a file for use with gemini
+upload_info <- gemini_upload_file("example.mp3")
 
-4. **`groq()` (Fast):** [Groq](https://console.groq.com/docs/quickstart) offers a unique advantage with its custom AI accelerator hardware, that get you the fastest output available on any API. It delivers high performance at low costs, especially for tasks that require fast execution. It hosts many strong open-source models, like **lamma3:70b**. There is also a `groq_transcribe()` function available that allows you to transcribe audio files with the Whipser-Large model on the Groq API.
+#Make the file available during a Gemini API call
+llm_message("Summarize this speech") |>
+  chat(gemini(.fileid = upload_info$name))
+  
+#Delte the file from the Google servers after you are done
+gemini_delete_file(upload_info$name)
+```
 
-5. **`ollama()` (Local Models):** If data privacy is a priority, running open-source models like **gemma2::9B** locally via [ollama](https://ollama.com/) gives you full control over model execution and data. However, the trade-off is that local models require significant computational resources, and are often not quite as powerful as the large API-providers. The [ollama blog](https://ollama.com/blog) regularly has posts about new models and their advantages that you can download via `ollama_download_model()`.
+4. **Mistral API (EU-based):** [Mistral](https://docs.mistral.ai/) offers lighter-weight, open-source models developed and hosted in the EU, making it particularly appealing if data protection (e.g., GDPR compliance) is a concern. While the models may not be as powerful as GPT-4o or Claude Sonnet, Mistral offers good performance for standard text generation tasks.
 
-6. **Other OpenAI-compatible Local Models:** Besides ollama, there are many solutions to run local models that are mostly compatible to the OpenAI API like [llama.cpp](https://github.com/ggerganov/llama.cpp/blob/master/examples/server/README.md), [vllm](https://github.com/vllm-project/vllm) and [many more](https://www.reddit.com/r/LocalLLaMA/comments/16csz5n/best_openai_api_compatible_application_server/). To use such an API you can set the base url of the api with `.api_url` as well as the path to the model-endpoint with `.api_path` argument in the `openai()` function. Set `.compatible=TRUE` to skip api-key checks and rate-limit tracking.  Compatibility with local models solutions may vary depending on the specific API’s implementation, and full functionality cannot be guaranteed.
+5. **Groq API (Fast):** [Groq](https://console.groq.com/docs/quickstart) offers a unique advantage with its custom AI accelerator hardware, that get you the fastest output available on any API. It delivers high performance at low costs, especially for tasks that require fast execution. It hosts many strong open-source models, like **lamma3:70b**. There is also a `groq_transcribe()` function available that allows you to transcribe audio files with the Whipser-Large model on the Groq API.
 
+6. **Ollama (Local Models):** If data privacy is a priority, running open-source models like **gemma2::9B** locally via [ollama](https://ollama.com/) gives you full control over model execution and data. However, the trade-off is that local models require significant computational resources, and are often not quite as powerful as the large API-providers. The [ollama blog](https://ollama.com/blog) regularly has posts about new models and their advantages that you can download via `ollama_download_model()`.
+
+7. **Other OpenAI-compatible Local Models:** Besides ollama, there are many solutions to run local models that are mostly compatible to the OpenAI API like [llama.cpp](https://github.com/ggerganov/llama.cpp/blob/master/examples/server/README.md), [vllm](https://github.com/vllm-project/vllm) and [many more](https://www.reddit.com/r/LocalLLaMA/comments/16csz5n/best_openai_api_compatible_application_server/). To use such an API you can set the base url of the api with `.api_url` as well as the path to the model-endpoint with `.api_path` argument in the `openai()` provider function. Set `.compatible=TRUE` to skip api-key checks and rate-limit tracking.  Compatibility with local models solutions may vary depending on the specific API’s implementation, and full functionality cannot be guaranteed. Ideally you can save complicated configurations like these in an object:
+```{r, eval=FALSE}
+my_provider <- openai(.model="llama3.2:90b",
+          .api_url="http://localhost:11434",
+          .compatible = TRUE,
+          .api_path = "/v1/chat/custom/"
+          )
+
+llm_message("Hi there") |>
+  chat(my_provider)
+```
+
+### Setting a Default Provider
+
+You can also specify default provides with options:
+```{r, eval=FALSE}
+# Set default providers
+#chat provider
+options(tidyllm_chat_default = openai(.model = "gpt-4o"))
+#embedding provider
+options(tidyllm_embed_default = ollama(.model = "all-minilm"))
+#send batch provider
+options(tidyllm_sbatch_default = claude(.temperature=0))
+#check batch provider
+options(tidyllm_cbatch_default = claude())
+#fetch batch provider
+options(tidyllm_fbatch_default = claude())
+#List batches provider
+options(tidyllm_lbatch_default = claude())
+
+# Now you can use chat() or embed() without explicitly specifying a provider
+conversation <- llm_message("Hello, what is the weather today?") |> 
+  chat()
+
+embeddings <- c("What is AI?", "Define machine learning.") |> 
+  embed()
+
+# Now you can use batch functions without explicitly specifying a provider
+batch_messages <- list(
+  llm_message("Write a poem about the sea."),
+  llm_message("Summarize the theory of relativity."),
+  llm_message("Invent a name for a new genre of music.")
+)
+
+# Send batch using default for send_batch()
+batch_results <- batch_messages |> send_batch()
+
+# Check batch status using default for check_batch()
+status <- check_batch(batch_results)
+
+# Fetch completed results using default for fetch_batch()
+completed_results <- fetch_batch(batch_results)
+
+# List all batches using default for list_batches()
+all_batches <- list_batches()
+```
 

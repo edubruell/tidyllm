@@ -9,6 +9,7 @@
 #' @param .dry_run If TRUE, perform a dry run and return the request object.
 #'
 #' @return A list containing the assistant's reply and response headers.
+#' @noRd
 perform_api_request <- function(.request, 
                                 .api, 
                                 .stream = FALSE, 

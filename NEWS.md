@@ -1,4 +1,46 @@
-# Development Version 0.2.2
+# Development Version 0.2.3
+
+## Major Interface Overhaul
+
+`tidyllm` has introduced a verb-based interface overhaul to provide a more intuitive and flexible user experience. Previously, provider-specific functions like `claude()`, `openai()`, and others were directly used for chat-based workflows. Now, these functions primarily serve as provider configuration for some general verbs like `chat()`.
+
+### Key Changes:
+- **New Verb-Based Interface**: Users can now use verbs like `chat()`, `embed()`, `send_batch()`, `check_batch()`, and `fetch_batch()` to interact with APIs. These functions always work with a combination of verbs and providers:
+  - **Verbs** (e.g., `chat()`, `embed()`, `send_batch()`) define the type of action you want to perform.
+  - **Providers** (e.g., `openai()`, `claude()`, `ollama()`) are an arguement of verbs and specify the API to handle the action with and take provider-specific arguments
+
+Each verb and provider combination routes the interaction to provider-specific functions like `openai_chat()` or `claude_chat()` that do the work in the background. These functions can  also be called directly as an alternative more verbose and  provider-specific interface. 
+  
+### Old Usage:
+```r
+llm_message("Hello World") |>
+  openai(.model = "gpt-4o")
+```
+
+### New Usage:
+```r
+# Recommended Verb-Based Approach
+llm_message("Hello World") |>
+  chat(openai(.model = "gpt-4o"))
+  
+# Or even configuring a provider outside
+my_ollama <- ollama(.model = "llama3.2-vision:90B",
+       .ollama_server = "https://ollama.example-server.de",
+       .temperature = 0)
+
+llm_message("Hello World") |>
+  chat(my_ollama)
+
+# Alternative Approach is to use more verbose specific functions:
+llm_message("Hello World") |>
+  openai_chat(.model = "gpt-4o")
+```
+
+- **Backward Compatibility**:
+  - The old functions (`openai()`, `claude()`, etc.) still work if you directly supply an `LLMMessage` as arguement, but issue deprecation warnings when used directly for chat.
+  - Users are encouraged to transition to the new interface for future-proof workflows.
+  
+# Version 0.2.2
 
 ## Major Features
 

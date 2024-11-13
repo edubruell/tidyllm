@@ -26,7 +26,7 @@ LLMMessage <- R6::R6Class(
       self$add_message("system", self$system_prompt)
     },
     
-    
+    #' @description
     #' Deep Clone of LLMMessage Object
     #'
     #' This method creates a deep copy of the `LLMMessage` object. It ensures that 
@@ -43,7 +43,7 @@ LLMMessage <- R6::R6Class(
       return(new_copy)
     },
     
-    
+    #' @description
     #' Add a message
     #' 
     #' Adds a message to the history. Optionally includes media.
@@ -68,6 +68,7 @@ LLMMessage <- R6::R6Class(
       invisible(self)
     },
     
+    #' @description
     #' Convert to API format
     #' 
     #' Converts the message history to a format suitable for various API calls.
@@ -186,11 +187,10 @@ LLMMessage <- R6::R6Class(
         )
     },
     
-    #' Simple helper function to determine whether the message history contains 
-    #' an image
-    #' We check this function whenever we call models that do not support images
-    #' so we can post a warning to the user that images were found but not sent
-    #' to the model
+    #' @description
+    #' Simple helper method to determine whether the message history contains 
+    #' an image.
+    #' 
     #' @return Returns TRUE if the message hisotry contains images
     has_image= function() {
     
@@ -207,6 +207,7 @@ LLMMessage <- R6::R6Class(
         }) |> max() |> as.logical()
     },
     
+    #' @description
     #' Remove a Message by Index
     #'
     #' Removes a message from the message history at the specified index.
@@ -276,9 +277,8 @@ LLMMessage <- R6::R6Class(
 
 #' Create or Update Large Language Model Message Object
 #'
-#' This function allows the creation of a new LLMMessage object or the updating of an existing one.
-#' It can handle the addition of text prompts and various media types such as images, PDFs, text files, or plots.
-#' The function includes input validation to ensure that all provided parameters are in the correct format.
+#' This function creates a new `LLMMessage` object or updates an existing one.
+#' It supports adding text prompts and various media types, such as images, PDFs, text files, or plots.
 #'
 #' @param .llm An existing LLMMessage object or an initial text prompt.
 #' @param .prompt Text prompt to add to the message history.
@@ -293,6 +293,8 @@ LLMMessage <- R6::R6Class(
 #' @importFrom R6 R6Class
 #' @importFrom jsonlite toJSON
 #' @importFrom base64enc base64encode
+#' @family Message Creation Utilities
+#' @seealso [df_llm_message()]
 #' @export
 llm_message <- function(.llm = NULL, 
                         .prompt = NULL, 
@@ -426,23 +428,16 @@ llm_message <- function(.llm = NULL,
 }
 
 
-
-
-
 #' Convert a Data Frame to an LLMMessage Object
 #'
-#' This function takes a data frame and converts it into an LLMMessage object
-#' representing a conversation history. The data frame should contain specific
-#' columns (`role` and `content`) with each row representing a message in the
-#' conversation.
+#' This function converts a data frame into an `LLMMessage` object representing a conversation history.
+#' The data frame must have specific columns (`role` and `content`), with each row representing a message.
 #'
 #' @param .df A data frame with at least two rows and columns `role` and `content`.
-#'            The column `role` should contain values from "user", "assistant", or "system",
-#'            and `content` should be of type character.
-#'
-#' @return An LLMMessage object containing the structured messages as per the input data frame.
-#'
-#'
+#'   The `role` column should contain "user", "assistant", or "system". The `content` column should contain the corresponding message text.
+#' @return An `LLMMessage` object representing the structured conversation.
+#' @family Message Creation Utilities
+#' @seealso [llm_message()]
 #' @export
 df_llm_message <- function(.df){
   #Validate the inputs

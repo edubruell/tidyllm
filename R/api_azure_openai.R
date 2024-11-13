@@ -35,14 +35,14 @@
 #' result <- azure_openai(msg)
 #' 
 #' # With custom parameters
-#' result2 <- azure_openai(msg, 
+#' result2 <- azure_openai_chat(msg, 
 #'                  .deployment = "gpt-4o-mini",
 #'                  .temperature = 0.7, 
 #'                  .max_tokens = 1000)
 #' }
 #'
 #' @export
-azure_openai <- function(
+azure_openai_chat <- function(
     .llm,
     .endpoint_url = Sys.getenv("AZURE_ENDPOINT_URL"),
     .deployment = "gpt-4o-mini",
@@ -207,3 +207,24 @@ azure_openai <- function(
   return(llm_copy)
 }
 
+#' Azure-OpenAI Endpoint Provider Function
+#'
+#' The `azure_openai()` function acts as an interface for interacting with the Azure OpenAI API 
+#' through main `tidyllm` verbs.
+#' 
+#' `azure_openai()` currently routes messages only to `azure_openai_chat()` when used with `chat()`.
+#'
+#' @param ... Parameters to be passed to the Azure OpenAI API specific function, 
+#'   such as model configuration, input text, or API-specific options.
+#' @param .called_from An internal argument that specifies which action (e.g., 
+#'   `chat`) the function is being invoked from. 
+#'   This argument is automatically managed and should not be modified by the user.
+#'
+#' @return The result of the requested action, depending on the specific function invoked 
+#'   (currently, only an updated `LLMMessage` object for `azure_openai_chat()`).
+#'
+#' @export
+azure_openai <- create_provider_function(
+  .name = "azure_openai",
+  chat = azure_openai_chat
+)

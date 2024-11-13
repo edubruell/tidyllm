@@ -19,6 +19,7 @@
 #'   `message$content` field.
 #' - **For OpenAI, Mistral and Groq**: The function handles JSON data streams and processes content deltas.
 #'   It stops processing when the `[DONE]` message is encountered.
+#' @noRd  
 generate_callback_function <- function(.api) {
   if (.api == "claude") {
     callback_fn <- function(.data) {

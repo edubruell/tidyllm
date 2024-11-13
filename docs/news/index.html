@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -39,12 +39,60 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.2.2" id="development-version-022">Development Version 0.2.2<a class="anchor" aria-label="anchor" href="#development-version-022"></a></h2>
+<h2 class="pkg-version" data-toc-text="0.2.3" id="development-version-023">Development Version 0.2.3<a class="anchor" aria-label="anchor" href="#development-version-023"></a></h2>
+<div class="section level3">
+<h3 id="major-interface-overhaul-0-2-3">Major Interface Overhaul<a class="anchor" aria-label="anchor" href="#major-interface-overhaul-0-2-3"></a></h3>
+<p><code>tidyllm</code> has introduced a verb-based interface overhaul to provide a more intuitive and flexible user experience. Previously, provider-specific functions like <code><a href="../reference/claude.html">claude()</a></code>, <code><a href="../reference/openai.html">openai()</a></code>, and others were directly used for chat-based workflows. Now, these functions primarily serve as provider configuration for some general verbs like <code><a href="../reference/chat.html">chat()</a></code>.</p>
+<div class="section level4">
+<h4 id="key-changes-0-2-3">Key Changes:<a class="anchor" aria-label="anchor" href="#key-changes-0-2-3"></a></h4>
+<ul><li>
+<strong>New Verb-Based Interface</strong>: Users can now use verbs like <code><a href="../reference/chat.html">chat()</a></code>, <code><a href="../reference/embed.html">embed()</a></code>, <code><a href="../reference/send_batch.html">send_batch()</a></code>, <code><a href="../reference/check_batch.html">check_batch()</a></code>, and <code><a href="../reference/fetch_batch.html">fetch_batch()</a></code> to interact with APIs. These functions always work with a combination of verbs and providers:
+<ul><li>
+<strong>Verbs</strong> (e.g., <code><a href="../reference/chat.html">chat()</a></code>, <code><a href="../reference/embed.html">embed()</a></code>, <code><a href="../reference/send_batch.html">send_batch()</a></code>) define the type of action you want to perform.</li>
+<li>
+<strong>Providers</strong> (e.g., <code><a href="../reference/openai.html">openai()</a></code>, <code><a href="../reference/claude.html">claude()</a></code>, <code><a href="../reference/ollama.html">ollama()</a></code>) are an arguement of verbs and specify the API to handle the action with and take provider-specific arguments</li>
+</ul></li>
+</ul><p>Each verb and provider combination routes the interaction to provider-specific functions like <code><a href="../reference/openai_chat.html">openai_chat()</a></code> or <code><a href="../reference/claude_chat.html">claude_chat()</a></code> that do the work in the background. These functions can also be called directly as an alternative more verbose and provider-specific interface.</p>
+</div>
+<div class="section level4">
+<h4 id="old-usage-0-2-3">Old Usage:<a class="anchor" aria-label="anchor" href="#old-usage-0-2-3"></a></h4>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Hello World"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-4o"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level4">
+<h4 id="new-usage-0-2-3">New Usage:<a class="anchor" aria-label="anchor" href="#new-usage-0-2-3"></a></h4>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Recommended Verb-Based Approach</span></span>
+<span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Hello World"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-4o"</span><span class="op">)</span><span class="op">)</span></span>
+<span>  </span>
+<span><span class="co"># Or even configuring a provider outside</span></span>
+<span><span class="va">my_ollama</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ollama.html">ollama</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"llama3.2-vision:90B"</span>,</span>
+<span>       .ollama_server <span class="op">=</span> <span class="st">"https://ollama.example-server.de"</span>,</span>
+<span>       .temperature <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Hello World"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="va">my_ollama</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Alternative Approach is to use more verbose specific functions:</span></span>
+<span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Hello World"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/openai_chat.html">openai_chat</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-4o"</span><span class="op">)</span></span></code></pre></div>
+<ul><li>
+<strong>Backward Compatibility</strong>:
+<ul><li>The old functions (<code><a href="../reference/openai.html">openai()</a></code>, <code><a href="../reference/claude.html">claude()</a></code>, etc.) still work if you directly supply an <code>LLMMessage</code> as arguement, but issue deprecation warnings when used directly for chat.</li>
+<li>Users are encouraged to transition to the new interface for future-proof workflows.</li>
+</ul></li>
+</ul></div>
+</div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.2" id="version-022">Version 0.2.2<a class="anchor" aria-label="anchor" href="#version-022"></a></h2>
 <div class="section level3">
 <h3 id="major-features-0-2-2">Major Features<a class="anchor" aria-label="anchor" href="#major-features-0-2-2"></a></h3>
 <ul><li>Added functions to work with the Google Gemini API, with the new <code><a href="../reference/gemini.html">gemini()</a></code> main API-function</li>
 <li>Support for the file upload workflows for Gemini:</li>
-</ul><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+</ul><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">#Upload a file for use with gemini</span></span>
 <span><span class="va">upload_info</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gemini_upload_file.html">gemini_upload_file</a></span><span class="op">(</span><span class="st">"example.mp3"</span><span class="op">)</span></span>
 <span></span>
@@ -167,7 +215,7 @@
 <h3 id="major-features-0-2-1">Major Features:<a class="anchor" aria-label="anchor" href="#major-features-0-2-1"></a></h3>
 <ul><li>Added <code><a href="../reference/get_metadata.html">get_metadata()</a></code> function to retrieve and format metadata from <code>LLMMessage</code> objects.</li>
 <li>Enhanced the <code>print</code> method for <code>LLMMessage</code> to support printing metadata, controlled via the new <code>tidyllm_print_metadata</code> option or a new <code>.meta</code>-arguement for the print method.</li>
-</ul><div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+</ul><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">conversation</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Write a short poem about software development"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>  </span>
@@ -301,7 +349,7 @@
 <ul><li>
 <strong>Message Retrieval Functions</strong>: Added functions to retrieve single messages from conversations:
 <ul><li>
-<code><a href="../reference/last_user_message.html">last_user_message()</a></code> pulls the last message the user sent.</li>
+<code><a href="../reference/get_user_message.html">last_user_message()</a></code> pulls the last message the user sent.</li>
 <li>
 <code><a href="../reference/get_reply.html">get_reply()</a></code> gets the assistant reply at a given index of assistant messages.</li>
 <li>
@@ -358,13 +406,13 @@
 <h2 class="pkg-version" data-toc-text="0.1.1" id="version-011">Version 0.1.1<a class="anchor" aria-label="anchor" href="#version-011"></a></h2>
 <div class="section level3">
 <h3 id="major-features-0-1-1">Major Features<a class="anchor" aria-label="anchor" href="#major-features-0-1-1"></a></h3>
-<ul><li><p><strong>JSON Mode</strong>: JSON mode is now more widely supported across all API functions, allowing for structured outputs when APIs support them. The <code>.json</code> argument is now passed only to API functions, specifying how the API should respond, and it is not needed anymore in <code><a href="../reference/last_reply.html">last_reply()</a></code>.</p></li>
-<li><p><strong>Improved <code><a href="../reference/last_reply.html">last_reply()</a></code> Behavior</strong>: The behavior of the <code><a href="../reference/last_reply.html">last_reply()</a></code> function has changed. It now automatically handles JSON replies by parsing them into structured data and falling back to raw text in case of errors. You can still force raw text replies even for JSON output using the <code>.raw</code> argument.</p></li>
+<ul><li><p><strong>JSON Mode</strong>: JSON mode is now more widely supported across all API functions, allowing for structured outputs when APIs support them. The <code>.json</code> argument is now passed only to API functions, specifying how the API should respond, and it is not needed anymore in <code><a href="../reference/get_reply.html">last_reply()</a></code>.</p></li>
+<li><p><strong>Improved <code><a href="../reference/get_reply.html">last_reply()</a></code> Behavior</strong>: The behavior of the <code><a href="../reference/get_reply.html">last_reply()</a></code> function has changed. It now automatically handles JSON replies by parsing them into structured data and falling back to raw text in case of errors. You can still force raw text replies even for JSON output using the <code>.raw</code> argument.</p></li>
 </ul></div>
 <div class="section level3">
 <h3 id="breaking-changes-0-1-1">Breaking Changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-1-1"></a></h3>
 <ul><li>
-<strong><code><a href="../reference/last_reply.html">last_reply()</a></code></strong>: The <code>.json</code> argument is no longer used, and JSON replies are automatically parsed. Use <code>.raw</code> to force raw text replies.</li>
+<strong><code><a href="../reference/get_reply.html">last_reply()</a></code></strong>: The <code>.json</code> argument is no longer used, and JSON replies are automatically parsed. Use <code>.raw</code> to force raw text replies.</li>
 </ul></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

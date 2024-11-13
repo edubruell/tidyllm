@@ -26,7 +26,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -73,6 +73,14 @@
 
     
     
+<blockquote>
+<p>⚠️ <strong>Note:</strong> This vignette refers to the development
+version 0.2.3. of <strong>tidyllm</strong>, which introduced a major
+interface change. I you are using the CRAN-version 0.2.0 please refer to
+the installed vignette by using <code><a href="../articles/tidyllm.html">vignette("tidyllm")</a></code>.
+Version 0.2.3 is fully backward compatible to the old interface, but
+will throw deprecation warnings.</p>
+</blockquote>
 <div class="section level2">
 <h2 id="introduction-to-tidyllm">Introduction to tidyllm<a class="anchor" aria-label="anchor" href="#introduction-to-tidyllm"></a>
 </h2>
@@ -115,14 +123,13 @@ it with:</li>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Sys.setenv.html" class="external-link">Sys.setenv</a></span><span class="op">(</span>OPENAI_API_KEY <span class="op">=</span> <span class="st">"YOUR-OPENAI-API-KEY"</span><span class="op">)</span></span></code></pre></div>
 <ol start="3" style="list-style-type: decimal">
-<li>In the latest development version Google Gemini is also supported.
-Setup an API-key in the <a href="https://aistudio.google.com/app/apikey" class="external-link">Google AI Studio</a>
+<li>For Google Gemini you can setup an API key in the <a href="https://aistudio.google.com/app/apikey" class="external-link">Google AI Studio</a>
 </li>
 </ol>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Sys.setenv.html" class="external-link">Sys.setenv</a></span><span class="op">(</span>GOOGLE_API_KEY <span class="op">=</span> <span class="st">'YOUR-GOOGLE-API-KEY'</span><span class="op">)</span></span></code></pre></div>
 <ol start="4" style="list-style-type: decimal">
-<li>For Mistral you can set the API key on the <a href="https://console.mistral.ai/api-keys/" class="external-link">Mistral console page</a> and
+<li>For Mistral you can set an API key on the <a href="https://console.mistral.ai/api-keys/" class="external-link">Mistral console page</a> and
 set it by</li>
 </ol>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
@@ -154,10 +161,15 @@ different language models:</p>
 <span></span>
 <span><span class="co"># Start a conversation with Claude</span></span>
 <span><span class="va">conversation</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"What is the capital of France?"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co">#Standard way that llm_messages are printed</span></span>
 <span><span class="va">conversation</span></span></code></pre></div>
+<pre><code><span><span class="co">## </span></span>
+<span><span class="co">## Attaching package: 'tidyllm'</span></span></code></pre>
+<pre><code><span><span class="co">## The following object is masked from 'package:stats':</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">##     embed</span></span></code></pre>
 <pre><code><span><span class="co">## Message History:</span></span>
 <span><span class="co">## system: You are a helpful assistant</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span>
@@ -165,27 +177,49 @@ different language models:</p>
 <span><span class="co">## --------------------------------------------------------------</span></span>
 <span><span class="co">## assistant: The capital of France is Paris.</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span></code></pre>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Continue the conversation with ChatGPT</span></span>
 <span><span class="va">conversation</span> <span class="op">&lt;-</span> <span class="va">conversation</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"What's a famous landmark in this city?"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/get_reply.html">get_reply</a></span><span class="op">(</span><span class="va">conversation</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## [1] "A famous landmark in Paris is the Eiffel Tower."</span></span></code></pre>
+<p><strong>tidyllm</strong> is built around a
+<strong>message-centric</strong> interface design, where most
+interactions work with a message history, that is created by functions
+like <code><a href="../reference/llm_message.html">llm_message()</a></code> or modified by API-functions like
+<code><a href="../reference/chat.html">chat()</a></code>. These API-functions always work with a combination
+of verbs and providers:</p>
+<ul>
+<li>
+<strong>Verbs</strong> (e.g., <code><a href="../reference/chat.html">chat()</a></code>,
+<code><a href="../reference/embed.html">embed()</a></code>, <code><a href="../reference/send_batch.html">send_batch()</a></code>) define the type of
+action you want to perform.</li>
+<li>
+<strong>Providers</strong> (e.g., <code><a href="../reference/openai.html">openai()</a></code>,
+<code><a href="../reference/claude.html">claude()</a></code>, <code><a href="../reference/ollama.html">ollama()</a></code>) specify the API or service
+to handle the action.</li>
+</ul>
+<p>Alternatively there are also provider-specific functions like
+<code><a href="../reference/openai_chat.html">openai_chat()</a></code> or <code><a href="../reference/claude_chat.html">claude_chat()</a></code> that do the
+work in the background of the main verbs that you can also call
+directly. The documentation for these provider-specific functions offers
+a comprehensive overview of the full range of actions and input types
+supported for each API.</p>
 </div>
 <div class="section level4">
 <h4 id="sending-images-to-models">Sending Images to Models<a class="anchor" aria-label="anchor" href="#sending-images-to-models"></a>
 </h4>
 <p><strong>tidyllm</strong> also supports sending images to multimodal
 models. Let’s send this picture here:
-<img src="picture.jpeg" width="70%"></p>
+<img src="picture.jpeg" alt="A photograhp showing lake Garda and the scenery near Torbole, Italy." width="70%"></p>
 <p>Here we let ChatGPT guess where the picture was made:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Describe an image using a llava model on ollama</span></span>
 <span><span class="va">image_description</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Describe this picture? Can you guess where it was made?"</span>,</span>
 <span>                                 .imagefile <span class="op">=</span> <span class="st">"picture.jpeg"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-4o"</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-4o"</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Get the last reply</span></span>
 <span><span class="fu"><a href="../reference/get_reply.html">get_reply</a></span><span class="op">(</span><span class="va">image_description</span><span class="op">)</span></span></code></pre></div>
@@ -201,14 +235,14 @@ assistant.</p>
 <p>To use this feature, you need to have the <code>pdftools</code>
 package installed. If it is not already installed, you can install it
 with:</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"pdftools"</span><span class="op">)</span></span></code></pre></div>
 <p>To include text from a PDF in your prompt, simply pass the file path
 to the <code>.pdf</code> argument of the <code>chat</code> function:</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Please summarize the key points from the provided PDF document."</span>, </span>
 <span>     .pdf <span class="op">=</span> <span class="st">"die_verwandlung.pdf"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>     <span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-4o-mini"</span><span class="op">)</span></span></code></pre></div>
+<span>     <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-4o-mini"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Message History:</span></span>
 <span><span class="co">## system: You are a helpful assistant</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span>
@@ -247,7 +281,7 @@ which console output will be captured and appended to the message when
 you run it.</p>
 <p>In addition you can use <code>.capture_plot</code> to send the last
 plot pane to a model.</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tidyverse.tidyverse.org" class="external-link">tidyverse</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Create a plot for the mtcars example data</span></span>
@@ -257,12 +291,12 @@ plot pane to a model.</p>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>x<span class="op">=</span><span class="st">"Weight"</span>,y<span class="op">=</span><span class="st">"Miles per gallon"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tidyllm_files/figure-html/routputs_base-1.png" width="700"></p>
 <p>Now we can send the plot and data summary to a language model:</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tidyverse.tidyverse.org" class="external-link">tidyverse</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Analyze this plot and data summary:"</span>, </span>
 <span>                  .capture_plot <span class="op">=</span> <span class="cn">TRUE</span>, <span class="co">#Send the plot pane to a model</span></span>
 <span>                  .f <span class="op">=</span> <span class="op">~</span><span class="op">{</span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">mtcars</span><span class="op">)</span><span class="op">}</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="co">#Run summary(data) and send the output</span></span>
-<span>  <span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Message History:</span></span>
 <span><span class="co">## system: You are a helpful assistant</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span>
@@ -305,11 +339,11 @@ plot pane to a model.</p>
 <p>Retrieve an assistant reply as text from a message history with
 <code><a href="../reference/get_reply.html">get_reply()</a></code>. Specify an index to choose which assistant
 message to get:</p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">conversation</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Imagine a German adress."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>     <span class="fu"><a href="../reference/groq.html">groq</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>     <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/groq.html">groq</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>     <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Imagine another address"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>     <span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>     <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">conversation</span></span></code></pre></div>
 <pre><code><span><span class="co">## Message History:</span></span>
@@ -332,24 +366,23 @@ message to get:</p>
 <span><span class="co">## 42103 Wuppertal</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span></code></pre>
 <p>By default <code><a href="../reference/get_reply.html">get_reply()</a></code> gets the last assistant message.
-Alternatively you can also use <code><a href="../reference/last_reply.html">last_reply()</a></code> as a shortcut
+Alternatively you can also use <code><a href="../reference/get_reply.html">last_reply()</a></code> as a shortcut
 for the latest response.</p>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">#Getting the first </span></span>
 <span><span class="va">conversation</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/get_reply.html">get_reply</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## [1] "Let's imagine a German address: \n\nHerr Müller\nMusterstraße 12\n53111 Bonn"</span></span></code></pre>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">#By default it gets the last reply</span></span>
 <span><span class="va">conversation</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/get_reply.html">get_reply</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## [1] "Let's imagine another German address:\n\nFrau Schmidt\nFichtenweg 78\n42103 Wuppertal"</span></span></code></pre>
-<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co">#Or if you can more easily remember last_reply this works too</span></span>
-<span><span class="va">conversation</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/last_reply.html">last_reply</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## [1] "Let's imagine another German address:\n\nFrau Schmidt\nFichtenweg 78\n42103 Wuppertal"</span></span></code></pre>
-<p>In the current development version, you can use the
-<code><a href="../reference/get_metadata.html">get_metadata()</a></code> function to retrieve metadata from assistant
-replies:</p>
 <div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co">#Or if you can more easily remember last_reply this works too</span></span>
+<span><span class="va">conversation</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/get_reply.html">last_reply</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## [1] "Let's imagine another German address:\n\nFrau Schmidt\nFichtenweg 78\n42103 Wuppertal"</span></span></code></pre>
+<p>You can use the <code><a href="../reference/get_metadata.html">get_metadata()</a></code> function to retrieve
+metadata on models and token usage from assistant replies:</p>
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">conversation</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/get_metadata.html">get_metadata</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 2 × 5</span></span></span>
 <span><span class="co">##   model  timestamp           prompt_tokens completion_tokens</span></span>
@@ -373,10 +406,11 @@ that models reply with structured outputs in <a href="https://de.wikipedia.org/w
 (JavaScript Object Notation)</a> following your specifications. JSON is
 a standard format for organizing data in simple key-value pairs, which
 is both human-readable and machine-friendly.</p>
-<p>Currently, <code><a href="../reference/openai.html">openai()</a></code> is the only API function in
-<strong>tidyllm</strong> that supports schema enforcement through the
-<code>.json_schema</code> argument. This ensures that replies conform to
-a pre-defined consistent data formatting.</p>
+<p>Currently, <code><a href="../reference/openai.html">openai()</a></code> and <code><a href="../reference/gemini.html">gemini()</a></code> are the
+only API provider functions in <strong>tidyllm</strong> that support
+schema enforcement through the <code>.json_schema</code> argument. This
+ensures that replies conform to a pre-defined consistent data
+formatting.</p>
 <p>To create schemas, you can use the <code><a href="../reference/tidyllm_schema.html">tidyllm_schema()</a></code>
 function, which translates your data format specifications into the <a href="https://json-schema.org/" class="external-link">JSON-schema format</a> the API requires.
 This helper function standardizes the data layout by ensuring flat
@@ -407,7 +441,7 @@ field names and their data types, including:
 </li>
 </ul>
 <p>Here’s an example schema defining an address format:</p>
-<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">address_schema</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tidyllm_schema.html">tidyllm_schema</a></span><span class="op">(</span></span>
 <span>  name <span class="op">=</span> <span class="st">"AddressSchema"</span>,</span>
 <span>  street <span class="op">=</span> <span class="st">"character"</span>,</span>
@@ -418,7 +452,7 @@ field names and their data types, including:
 <span>  country <span class="op">=</span> <span class="st">"factor(Germany,France)"</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">address</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Imagine an address in JSON format that matches the schema."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>        <span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.json_schema <span class="op">=</span> <span class="va">address_schema</span><span class="op">)</span></span>
+<span>        <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.json_schema <span class="op">=</span> <span class="va">address_schema</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">address</span></span></code></pre></div>
 <pre><code><span><span class="co">## Message History:</span></span>
 <span><span class="co">## system: You are a helpful assistant</span></span>
@@ -430,7 +464,7 @@ field names and their data types, including:
 <p>The model responded in JSON format, organizing data into key-value
 pairs like specified. You can then convert this JSON output into an R
 list for easier handling with <code><a href="../reference/get_reply_data.html">get_reply_data()</a></code>:</p>
-<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">address</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/get_reply_data.html">get_reply_data</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## List of 6</span></span>
 <span><span class="co">##  $ street     : chr "Hauptstraße"</span></span>
@@ -439,17 +473,19 @@ list for easier handling with <code><a href="../reference/get_reply_data.html">g
 <span><span class="co">##  $ city       : chr "Berlin"</span></span>
 <span><span class="co">##  $ region     : chr "Berlin"</span></span>
 <span><span class="co">##  $ country    : chr "Germany"</span></span></code></pre>
-<p>Other API functions like <code><a href="../reference/ollama.html">ollama()</a></code>, <code><a href="../reference/groq.html">groq()</a></code>,
-and <code><a href="../reference/mistral.html">mistral()</a></code> also support structured outputs through a
-simpler JSON mode, accessible with the <code>.json</code> argument.
-Since these APIs do not currently support native schema enforcement,
-you’ll need to prompt the model to follow a specified format directly in
-your messages. Although <code><a href="../reference/get_reply_data.html">get_reply_data()</a></code> can help extract
-structured data from these responses when you set
-<code>.json=TRUE</code> in each of the API functions, the model may not
-always adhere strictly to the specified structure. Once these APIs
-support native schema enforcement, <strong>tidyllm</strong> will
-integrate full schema functionality for them.</p>
+<p>The OpenAI and the Google Gemini API work with a schema provided by
+<code><a href="../reference/tidyllm_schema.html">tidyllm_schema()</a></code>. Other API providers like
+<code><a href="../reference/ollama.html">ollama()</a></code>, <code><a href="../reference/groq.html">groq()</a></code>, and <code><a href="../reference/mistral.html">mistral()</a></code>
+also support structured outputs through a simpler JSON mode, accessible
+with the <code>.json</code> argument. Since these APIs do not currently
+support native schema enforcement, you’ll need to prompt the model to
+follow a specified format directly in your messages. Although
+<code><a href="../reference/get_reply_data.html">get_reply_data()</a></code> can help extract structured data from
+these responses when you set <code>.json=TRUE</code> in each of the API
+functions, the model may not always adhere strictly to the specified
+structure. Once these APIs support native schema enforcement,
+<strong>tidyllm</strong> will integrate full schema functionality for
+them.</p>
 </div>
 <div class="section level4">
 <h4 id="api-parameters">API parameters<a class="anchor" aria-label="anchor" href="#api-parameters"></a>
@@ -458,25 +494,28 @@ integrate full schema functionality for them.</p>
 deterministic the response should be via parameters like temperature.
 Please read API-documentation and the documentation of the model
 functions for specific examples.</p>
-<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span>  <span class="va">temp_example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Explain how temperature parameters work in large language models  and why temperature 0 gives you deterministic outputs in one sentence."</span><span class="op">)</span></span>
+<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span>  <span class="va">temp_example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Explain how temperature parameters work in large language models </span></span>
+<span><span class="st">                               and why temperature 0 gives you deterministic outputs in one sentence."</span><span class="op">)</span></span>
 <span>  </span>
 <span>  <span class="co">#per default it is non-zero</span></span>
-<span>  <span class="va">temp_example</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/ollama.html">ollama</a></span><span class="op">(</span>.temperature<span class="op">=</span><span class="fl">0</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="va">temp_example</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/ollama.html">ollama</a></span><span class="op">(</span>.temperature<span class="op">=</span><span class="fl">0</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Message History:</span></span>
 <span><span class="co">## system: You are a helpful assistant</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span>
-<span><span class="co">## user: Explain how temperature parameters work in large language models  and why temperature 0 gives you deterministic outputs in one sentence.</span></span>
+<span><span class="co">## user: Explain how temperature parameters work in large language models  </span></span>
+<span><span class="co">##                                and why temperature 0 gives you deterministic outputs in one sentence.</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span>
 <span><span class="co">## assistant: In large language models, temperature parameters control the randomness of generated text by scaling the output probabilities, with higher temperatures introducing more uncertainty and lower temperatures favoring more likely outcomes; specifically, setting temperature to 0 effectively eliminates all randomness, resulting in deterministic outputs because it sets the probability of each token to its maximum likelihood value.</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span></code></pre>
-<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span>  <span class="co">#Retrying with .temperature=0</span></span>
-<span>  <span class="va">temp_example</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/ollama.html">ollama</a></span><span class="op">(</span>.temperature<span class="op">=</span><span class="fl">0</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="va">temp_example</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/ollama.html">ollama</a></span><span class="op">(</span>.temperature<span class="op">=</span><span class="fl">0</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Message History:</span></span>
 <span><span class="co">## system: You are a helpful assistant</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span>
-<span><span class="co">## user: Explain how temperature parameters work in large language models  and why temperature 0 gives you deterministic outputs in one sentence.</span></span>
+<span><span class="co">## user: Explain how temperature parameters work in large language models  </span></span>
+<span><span class="co">##                                and why temperature 0 gives you deterministic outputs in one sentence.</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span>
 <span><span class="co">## assistant: In large language models, temperature parameters control the randomness of generated text by scaling the output probabilities, with higher temperatures introducing more uncertainty and lower temperatures favoring more likely outcomes; specifically, setting temperature to 0 effectively eliminates all randomness, resulting in deterministic outputs because it sets the probability of each token to its maximum likelihood value.</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span></code></pre>
@@ -488,13 +527,25 @@ functions for specific examples.</p>
 models</a> in <strong>tidyllm</strong> transform textual inputs into
 vector representations, capturing semantic information that can enhance
 similarity comparisons, clustering, and retrieval tasks. You can
-generate embeddings using functions like
-<code><a href="../reference/openai_embedding.html">openai_embedding()</a></code>, <code><a href="../reference/mistral_embedding.html">mistral_embedding()</a></code>, and
-<code><a href="../reference/ollama_embedding.html">ollama_embedding()</a></code> which each interface with their
-respective APIs. These functions create vector representations for
-texts. These functions return vector representations either for each
+generate embeddings with the <code><a href="../reference/embed.html">embed()</a></code>-function. These
+functions return a semantic vector representation either for each
 message in a message history or, more typically for this application,
-for each entry in a character vector.</p>
+for each entry in a character vector:</p>
+<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"What is the meaning of life?"</span>,</span>
+<span>  <span class="st">"How much wood would a woodchuck chuck?"</span>,</span>
+<span>  <span class="st">"How does the brain work?"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/embed.html">embed</a></span><span class="op">(</span><span class="fu"><a href="../reference/ollama.html">ollama</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">##                 [,1]         [,2]         [,3]</span></span>
+<span><span class="co">##   [1,] -0.8384997249 -0.332353365  0.917455798</span></span>
+<span><span class="co">##   [2,]  0.6686660745  0.498545304 -0.280079755</span></span>
+<span><span class="co">##   [3,]  0.2015217724  0.826316021 -0.602027516</span></span>
+<span><span class="co">##   [4,] -0.6855831170 -0.591341874  0.452570635</span></span>
+<span><span class="co">##   [5,] -0.9852011176 -0.056488777 -0.663735099</span></span>
+<span><span class="co">##   [6,] -0.0672130054 -0.229633799 -0.547037341</span></span>
+<span><span class="co">##  [ reached getOption("max.print") -- omitted 394 rows ]</span></span></code></pre>
+<p>Each column in the output matrix is a semantic vector representation
+of the three texts sent to the model</p>
 </div>
 <div class="section level4">
 <h4 id="batch-requests">Batch requests<a class="anchor" aria-label="anchor" href="#batch-requests"></a>
@@ -504,18 +555,18 @@ cheaper than standard single-interaction APIs. Batch processing allows
 you to submit multiple message histories at once, which are then
 processed together on the model providers servers, usually within a
 24-hour period. In <strong>tidyllm</strong>, you can use the
-<code><a href="../reference/send_claude_batch.html">send_claude_batch()</a></code> or <code><a href="../reference/send_openai_batch.html">send_openai_batch()</a></code>
-functions to submit these batch requests.</p>
+<code><a href="../reference/send_batch.html">send_batch()</a></code> function to submit these batch requests to
+either API.</p>
 <p>Here’s an example of how to send a batch request to Claude’s batch
 API:</p>
-<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">#Create a message batch and save it to disk to fetch it later</span></span>
 <span><span class="fu"><a href="https://glue.tidyverse.org/reference/glue.html" class="external-link">glue</a></span><span class="op">(</span><span class="st">"Write a poem about {x}"</span>, x<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cats"</span>,<span class="st">"dogs"</span>,<span class="st">"hamsters"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">purrr</span><span class="fu">::</span><span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="va">llm_message</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/send_claude_batch.html">send_claude_batch</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/send_batch.html">send_batch</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="st">"claude_batch.rds"</span><span class="op">)</span></span></code></pre></div>
-<p>The <code><a href="../reference/send_claude_batch.html">send_claude_batch()</a></code> function returns the same list
-of message histories that was input, but marked with an attribute that
+<p>The <code><a href="../reference/send_batch.html">send_batch()</a></code> function returns the same list of
+message histories that was input, but marked with an attribute that
 contains a batch-id from the Claude API as well as unique names for each
 list element that can be used to stitch together messages with replies,
 once they are ready. If you provide a named list of messages, tidyllm
@@ -524,19 +575,12 @@ unique.</p>
 <p><strong>Tip:</strong> Saving batch requests to a file allows you to
 persist them across R sessions, making it easier to manage large jobs
 and access results later.</p>
-<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co">#Create a message batch and save it to disk to fetch it later</span></span>
-<span><span class="fu"><a href="https://glue.tidyverse.org/reference/glue.html" class="external-link">glue</a></span><span class="op">(</span><span class="st">"Write a poem about {x}"</span>, x<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cats"</span>,<span class="st">"dogs"</span>,<span class="st">"hamsters"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">purrr</span><span class="fu">::</span><span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="va">llm_message</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/send_claude_batch.html">send_claude_batch</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="st">"claude_batch.rds"</span><span class="op">)</span></span></code></pre></div>
 <p>After sending a batch request, you can check its status with
-<code><a href="../reference/check_openai_batch.html">check_openai_batch()</a></code> or <code><a href="../reference/check_claude_batch.html">check_claude_batch()</a></code> .
-For example:</p>
-<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
+<code><a href="../reference/check_batch.html">check_batch()</a></code>. For example:</p>
+<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">#Check the status of the batch</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"claude_batch.rds"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>   <span class="fu"><a href="../reference/check_claude_batch.html">check_claude_batch</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<span>   <span class="fu"><a href="../reference/check_batch.html">check_batch</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
 <span><span class="co">##   batch_id          status created_at          expires_at          req_succeeded</span></span>
 <span><span class="co">##   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dttm&gt;</span>              <span style="color: #949494; font-style: italic;">&lt;dttm&gt;</span>                      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
@@ -545,34 +589,36 @@ For example:</p>
 <p>The status output shows details such as the number of successful,
 errored, expired, and canceled requests in the batch, as well as the
 current status. You can also see all your batch requests with
-<code><a href="../reference/list_claude_batches.html">list_claude_batches()</a></code> or in the batches dashboard of the
-Anthropic console. Once the processing of a batch is completed you can
-fetch its results with <code><a href="../reference/fetch_claude_batch.html">fetch_claude_batch()</a></code> or
-<code><a href="../reference/fetch_openai_batch.html">fetch_openai_batch()</a></code>:</p>
-<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
+<code><a href="../reference/list_batches.html">list_batches()</a></code> (or in the batches dashboard of the your API
+provider). Once the processing of a batch is completed you can fetch its
+results with <code><a href="../reference/fetch_batch.html">fetch_batch()</a></code>:</p>
+<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">conversations</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"claude_batch.rds"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/fetch_claude_batch.html">fetch_claude_batch</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="../reference/fetch_batch.html">fetch_batch</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">poems</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map_chr</a></span><span class="op">(</span><span class="va">conversations</span>, <span class="va">get_reply</span><span class="op">)</span></span></code></pre></div>
 <p>The output is a list of message histories, each now updated with new
 assistant replies. You can further process these responses with
 <strong>tidyllm’s</strong> standard tools.Before launching a large batch
 operation, it’s good practice to run a few test requests and review
-outputs with the standard API fuctions. This approach helps confirm that
-prompt settings and model configurations produce the desired responses,
-minimizing potential errors or resource waste.</p>
+outputs with the standard <code><a href="../reference/chat.html">chat()</a></code> fuction. This approach
+helps confirm that prompt settings and model configurations produce the
+desired responses, minimizing potential errors or resource waste.</p>
 </div>
 <div class="section level4">
 <h4 id="streaming-back-responses-experimental">Streaming back responses (Experimental)<a class="anchor" aria-label="anchor" href="#streaming-back-responses-experimental"></a>
 </h4>
-<p>All standard chat API-functions support real-time streaming of reply
-tokens to the console while the model works with the
-<code>.stream=TRUE</code> argument. While this feature offers slightly
-better feedback on model behavior in real-time, it’s not particularly
-useful for data-analysis workflows. We consider this feature
-experimental and recommend using non-streaming responses for production
-tasks. Note that error handling in streaming callbacks varies by API and
-differs in quality at this time.</p>
+<p><code><a href="../reference/chat.html">chat()</a></code> supports real-time streaming of reply tokens to
+the console while the model works with the <code>.stream=TRUE</code>
+argument in the api provider, for most api providers.</p>
+<div class="sourceCode" id="cb48"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Write a lengthy maagzine advertisement for an R package called tidyllm"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span>.stream<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>While this feature offers slightly better feedback on model behavior
+in real-time, it’s not particularly useful for data-analysis workflows.
+We consider this feature experimental and recommend using non-streaming
+responses for production tasks. Note that error handling in streaming
+callbacks varies by API and differs in quality at this time.</p>
 </div>
 <div class="section level4">
 <h4 id="choosing-the-right-model-and-api">Choosing the Right Model and API<a class="anchor" aria-label="anchor" href="#choosing-the-right-model-and-api"></a>
@@ -582,7 +628,7 @@ models with varying strengths. The choice of which model or API to use
 often depends on the specific task, cost considerations, and data
 privacy concerns.</p>
 <ol style="list-style-type: decimal">
-<li><p><strong><code><a href="../reference/claude.html">claude()</a></code> - Anthropic API:</strong> <a href="https://docs.anthropic.com/en/docs/welcome" class="external-link">Claude</a> is known
+<li><p><strong>Anthropic API:</strong> <a href="https://docs.anthropic.com/en/docs/welcome" class="external-link">Claude</a> is known
 for generating thoughtful, nuanced responses, making it ideal for tasks
 that require more human-like reasoning, such as summarization or
 creative writing. Claude Sonnet 3.5 currently is one of the
@@ -590,21 +636,40 @@ top-performing models on many benchmarks. However, it can sometimes be
 more verbose than necessary, and it lacks direct JSON support, which
 requires additional prompting and validation to ensure structured
 output.</p></li>
-<li><p><strong><code><a href="../reference/openai.html">openai()</a></code> (OpenAI API):</strong> Models by <a href="https://platform.openai.com/docs/api-reference/chat" class="external-link">OpenAI
+<li><p><strong>OpenAI API:</strong> Models by <a href="https://platform.openai.com/docs/api-reference/chat" class="external-link">OpenAI
 API</a>, particularly the GPT-4o model, are extremely versatile and
 perform well across a wide range of tasks, including text generation,
 code completion, and multimodal analysis. In addition the o1-reasoning
 models offer very good performance for a set of specific task (at a
 relatively high price). There is also an <code><a href="../reference/azure_openai.html">azure_openai()</a></code>
-function if you prefer to use the OpenAI API on Microsoft
+provider function if you prefer to use the OpenAI API on Microsoft
 Azure.</p></li>
-<li><p><strong><code><a href="../reference/mistral.html">mistral()</a></code> (EU-based):</strong> <a href="https://docs.mistral.ai/" class="external-link">Mistral</a> offers lighter-weight,
+<li><p><strong>Google Gemini API:</strong> Google Gemini is great for
+long-context tasks — it can handle up to a million tokens! Moreover,
+with the Gemini API you are able to upload a wide range of media files
+and use them in the prompts of your models with functions like
+<code><a href="../reference/gemini_upload_file.html">gemini_upload_file()</a></code>. Using this, Gemini models can be used
+to process video and audio together with your messages. Here is an
+example of summarizing a speech:</p></li>
+</ol>
+<div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co">#Upload a file for use with gemini</span></span>
+<span><span class="va">upload_info</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gemini_upload_file.html">gemini_upload_file</a></span><span class="op">(</span><span class="st">"example.mp3"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co">#Make the file available during a Gemini API call</span></span>
+<span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Summarize this speech"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/gemini.html">gemini</a></span><span class="op">(</span>.fileid <span class="op">=</span> <span class="va">upload_info</span><span class="op">$</span><span class="va">name</span><span class="op">)</span><span class="op">)</span></span>
+<span>  </span>
+<span><span class="co">#Delte the file from the Google servers after you are done</span></span>
+<span><span class="fu"><a href="../reference/gemini_delete_file.html">gemini_delete_file</a></span><span class="op">(</span><span class="va">upload_info</span><span class="op">$</span><span class="va">name</span><span class="op">)</span></span></code></pre></div>
+<ol start="4" style="list-style-type: decimal">
+<li><p><strong>Mistral API (EU-based):</strong> <a href="https://docs.mistral.ai/" class="external-link">Mistral</a> offers lighter-weight,
 open-source models developed and hosted in the EU, making it
 particularly appealing if data protection (e.g., GDPR compliance) is a
 concern. While the models may not be as powerful as GPT-4o or Claude
 Sonnet, Mistral offers good performance for standard text generation
 tasks.</p></li>
-<li><p><strong><code><a href="../reference/groq.html">groq()</a></code> (Fast):</strong> <a href="https://console.groq.com/docs/quickstart" class="external-link">Groq</a> offers a unique
+<li><p><strong>Groq API (Fast):</strong> <a href="https://console.groq.com/docs/quickstart" class="external-link">Groq</a> offers a unique
 advantage with its custom AI accelerator hardware, that get you the
 fastest output available on any API. It delivers high performance at low
 costs, especially for tasks that require fast execution. It hosts many
@@ -612,26 +677,81 @@ strong open-source models, like <strong>lamma3:70b</strong>. There is
 also a <code><a href="../reference/groq_transcribe.html">groq_transcribe()</a></code> function available that allows you
 to transcribe audio files with the Whipser-Large model on the Groq
 API.</p></li>
-<li><p><strong><code><a href="../reference/ollama.html">ollama()</a></code> (Local Models):</strong> If data
-privacy is a priority, running open-source models like
-<strong>gemma2::9B</strong> locally via <a href="https://ollama.com/" class="external-link">ollama</a> gives you full control over model
-execution and data. However, the trade-off is that local models require
-significant computational resources, and are often not quite as powerful
-as the large API-providers. The <a href="https://ollama.com/blog" class="external-link">ollama
-blog</a> regularly has posts about new models and their advantages that
-you can download via <code><a href="../reference/ollama_download_model.html">ollama_download_model()</a></code>.</p></li>
+<li><p><strong>Ollama (Local Models):</strong> If data privacy is a
+priority, running open-source models like <strong>gemma2::9B</strong>
+locally via <a href="https://ollama.com/" class="external-link">ollama</a> gives you full
+control over model execution and data. However, the trade-off is that
+local models require significant computational resources, and are often
+not quite as powerful as the large API-providers. The <a href="https://ollama.com/blog" class="external-link">ollama blog</a> regularly has posts about
+new models and their advantages that you can download via
+<code><a href="../reference/ollama_download_model.html">ollama_download_model()</a></code>.</p></li>
 <li><p><strong>Other OpenAI-compatible Local Models:</strong> Besides
 ollama, there are many solutions to run local models that are mostly
 compatible to the OpenAI API like <a href="https://github.com/ggerganov/llama.cpp/blob/master/examples/server/README.md" class="external-link">llama.cpp</a>,
 <a href="https://github.com/vllm-project/vllm" class="external-link">vllm</a> and <a href="https://www.reddit.com/r/LocalLLaMA/comments/16csz5n/best_openai_api_compatible_application_server/" class="external-link">many
 more</a>. To use such an API you can set the base url of the api with
 <code>.api_url</code> as well as the path to the model-endpoint with
-<code>.api_path</code> argument in the <code><a href="../reference/openai.html">openai()</a></code> function.
-Set <code>.compatible=TRUE</code> to skip api-key checks and rate-limit
-tracking. Compatibility with local models solutions may vary depending
-on the specific API’s implementation, and full functionality cannot be
-guaranteed.</p></li>
+<code>.api_path</code> argument in the <code><a href="../reference/openai.html">openai()</a></code> provider
+function. Set <code>.compatible=TRUE</code> to skip api-key checks and
+rate-limit tracking. Compatibility with local models solutions may vary
+depending on the specific API’s implementation, and full functionality
+cannot be guaranteed. Ideally you can save complicated configurations
+like these in an object:</p></li>
 </ol>
+<div class="sourceCode" id="cb50"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">my_provider</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model<span class="op">=</span><span class="st">"llama3.2:90b"</span>,</span>
+<span>          .api_url<span class="op">=</span><span class="st">"http://localhost:11434"</span>,</span>
+<span>          .compatible <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>          .api_path <span class="op">=</span> <span class="st">"/v1/chat/custom/"</span></span>
+<span>          <span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Hi there"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="va">my_provider</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level4">
+<h4 id="setting-a-default-provider">Setting a Default Provider<a class="anchor" aria-label="anchor" href="#setting-a-default-provider"></a>
+</h4>
+<p>You can also specify default provides with options:</p>
+<div class="sourceCode" id="cb51"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Set default providers</span></span>
+<span><span class="co">#chat provider</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>tidyllm_chat_default <span class="op">=</span> <span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-4o"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#embedding provider</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>tidyllm_embed_default <span class="op">=</span> <span class="fu"><a href="../reference/ollama.html">ollama</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"all-minilm"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#send batch provider</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>tidyllm_sbatch_default <span class="op">=</span> <span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span>.temperature<span class="op">=</span><span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#check batch provider</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>tidyllm_cbatch_default <span class="op">=</span> <span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#fetch batch provider</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>tidyllm_fbatch_default <span class="op">=</span> <span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#List batches provider</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>tidyllm_lbatch_default <span class="op">=</span> <span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Now you can use chat() or embed() without explicitly specifying a provider</span></span>
+<span><span class="va">conversation</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Hello, what is the weather today?"</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">embeddings</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"What is AI?"</span>, <span class="st">"Define machine learning."</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="../reference/embed.html">embed</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Now you can use batch functions without explicitly specifying a provider</span></span>
+<span><span class="va">batch_messages</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Write a poem about the sea."</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Summarize the theory of relativity."</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Invent a name for a new genre of music."</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Send batch using default for send_batch()</span></span>
+<span><span class="va">batch_results</span> <span class="op">&lt;-</span> <span class="va">batch_messages</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/send_batch.html">send_batch</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Check batch status using default for check_batch()</span></span>
+<span><span class="va">status</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/check_batch.html">check_batch</a></span><span class="op">(</span><span class="va">batch_results</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Fetch completed results using default for fetch_batch()</span></span>
+<span><span class="va">completed_results</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fetch_batch.html">fetch_batch</a></span><span class="op">(</span><span class="va">batch_results</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># List all batches using default for list_batches()</span></span>
+<span><span class="va">all_batches</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/list_batches.html">list_batches</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
 </div>

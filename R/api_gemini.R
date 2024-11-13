@@ -21,7 +21,7 @@
 #' @param .stream Should the response be streamed (default: FALSE).
 #' @return Returns an updated LLMMessage object.
 #' @export
-gemini <- function(.llm,
+gemini_chat <- function(.llm,
                    .model = "gemini-1.5-flash",
                    .fileid = NULL,
                    .temperature = NULL,
@@ -87,10 +87,11 @@ gemini <- function(.llm,
   response_format <- NULL
   json=FALSE
   if (!is.null(.json_schema)) {
-    #Deal with the different schema format for gemini
-    gemini_schema <- .json_schema$schema
-    #gemini_schema$name <- NULL
-      
+    #Deal with the different schema format for gemini compared to the tidyllm_schema output for openai
+    if("schema" %in% names(.json_schema)) {
+      gemini_schema <- .json_schema$schema
+    }
+
     json=TRUE
     response_format <- list(
       response_mime_type = "application/json",
@@ -178,7 +179,7 @@ gemini <- function(.llm,
 #' @return A tibble containing metadata about the uploaded file, including its name, URI, and MIME type.
 #' @export
 gemini_upload_file <- function(.file_path) {
-  mime_type <- system(paste("file -b --mime-type", shQuote(.file_path)), intern = TRUE)
+  mime_type <- guess_mime_type(.file_path)
   num_bytes <- file.info(.file_path)$size
   display_name <- basename(.file_path)
   
@@ -431,4 +432,28 @@ gemini_embedding <- function(.llm,
   embedding_matrix
 }
 
-
+#' Google Gemini Provider Function
+#'
+#' The `gemini()` function acts as a provider interface for interacting with the Google Gemini API 
+#' through `tidyllm`'s main verbs such as `chat()` and `embed()`. 
+#' It dynamically routes requests to Gemini-specific functions 
+#' like `gemini_chat()` and `gemini_embedding()` based on the context of the call.
+#'
+#' Some functions, such as `gemini_upload_file()` and `gemini_delete_file()`, 
+#' are specific to Gemini and do not have general verb counterparts.
+#'
+#' @param ... Parameters to be passed to the appropriate Gemini-specific function, 
+#'   such as model configuration, input text, or API-specific options.
+#' @param .called_from An internal argument specifying which action (e.g., 
+#'   `chat`, `embed`) the function is invoked from. 
+#'   This argument is automatically managed by the `tidyllm` verbs and should not be modified by the user.
+#'
+#' @return The result of the requested action, depending on the specific function invoked 
+#'   (e.g., an updated `LLMMessage` object for `chat()`, or a matrix for `embed()`).
+#'
+#' @export
+gemini <- create_provider_function(
+  .name = "gemini",
+  chat = gemini_chat,
+  embed = gemini_embedding
+)

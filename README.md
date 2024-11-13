@@ -14,6 +14,7 @@
 - **Batch processing:** Efficiently handle large workloads with Anthropic and OpenAI batch processing APIs, reducing costs by up to 50%.
 - **Tidy Workflow**: Use R's functional programming features for a side-effect-free, pipeline-oriented operation style.
 
+
 ## Installation
 
 To install **tidyllm** from CRAN, use:
@@ -42,18 +43,31 @@ library("tidyllm")
 # Describe an image with  claude
 conversation <- llm_message("Describe this image", 
                               .imagefile = here("image.png")) |>
-  claude()
+  chat(claude())
 
 # Use the description to query further with groq
 conversation |>
   llm_message("Based on the previous description,
   what could the research in the figure be about?") |>
-  ollama(.model = "gemma2")
+  chat(ollama(.model = "gemma2"))
 ```
 
 For more examples and advanced usage, check the [Get Started vignette](https://edubruell.github.io/tidyllm/articles/tidyllm.html).
 
 Please note: To use **tidyllm**, you need either an installation of **ollama** or an active API key for one of the supported providers (e.g., Claude, ChatGPT). See the [Get Started vignette](https://edubruell.github.io/tidyllm/articles/tidyllm.html) for setup instructions.
+
+## Interface-change in 0.2.3.
+
+The development version 0.2.3. of **tidyllm**,  introduces a major interface change to provide a more intuitive user experience. Previously, provider-specific functions like `claude()`, `openai()`, and others were directly used for chat-based workflows. They specified both an API-provider and performed a chat-interaction. Now, these functions primarily serve as provider configuration for more general verbs like `chat()`,`embed()` or `send_batch()`. A combination of a general verb and a provider will always route requests to a provider-specific function like `openai_chat()`. Read the [Changelog](https://edubruell.github.io/tidyllm/news/) or the [package vignette](https://edubruell.github.io/tidyllm/articles/tidyllm.html) for more information. 
+
+For backward compatibility, the old use of functions like `openai()` or `claude()` directly for chat requests still works but now but issues deprecation warnings. It is recommended to either use the verb-based interface:
+```r
+llm_message("Hallo") |> chat(openai(.model="gpt-4o"))
+```
+or to use the more verbose provider-specific functions directly:
+```r
+llm_message("Hallo") |> openai_chat(.model="gpt-4o")
+```
 
 ## Learn More
 

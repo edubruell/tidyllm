@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -40,7 +40,7 @@
     <div class="section level2">
       <h2 id="llm-message-handling">LLM Message Handling<a class="anchor" aria-label="anchor" href="#llm-message-handling"></a></h2>
 
-
+      <div class="section-desc"><p>Functions for creating, managing, and retrieving messages and metadata.</p></div>
 
 
     </div><div class="section level2">
@@ -62,56 +62,91 @@
         <dd>Convert a Data Frame to an LLMMessage Object</dd>
       </dl><dl><dt>
 
-          <code><a href="get_reply.html">get_reply()</a></code>
+          <code><a href="get_reply.html">get_reply()</a></code> <code><a href="get_reply.html">last_reply()</a></code>
 
         </dt>
-        <dd>Get Assistant Reply as Text</dd>
+        <dd>Retrieve Assistant Reply as Text</dd>
       </dl><dl><dt>
 
-          <code><a href="get_reply_data.html">get_reply_data()</a></code>
+          <code><a href="get_reply_data.html">get_reply_data()</a></code> <code><a href="get_reply_data.html">last_reply_data()</a></code>
 
         </dt>
-        <dd>Get Data from an Assistant Reply by parsing structured JSON responses</dd>
+        <dd>Retrieve Assistant Reply as Structured Data</dd>
       </dl><dl><dt>
 
-          <code><a href="get_user_message.html">get_user_message()</a></code>
+          <code><a href="get_user_message.html">get_user_message()</a></code> <code><a href="get_user_message.html">last_user_message()</a></code>
 
         </dt>
         <dd>Retrieve a User Message by Index</dd>
       </dl><dl><dt>
 
-          <code><a href="get_metadata.html">get_metadata()</a></code>
+          <code><a href="get_metadata.html">get_metadata()</a></code> <code><a href="get_metadata.html">last_metadata()</a></code>
 
         </dt>
-        <dd>Get Metadata from Assistant Replies</dd>
-      </dl><dl><dt>
-
-          <code><a href="last_reply.html">last_reply()</a></code>
-
-        </dt>
-        <dd>Get the Last Assistant Reply as Text</dd>
-      </dl><dl><dt>
-
-          <code><a href="last_reply_data.html">last_reply_data()</a></code>
-
-        </dt>
-        <dd>Get the Last Assistant Reply as Text</dd>
-      </dl><dl><dt>
-
-          <code><a href="last_user_message.html">last_user_message()</a></code>
-
-        </dt>
-        <dd>Retrieve the Last User Message</dd>
+        <dd>Retrieve Metadata from Assistant Replies</dd>
       </dl><dl><dt>
 
           <code><a href="tidyllm_schema.html">tidyllm_schema()</a></code>
 
         </dt>
         <dd>Create a JSON schema for structured outputs</dd>
+      </dl><dl><dt>
+
+          <code><a href="rate_limit_info.html">rate_limit_info()</a></code>
+
+        </dt>
+        <dd>Get the current rate limit information for all or a specific API</dd>
       </dl></div><div class="section level2">
-      <h2 id="core-chat-api-functions">Core Chat-API Functions<a class="anchor" aria-label="anchor" href="#core-chat-api-functions"></a></h2>
+      <h2 id="tidyllm-main-verbs">Tidyllm Main Verbs<a class="anchor" aria-label="anchor" href="#tidyllm-main-verbs"></a></h2>
+
+      <div class="section-desc"><p>Core verbs facilitating interactions with LLMs, including sending messages, generating embeddings, and managing batch requests.</p></div>
 
 
+    </div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="chat.html">chat()</a></code>
+
+        </dt>
+        <dd>Chat with a Language Model</dd>
+      </dl><dl><dt>
+
+          <code><a href="embed.html">embed()</a></code>
+
+        </dt>
+        <dd>Generate embeddings</dd>
+      </dl><dl><dt>
+
+          <code><a href="send_batch.html">send_batch()</a></code>
+
+        </dt>
+        <dd>Send a batch of messages to a batch API</dd>
+      </dl><dl><dt>
+
+          <code><a href="check_batch.html">check_batch()</a></code>
+
+        </dt>
+        <dd>Check Batch Processing Status</dd>
+      </dl><dl><dt>
+
+          <code><a href="fetch_batch.html">fetch_batch()</a></code>
+
+        </dt>
+        <dd>Fetch Results from a Batch API</dd>
+      </dl><dl><dt>
+
+          <code><a href="list_batches.html">list_batches()</a></code>
+
+        </dt>
+        <dd>List all Batch Requests on a Batch API</dd>
+      </dl></div><div class="section level2">
+      <h2 id="api-provider-functions">API Provider Functions<a class="anchor" aria-label="anchor" href="#api-provider-functions"></a></h2>
+
+      <div class="section-desc"><p>Functions interfacing with various API providers called from main verbs</p></div>
 
 
     </div><div class="section level2">
@@ -124,53 +159,53 @@
           <code><a href="openai.html">openai()</a></code>
 
         </dt>
-        <dd>Send LLM Messages to the OpenAI Chat Completions API</dd>
+        <dd>OpenAI Provider Function</dd>
       </dl><dl><dt>
 
           <code><a href="claude.html">claude()</a></code>
 
         </dt>
-        <dd>Interact with Claude AI models via the Anthropic API</dd>
+        <dd>Provider Function for Claude models on the Anthropic API</dd>
       </dl><dl><dt>
 
           <code><a href="gemini.html">gemini()</a></code>
 
         </dt>
-        <dd>Send LLMMessage to Gemini API</dd>
+        <dd>Google Gemini Provider Function</dd>
       </dl><dl><dt>
 
           <code><a href="groq.html">groq()</a></code>
 
         </dt>
-        <dd>Send LLM Messages to the Groq Chat API</dd>
+        <dd>Groq API Provider Function</dd>
       </dl><dl><dt>
 
           <code><a href="mistral.html">mistral()</a></code>
 
         </dt>
-        <dd>Send LLMMessage to Mistral API</dd>
+        <dd>Mistral Provider Function</dd>
       </dl><dl><dt>
 
           <code><a href="ollama.html">ollama()</a></code>
 
         </dt>
-        <dd>Interact with local AI models via the Ollama API</dd>
+        <dd>Ollama API Provider Function</dd>
       </dl><dl><dt>
 
           <code><a href="azure_openai.html">azure_openai()</a></code>
 
         </dt>
-        <dd>Send LLM Messages to an OpenAI Chat Completions endpoint on Azure</dd>
+        <dd>Azure-OpenAI Endpoint Provider Function</dd>
       </dl><dl><dt>
 
           <code><a href="chatgpt.html">chatgpt()</a></code>
 
         </dt>
-        <dd>ChatGPT Wrapper (Deprecated)</dd>
+        <dd>Alias for the OpenAI Provider Function</dd>
       </dl></div><div class="section level2">
-      <h2 id="bacth-request-api-functions">Bacth Request API Functions<a class="anchor" aria-label="anchor" href="#bacth-request-api-functions"></a></h2>
+      <h2 id="openai-specific-functions">OpenAI-Specific Functions<a class="anchor" aria-label="anchor" href="#openai-specific-functions"></a></h2>
 
-
+      <div class="section-desc"><p>Functions for OpenAI services, including chat interactions, batch processing and embedding generation.</p></div>
 
 
     </div><div class="section level2">
@@ -180,28 +215,10 @@
 
       <dl><dt>
 
-          <code><a href="send_claude_batch.html">send_claude_batch()</a></code>
+          <code><a href="openai_chat.html">openai_chat()</a></code>
 
         </dt>
-        <dd>Send a Batch of Messages to Claude API</dd>
-      </dl><dl><dt>
-
-          <code><a href="check_claude_batch.html">check_claude_batch()</a></code>
-
-        </dt>
-        <dd>Check Batch Processing Status for Claude API</dd>
-      </dl><dl><dt>
-
-          <code><a href="fetch_claude_batch.html">fetch_claude_batch()</a></code>
-
-        </dt>
-        <dd>Fetch Results for a Claude Batch</dd>
-      </dl><dl><dt>
-
-          <code><a href="list_claude_batches.html">list_claude_batches()</a></code>
-
-        </dt>
-        <dd>List Claude Batch Requests</dd>
+        <dd>Send LLM Messages to the OpenAI Chat Completions API</dd>
       </dl><dl><dt>
 
           <code><a href="send_openai_batch.html">send_openai_batch()</a></code>
@@ -226,10 +243,16 @@
 
         </dt>
         <dd>List OpenAI Batch Requests</dd>
+      </dl><dl><dt>
+
+          <code><a href="openai_embedding.html">openai_embedding()</a></code>
+
+        </dt>
+        <dd>Generate Embeddings Using OpenAI API</dd>
       </dl></div><div class="section level2">
-      <h2 id="embedding-api-functions">Embedding API Functions<a class="anchor" aria-label="anchor" href="#embedding-api-functions"></a></h2>
+      <h2 id="claude-specific-functions">Claude-Specific Functions<a class="anchor" aria-label="anchor" href="#claude-specific-functions"></a></h2>
 
-
+      <div class="section-desc"><p>Functions designed for Claude services for chat interactions and batch processing.</p></div>
 
 
     </div><div class="section level2">
@@ -239,16 +262,51 @@
 
       <dl><dt>
 
-          <code><a href="ollama_embedding.html">ollama_embedding()</a></code>
+          <code><a href="claude_chat.html">claude_chat()</a></code>
 
         </dt>
-        <dd>Generate Embeddings Using Ollama API</dd>
+        <dd>Interact with Claude AI models via the Anthropic API</dd>
       </dl><dl><dt>
 
-          <code><a href="openai_embedding.html">openai_embedding()</a></code>
+          <code><a href="send_claude_batch.html">send_claude_batch()</a></code>
 
         </dt>
-        <dd>Generate Embeddings Using OpenAI API</dd>
+        <dd>Send a Batch of Messages to Claude API</dd>
+      </dl><dl><dt>
+
+          <code><a href="check_claude_batch.html">check_claude_batch()</a></code>
+
+        </dt>
+        <dd>Check Batch Processing Status for Claude API</dd>
+      </dl><dl><dt>
+
+          <code><a href="fetch_claude_batch.html">fetch_claude_batch()</a></code>
+
+        </dt>
+        <dd>Fetch Results for a Claude Batch</dd>
+      </dl><dl><dt>
+
+          <code><a href="list_claude_batches.html">list_claude_batches()</a></code>
+
+        </dt>
+        <dd>List Claude Batch Requests</dd>
+      </dl></div><div class="section level2">
+      <h2 id="gemini-specific-functions">Gemini-Specific Functions<a class="anchor" aria-label="anchor" href="#gemini-specific-functions"></a></h2>
+
+      <div class="section-desc"><p>Functions specific to Google Gemini services, including chat, embedding, and file management operations.</p></div>
+
+
+    </div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="gemini_chat.html">gemini_chat()</a></code>
+
+        </dt>
+        <dd>Send LLMMessage to Gemini API</dd>
       </dl><dl><dt>
 
           <code><a href="gemini_embedding.html">gemini_embedding()</a></code>
@@ -257,39 +315,10 @@
         <dd>Generate Embeddings Using the Google Gemini API</dd>
       </dl><dl><dt>
 
-          <code><a href="mistral_embedding.html">mistral_embedding()</a></code>
-
-        </dt>
-        <dd>Generate Embeddings Using Mistral API</dd>
-      </dl></div><div class="section level2">
-      <h2 id="other-api-functions">Other API Functions<a class="anchor" aria-label="anchor" href="#other-api-functions"></a></h2>
-
-
-
-
-    </div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="groq_transcribe.html">groq_transcribe()</a></code>
-
-        </dt>
-        <dd>Transcribe an Audio File Using Groq transcription API</dd>
-      </dl><dl><dt>
-
           <code><a href="gemini_upload_file.html">gemini_upload_file()</a></code>
 
         </dt>
         <dd>Upload a File to Gemini API</dd>
-      </dl><dl><dt>
-
-          <code><a href="gemini_file_metadata.html">gemini_file_metadata()</a></code>
-
-        </dt>
-        <dd>Retrieve Metadata for a File from Gemini API</dd>
       </dl><dl><dt>
 
           <code><a href="gemini_list_files.html">gemini_list_files()</a></code>
@@ -298,14 +327,20 @@
         <dd>List Files in Gemini API</dd>
       </dl><dl><dt>
 
+          <code><a href="gemini_file_metadata.html">gemini_file_metadata()</a></code>
+
+        </dt>
+        <dd>Retrieve Metadata for a File from Gemini API</dd>
+      </dl><dl><dt>
+
           <code><a href="gemini_delete_file.html">gemini_delete_file()</a></code>
 
         </dt>
         <dd>Delete a File from Gemini API</dd>
       </dl></div><div class="section level2">
-      <h2 id="ollama-functions">Ollama Functions<a class="anchor" aria-label="anchor" href="#ollama-functions"></a></h2>
+      <h2 id="groq-specific-functions">Groq-Specific Functions<a class="anchor" aria-label="anchor" href="#groq-specific-functions"></a></h2>
 
-
+      <div class="section-desc"><p>Functions for interacting with Groq services, such as chat and transcription.</p></div>
 
 
     </div><div class="section level2">
@@ -314,6 +349,81 @@
 
 
       <dl><dt>
+
+          <code><a href="groq_chat.html">groq_chat()</a></code>
+
+        </dt>
+        <dd>Send LLM Messages to the Groq Chat API</dd>
+      </dl><dl><dt>
+
+          <code><a href="groq_transcribe.html">groq_transcribe()</a></code>
+
+        </dt>
+        <dd>Transcribe an Audio File Using Groq transcription API</dd>
+      </dl></div><div class="section level2">
+      <h2 id="mistral-specific-functions">Mistral-Specific Functions<a class="anchor" aria-label="anchor" href="#mistral-specific-functions"></a></h2>
+
+      <div class="section-desc"><p>Functions for interacting with the Mistral API .</p></div>
+
+
+    </div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="mistral_chat.html">mistral_chat()</a></code>
+
+        </dt>
+        <dd>Send LLMMessage to Mistral API</dd>
+      </dl><dl><dt>
+
+          <code><a href="mistral_embedding.html">mistral_embedding()</a></code>
+
+        </dt>
+        <dd>Generate Embeddings Using Mistral API</dd>
+      </dl></div><div class="section level2">
+      <h2 id="azure-specific-functions">Azure-Specific Functions<a class="anchor" aria-label="anchor" href="#azure-specific-functions"></a></h2>
+
+      <div class="section-desc"><p>Functions for interacting with the Azure OpenAI API .</p></div>
+
+
+    </div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="azure_openai_chat.html">azure_openai_chat()</a></code>
+
+        </dt>
+        <dd>Send LLM Messages to an OpenAI Chat Completions endpoint on Azure</dd>
+      </dl></div><div class="section level2">
+      <h2 id="ollama-specific-functions">Ollama-Specific Functions<a class="anchor" aria-label="anchor" href="#ollama-specific-functions"></a></h2>
+
+      <div class="section-desc"><p>Functions for engaging with Ollama services, including chat, embedding, and model management.</p></div>
+
+
+    </div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="ollama_chat.html">ollama_chat()</a></code>
+
+        </dt>
+        <dd>Interact with local AI models via the Ollama API</dd>
+      </dl><dl><dt>
+
+          <code><a href="ollama_embedding.html">ollama_embedding()</a></code>
+
+        </dt>
+        <dd>Generate Embeddings Using Ollama API</dd>
+      </dl><dl><dt>
 
           <code><a href="ollama_download_model.html">ollama_download_model()</a></code>
 
@@ -326,68 +436,9 @@
         </dt>
         <dd>Retrieve and return model information from the Ollama API</dd>
       </dl></div><div class="section level2">
-      <h2 id="internals-and-utility-functions">Internals and Utility Functions<a class="anchor" aria-label="anchor" href="#internals-and-utility-functions"></a></h2>
-
-
-
-
-    </div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="LLMMessage.html">LLMMessage</a></code>
-
-        </dt>
-        <dd>Large Language Model Message Class</dd>
-      </dl><dl><dt>
-
-          <code><a href="perform_api_request.html">perform_api_request()</a></code>
-
-        </dt>
-        <dd>Perform an API request to interact with language models</dd>
-      </dl><dl><dt>
-
-          <code><a href="generate_callback_function.html">generate_callback_function()</a></code>
-
-        </dt>
-        <dd>Generate API-Specific Callback Function for Streaming Responses</dd>
-      </dl><dl><dt>
-
-          <code><a href="initialize_api_env.html">initialize_api_env()</a></code>
-
-        </dt>
-        <dd>Initialize or Retrieve API-specific Environment</dd>
-      </dl><dl><dt>
-
-          <code><a href="rate_limit_info.html">rate_limit_info()</a></code>
-
-        </dt>
-        <dd>Get the current rate limit information for all or a specific API</dd>
-      </dl><dl><dt>
-
-          <code><a href="update_rate_limit.html">update_rate_limit()</a></code>
-
-        </dt>
-        <dd>Update the standard API rate limit info in the hidden .tidyllm_rate_limit_env environment</dd>
-      </dl><dl><dt>
-
-          <code><a href="parse_duration_to_seconds.html">parse_duration_to_seconds()</a></code>
-
-        </dt>
-        <dd>This internal function parses duration strings as returned by the OpenAI API</dd>
-      </dl><dl><dt>
-
-          <code><a href="ratelimit_from_header.html">ratelimit_from_header()</a></code>
-
-        </dt>
-        <dd>Extract rate limit information from API response headers</dd>
-      </dl></div><div class="section level2">
       <h2 id="pdf-processing">PDF Processing<a class="anchor" aria-label="anchor" href="#pdf-processing"></a></h2>
 
-
+      <div class="section-desc"><p>Processing PDF documents, enabling page-by-page analysis.</p></div>
 
 
     </div><div class="section level2">
@@ -401,6 +452,23 @@
 
         </dt>
         <dd>Batch Process PDF into LLM Messages</dd>
+      </dl></div><div class="section level2">
+      <h2 id="internals">Internals<a class="anchor" aria-label="anchor" href="#internals"></a></h2>
+
+      <div class="section-desc"><p>Main definition of the LLMMessage object at the core of most tidyllm workflows</p></div>
+
+
+    </div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="LLMMessage.html">LLMMessage</a></code>
+
+        </dt>
+        <dd>Large Language Model Message Class</dd>
       </dl></div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

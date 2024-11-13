@@ -50,7 +50,7 @@
 #' }
 #'
 #' @export
-ollama <- function(.llm,
+ollama_chat <- function(.llm,
                    .model = "gemma2",
                    .stream = FALSE,
                    .seed = NULL,
@@ -394,3 +394,33 @@ ollama_download_model <- function(.model, .ollama_server = "http://localhost:114
   invisible(NULL)
 }
 
+#' Ollama API Provider Function
+#'
+#' The `ollama()` function acts as an interface for interacting with local AI models via the Ollama API.
+#' It integrates seamlessly with the main `tidyllm` verbs such as `chat()` and `embed()`.
+#' 
+#' Some functionalities, like `ollama_download_model()` or `ollama_list_models()`
+#' are unique to the Ollama API and do not have a general verb counterpart. 
+#' These functions can be only accessed directly.
+#'
+#' @param ... Parameters to be passed to the appropriate Ollama-specific function, 
+#'   such as model configuration, input text, or API-specific options.
+#' @param .called_from An internal argument specifying the verb (e.g., `chat`, `embed`) 
+#'   the function is invoked from. This argument is automatically managed by `tidyllm` and 
+#'   should not be set by the user.
+#'
+#' @return The result of the requested action:
+#'   - For `chat()`: An updated `LLMMessage` object containing the model's response.
+#'   - For `embed()`: A matrix where each column corresponds to an embedding.
+#'
+#' @details
+#' Supported Verbs:
+#' - **`chat()`**: Sends a message to an Ollama model and retrieves the model's response.
+#' - **`embed()`**: Generates embeddings for input texts using an Ollama model.
+#'
+#' @export
+ollama <- create_provider_function(
+  .name = "ollama",
+  chat = ollama_chat,
+  embed = ollama_embedding
+)

@@ -2,18 +2,28 @@
 % Please edit documentation in R/message_retrieval.R
 \name{get_user_message}
 \alias{get_user_message}
+\alias{last_user_message}
 \title{Retrieve a User Message by Index}
 \usage{
 get_user_message(.llm, .index = NULL)
+
+last_user_message(.llm)
 }
 \arguments{
-\item{.llm}{A \code{LLMMessage} object.}
+\item{.llm}{An \code{LLMMessage} object.}
 
 \item{.index}{A positive integer indicating which user message to retrieve. Defaults to \code{NULL}, which retrieves the last message.}
 }
 \value{
-Returns the content of the user's message at the specified index. If no messages are found, returns \code{NULL}.
+Returns the content of the user's message at the specified index. If no messages are found, returns \code{NA_character_}.
 }
 \description{
 Extracts the content of a user's message from an \code{LLMMessage} object at a specific index.
+}
+\details{
+For convenience, \code{\link[=last_user_message]{last_user_message()}} is provided as a wrapper to retrieve the
+latest user message without specifying an index.
+}
+\seealso{
+\code{\link[=last_user_message]{last_user_message()}}
 }

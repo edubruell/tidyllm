@@ -26,7 +26,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -73,6 +73,20 @@
 
     
     
+<blockquote>
+<p>⚠️ <strong>Note:</strong> This article refers to the development
+version 0.2.3. of <strong>tidyllm</strong>, which introduced a major
+interface change. You can install the current development version
+directly from GitHub using devtools:</p>
+</blockquote>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Install devtools if not already installed</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"devtools"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"devtools"</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="co"># Install TidyLLM from GitHub</span></span>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"edubruell/tidyllm"</span><span class="op">)</span></span></code></pre></div>
 <p>As large language models (LLMs) evolve, their potential to simulate
 human-like behavior offers an exciting opportunity for researchers in
 various fields. Inspired by the work of <a href="https://arxiv.org/abs/2301.07543" class="external-link">Horton et al (2023)</a> on
@@ -93,29 +107,29 @@ info for many lawyers you want to invite to a survey on automation,
 provided by the bar association. You have already enriched this data
 with information from web-based sources, such as advertising taglines
 from law firm websites. Here is what such data could look like:</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://edubruell.github.io/tidyllm/">tidyllm</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tidyverse.tidyverse.org" class="external-link">tidyverse</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://glue.tidyverse.org/" class="external-link">glue</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">lawyers</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://readr.tidyverse.org/reference/read_rds.html" class="external-link">read_rds</a></span><span class="op">(</span><span class="st">"lawyer_profiles.rds"</span><span class="op">)</span></span>
 <span><span class="va">lawyers</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 495 × 9</span></span></span>
-<span><span class="co">#&gt;    first_name last_name     year_bar_admission specialization  location         </span></span>
-<span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>              <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>            </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> Solon      <span style="color: #949494;">"</span>Predovic<span style="color: #949494;">"</span>    2018               Criminal Law    Denver, CO       </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> Linzy      <span style="color: #949494;">"</span>Gleason<span style="color: #949494;">"</span>     2020               Tax Law         San Francisco, CA</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> Miss Amiya <span style="color: #949494;">"</span>Braun<span style="color: #949494;">"</span>       2015               Family Law      Atlanta, GA      </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> Irvine     <span style="color: #949494;">"</span>Kerluke PhD<span style="color: #949494;">"</span> 2008               Corporate Law   Chicago, IL      </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> Marta      <span style="color: #949494;">"</span>Waelchi <span style="color: #949494;">"</span>    2012               Healthcare Law  Boston, MA       </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> Affie      <span style="color: #949494;">"</span>Kreiger<span style="color: #949494;">"</span>     2018               Criminal Law    Dallas, TX       </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> Montie     <span style="color: #949494;">"</span>Kunze<span style="color: #949494;">"</span>       2002               Tax Law         San Francisco, CA</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> Marleigh   <span style="color: #949494;">"</span>Fahey<span style="color: #949494;">"</span>       2015               Family Law      Miami, FL        </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> Olene      <span style="color: #949494;">"</span>Stokes<span style="color: #949494;">"</span>      2012               Corporate Law   Chicago, IL      </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> Sonji      <span style="color: #949494;">"</span>Stark <span style="color: #949494;">"</span>      2009               Estate Planning Boston, MA       </span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 485 more rows</span></span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 4 more variables: bar_admission_state &lt;chr&gt;, place_of_education &lt;chr&gt;,</span></span></span>
-<span><span class="co">#&gt; <span style="color: #949494;">#   email &lt;chr&gt;, advertising_tagline &lt;chr&gt;</span></span></span></code></pre></div>
+<span><span class="co">## <span style="color: #949494;"># A tibble: 495 × 9</span></span></span>
+<span><span class="co">##    first_name last_name     year_bar_admission specialization  location         </span></span>
+<span><span class="co">##    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>              <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>            </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 1</span> Solon      <span style="color: #949494;">"</span>Predovic<span style="color: #949494;">"</span>    2018               Criminal Law    Denver, CO       </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 2</span> Linzy      <span style="color: #949494;">"</span>Gleason<span style="color: #949494;">"</span>     2020               Tax Law         San Francisco, CA</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 3</span> Miss Amiya <span style="color: #949494;">"</span>Braun<span style="color: #949494;">"</span>       2015               Family Law      Atlanta, GA      </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 4</span> Irvine     <span style="color: #949494;">"</span>Kerluke PhD<span style="color: #949494;">"</span> 2008               Corporate Law   Chicago, IL      </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 5</span> Marta      <span style="color: #949494;">"</span>Waelchi <span style="color: #949494;">"</span>    2012               Healthcare Law  Boston, MA       </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 6</span> Affie      <span style="color: #949494;">"</span>Kreiger<span style="color: #949494;">"</span>     2018               Criminal Law    Dallas, TX       </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 7</span> Montie     <span style="color: #949494;">"</span>Kunze<span style="color: #949494;">"</span>       2002               Tax Law         San Francisco, CA</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 8</span> Marleigh   <span style="color: #949494;">"</span>Fahey<span style="color: #949494;">"</span>       2015               Family Law      Miami, FL        </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 9</span> Olene      <span style="color: #949494;">"</span>Stokes<span style="color: #949494;">"</span>      2012               Corporate Law   Chicago, IL      </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">10</span> Sonji      <span style="color: #949494;">"</span>Stark <span style="color: #949494;">"</span>      2009               Estate Planning Boston, MA       </span></span>
+<span><span class="co">## <span style="color: #949494;"># ℹ 485 more rows</span></span></span>
+<span><span class="co">## <span style="color: #949494;"># ℹ 4 more variables: bar_admission_state &lt;chr&gt;, place_of_education &lt;chr&gt;,</span></span></span>
+<span><span class="co">## <span style="color: #949494;">#   email &lt;chr&gt;, advertising_tagline &lt;chr&gt;</span></span></span></code></pre></div>
 <p>To generate synthetic survey responses based on real profiles, we
 first need to format the lawyer profiles into a human-readable prompt
 that the language model can use to simulate responses. This step
@@ -125,28 +139,28 @@ model will assume when responding to the survey.</p>
 the language model. So as a first step we get each individual profile
 into list of single-row tibbles that we can modify with further
 functions:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">profiles</span> <span class="op">&lt;-</span> <span class="va">lawyers</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/rowwise.html" class="external-link">rowwise</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_split.html" class="external-link">group_split</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>Each of these invidual profile tibbles can be prepared as a potential
 input into the model prompt. Here is an example step to get the profile
 for the first person in our data in a well-readable format:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">profiles</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/pivot_longer.html" class="external-link">pivot_longer</a></span><span class="op">(</span>cols <span class="op">=</span> <span class="fu"><a href="https://tidyselect.r-lib.org/reference/everything.html" class="external-link">everything</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://glue.tidyverse.org/reference/glue.html" class="external-link">glue_data</a></span><span class="op">(</span><span class="st">"{str_replace_all(name, '_', ' ') |&gt; str_to_sentence()}: {value}"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://stringr.tidyverse.org/reference/str_c.html" class="external-link">str_c</a></span><span class="op">(</span>collapse <span class="op">=</span> <span class="st">"\n"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; First name: Solon</span></span>
-<span><span class="co">#&gt; Last name: Predovic</span></span>
-<span><span class="co">#&gt; Year bar admission: 2018</span></span>
-<span><span class="co">#&gt; Specialization: Criminal Law</span></span>
-<span><span class="co">#&gt; Location: Denver, CO</span></span>
-<span><span class="co">#&gt; Bar admission state: Colorado</span></span>
-<span><span class="co">#&gt; Place of education: University of Colorado Law School</span></span>
-<span><span class="co">#&gt; Email: solonpredovic@co-legal.com</span></span>
-<span><span class="co">#&gt; Advertising tagline: Protecting Your Rights in the Mile High City</span></span></code></pre></div>
+<span><span class="co">## First name: Solon</span></span>
+<span><span class="co">## Last name: Predovic</span></span>
+<span><span class="co">## Year bar admission: 2018</span></span>
+<span><span class="co">## Specialization: Criminal Law</span></span>
+<span><span class="co">## Location: Denver, CO</span></span>
+<span><span class="co">## Bar admission state: Colorado</span></span>
+<span><span class="co">## Place of education: University of Colorado Law School</span></span>
+<span><span class="co">## Email: solonpredovic@co-legal.com</span></span>
+<span><span class="co">## Advertising tagline: Protecting Your Rights in the Mile High City</span></span></code></pre></div>
 <ul>
 <li>This code uses <code><a href="https://tidyr.tidyverse.org/reference/pivot_longer.html" class="external-link">pivot_longer()</a></code> to convert the profile
 into key-value pairs.</li>
@@ -158,7 +172,7 @@ model.</li>
 </ul>
 <p>With a way to get reasonable person profiles, we can put a first
 questionaire flow into a function:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">generate_synthetic_study_opener</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">lawyer_profile</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="co">#Get the person prompt to glue into the initial setup</span></span>
 <span>  <span class="va">person_prompt</span> <span class="op">&lt;-</span> <span class="va">lawyer_profile</span> <span class="op">|&gt;</span></span>
@@ -187,11 +201,11 @@ questionaire flow into a function:</p>
 <span>  <span class="co">#Pipe the initial setup into the second and third question,</span></span>
 <span>  <span class="co"># as well as model answers. </span></span>
 <span>  <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="va">initial_setup</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>    <span class="fu"><a href="../reference/ollama.html">ollama</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gemma2"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="../reference/ollama_chat.html">ollama_chat</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gemma2"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>    <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Question 2: What's your year of birth?</span></span>
 <span><span class="st">              Answer with a four-digit number.</span></span>
 <span><span class="st">              "</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>    <span class="fu"><a href="../reference/ollama.html">ollama</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gemma2"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="../reference/ollama_chat.html">ollama_chat</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gemma2"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>    <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Question 3: How familiar are you with the term AI?</span></span>
 <span><span class="st">              </span></span>
 <span><span class="st">              1 = Not familiar at all</span></span>
@@ -202,72 +216,72 @@ questionaire flow into a function:</p>
 <span><span class="st">              </span></span>
 <span><span class="st">            99 = Prefer not to say  </span></span>
 <span><span class="st">              "</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>    <span class="fu"><a href="../reference/ollama.html">ollama</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gemma2"</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="../reference/ollama_chat.html">ollama_chat</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gemma2"</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span></span>
 <span>  </span>
 <span><span class="va">profile1_questionaire</span> <span class="op">&lt;-</span> <span class="fu">generate_synthetic_study_opener</span><span class="op">(</span><span class="va">profiles</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="va">profile1_questionaire</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; Message History:</span></span>
-<span><span class="co">#&gt; system: You are a helpful assistant</span></span>
-<span><span class="co">#&gt; --------------------------------------------------------------</span></span>
-<span><span class="co">#&gt; user: Imagine you are this person and you are participating in </span></span>
-<span><span class="co">#&gt; a survey on automation and the future of legal occupations:</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; First name: Solon</span></span>
-<span><span class="co">#&gt; Last name: Predovic</span></span>
-<span><span class="co">#&gt; Year bar admission: 2018</span></span>
-<span><span class="co">#&gt; Specialization: Criminal Law</span></span>
-<span><span class="co">#&gt; Location: Denver, CO</span></span>
-<span><span class="co">#&gt; Bar admission state: Colorado</span></span>
-<span><span class="co">#&gt; Place of education: University of Colorado Law School</span></span>
-<span><span class="co">#&gt; Email: solonpredovic@co-legal.com</span></span>
-<span><span class="co">#&gt; Advertising tagline: Protecting Your Rights in the Mile High City</span></span>
-<span><span class="co">#&gt;      </span></span>
-<span><span class="co">#&gt; How would you answer the following questions. </span></span>
-<span><span class="co">#&gt; ONLY ANSWER WITH A VALID RESPONSE BUTTON</span></span>
-<span><span class="co">#&gt; ----</span></span>
-<span><span class="co">#&gt; Question 1: What gender do you identify as?</span></span>
-<span><span class="co">#&gt; 1 = Male</span></span>
-<span><span class="co">#&gt; 2 = Female</span></span>
-<span><span class="co">#&gt; 3 = Diverse</span></span>
-<span><span class="co">#&gt; 99 = Prefer not to say</span></span>
-<span><span class="co">#&gt; --------------------------------------------------------------</span></span>
-<span><span class="co">#&gt; assistant: 1 </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; --------------------------------------------------------------</span></span>
-<span><span class="co">#&gt; user: Question 2: What's your year of birth?</span></span>
-<span><span class="co">#&gt;               Answer with a four-digit number.</span></span>
-<span><span class="co">#&gt;               </span></span>
-<span><span class="co">#&gt; --------------------------------------------------------------</span></span>
-<span><span class="co">#&gt; assistant: 1991</span></span>
-<span><span class="co">#&gt; --------------------------------------------------------------</span></span>
-<span><span class="co">#&gt; user: Question 3: How familiar are you with the term AI?</span></span>
-<span><span class="co">#&gt;               </span></span>
-<span><span class="co">#&gt;               1 = Not familiar at all</span></span>
-<span><span class="co">#&gt;               2 = Slightly familiar</span></span>
-<span><span class="co">#&gt;               3 = Somewhat familiar</span></span>
-<span><span class="co">#&gt;               4 = Moderately familiar</span></span>
-<span><span class="co">#&gt;               5 = Very familiar</span></span>
-<span><span class="co">#&gt;               </span></span>
-<span><span class="co">#&gt;             99 = Prefer not to say  </span></span>
-<span><span class="co">#&gt;               </span></span>
-<span><span class="co">#&gt; --------------------------------------------------------------</span></span>
-<span><span class="co">#&gt; assistant: 4</span></span>
-<span><span class="co">#&gt; --------------------------------------------------------------</span></span></code></pre>
+<pre><code><span><span class="co">## Message History:</span></span>
+<span><span class="co">## system: You are a helpful assistant</span></span>
+<span><span class="co">## --------------------------------------------------------------</span></span>
+<span><span class="co">## user: Imagine you are this person and you are participating in </span></span>
+<span><span class="co">## a survey on automation and the future of legal occupations:</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## First name: Solon</span></span>
+<span><span class="co">## Last name: Predovic</span></span>
+<span><span class="co">## Year bar admission: 2018</span></span>
+<span><span class="co">## Specialization: Criminal Law</span></span>
+<span><span class="co">## Location: Denver, CO</span></span>
+<span><span class="co">## Bar admission state: Colorado</span></span>
+<span><span class="co">## Place of education: University of Colorado Law School</span></span>
+<span><span class="co">## Email: solonpredovic@co-legal.com</span></span>
+<span><span class="co">## Advertising tagline: Protecting Your Rights in the Mile High City</span></span>
+<span><span class="co">##      </span></span>
+<span><span class="co">## How would you answer the following questions. </span></span>
+<span><span class="co">## ONLY ANSWER WITH A VALID RESPONSE BUTTON</span></span>
+<span><span class="co">## ----</span></span>
+<span><span class="co">## Question 1: What gender do you identify as?</span></span>
+<span><span class="co">## 1 = Male</span></span>
+<span><span class="co">## 2 = Female</span></span>
+<span><span class="co">## 3 = Diverse</span></span>
+<span><span class="co">## 99 = Prefer not to say</span></span>
+<span><span class="co">## --------------------------------------------------------------</span></span>
+<span><span class="co">## assistant: 1 </span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## --------------------------------------------------------------</span></span>
+<span><span class="co">## user: Question 2: What's your year of birth?</span></span>
+<span><span class="co">##               Answer with a four-digit number.</span></span>
+<span><span class="co">##               </span></span>
+<span><span class="co">## --------------------------------------------------------------</span></span>
+<span><span class="co">## assistant: 1991</span></span>
+<span><span class="co">## --------------------------------------------------------------</span></span>
+<span><span class="co">## user: Question 3: How familiar are you with the term AI?</span></span>
+<span><span class="co">##               </span></span>
+<span><span class="co">##               1 = Not familiar at all</span></span>
+<span><span class="co">##               2 = Slightly familiar</span></span>
+<span><span class="co">##               3 = Somewhat familiar</span></span>
+<span><span class="co">##               4 = Moderately familiar</span></span>
+<span><span class="co">##               5 = Very familiar</span></span>
+<span><span class="co">##               </span></span>
+<span><span class="co">##             99 = Prefer not to say  </span></span>
+<span><span class="co">##               </span></span>
+<span><span class="co">## --------------------------------------------------------------</span></span>
+<span><span class="co">## assistant: 4</span></span>
+<span><span class="co">## --------------------------------------------------------------</span></span></code></pre>
 <p>An easy way to get the assistant answers from this message history is
 to use the <code><a href="../reference/get_reply.html">get_reply()</a></code>-function which can give you
 assistant messages based on their index in the message history.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
 <span>  gender      <span class="op">=</span> <span class="fu"><a href="../reference/get_reply.html">get_reply</a></span><span class="op">(</span><span class="va">profile1_questionaire</span>,<span class="fl">1</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  birth_year  <span class="op">=</span> <span class="fu"><a href="../reference/get_reply.html">get_reply</a></span><span class="op">(</span><span class="va">profile1_questionaire</span>,<span class="fl">2</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  ai_familiar <span class="op">=</span> <span class="fu"><a href="../reference/get_reply.html">get_reply</a></span><span class="op">(</span><span class="va">profile1_questionaire</span>,<span class="fl">3</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 3</span></span></span>
-<span><span class="co">#&gt;   gender birth_year ai_familiar</span></span>
-<span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>      1       <span style="text-decoration: underline;">1</span>991           4</span></span></code></pre></div>
+<span><span class="co">## <span style="color: #949494;"># A tibble: 1 × 3</span></span></span>
+<span><span class="co">##   gender birth_year ai_familiar</span></span>
+<span><span class="co">##    <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">1</span>      1       <span style="text-decoration: underline;">1</span>991           4</span></span></code></pre></div>
 <p>We could now put this into our
 <code>generate_synthetic_study_opener()</code> function and directly get
 the answers together with some information from the lawyer profiles we
@@ -303,7 +317,7 @@ respondent’s demographic information, offering insights into how the
 information treatment affects perceptions of AI automation.</p>
 <p>Here is how such a simplified version of such a function (without
 error-handling or cleanup logic) might look like:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">generate_synthetic_infotreatment</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">conversation</span>, <span class="va">treated</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  </span>
 <span>  <span class="co"># Extract key initial answers (gender, birth year, familiarity with AI)</span></span>
@@ -330,10 +344,10 @@ error-handling or cleanup logic) might look like:</p>
 <span><span class="st">                  10 = At the very top</span></span>
 <span><span class="st">                  99 = Prefer not to say</span></span>
 <span><span class="st">                  "</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>    <span class="fu"><a href="../reference/ollama.html">ollama</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gemma2"</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="../reference/ollama_chat.html">ollama_chat</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gemma2"</span><span class="op">)</span></span>
 <span>  </span>
 <span>  <span class="co"># Extract the prior answer (belief before the treatment)</span></span>
-<span>  <span class="va">prior_answer</span> <span class="op">&lt;-</span> <span class="va">prior</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/last_reply.html">last_reply</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://stringr.tidyverse.org/reference/str_trim.html" class="external-link">str_squish</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>  <span class="va">prior_answer</span> <span class="op">&lt;-</span> <span class="va">prior</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/get_reply.html">last_reply</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://stringr.tidyverse.org/reference/str_trim.html" class="external-link">str_squish</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>  </span>
 <span>  <span class="co"># Default to use the conversation state of the prior answer for the untreated group</span></span>
 <span>  <span class="va">post_treatment</span> <span class="op">&lt;-</span> <span class="va">prior</span></span>
@@ -353,10 +367,10 @@ error-handling or cleanup logic) might look like:</p>
 <span><span class="st">2 = NO</span></span>
 <span><span class="st">99 = Prefer not to say</span></span>
 <span><span class="st">"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>      <span class="fu"><a href="../reference/ollama.html">ollama</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gemma2"</span><span class="op">)</span></span>
+<span>      <span class="fu"><a href="../reference/ollama_chat.html">ollama_chat</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gemma2"</span><span class="op">)</span></span>
 <span>    </span>
 <span>    <span class="co"># Update info-updating based on whether the participant confirms reading the information</span></span>
-<span>    <span class="va">info_updating</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/last_reply.html">last_reply</a></span><span class="op">(</span><span class="va">post_treatment</span><span class="op">)</span></span>
+<span>    <span class="va">info_updating</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_reply.html">last_reply</a></span><span class="op">(</span><span class="va">post_treatment</span><span class="op">)</span></span>
 <span>  <span class="op">}</span></span>
 <span>  </span>
 <span>  <span class="co"># Ask the posterior belief question (after treatment)</span></span>
@@ -380,7 +394,7 @@ error-handling or cleanup logic) might look like:</p>
 <span>    <span class="fu"><a href="../reference/ollama.html">ollama</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gemma2"</span><span class="op">)</span></span>
 <span>  </span>
 <span>  <span class="co"># Extract the posterior answer (belief after the treatment)</span></span>
-<span>  <span class="va">posterior_answer</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/last_reply.html">last_reply</a></span><span class="op">(</span><span class="va">post_treatment</span><span class="op">)</span></span>
+<span>  <span class="va">posterior_answer</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_reply.html">last_reply</a></span><span class="op">(</span><span class="va">post_treatment</span><span class="op">)</span></span>
 <span>  </span>
 <span>  <span class="co"># Combine demographic data, prior and posterior beliefs, and info-updating status</span></span>
 <span>  <span class="va">answers_opener</span> <span class="op">|&gt;</span></span>
@@ -395,16 +409,16 @@ error-handling or cleanup logic) might look like:</p>
 <span></span>
 <span><span class="co">#Print the result tibble</span></span>
 <span><span class="va">profile1_info_treatment</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 6</span></span></span>
-<span><span class="co">#&gt;   gender birth_year ai_familiar prior info_updating posterior</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> <span style="color: #949494;">"</span>1 \n<span style="color: #949494;">"</span> 1991       4           3     2             2</span></span></code></pre>
+<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 1 × 6</span></span></span>
+<span><span class="co">##   gender birth_year ai_familiar prior info_updating posterior</span></span>
+<span><span class="co">##   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">1</span> <span style="color: #949494;">"</span>1 \n<span style="color: #949494;">"</span> 1991       4           3     2             2</span></span></code></pre>
 <p>Our lawyer is very familiar with AI, has a low prior on
 automatibility of his occupation, choose not to read the info material
-and did update his posterior downwards. Ironically, for now the only
-lawyer we’ve fully “replaced” with generative AI as synthetic survey
-respondent seems to believe his job is safe from automation.</p>
-<p>We could now loop over the lawyer profile, make each of them answer
+and did update his posterior. Ironically, for now the only lawyer we’ve
+fully “replaced” with generative AI as synthetic survey respondent seems
+to believe his job is safe from automation.</p>
+<p>We could now loop over each lawyer profile, make each of them answer
 the survey, or add further questions. From here we have a basic setup to
 generate synthetic data with <strong>tidyllm</strong></p>
 </div>
@@ -420,9 +434,9 @@ legal practices that influence real lawyers’ perspectives on
 automation.</p>
 <p>Additionally, as AI models are trained on vast datasets, there might
 be overgeneralization, especially for niche professions we have in our
-data (i.e. divorce lawyers). Therefore, while synthetic data can
-streamline early iterations of survey design, it should complement, not
-replace, actual human feedback during later stages of research.</p>
+data (i.e. very specialized lawyers). Therefore, while synthetic data
+can streamline early iterations of survey design, it should complement,
+not replace, actual human feedback during later stages of research.</p>
 </div>
 <div class="section level2">
 <h2 id="outlook">Outlook<a class="anchor" aria-label="anchor" href="#outlook"></a>

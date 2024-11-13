@@ -4,22 +4,36 @@ template:
   bootswatch: litera  
   assets:
     css: ["extra.scss"]
-    
+
 reference:
   - title: "LLM Message Handling"
+    desc: >
+      Functions for creating, managing, and retrieving messages and metadata.
     contents:
       - llm_message
       - df_llm_message
-      - get_reply
-      - get_reply_data
-      - get_user_message
+      - ends_with("reply")
+      - ends_with("reply_data")
+      - ends_with("user_message")
       - get_metadata
-      - last_reply
-      - last_reply_data
-      - last_user_message
       - tidyllm_schema
+      - rate_limit_info
 
-  - title: "Core Chat-API Functions"
+  - title: "Tidyllm Main Verbs"
+    desc: >
+      Core verbs facilitating interactions with LLMs, including sending messages,
+      generating embeddings, and managing batch requests.
+    contents:
+      - chat
+      - embed
+      - send_batch
+      - check_batch
+      - fetch_batch
+      - list_batches
+
+  - title: "API Provider Functions"
+    desc: >
+      Functions interfacing with various API providers called from main verbs
     contents:
       - openai
       - claude
@@ -28,52 +42,83 @@ reference:
       - mistral
       - ollama
       - azure_openai
-      - chatgpt # Deprecated, use openai instead
-      
-  - title: "Batch Request API Functions"
-    contents:
-    - send_claude_batch
-    - check_claude_batch
-    - fetch_claude_batch
-    - list_claude_batches
-    - send_openai_batch
-    - check_openai_batch
-    - fetch_openai_batch
-    - list_openai_batches
+      - chatgpt
 
-  - title: "Embedding API Functions"
+  - title: "OpenAI-Specific Functions"
+    desc: >
+      Functions for OpenAI services, including chat interactions, batch processing and
+      embedding generation.
     contents:
-    - ollama_embedding
-    - openai_embedding
-    - gemini_embedding
-    - mistral_embedding
-    
-  - title: "Other API Functions"
+      - openai_chat
+      - send_openai_batch
+      - check_openai_batch
+      - fetch_openai_batch
+      - list_openai_batches
+      - openai_embedding
+
+  - title: "Claude-Specific Functions"
+    desc: >
+      Functions designed for Claude services for chat interactions and
+      batch processing.
     contents:
-    - groq_transcribe
-    - gemini_upload_file
-    - gemini_file_metadata
-    - gemini_list_files
-    - gemini_delete_file
-    
-  - title: "Ollama Functions"
+      - claude_chat
+      - send_claude_batch
+      - check_claude_batch
+      - fetch_claude_batch
+      - list_claude_batches
+
+  - title: "Gemini-Specific Functions"
+    desc: >
+      Functions specific to Google Gemini services, including chat, embedding,
+      and file management operations.
     contents:
+      - gemini_chat
+      - gemini_embedding
+      - gemini_upload_file
+      - gemini_list_files
+      - gemini_file_metadata
+      - gemini_delete_file
+
+  - title: "Groq-Specific Functions"
+    desc: >
+      Functions for interacting with Groq services, such as chat and transcription.
+    contents:
+      - groq_chat
+      - groq_transcribe
+      
+  - title: "Mistral-Specific Functions"
+    desc: >
+      Functions for interacting with the Mistral API .
+    contents:
+      - mistral_chat
+      - mistral_embedding
+      
+  - title: "Azure-Specific Functions"
+    desc: >
+      Functions for interacting with the Azure OpenAI API .
+    contents:
+      - azure_openai_chat
+      
+  - title: "Ollama-Specific Functions"
+    desc: >
+      Functions for engaging with Ollama services, including chat, embedding,
+      and model management.
+    contents:
+      - ollama_chat
+      - ollama_embedding
       - ollama_download_model
       - ollama_list_models
+      
+  - title: "PDF Processing"
+    desc: >
+      Processing PDF documents, enabling page-by-page analysis.
+    contents:
+      - pdf_page_batch      
 
-  - title: "Internals and Utility Functions"
+  - title: "Internals"
+    desc: >
+      Main definition of the LLMMessage object at the core of most tidyllm workflows 
     contents:
       - LLMMessage
-      - perform_api_request
-      - generate_callback_function
-      - initialize_api_env
-      - rate_limit_info
-      - update_rate_limit
-      - parse_duration_to_seconds
-      - ratelimit_from_header
-
-  - title: "PDF Processing"
-    contents:
-      - pdf_page_batch
 
 

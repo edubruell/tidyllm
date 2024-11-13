@@ -4,11 +4,20 @@ title: "Structured Question Answering from PDFs"
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>"
+  collapse = TRUE
 )
 ```
+> ⚠️ **Note:**  This article refers to the development version 0.2.3. of **tidyllm**, which introduced a major interface change. You can install the current development version directly from GitHub using devtools:
 
+```{r, eval= FALSE, echo=TRUE}
+# Install devtools if not already installed
+if (!requireNamespace("devtools", quietly = TRUE)) {
+  install.packages("devtools")
+}
+
+# Install TidyLLM from GitHub
+devtools::install_github("edubruell/tidyllm")
+```
 Navigating through a large collection of academic papers can be time-consuming, especially when you're trying to extract specific insights or determine the relevance of each document to your research. With **tidyllm**, you can streamline this process by automating the extraction of structured answers directly from PDF documents using large language models.
 
 Imagine you have a folder of papers on the economic effects of generative AI, and you need to assess how each paper is related to your own research interests. This article will guide you through setting up a workflow that processes the first few pages of each paper, asks an AI model targeted questions, and returns the answers in a structured format — perfect for converting into a table for easy review and analysis.
@@ -52,7 +61,7 @@ Additionally, answer the following questions about the document’s content. Eac
 
 ### Step 2: Generating Messages for Each Document
 
-Next, we prepare a list of messages for all PDFs in the folder by applying `llm_message()` with the prompt to the first five pages of each document. This step sets up a list of messages, where each entry specifies a task to retrieve structured answers on one file.Even though the `gpt-4o-mini model` we will use in this example can process up to 128,000 tokens -approximately 80-90 pages of english text- we limit the input to five pages for demonstration purposes and to maintain focus on the introduction that is ususally enough to get a first overview of a paper. 
+Next, we prepare a list of messages for all PDFs in the folder by applying `llm_message()` with the prompt to the first five pages of each document. This step sets up a list of messages, where each entry specifies a task to retrieve structured answers on one file. Even though the `gpt-4o-mini model` we will use in this example can process up to 128,000 tokens -approximately 80-90 pages of English text- we limit the input to five pages for demonstration purposes and to maintain focus on the introduction that is usually enough to get a first overview of a paper. 
 
 ```{r document_tasks, eval=FALSE}
 document_tasks <- map(files,~llm_message(document_prompt, 
@@ -82,15 +91,15 @@ document_schema <- tidyllm_schema(
 )
 ```
 
-In `tidyllm_schema()`, we begin by naming the schema with a character string, which is required by the API. Then, we specify each field along with its expected data type. Supported types include `character` (with `string` as an accepted synonym), `logical`, and `numeric`. For fields where categorical responses are needed, we can use `factor()` to define specific allowed options. For instance, `factor(Policy, Research)` creates a categorical field with the choices "Policy" and "Research." To indicate that a field should return a list of values, we append `[]` to the type. For example, setting `Authors = "character[]"` allows multiple entries in a list format for the Authors field. However, we intentionally avoid lists here to maintain a flat structure. This ensures that the output can be easily converted to a single-row `tibble`.
+In `tidyllm_schema()`, we begin by naming the schema with a character string, which is required by the OpenAI API. Then, we specify each field along with its expected data type. Supported types include `character` (with `string` as an accepted synonym), `logical`, and `numeric`. For fields where categorical responses are needed, we can use `factor()` to define specific allowed options. For instance, `factor(Policy, Research)` creates a categorical field with the choices "Policy" and "Research." To indicate that a field should return a list of values, we append `[]` to the type. For example, setting `Authors = "character[]"` allows multiple entries in a list format for the Authors field. However, we intentionally avoid lists here to maintain a flat structure. This ensures that the output can be easily converted to a single-row `tibble`.
 
 ### Step 4: Running the Analysis on a Sample Document
-To test the setup, we run the analysis on a single document with the standard `openai()` function, using the schema to ensure structured output.
+To test the setup, we run the analysis on a single document with the standard `chat()` function, using the schema to ensure structured output.
 
 ```{r example_task, eval=FALSE}
 example_task <- document_tasks[[1]] |> 
-  openai(.json_schema = document_schema,
-         .model       = "gpt-4o-mini")
+  chat(openai(.json_schema = document_schema,
+              .model       = "gpt-4o-mini"))
 ```
 ```{r example_task_hidden, echo=FALSE}
 example_task <- read_rds("example_task.rds")
@@ -100,36 +109,49 @@ We use `get_reply_data()` to extract the model’s structured responses from the
 ```{r example_task_get_reply}
 get_reply_data(example_task)
 ```
-The model seems to have reasonably answered our questions in the structured format we provided for our first example task.
+The model seems to have reasonably answered our questions in the structured format we provided for our first example task. Here we can also look at the token usage of the example task:
+```{r example_task_get_metadata, eval=FALSE}
+get_reply_data(example_task)
+```
+```{r, echo=FALSE}
+tibble(
+  model = "gpt-4o-mini-2024-07-18",
+  timestamp = as.POSIXct("2024-11-13 07:41:29"),
+  prompt_tokens = 4356L,
+  completion_tokens = 273L,
+  total_tokens = 4629L
+)
+```
+At a price for `gpt-4o-mini` of  \$0.15 / million input tokens and \$0.60 / million output tokens the cost of our example task is less than a cent.
 
 ### Step 6: Scaling up to a whole batch of papers
 
 After confirming that our single-document analysis is working well, we can extend this workflow to process a larger batch of documents. Batch processing is particularly valuable when handling a large collection of files, as it allows us to submit multiple messages at once, which are then processed together on the model provider’s servers. 
 
-Batch APIs, like those from Anthropic and OpenAI, often offer up to 50% savings compared to single-interaction requests. In **tidyllm**, we can use `send_openai_batch()` to submit batch requests. The OpenAI Batch API, supports up to 50,000 requests in a single batch with a maximum file size of 100 MB. Additionally, batch API rate limits are separate from the standard per-model limits, meaning batch usage doesn’t impact your regular API rate allocations.
+Batch APIs, like those from Anthropic and OpenAI, often offer up to 50% savings compared to single-interaction requests. In **tidyllm**, we can use `send_batch()` to submit batch requests. The OpenAI Batch API, supports up to 50,000 requests in a single batch with a maximum file size of 100 MB. Additionally, batch API rate limits are separate from the standard per-model limits, meaning batch usage doesn’t impact your regular API rate allocations.
 ```{r batch, eval=FALSE}
 document_tasks |> 
-  send_openai_batch(.json_schema = document_schema,
-                    .model       = "gpt-4o-mini") |>
+  send__batch(openai(.json_schema = document_schema,
+                     .model       = "gpt-4o-mini")) |>
   write_rds("document_batch.rds")
 ```
-After the batch is sent, the output of  `send_openai_batch()` contains the input list of message histories along with batch metadata, such as the `batchID` as an attribute as well as unique names for each list element that can be used to stitch together messages with replies, once they are ready. If you provide a named list of messages, **tidyllm** will use these names as identifiers in the batch (provided that these names are unique for each list element). Batches are processed within 24 hours, usually much faster. The batch request for this example was processed within 10 minutes. 
+After the batch is sent, the output of  `send_batch()` contains the input list of message histories along with batch metadata, such as the `batchID` as an attribute as well as unique names for each list element that can be used to stitch together messages with replies, once they are ready. If you provide a named list of messages, **tidyllm** will use these names as identifiers in the batch (provided that these names are unique for each list element). Batches are processed within 24 hours, usually much faster. The batch request for this example was processed within 10 minutes. 
 
 > ⚠️ **Note:** We save the RDS file to disk to preserve the state of our batch request, including all messages and their unique identifiers. This file acts as a checkpoint, allowing us to easily reload and check the batch status or retrieve results across R sessions without needing to resend the entire batch if we close the session in the mean time.
 
 To check whether a batch was compeleted you can load the output file into `check_openai_batch()`:
 ```{r, eval=FALSE}
 read_rds("document_batch.rds")|>
-  check_openai_batch()
+  check_batch(openai())
 ```
-Alternatively you can list all OpenAI batches with `list_openai_batches()` or look into the [batches dashboard of the OpenAI platform](https://platform.openai.com/batches/). Since OpenAI batches are sent as `.jsonl` and saved on the OpenAI server, you can also look into the file tab of the dashboard to delete old files from time to time. 
+Alternatively you can list all OpenAI batches with `list_openai_batches()`or `list_batchers(openai())`. Of course, you can also look into the [batches dashboard of the OpenAI platform](https://platform.openai.com/batches/) for the same overview. Since OpenAI batches are sent as `.jsonl` and saved on the OpenAI server, you can also look into the file tab of the dashboard to delete old files from time to time. 
 
 ### Step 7: Getting data from the entire batch
 
-Once the batch is complete, we fetch all responses with `fetch_openai_batch()`:
+Once the batch is complete, we fetch all responses with `fetch_batch()`:
 ```{r, eval=FALSE}
 results <- read_rds("document_batch.rds")|>
-  fetch_openai_batch()
+  fetch_batch(openai())
 ```
 ```{r results_hidden, echo=FALSE}
 results <- read_rds("document_results.rds")
@@ -159,7 +181,7 @@ Alternatively, for very large documents, you could split them into smaller secti
 
 ### Local Models
  
-Using open-source local models for PDF processing is also possible, though remote models like `gpt-4o-mini` tend to handle longer documents more effectively. Smaller local models, like `gemma2:9B` in `ollama()`, may struggle with large content and complex, structured queries, even if they support extended context lengths. For more demanding tasks, larger local models like `llama3:70B` may perform better with complex queries, but they require substantial hardware resources to run smoothly. Since Ollama has a default context length of just 2,048 tokens, you will likely need to adjust the context length with the `.num_ctx` option in `ollama()`. Note that increasing context length will likely slow down processing due to higher memory usage. In these cases, reducing the number of pages may help.
+Using open-source local models for PDF processing is also possible, though remote models like `gpt-4o-mini` tend to handle longer documents more effectively. Smaller local models, like `gemma2:9B` in `ollama()`, may struggle with large content and complex, structured queries, even if they support extended context lengths. For more demanding tasks, larger local models like `llama3:70B` may perform better with complex queries, but they require substantial hardware resources to run smoothly. Since Ollama has a default context length of just 2,048 tokens, you will likely need to adjust the context length with the `.num_ctx` option in `ollama()`. Sending a message that is longer than the context length might lead to strange errors, since the input will be truncated by Ollama, which might lead to cases where only parts of the document are processed without your instructions.  Note that increasing context length will likely slow down processing due to higher memory usage. In these cases, reducing the number of pages may help.
 
 > ⚠️ **Note:** When using paid remote models, it's important to consider data privacy and security, especially if you're processing sensitive documents, as uploading data to external servers may introduce risks — local models provide more control in such cases. 
 
@@ -184,7 +206,7 @@ Answer the following queries about the document in this provided JSON format:
   filename = files[[1]],
   start_page = 1,
   end_page = 5)) |>
-  ollama(.json=TRUE,.num_ctx = 8192)
+  chat(ollama(.json=TRUE,.num_ctx = 8192))
 ```
 ```{r ollama_example_hidden, echo=FALSE}
 ollama_output <- read_rds("ollama_reply.rds")
@@ -196,4 +218,4 @@ While this worked for the current document, it is not clear that the model will 
 
 ## Outlook
 
-This structured question-answering workflow not only streamlines the extraction of key insights from academic papers, but can also be adapted for other document-heavy tasks. Whether you’re working with reports, policy documents, or news articles this approach can quickly help you summarize and categorize information for further analysis. 
+This structured question-answering workflow not only streamlines the extraction of key insights from academic papers, but can also be adapted for other document-heavy tasks. Whether you're working with reports, policy documents, or news articles this approach can quickly help you summarize and categorize information for further analysis. 

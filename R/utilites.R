@@ -51,51 +51,56 @@ filter_roles = function(.message_history,
   Filter(function(x) "role" %in% names(x) && x$role %in% .roles, .message_history)
 }
 
-
-#' Extract Response Metadata
-#'
-#' This helper function extracts and formats metadata from LLM API responses.
-#' It standardizes the model used, timestamp of the response, and token usage statistics 
-#' (prompt, completion, and total tokens) across various LLM API providers.
-#'
-#' @param .response A list containing the response object from an LLM API call.
-#'                  The structure of this list may vary depending on the provider 
-#' @return A named list containing the standardized metadata: model, timestamp, prompt tokens, 
-#'         completion tokens, and total tokens.
-#' @importFrom lubridate as_datetime
+#' @title Guess MIME Type from File Extension
+#' @description Internal utility function to guess the MIME type of a file based on its extension.
+#' This function provides a mapping of common file extensions to their respective MIME types.
+#' 
+#' @param file_path A string representing the path to the file.
+#' 
+#' @return A character vector of possible MIME types, or "application/octet-stream" if the extension is unknown.
+#' 
 #' @importFrom rlang %||%
 #' @noRd
-extract_response_metadata <- function(.response) {
-  timestamp <- .response$created_at %||% .response$created %||% NA
-  timestamp <- if (is.numeric(timestamp)) {
-    lubridate::as_datetime(timestamp)
-  } else if (is.character(timestamp)) {
-    lubridate::as_datetime(timestamp, format = "%Y-%m-%dT%H:%M:%OSZ")
-  } else {
-    NA
-  }
+guess_mime_type <- function(file_path) {
+  # Extract the file extension
+  ext <- tools::file_ext(file_path)
   
-  prompt_tokens <- .response$usage$prompt_tokens %||% 
-                   .response$usage$input_tokens %||% 
-                   .response$usageMetadata$promptTokenCount %||% NA
-  
-  completion_tokens <- .response$usage$completion_tokens %||% 
-                       .response$usage$output_tokens %||% 
-                       .response$usageMetadata$candidatesTokenCount %||% NA
-  
-  total_tokens <- .response$usage$total_tokens %||% 
-    .response$usageMetadata$totalTokenCount %||% 
-    if (!is.na(prompt_tokens) && !is.na(completion_tokens)) {
-      prompt_tokens + completion_tokens
-    } else {
-      NA
-    }
-  
-  list(
-    model = .response$model %||% .response$modelVersion %||%  NA,
-    timestamp = timestamp,
-    prompt_tokens = prompt_tokens,
-    completion_tokens = completion_tokens,
-    total_tokens = total_tokens
+  # Define a mapping of extensions to MIME types
+  mime_types <- list(
+    pdf = "application/pdf",
+    txt = "text/plain",
+    html = "text/html",
+    css = "text/css",
+    md = "text/md",
+    csv = "text/csv",
+    xml = "text/xml",
+    rtf = "text/rtf",
+    js = c("application/x-javascript", "text/javascript"),
+    py = c("application/x-python", "text/x-python"),
+    png = "image/png",
+    jpeg = "image/jpeg",
+    jpg = "image/jpeg",
+    webp = "image/webp",
+    heic = "image/heic",
+    heif = "image/heif",
+    mp4 = "video/mp4",
+    mpeg = "video/mpeg",
+    mov = "video/mov",
+    avi = "video/avi",
+    flv = "video/x-flv",
+    mpg = "video/mpg",
+    webm = "video/webm",
+    wmv = "video/wmv",
+    `3gpp` = "video/3gpp",
+    wav = "audio/wav",
+    mp3 = "audio/mp3",
+    aiff = "audio/aiff",
+    aac = "audio/aac",
+    ogg = "audio/ogg",
+    flac = "audio/flac"
   )
+  
+  # Return the corresponding MIME type(s) or a default value
+  mime_types[[tolower(ext)]] %||% "application/octet-stream"
 }
+

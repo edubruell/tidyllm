@@ -4,10 +4,22 @@ title: "Classifying Texts with tidyllm"
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>"
+  collapse = TRUE#,
+#  comment = "#>"
 )
 ```
+> ⚠️ **Note:**  This article refers to the development version 0.2.3. of **tidyllm**, which introduced a major interface change. You can install the current development version directly from GitHub using devtools:
+
+```{r, eval= FALSE, echo=TRUE}
+# Install devtools if not already installed
+if (!requireNamespace("devtools", quietly = TRUE)) {
+  install.packages("devtools")
+}
+
+# Install TidyLLM from GitHub
+devtools::install_github("edubruell/tidyllm")
+```
+
 
 Classification tasks are a key challenge when dealing with unstructured data in surveys, customer feedback, or for image analysis. This article introduces a practical, step-by-step guide to using **tidyllm** for classifying text, streamlining the process.
 
@@ -73,7 +85,7 @@ print(sub_sample, n = 5)
 ```
 By splitting the data, we now have a smaller sub-sample of 422 observations to work with during the initial classification stage. 
 
-### Using a claude batch request
+### A simple sequential classifier
 
 To classify this sub-sample of occupation descriptions, we first generate prompts with a specific classification task for each occupation. Each prompt directs the model to classify the occupation based on a numerical code, ensuring that the output aligns with our coding system. We use `glue()` to create prompts for each occupation description to the prompt with `{occupation}` and `purrr::map()` to pass each prompt to `llm_message()`. The output is a list of messages ready for submission to a large language model.
 
@@ -113,14 +125,15 @@ A typical message from this list of classification tasks looks like this:
 ```{r classification_tasks1}
 classification_tasks[[1]]
 ```
-To classify an initial subset, which will need to be manually verified later, it is beneficial to use a reliable commercial model, as its output typically requires fewer adjustments. Here, we choose Claude-3.5-Sonnet, setting `.temperature` to 0 to ensure deterministic (non-random) responses. Initially, we test our prompt with the standard sequential `claude()` function. This preliminary step allows us to verify that the model interprets the prompt accurately and produces output in the required format before running the full batch of classification tasks.
+To classify an initial subset, which will need to be manually verified later, it is beneficial to use a reliable commercial model, as its output typically requires fewer adjustments. Here, we choose Claude-3.5-Sonnet, setting `.temperature` to 0 to ensure deterministic (non-random) responses. Initially, we test our prompt with the standard sequential `chat(claude())` approach. This preliminary step allows us to verify that the model interprets the prompt accurately and produces output in the required format before running the full batch of classification tasks.
 
-To this end, we create a tibble containing the occupation descriptions from our sub-sample alongside the prepared classification tasks. We then randomly select 10 rows from this tibble. Each selected occupation is passed sequentially through the `classify_sequential()` function that passes each classification task through `claude()`, fetches the reply with `get_reply()` and converts the text output of the model to a numeric code with `parse_number()`. Finally, the results are joined with the `occ_codes` table to map the numeric occupation codes to their corresponding occupation labels, providing an interpretable  output:
+To this end, we create a tibble containing the occupation descriptions from our sub-sample alongside the prepared classification tasks. We then randomly select 10 rows from this tibble. Each selected occupation is passed sequentially through the `classify_sequential()` function that passes each classification task through `chat(claude())`,
+fetches the reply with `get_reply()` and converts the text output of the model to a numeric code with `parse_number()`. Finally, the results are joined with the `occ_codes` table to map the numeric occupation codes to their corresponding occupation labels, providing an interpretable  output:
 
 ```{r classification_tasks1_output, eval=FALSE}
 classify_sequential <- function(occupation_open,message){
     raw_code <- message |>
-        claude(.temperature = 0) |>
+        chat(claude(.temperature = 0)) |>
         get_reply() |>
         parse_number()
     
@@ -147,11 +160,27 @@ tribble(
   "Systems administrator",        15,   "Computer and Mathematical Occupations"
 )
 ```
-This output demonstrates that the model accurately interprets the prompts, assigning each occupation description to a suitable category. With this confirmation, we can confidently leverage tidyllm’s built-in batch-processing functions to classify the entire set of messages in `classification_tasks` using Anthropic's Claude-3.5-Sonnet model.
+This output demonstrates that the model accurately interprets the prompts, assigning each occupation description to a suitable category. Another check before we  classify the entire set of messages in `classification_tasks` using Anthropic's Claude-3.5-Sonnet model, is to look at the token-usage and the cost of a typical message with `get_metdadata()`:
+
+```{r, eval=FALSE}
+classification_tasks[[1]] |>
+  chat(claude(.temperature = 0)) |>
+  get_metadata()
+```
+```{r, eval=TRUE,echo=FALSE}
+tibble(model="claude-3-5-sonnet-20241022",
+       timestamp=NA,
+       prompt_tokens = 349,
+       completion_tokens = 5,
+       total_tokens = 354)
+```
+Assuming all messages in this initial batch are roughly similar, we can expect all 442 messages to need around 150,000 prompt tokens and 2200 completion tokens. At the time of writing, the price for one million input tokens on Claude was 3\$, while one million output tokens did cost 15\$. Prices using batch request are only half. Classifying our subsample with batch-processing costs roughly 22 cents.
+
+### Using a claude batch request
 
 Batch-processing offers a significant cost advantage over sequential classification. Anthropic charges half the price per token for batch requests compared to single requests, making it an efficient choice for large-scale tasks. While batch requests do not return results instantly, they are typically processed within 24 hours, often much faster. A Message Batch is limited to either 10,000 requests or 32 MB in size, whichever is reached first. 
 
-To initiate a batch request, we use the `send_claude_batch()` function. This function returns the same list of classification tasks that we sent, but marked with an attribute that contains a batch-id from the Claude API as well as unique names for each list element that can be used to stitch together messages with replies.  If you supply a named list of messages, these names are used as identifiers (ensuring they are unique before submission). For convenient access later, we save the batch output locally, allowing us to resume processing from the batch even after closing the R session:
+To initiate a batch request, we use the `send_claude_batch()` function (you can of course also use the more general verb `send_batch(claude())`. This batch submission function returns the same list of classification tasks that we uploaded, but marked with an attribute that contains a batch-id from the Claude API as well as unique names for each list element that can be used to stitch together messages with replies, once the batch is ready.  If you supply a named list of messages, these names are used as identifiers (ensuring they are unique before submission). For convenient access later, we save the batch output locally, allowing us to resume processing from the batch even after closing the R session:
 ```{r batch_send, eval=FALSE}
 classification_tasks |>
   send_claude_batch(.temperature = 0) |>
@@ -183,7 +212,7 @@ tibble(occupation_open = sub_sample$occupation,
   left_join(occ_codes, by="occ2") |>
   writexl::write_xlsx("ground_truth_excel.xlsx")
 ```
-We get a list of messages with assistant replies from `fetch_claude_batch()` that we pass into `map_chr(get_reply)` to get assistant replies from each message as a character vector. We then again parse the numeric code and merge occupation titles. To ensure that the output is correct, we can export the results to Excel with `write_xlsx` from the `writexl` package and manually fix miss-classifications. Running this initial batch on on this sub-sample cost us less than 30 cents. 
+We get a list of messages with assistant replies from `fetch_claude_batch()` that we pass into `map_chr(get_reply)` to get assistant replies from each message as a character vector. We then again parse the numeric code and merge occupation titles. To ensure that the output is correct, we can export the results to Excel with `write_xlsx` from the `writexl` package and manually fix miss-classifications. 
 
 A manual review of the classifier’s output showed highly promising results. Out of 443 classifications, only 9 needed corrections, indicating an error rate of just 2% for the `claude()`-based classifier with our initial prompt. Most issues arose from not correctly identifying unclear responses as missing, such as "Doin' the numbers" or "Barster" (a potential mix of Barrister or Barkeeper). 
 
@@ -206,7 +235,7 @@ test_data  <- testing(gt_split)
 print(train_data,n=5)
 ```
 ###  Writing a flexible classifier function
-To test different prompts and models systematically we need to create a flexible classifier function that can handle different prompts or models that can work with any api-function including local models that do not support batch requests.  This function can take the open `occupation` question, our ground-truth for `occ2` a `prompt` and `prompt_id`, a `api_function` and a `model` as arguements allowing us to test each occupation classification across a grid of prompts and models.
+To test different prompts and models systematically we need to create a flexible classifier function that can handle different prompts or models that can work with any api-function including local models that do not support batch requests.  This function can take the open `occupation` question, our ground-truth for `occ2` a `prompt` and `prompt_id`, a `provider` and a `model` as arguements allowing us to test each occupation classification across a grid of prompts and models.
 
 ```{r classify_occ2, eval=FALSE, echo=TRUE}
 # External numerical code list for reusability
@@ -225,7 +254,7 @@ classify_occupation_grid <- function(occupation,
                                 occ2,
                                 prompt,
                                 prompt_id,
-                                api_function,
+                                provider,
                                 model){
   # Output what the model is currently doing to the console
   glue("Classifying: {model} - {prompt_id} - {occupation}\n") |> cat("\n")
@@ -237,7 +266,7 @@ classify_occupation_grid <- function(occupation,
   classification <- tryCatch({
     # Get the assistant's reply using the dynamically provided API function and model
     assistant_reply <- llm_message(prompt) |>
-      api_function(.model = model, .temperature = 0) |>
+      chat(provider(.model = model, .temperature = 0)) |>
       get_reply() |>
       str_squish()
     
@@ -342,7 +371,7 @@ To run the classification across the entire grid, we use `pmap_dfr()` from the p
 ```{r gridrun, eval=FALSE,echo=TRUE}
 grid_results <- grid |>
   pmap_dfr(classify_occupation_grid,
-           api_function = ollama)
+           provider = ollama)
 ```
 ```{r, eval=TRUE, echo=FALSE}
 classifications <- c(
@@ -422,7 +451,7 @@ Here is a modified chain of thought prompting function with a reasoning and an o
 ```{r cot, eval=FALSE, echo=TRUE}
 classify_occupation_cot <- function(occupation,
                                     occ2,
-                                    api_function,
+                                    provider,
                                     model,
                                     stream = FALSE){
   # Output what the model is currently doing to the console
@@ -439,7 +468,7 @@ classify_occupation_cot <- function(occupation,
   
   reasoning_response <- tryCatch({
     conversation <<- llm_message(prompt_reasoning) |>
-      api_function(.model = model, .temperature = 0, .stream=stream) 
+      chat(provider(.model = model, .temperature = 0, .stream=stream))
     
     conversation |>
       get_reply()
@@ -457,7 +486,7 @@ classify_occupation_cot <- function(occupation,
   final_response <- tryCatch({
     conversation |>
     llm_message(prompt_final) |>
-      api_function(.model = model, .temperature = 0, .stream=stream) |>
+      chat(provider(.model = model, .temperature = 0, .stream=stream)) |>
       get_reply() |>
       str_squish()
   }, error = function(e){
@@ -486,7 +515,7 @@ classify_occupation_cot <- function(occupation,
 ```
 Note that this increases the compute time for **gemma2** massively because it now produces a multiple of the output from before. Each run produces roughly a page of reasoning, before the second question generates a number, while our original prompting strategy just gave us one number. So run-times increase strongly.
 
-> **Note:** To test more complicated prompting strategies like this in realtime, another feature of **tidyllm** comes in handy. You can stream back responses  just like in online chatbot interfaces during a first test run with the `.stream`-argument in most api functions to immediately see whether you made strange errors in your prompting. Therefore, here we pass the stream arguement trough `classify_occupation_cot()` to first test the function and the prompting on single inputs before we scale it up to the whole data.
+> **Note:** To test more complicated prompting strategies like this in realtime, another feature of **tidyllm** comes in handy. You can stream back responses  just like in online chatbot interfaces during a first test run with the `.stream`-argument for most provider functions in `chat()` to immediately see whether you made strange errors in your prompting. Therefore, here we pass the stream arguement trough `classify_occupation_cot()` to first test the function and the prompting on single inputs before we scale it up to the whole data. 
 
 Let's run this function  with **gemma2**:
 

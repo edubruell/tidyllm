@@ -2,18 +2,31 @@
 % Please edit documentation in R/message_retrieval.R
 \name{get_reply}
 \alias{get_reply}
-\title{Get Assistant Reply as Text}
+\alias{last_reply}
+\title{Retrieve Assistant Reply as Text}
 \usage{
 get_reply(.llm, .index = NULL)
+
+last_reply(.llm)
 }
 \arguments{
 \item{.llm}{An \code{LLMMessage} object containing the message history.}
 
-\item{.index}{A positive integer for the assistant reply index to retrieve, defaulting to the last reply.}
+\item{.index}{A positive integer indicating the index of the assistant reply to retrieve.
+Defaults to \code{NULL}, which retrieves the last reply.}
 }
 \value{
-Plain text content of the assistant's reply, or \code{NA_character_} if no reply is available.
+Returns a character string containing the assistant's reply, or \code{NA_character_} if no reply exists.
 }
 \description{
-Retrieves the assistant's reply as plain text from an \code{LLMMessage} object at a specified index.
+Extracts the plain text content of the assistant's reply from an \code{LLMMessage} object.
+Use \code{\link[=get_reply_data]{get_reply_data()}} for structured replies in JSON format.
+}
+\details{
+This function is the core utility for retrieving assistant replies by index.
+For convenience, \code{\link[=last_reply]{last_reply()}} is provided as a wrapper to retrieve the
+latest assistant reply.
+}
+\seealso{
+\code{\link[=get_reply_data]{get_reply_data()}}, \code{\link[=last_reply]{last_reply()}}
 }

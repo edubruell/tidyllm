@@ -30,7 +30,7 @@
 #' @return A new `LLMMessage` object containing the original messages plus the assistant's response.
 #'
 #' @export
-openai <- function(
+openai_chat <- function(
     .llm,
     .model = "gpt-4o",
     .max_completion_tokens = NULL,
@@ -210,107 +210,6 @@ openai <- function(
 }
 
 
-#' @title ChatGPT Wrapper (Deprecated)
-#' 
-#' @description Provides a wrapper for the `openai()` function to facilitate
-#' migration from the deprecated `chatgpt()` function. This ensures backward
-#' compatibility while allowing users to transition to the updated features.
-#' 
-#' @param .llm An `LLMMessage` (passed directly to the `openai()` function)
-#' @param .model A character string specifying the model to use. 
-#' @param .max_tokens An integer specifying the maximum number of tokens  (mapped to `.max_completion_tokens` in `openai()`)
-#' @param .temperature A numeric value for controlling randomness. This is
-#' @param .top_p A numeric value for nucleus sampling, indicating the top
-#' @param .top_k Currently unused, as it is not supported by `openai()`.
-#' @param .frequency_penalty A numeric value that penalizes new tokens based on
-#'   their frequency so far. 
-#' @param .presence_penalty A numeric value that penalizes new tokens based on
-#'   whether they appear in the text so far.
-#' @param .api_url Character string specifying the API URL. Defaults to the
-#'   OpenAI API endpoint.
-#' @param .timeout An integer specifying the request timeout in seconds. This is
-#' @param .verbose Will print additional information about the request (default: false)
-#' @param .json Should json-mode be used? (detault: false)
-#' @param .stream Should the response  be processed as a stream (default: false)
-#' @param .dry_run Should the request is constructed but not actually sent. Useful for debugging and testing. (default: false)
-#' 
-#' @return An `LLMMessage` object with the assistant's reply.
-#'
-#' 
-#' @details
-#' This function is deprecated and is now a wrapper around `openai()`. It is
-#' recommended to switch to using `openai()` directly in future code. The
-#' `chatgpt()` function remains available to ensure backward compatibility for
-#' existing projects.
-#' 
-#' @examples
-#' \dontrun{
-#' # Using the deprecated chatgpt() function
-#' result <- chatgpt(.llm = llm_message(), .prompt = "Hello, how are you?")
-#' }
-#' 
-#' @seealso Use [openai()] instead.
-#' 
-#' @export
-chatgpt <- function(
-    .llm,
-    .model = "gpt-4o",
-    .max_tokens = 1024,
-    .temperature = NULL,
-    .top_p = NULL,
-    .top_k = NULL,
-    .frequency_penalty = NULL,
-    .presence_penalty = NULL,
-    .api_url = "https://api.openai.com/",
-    .timeout = 60,
-    .verbose = FALSE,
-    .json = FALSE,
-    .stream = FALSE,
-    .dry_run = FALSE
-) {
-  # Issue deprecation warning
-  lifecycle::deprecate_warn(
-    when = "0.1.9", 
-    what = "chatgpt()",
-    with = "openai()"
-  )
-  
-  # Map arguments from chatgpt() to openai()
-  .max_completion_tokens <- .max_tokens
-  .logprobs <- NULL  # Not used in chatgpt(), set to NULL
-  .top_logprobs <- NULL  # Not used in chatgpt(), set to NULL
-  .logit_bias <- NULL  # Not used in chatgpt(), set to NULL
-  .seed <- NULL  # Not used in chatgpt(), set to NULL
-  .stop <- NULL  # Not used in chatgpt(), set to NULL
-  .json_schema <- NULL  # Not used in chatgpt(), set to NULL
-  .frequency_penalty <- .frequency_penalty
-  .presence_penalty <- .presence_penalty
-  
-  # Call the openai() function with mapped arguments
-  result <- openai(
-    .llm = .llm,
-    .model = .model,
-    .max_completion_tokens = .max_completion_tokens,
-    .frequency_penalty = .frequency_penalty,
-    .logit_bias = .logit_bias,
-    .logprobs = .logprobs,
-    .top_logprobs = .top_logprobs,
-    .presence_penalty = .presence_penalty,
-    .seed = .seed,
-    .stop = .stop,
-    .stream = .stream,
-    .temperature = .temperature,
-    .top_p = .top_p,
-    .api_url = .api_url,
-    .timeout = .timeout,
-    .verbose = .verbose,
-    .json = .json,
-    .json_schema = .json_schema,
-    .dry_run = .dry_run
-  )
-  
-  return(result)
-}
 
 #' Generate Embeddings Using OpenAI API
 #'
@@ -979,6 +878,52 @@ fetch_openai_batch <- function(.llms,
   
   return(updated_llms)
 }
+
+#' OpenAI Provider Function
+#'
+#' The `openai()` function acts as an interface for interacting with the OpenAI API 
+#' through main `tidyllm` verbs such as `chat()`, `embed()`, and 
+#' `send_batch()`. It dynamically routes requests to OpenAI-specific functions 
+#' like `openai_chat()` and `openai_embedding()` based on the context of the call.
+#'
+#' @param ... Parameters to be passed to the appropriate OpenAI-specific function, 
+#'   such as model configuration, input text, or API-specific options.
+#' @param .called_from An internal argument that specifies which action (e.g., 
+#'   `chat`, `embed`, `send_batch`) the function is being invoked from. 
+#'   This argument is automatically managed and should not be modified by the user.
+#'
+#' @return The result of the requested action, depending on the specific function invoked 
+#'   (e.g., an updated `LLMMessage` object for `chat()`, or a matrix for `embed()`).
+#' 
+#' @export
+openai <- create_provider_function(
+  .name = "openai",
+  chat = openai_chat,
+  embed = openai_embedding,
+  send_batch = send_openai_batch,
+  check_batch = check_openai_batch,
+  list_batches = list_openai_batches,
+  fetch_batch = fetch_openai_batch
+)
+
+#' Alias for the OpenAI Provider Function
+#'
+#' The `chatgpt` function is an alias for the `openai()` provider function. 
+#' It provides a convenient way to interact with the OpenAI API for tasks such 
+#' as sending chat messages, generating embeddings, and handling batch operations 
+#' using `tidyllm` verbs like `chat()`, `embed()`, and `send_batch()`.
+#'
+#' @param ... Parameters to be passed to the appropriate OpenAI-specific function, 
+#'   such as model configuration, input text, or other API-specific options.
+#' @param .called_from An internal argument that specifies the context (e.g., 
+#'   `chat`, `embed`, `send_batch`) in which the function is being 
+#'   invoked. This is automatically managed and should not be modified by the user.
+#'
+#' @return The result of the requested action, depending on the specific function invoked 
+#'   (e.g., an updated `LLMMessage` object for `chat()`, or a matrix for `embed()`).
+#' 
+#' @export
+chatgpt <- openai
 
 
 

@@ -4,11 +4,20 @@ title: "Generate Synthetic Data with tidyllm"
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>"
+  collapse = TRUE
 )
 ```
+> ⚠️ **Note:**  This article refers to the development version 0.2.3. of **tidyllm**, which introduced a major interface change. You can install the current development version directly from GitHub using devtools:
 
+```{r, eval= FALSE, echo=TRUE}
+# Install devtools if not already installed
+if (!requireNamespace("devtools", quietly = TRUE)) {
+  install.packages("devtools")
+}
+
+# Install TidyLLM from GitHub
+devtools::install_github("edubruell/tidyllm")
+```
 As large language models (LLMs) evolve, their potential to simulate human-like behavior offers an exciting opportunity for researchers in various fields. Inspired by the work of [Horton et al (2023)](https://arxiv.org/abs/2301.07543) on running behivoural econonomics lab experiments with  a "homo silicus", LLMs acting as computational models of humans, this article explores how synthetic data generated from LLMs can be used to pretest survey designs before going into the field.
 
 Pretesting with synthetic data enables quick iterations on survey questions, helping you spot potential issues early on and save time during actual data collection. For example, if you're preparing a survey for lawyers on automation, you can use **tidyllm** to simulate survey responses based on real profiles. This allows you to write analysis code and identify ambiguities in question phrasing or logic flow, ensuring a smoother deployment when surveying real participants.
@@ -78,11 +87,11 @@ generate_synthetic_study_opener <- function(lawyer_profile) {
   #Pipe the initial setup into the second and third question,
   # as well as model answers. 
   llm_message(initial_setup) |>
-    ollama(.model = "gemma2") |>
+    ollama_chat(.model = "gemma2") |>
     llm_message("Question 2: What's your year of birth?
               Answer with a four-digit number.
               ") |>
-    ollama(.model = "gemma2") |>
+    ollama_chat(.model = "gemma2") |>
     llm_message("Question 3: How familiar are you with the term AI?
               
               1 = Not familiar at all
@@ -93,7 +102,7 @@ generate_synthetic_study_opener <- function(lawyer_profile) {
               
             99 = Prefer not to say  
               ") |>
-    ollama(.model = "gemma2")
+    ollama_chat(.model = "gemma2")
 }
 
   
@@ -148,7 +157,7 @@ generate_synthetic_infotreatment <- function(conversation, treated) {
                   10 = At the very top
                   99 = Prefer not to say
                   ") |>
-    ollama(.model = "gemma2")
+    ollama_chat(.model = "gemma2")
   
   # Extract the prior answer (belief before the treatment)
   prior_answer <- prior |> last_reply() |> str_squish()
@@ -171,7 +180,7 @@ Have you read this information?
 2 = NO
 99 = Prefer not to say
 ") |>
-      ollama(.model = "gemma2")
+      ollama_chat(.model = "gemma2")
     
     # Update info-updating based on whether the participant confirms reading the information
     info_updating <- last_reply(post_treatment)
@@ -218,15 +227,15 @@ profile1_info_treatment
 profile1_info_treatment <- read_rds(here::here("vignettes","articles","synth_info_solon.rds"))
 profile1_info_treatment
 ```
-Our lawyer is very familiar with AI, has a low prior on automatibility of his occupation, choose not to read the info material and did update his posterior downwards. Ironically, for now the only lawyer we've fully "replaced" with generative AI as synthetic survey respondent seems to believe his job is safe from automation.
+Our lawyer is very familiar with AI, has a low prior on automatibility of his occupation, choose not to read the info material and did update his posterior. Ironically, for now the only lawyer we've fully "replaced" with generative AI as synthetic survey respondent seems to believe his job is safe from automation.
 
-We could now loop over the lawyer profile, make each of them answer the survey, or add further questions. From here we have a basic setup to generate synthetic data with **tidyllm**
+We could now loop over each lawyer profile, make each of them answer the survey, or add further questions. From here we have a basic setup to generate synthetic data with **tidyllm**
 
 ## Validity and Limitations
 
 While synthetic data from LLMs offers valuable insights for pretesting surveys, it's important to recognize the limitations of this approach. LLM-generated responses are approximations and might miss nuances that come with real human respondents. For instance, the model might not accurately reflect personal biases, experiences, or diverse legal practices that influence real lawyers’ perspectives on automation.
 
-Additionally, as AI models are trained on vast datasets, there might be overgeneralization, especially for niche professions we have in our data (i.e. divorce lawyers). Therefore, while synthetic data can streamline early iterations of survey design, it should complement, not replace, actual human feedback during later stages of research.
+Additionally, as AI models are trained on vast datasets, there might be overgeneralization, especially for niche professions we have in our data (i.e. very specialized lawyers). Therefore, while synthetic data can streamline early iterations of survey design, it should complement, not replace, actual human feedback during later stages of research.
 
 ## Outlook
 

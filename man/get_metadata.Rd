@@ -2,24 +2,24 @@
 % Please edit documentation in R/message_retrieval.R
 \name{get_metadata}
 \alias{get_metadata}
-\title{Get Metadata from Assistant Replies}
+\alias{last_metadata}
+\title{Retrieve Metadata from Assistant Replies}
 \usage{
 get_metadata(.llm, .index = NULL)
+
+last_metadata(.llm)
 }
 \arguments{
-\item{.llm}{An \code{LLMMessage} object containing the message history.
-This object should include metadata for assistant replies.}
+\item{.llm}{An \code{LLMMessage} object containing the message history.}
 
 \item{.index}{A positive integer specifying which assistant reply's metadata to extract.
 If \code{NULL} (default), metadata for all replies is returned.}
 }
 \value{
-A tibble containing metadata for the specified assistant reply if \code{.index} is provided,
-or metadata for all replies if \code{.index} is \code{NULL}. Returns an empty tibble if no
-assistant replies are found.
+A tibble containing metadata for the specified assistant reply or all replies.
 }
 \description{
-This function retrieves metadata from assistant replies within an \code{LLMMessage} object.
+Retrieves metadata from assistant replies within an \code{LLMMessage} object.
 It returns the metadata as a tibble.
 }
 \details{
@@ -31,4 +31,9 @@ Metadata columns may include:
 \item \code{completion_tokens}: The number of tokens in the assistant's reply.
 \item \code{total_tokens}: The total number of tokens (prompt + completion).
 }
+
+For convenience, \code{\link[=last_metadata]{last_metadata()}} is provided to retrieve the metadata for the last message.
+}
+\seealso{
+\code{\link[=last_metadata]{last_metadata()}}
 }

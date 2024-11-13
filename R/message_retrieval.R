@@ -1,11 +1,19 @@
-#' Get Assistant Reply as Text
+#' Retrieve Assistant Reply as Text
 #'
-#' Retrieves the assistant's reply as plain text from an `LLMMessage` object at a specified index.
+#' Extracts the plain text content of the assistant's reply from an `LLMMessage` object.
+#' Use [get_reply_data()] for structured replies in JSON format.
+#'
+#' This function is the core utility for retrieving assistant replies by index. 
+#' For convenience, [last_reply()] is provided as a wrapper to retrieve the 
+#' latest assistant reply.
 #'
 #' @param .llm An `LLMMessage` object containing the message history.
-#' @param .index A positive integer for the assistant reply index to retrieve, defaulting to the last reply.
-#' @return Plain text content of the assistant's reply, or `NA_character_` if no reply is available.
+#' @param .index A positive integer indicating the index of the assistant reply to retrieve.
+#'   Defaults to `NULL`, which retrieves the last reply.
+#' @return Returns a character string containing the assistant's reply, or `NA_character_` if no reply exists.
+#' @seealso [get_reply_data()], [last_reply()]
 #' @export
+#' @rdname get_reply
 get_reply <- function(.llm, .index = NULL) {
   # Validate that .llm is an LLMMessage object and index is within bounds if provided
   validate_inputs(c(
@@ -29,30 +37,28 @@ get_reply <- function(.llm, .index = NULL) {
   selected_reply$content
 }
 
-
-#' Get the Last Assistant Reply as Text
-#'
-#' A wrapper around `get_reply()` to retrieve the most recent assistant text reply.
-#'
-#' @param .llm A `LLMMessage` object.
-#'
-#' @return Returns the content of the assistant's reply at the specified index, based on the following conditions:
 #' @export
+#' @rdname get_reply
 last_reply <- function(.llm) {
   get_reply(.llm = .llm, .index = NULL)
 }
 
 
-
-#' Get Data from an Assistant Reply by parsing structured JSON responses
+#' Retrieve Assistant Reply as Structured Data
 #'
-#' Retrieves and parses the assistant's reply as JSON from an `LLMMessage` object at a specified index.
-#' If the reply is not marked as JSON, attempts to extract JSON content from text.
+#' Parses the assistant's reply as JSON and returns the corresponding structured data.
+#' If the reply is not marked as JSON, attempts to extract and parse JSON content from the text.
+#'
+#' For convenience, [last_reply_data()] is provided as a wrapper to retrieve the 
+#' latest assistant reply's data.
 #'
 #' @param .llm An `LLMMessage` object containing the message history.
-#' @param .index A positive integer for the assistant reply index to retrieve, defaulting to the last reply.
-#' @return Parsed data content of the assistant's reply, or `NULL` if parsing fails.
+#' @param .index A positive integer indicating the index of the assistant reply to retrieve.
+#'   Defaults to `NULL`, which retrieves the last reply.
+#' @return Returns the parsed data from the assistant's reply, or `NULL` if parsing fails.
+#' @seealso [get_reply()], [last_reply_data()]
 #' @export
+#' @rdname get_reply_data
 get_reply_data <- function(.llm, .index = NULL) {
   # Validate inputs for .llm and .index
   validate_inputs(c(
@@ -103,9 +109,17 @@ get_reply_data <- function(.llm, .index = NULL) {
   )
 }
 
-#' Get Metadata from Assistant Replies
+#' @export
+#' @rdname get_reply_data
+last_reply_data <- function(.llm) {
+  get_reply_data(.llm = .llm, .index = NULL)
+}
+
+
+
+#' Retrieve Metadata from Assistant Replies
 #'
-#' This function retrieves metadata from assistant replies within an `LLMMessage` object. 
+#' Retrieves metadata from assistant replies within an `LLMMessage` object. 
 #' It returns the metadata as a tibble.
 #'
 #' Metadata columns may include:
@@ -115,15 +129,15 @@ get_reply_data <- function(.llm, .index = NULL) {
 #' - `completion_tokens`: The number of tokens in the assistant's reply.
 #' - `total_tokens`: The total number of tokens (prompt + completion).
 #'
-#' @param .llm An `LLMMessage` object containing the message history. 
-#'             This object should include metadata for assistant replies.
+#' For convenience, [last_metadata()] is provided to retrieve the metadata for the last message.
+#'
+#' @param .llm An `LLMMessage` object containing the message history.
 #' @param .index A positive integer specifying which assistant reply's metadata to extract.
-#'               If `NULL` (default), metadata for all replies is returned.
-#'
-#' @return A tibble containing metadata for the specified assistant reply if `.index` is provided,
-#'         or metadata for all replies if `.index` is `NULL`. Returns an empty tibble if no 
-#'         assistant replies are found.
-#'
+#'   If `NULL` (default), metadata for all replies is returned.
+#' @return A tibble containing metadata for the specified assistant reply or all replies.
+#' @seealso [last_metadata()]
+#' @export
+#' @rdname get_metadata
 get_metadata <- function(.llm, .index = NULL) {
   # Validate input
   validate_inputs(c(
@@ -161,28 +175,25 @@ get_metadata <- function(.llm, .index = NULL) {
   tibble::as_tibble(do.call(rbind, lapply(metadata, as.data.frame)))
 }
 
-#' Get the Last Assistant Reply as Text
-#'
-#' A wrapper around `get_reply_data()` to retrieve structured data from the most recent assistant reply.
-#'
-#' @param .llm A `LLMMessage` object.
-#'
-#' @return Returns the content of the assistant's reply at the specified index, based on the following conditions:
 #' @export
-last_reply_data <- function(.llm) {
-  get_reply_data(.llm = .llm, .index = NULL)
+#' @rdname get_metadata
+last_metadata <- function(.llm) {
+  get_metadata(.llm = .llm)
 }
-
 
 #' Retrieve a User Message by Index
 #'
 #' Extracts the content of a user's message from an `LLMMessage` object at a specific index.
+#' 
+#' For convenience, [last_user_message()] is provided as a wrapper to retrieve the
+#' latest user message without specifying an index.
 #'
-#' @param .llm A `LLMMessage` object.
+#' @param .llm An `LLMMessage` object.
 #' @param .index A positive integer indicating which user message to retrieve. Defaults to `NULL`, which retrieves the last message.
-#'
-#' @return Returns the content of the user's message at the specified index. If no messages are found, returns `NULL`.
+#' @return Returns the content of the user's message at the specified index. If no messages are found, returns `NA_character_`.
+#' @seealso [last_user_message()]
 #' @export
+#' @rdname get_user_message
 get_user_message <- function(.llm, .index = NULL) {
   # Validate inputs
   c(
@@ -213,13 +224,8 @@ get_user_message <- function(.llm, .index = NULL) {
   return(selected_message$content)
 }
 
-#' Retrieve the Last User Message
-#'
-#' A wrapper around `get_user_message()` to retrieve the most recent user message.
-#'
-#' @param .llm A `LLMMessage` object.
-#' @return The content of the last user message.
 #' @export
+#' @rdname get_user_message
 last_user_message <- function(.llm) {
   get_user_message(.llm = .llm, .index = NULL)
 }

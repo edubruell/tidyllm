@@ -36,7 +36,7 @@
 #' }
 #'
 #' @export
-groq <- function(.llm,
+groq_chat <- function(.llm,
                  .model = "llama-3.2-11b-vision-preview",
                  .max_tokens = 1024,
                  .temperature = NULL,
@@ -288,3 +288,26 @@ groq_transcribe <- function(
   return(content$text)
 }
 
+#' Groq API Provider Function
+#'
+#' The `groq()` function acts as an interface for interacting with the Groq API 
+#' through `tidyllm`'s main verbs. Currently, Groq only supports `groq_chat()` 
+#' for chat-based interactions and `groq_transcribe()` for transcription tasks.
+#'
+#' Since `groq_transcribe()` is unique to Groq and does not have a general verb counterpart, 
+#' `groq()` currently routes messages only to `groq_chat()` when used with verbs like `chat()`.
+#'
+#' @param ... Parameters to be passed to the Groq-specific function, 
+#'   such as model configuration, input text, or API-specific options.
+#' @param .called_from An internal argument that specifies which action (e.g., 
+#'   `chat`) the function is being invoked from. 
+#'   This argument is automatically managed and should not be modified by the user.
+#'
+#' @return The result of the requested action, depending on the specific function invoked 
+#'   (currently, only an updated `LLMMessage` object for `groq_chat()`).
+#'
+#' @export
+groq <- create_provider_function(
+  .name = "groq",
+  chat = groq_chat
+)

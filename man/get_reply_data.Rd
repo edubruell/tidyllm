@@ -2,19 +2,30 @@
 % Please edit documentation in R/message_retrieval.R
 \name{get_reply_data}
 \alias{get_reply_data}
-\title{Get Data from an Assistant Reply by parsing structured JSON responses}
+\alias{last_reply_data}
+\title{Retrieve Assistant Reply as Structured Data}
 \usage{
 get_reply_data(.llm, .index = NULL)
+
+last_reply_data(.llm)
 }
 \arguments{
 \item{.llm}{An \code{LLMMessage} object containing the message history.}
 
-\item{.index}{A positive integer for the assistant reply index to retrieve, defaulting to the last reply.}
+\item{.index}{A positive integer indicating the index of the assistant reply to retrieve.
+Defaults to \code{NULL}, which retrieves the last reply.}
 }
 \value{
-Parsed data content of the assistant's reply, or \code{NULL} if parsing fails.
+Returns the parsed data from the assistant's reply, or \code{NULL} if parsing fails.
 }
 \description{
-Retrieves and parses the assistant's reply as JSON from an \code{LLMMessage} object at a specified index.
-If the reply is not marked as JSON, attempts to extract JSON content from text.
+Parses the assistant's reply as JSON and returns the corresponding structured data.
+If the reply is not marked as JSON, attempts to extract and parse JSON content from the text.
+}
+\details{
+For convenience, \code{\link[=last_reply_data]{last_reply_data()}} is provided as a wrapper to retrieve the
+latest assistant reply's data.
+}
+\seealso{
+\code{\link[=get_reply]{get_reply()}}, \code{\link[=last_reply_data]{last_reply_data()}}
 }

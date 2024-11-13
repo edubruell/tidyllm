@@ -26,7 +26,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -73,6 +73,20 @@
 
     
     
+<blockquote>
+<p>⚠️ <strong>Note:</strong> This article refers to the development
+version 0.2.3. of <strong>tidyllm</strong>, which introduced a major
+interface change. You can install the current development version
+directly from GitHub using devtools:</p>
+</blockquote>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Install devtools if not already installed</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"devtools"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"devtools"</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="co"># Install TidyLLM from GitHub</span></span>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"edubruell/tidyllm"</span><span class="op">)</span></span></code></pre></div>
 <p>Navigating through a large collection of academic papers can be
 time-consuming, especially when you’re trying to extract specific
 insights or determine the relevance of each document to your research.
@@ -90,34 +104,34 @@ model targeted questions, and returns the answers in a structured format
 </h2>
 <p>Imagine your folder looks something like this—many downloaded papers,
 but no structure yet:</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tidyverse.tidyverse.org" class="external-link">tidyverse</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://edubruell.github.io/tidyllm/">tidyllm</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">dir</a></span><span class="op">(</span><span class="st">"aipapers"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1] "2018_Felten_etal_AILinkOccupations.pdf"                                                           </span></span>
-<span><span class="co">#&gt;  [2] "2024_Bick_etal_RapidAdoption.pdf"                                                                 </span></span>
-<span><span class="co">#&gt;  [3] "2024_Caplin_etal_ABCsofAI.pdf"                                                                    </span></span>
-<span><span class="co">#&gt;  [4] "2301.07543v1.pdf"                                                                                 </span></span>
-<span><span class="co">#&gt;  [5] "2302.06590v1.pdf"                                                                                 </span></span>
-<span><span class="co">#&gt;  [6] "2303.10130v5.pdf"                                                                                 </span></span>
-<span><span class="co">#&gt;  [7] "488.pdf"                                                                                          </span></span>
-<span><span class="co">#&gt;  [8] "88684e36-en.pdf"                                                                                  </span></span>
-<span><span class="co">#&gt;  [9] "ABCs_AI_Oct2024.pdf"                                                                              </span></span>
-<span><span class="co">#&gt; [10] "acemoglu-restrepo-2019-automation-and-new-tasks-how-technology-displaces-and-reinstates-labor.pdf"</span></span>
-<span><span class="co">#&gt; [11] "BBD_GenAI_NBER_Sept2024.pdf"                                                                      </span></span>
-<span><span class="co">#&gt; [12] "Deming-Ong-Summers-AESG-2024.pdf"                                                                 </span></span>
-<span><span class="co">#&gt; [13] "dp22036.pdf"                                                                                      </span></span>
-<span><span class="co">#&gt; [14] "FeltenRajSeamans_AIAbilities_AEA.pdf"                                                             </span></span>
-<span><span class="co">#&gt; [15] "JEL-2023-1736_published_version.pdf"                                                              </span></span>
-<span><span class="co">#&gt; [16] "Noy_Zhang_1.pdf"                                                                                  </span></span>
-<span><span class="co">#&gt; [17] "sd-2024-09-falck-etal-kuenstliche-intelligenz-unternehmen.pdf"                                    </span></span>
-<span><span class="co">#&gt; [18] "ssrn-4700751.pdf"                                                                                 </span></span>
-<span><span class="co">#&gt; [19] "SSRN-id4573321.pdf"                                                                               </span></span>
-<span><span class="co">#&gt; [20] "The Simple Macroeconomics of AI.pdf"                                                              </span></span>
-<span><span class="co">#&gt; [21] "w24001.pdf"                                                                                       </span></span>
-<span><span class="co">#&gt; [22] "w24871.pdf"                                                                                       </span></span>
-<span><span class="co">#&gt; [23] "w31161.pdf"                                                                                       </span></span>
-<span><span class="co">#&gt; [24] "w32430.pdf"</span></span></code></pre></div>
+<span><span class="co">##  [1] "2018_Felten_etal_AILinkOccupations.pdf"                                                           </span></span>
+<span><span class="co">##  [2] "2024_Bick_etal_RapidAdoption.pdf"                                                                 </span></span>
+<span><span class="co">##  [3] "2024_Caplin_etal_ABCsofAI.pdf"                                                                    </span></span>
+<span><span class="co">##  [4] "2301.07543v1.pdf"                                                                                 </span></span>
+<span><span class="co">##  [5] "2302.06590v1.pdf"                                                                                 </span></span>
+<span><span class="co">##  [6] "2303.10130v5.pdf"                                                                                 </span></span>
+<span><span class="co">##  [7] "488.pdf"                                                                                          </span></span>
+<span><span class="co">##  [8] "88684e36-en.pdf"                                                                                  </span></span>
+<span><span class="co">##  [9] "ABCs_AI_Oct2024.pdf"                                                                              </span></span>
+<span><span class="co">## [10] "acemoglu-restrepo-2019-automation-and-new-tasks-how-technology-displaces-and-reinstates-labor.pdf"</span></span>
+<span><span class="co">## [11] "BBD_GenAI_NBER_Sept2024.pdf"                                                                      </span></span>
+<span><span class="co">## [12] "Deming-Ong-Summers-AESG-2024.pdf"                                                                 </span></span>
+<span><span class="co">## [13] "dp22036.pdf"                                                                                      </span></span>
+<span><span class="co">## [14] "FeltenRajSeamans_AIAbilities_AEA.pdf"                                                             </span></span>
+<span><span class="co">## [15] "JEL-2023-1736_published_version.pdf"                                                              </span></span>
+<span><span class="co">## [16] "Noy_Zhang_1.pdf"                                                                                  </span></span>
+<span><span class="co">## [17] "sd-2024-09-falck-etal-kuenstliche-intelligenz-unternehmen.pdf"                                    </span></span>
+<span><span class="co">## [18] "ssrn-4700751.pdf"                                                                                 </span></span>
+<span><span class="co">## [19] "SSRN-id4573321.pdf"                                                                               </span></span>
+<span><span class="co">## [20] "The Simple Macroeconomics of AI.pdf"                                                              </span></span>
+<span><span class="co">## [21] "w24001.pdf"                                                                                       </span></span>
+<span><span class="co">## [22] "w24871.pdf"                                                                                       </span></span>
+<span><span class="co">## [23] "w31161.pdf"                                                                                       </span></span>
+<span><span class="co">## [24] "w32430.pdf"</span></span></code></pre></div>
 <p>Our goal is to get a first overview of these papers and what they are
 about and to give them good file names.</p>
 <div class="section level3">
@@ -127,7 +141,7 @@ about and to give them good file names.</p>
 each document. This structured prompt asks for specific metadata like
 title, authors, and type, along with deeper content-related questions
 about empirical methods and theoretical frameworks.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="va">document_prompt</span> <span class="op">&lt;-</span> <span class="st">'</span></span>
 <span><span class="st">Below are the first 5 pages of a document. Answer the questions below in detail.</span></span>
@@ -153,13 +167,13 @@ about empirical methods and theoretical frameworks.</p>
 <p>Next, we prepare a list of messages for all PDFs in the folder by
 applying <code><a href="../reference/llm_message.html">llm_message()</a></code> with the prompt to the first five
 pages of each document. This step sets up a list of messages, where each
-entry specifies a task to retrieve structured answers on one file.Even
+entry specifies a task to retrieve structured answers on one file. Even
 though the <code>gpt-4o-mini model</code> we will use in this example
-can process up to 128,000 tokens -approximately 80-90 pages of english
+can process up to 128,000 tokens -approximately 80-90 pages of English
 text- we limit the input to five pages for demonstration purposes and to
-maintain focus on the introduction that is ususally enough to get a
-first overview of a paper.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+maintain focus on the introduction that is usually enough to get a first
+overview of a paper.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">document_tasks</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="va">files</span>,<span class="op">~</span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="va">document_prompt</span>, </span>
 <span>            .pdf <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>              filename <span class="op">=</span> <span class="va">.x</span>,</span>
@@ -175,7 +189,7 @@ types for each field in the model’s responses. This schema enables the
 large language model to return answers in a structured, consistent
 format that can later be converted into a table, making it easy to
 analyze and compare results across documents.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">document_schema</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tidyllm_schema.html">tidyllm_schema</a></span><span class="op">(</span></span>
 <span>  name <span class="op">=</span> <span class="st">"DocumentAnalysisSchema"</span>,</span>
 <span>  Title <span class="op">=</span> <span class="st">"character"</span>,</span>
@@ -189,9 +203,9 @@ analyze and compare results across documents.</p>
 <span>  KeyCitations <span class="op">=</span> <span class="st">"character"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>In <code><a href="../reference/tidyllm_schema.html">tidyllm_schema()</a></code>, we begin by naming the schema with
-a character string, which is required by the API. Then, we specify each
-field along with its expected data type. Supported types include
-<code>character</code> (with <code>string</code> as an accepted
+a character string, which is required by the OpenAI API. Then, we
+specify each field along with its expected data type. Supported types
+include <code>character</code> (with <code>string</code> as an accepted
 synonym), <code>logical</code>, and <code>numeric</code>. For fields
 where categorical responses are needed, we can use <code><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor()</a></code>
 to define specific allowed options. For instance,
@@ -208,12 +222,12 @@ ensures that the output can be easily converted to a single-row
 <h3 id="step-4-running-the-analysis-on-a-sample-document">Step 4: Running the Analysis on a Sample Document<a class="anchor" aria-label="anchor" href="#step-4-running-the-analysis-on-a-sample-document"></a>
 </h3>
 <p>To test the setup, we run the analysis on a single document with the
-standard <code><a href="../reference/openai.html">openai()</a></code> function, using the schema to ensure
+standard <code><a href="../reference/chat.html">chat()</a></code> function, using the schema to ensure
 structured output.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example_task</span> <span class="op">&lt;-</span> <span class="va">document_tasks</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span> <span class="op">|&gt;</span> </span>
-<span>  <span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.json_schema <span class="op">=</span> <span class="va">document_schema</span>,</span>
-<span>         .model       <span class="op">=</span> <span class="st">"gpt-4o-mini"</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.json_schema <span class="op">=</span> <span class="va">document_schema</span>,</span>
+<span>              .model       <span class="op">=</span> <span class="st">"gpt-4o-mini"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="step-5-extracting-and-formatting-the-results-for-our-example-task">Step 5: Extracting and Formatting the Results for our example
@@ -221,36 +235,46 @@ task<a class="anchor" aria-label="anchor" href="#step-5-extracting-and-formattin
 </h3>
 <p>We use <code><a href="../reference/get_reply_data.html">get_reply_data()</a></code> to extract the model’s
 structured responses from the model reply.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_reply_data.html">get_reply_data</a></span><span class="op">(</span><span class="va">example_task</span><span class="op">)</span></span>
-<span><span class="co">#&gt; $Title</span></span>
-<span><span class="co">#&gt; [1] "A Method to Link Advances in Artificial Intelligence to Occupational Abilities†"</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $Authors</span></span>
-<span><span class="co">#&gt; [1] "Edward W. Felten, Manav Raj, and Robert Seamans, Princeton University, NYU Stern School of Business"</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $SuggestedFilename</span></span>
-<span><span class="co">#&gt; [1] "2018_Felten_etal_AILinkOccupations.pdf"</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $Type</span></span>
-<span><span class="co">#&gt; [1] "Research"</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $Empirics</span></span>
-<span><span class="co">#&gt; [1] "The paper leverages two main datasets: the Electronic Frontier Foundation (EFF) AI Progress Measurement Dataset and the Occupational Information Network (O*NET). It tracks AI advancements from 2010 to 2015 and correlates these to occupational abilities, focusing on the impact on U.S. occupations and their skill requirements, based on job descriptions and metric changes collected in those years."</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $Theory</span></span>
-<span><span class="co">#&gt; [1] "The theoretical framework links AI advancements to occupational abilities. The authors develop a method for analyzing how different AI capabilities affect various skills required in the labor market, building on existing models that assess automation risk and labor economics, particularly regarding how tasks vary across occupations."</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $MainPoint</span></span>
-<span><span class="co">#&gt; [1] "The central argument is that while AI may contribute to economic growth, its effects on labor are complex and depend on the specific abilities required for different occupations. The paper introduces a method to quantitatively link AI progress to changes in occupational skill requirements, aiming to provide better insights for policymakers and researchers."</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $Contribution</span></span>
-<span><span class="co">#&gt; [1] "This document contributes a novel methodological framework to the study of AI's impact on labor, addressing the gap in systematic empirical research linking AI advancements to specific job-related skills and enabling a clearer understanding of how different occupations may be affected. It benefits researchers and policymakers by offering a structured way to analyze the implications of AI developments on the workforce."</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $KeyCitations</span></span>
-<span><span class="co">#&gt; [1] "Frey and Osborne (2017); Autor and Salomons (2017); Bessen (2017); Brynjolfsson, Mitchell, and Rock (2018)."</span></span></code></pre></div>
+<span><span class="co">## $Title</span></span>
+<span><span class="co">## [1] "A Method to Link Advances in Artificial Intelligence to Occupational Abilities†"</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## $Authors</span></span>
+<span><span class="co">## [1] "Edward W. Felten, Manav Raj, and Robert Seamans, Princeton University, NYU Stern School of Business"</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## $SuggestedFilename</span></span>
+<span><span class="co">## [1] "2018_Felten_etal_AILinkOccupations.pdf"</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## $Type</span></span>
+<span><span class="co">## [1] "Research"</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## $Empirics</span></span>
+<span><span class="co">## [1] "The paper leverages two main datasets: the Electronic Frontier Foundation (EFF) AI Progress Measurement Dataset and the Occupational Information Network (O*NET). It tracks AI advancements from 2010 to 2015 and correlates these to occupational abilities, focusing on the impact on U.S. occupations and their skill requirements, based on job descriptions and metric changes collected in those years."</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## $Theory</span></span>
+<span><span class="co">## [1] "The theoretical framework links AI advancements to occupational abilities. The authors develop a method for analyzing how different AI capabilities affect various skills required in the labor market, building on existing models that assess automation risk and labor economics, particularly regarding how tasks vary across occupations."</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## $MainPoint</span></span>
+<span><span class="co">## [1] "The central argument is that while AI may contribute to economic growth, its effects on labor are complex and depend on the specific abilities required for different occupations. The paper introduces a method to quantitatively link AI progress to changes in occupational skill requirements, aiming to provide better insights for policymakers and researchers."</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## $Contribution</span></span>
+<span><span class="co">## [1] "This document contributes a novel methodological framework to the study of AI's impact on labor, addressing the gap in systematic empirical research linking AI advancements to specific job-related skills and enabling a clearer understanding of how different occupations may be affected. It benefits researchers and policymakers by offering a structured way to analyze the implications of AI developments on the workforce."</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## $KeyCitations</span></span>
+<span><span class="co">## [1] "Frey and Osborne (2017); Autor and Salomons (2017); Bessen (2017); Brynjolfsson, Mitchell, and Rock (2018)."</span></span></code></pre></div>
 <p>The model seems to have reasonably answered our questions in the
-structured format we provided for our first example task.</p>
+structured format we provided for our first example task. Here we can
+also look at the token usage of the example task:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/get_reply_data.html">get_reply_data</a></span><span class="op">(</span><span class="va">example_task</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
+<span><span class="co">##   model         timestamp           prompt_tokens completion_tokens total_tokens</span></span>
+<span><span class="co">##   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;dttm&gt;</span>                      <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">1</span> gpt-4o-mini-… 2024-11-13 <span style="color: #949494;">07:41:29</span>          <span style="text-decoration: underline;">4</span>356               273         <span style="text-decoration: underline;">4</span>629</span></span></code></pre>
+<p>At a price for <code>gpt-4o-mini</code> of $0.15 / million input
+tokens and $0.60 / million output tokens the cost of our example task is
+less than a cent.</p>
 </div>
 <div class="section level3">
 <h3 id="step-6-scaling-up-to-a-whole-batch-of-papers">Step 6: Scaling up to a whole batch of papers<a class="anchor" aria-label="anchor" href="#step-6-scaling-up-to-a-whole-batch-of-papers"></a>
@@ -263,27 +287,25 @@ once, which are then processed together on the model provider’s
 servers.</p>
 <p>Batch APIs, like those from Anthropic and OpenAI, often offer up to
 50% savings compared to single-interaction requests. In
-<strong>tidyllm</strong>, we can use <code><a href="../reference/send_openai_batch.html">send_openai_batch()</a></code> to
-submit batch requests. The OpenAI Batch API, supports up to 50,000
-requests in a single batch with a maximum file size of 100 MB.
-Additionally, batch API rate limits are separate from the standard
-per-model limits, meaning batch usage doesn’t impact your regular API
-rate allocations.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<strong>tidyllm</strong>, we can use <code><a href="../reference/send_batch.html">send_batch()</a></code> to submit
+batch requests. The OpenAI Batch API, supports up to 50,000 requests in
+a single batch with a maximum file size of 100 MB. Additionally, batch
+API rate limits are separate from the standard per-model limits, meaning
+batch usage doesn’t impact your regular API rate allocations.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">document_tasks</span> <span class="op">|&gt;</span> </span>
-<span>  <span class="fu"><a href="../reference/send_openai_batch.html">send_openai_batch</a></span><span class="op">(</span>.json_schema <span class="op">=</span> <span class="va">document_schema</span>,</span>
-<span>                    .model       <span class="op">=</span> <span class="st">"gpt-4o-mini"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">send__batch</span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.json_schema <span class="op">=</span> <span class="va">document_schema</span>,</span>
+<span>                     .model       <span class="op">=</span> <span class="st">"gpt-4o-mini"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://readr.tidyverse.org/reference/read_rds.html" class="external-link">write_rds</a></span><span class="op">(</span><span class="st">"document_batch.rds"</span><span class="op">)</span></span></code></pre></div>
-<p>After the batch is sent, the output of
-<code><a href="../reference/send_openai_batch.html">send_openai_batch()</a></code> contains the input list of message
-histories along with batch metadata, such as the <code>batchID</code> as
-an attribute as well as unique names for each list element that can be
-used to stitch together messages with replies, once they are ready. If
-you provide a named list of messages, <strong>tidyllm</strong> will use
-these names as identifiers in the batch (provided that these names are
-unique for each list element). Batches are processed within 24 hours,
-usually much faster. The batch request for this example was processed
-within 10 minutes.</p>
+<p>After the batch is sent, the output of <code><a href="../reference/send_batch.html">send_batch()</a></code>
+contains the input list of message histories along with batch metadata,
+such as the <code>batchID</code> as an attribute as well as unique names
+for each list element that can be used to stitch together messages with
+replies, once they are ready. If you provide a named list of messages,
+<strong>tidyllm</strong> will use these names as identifiers in the
+batch (provided that these names are unique for each list element).
+Batches are processed within 24 hours, usually much faster. The batch
+request for this example was processed within 10 minutes.</p>
 <blockquote>
 <p>⚠️ <strong>Note:</strong> We save the RDS file to disk to preserve
 the state of our batch request, including all messages and their unique
@@ -294,48 +316,50 @@ the mean time.</p>
 </blockquote>
 <p>To check whether a batch was compeleted you can load the output file
 into <code><a href="../reference/check_openai_batch.html">check_openai_batch()</a></code>:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://readr.tidyverse.org/reference/read_rds.html" class="external-link">read_rds</a></span><span class="op">(</span><span class="st">"document_batch.rds"</span><span class="op">)</span><span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/check_openai_batch.html">check_openai_batch</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu"><a href="../reference/check_batch.html">check_batch</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>Alternatively you can list all OpenAI batches with
-<code><a href="../reference/list_openai_batches.html">list_openai_batches()</a></code> or look into the <a href="https://platform.openai.com/batches/" class="external-link">batches dashboard of the
-OpenAI platform</a>. Since OpenAI batches are sent as
-<code>.jsonl</code> and saved on the OpenAI server, you can also look
-into the file tab of the dashboard to delete old files from time to
+<code><a href="../reference/list_openai_batches.html">list_openai_batches()</a></code>or
+<code>list_batchers(openai())</code>. Of course, you can also look into
+the <a href="https://platform.openai.com/batches/" class="external-link">batches dashboard of
+the OpenAI platform</a> for the same overview. Since OpenAI batches are
+sent as <code>.jsonl</code> and saved on the OpenAI server, you can also
+look into the file tab of the dashboard to delete old files from time to
 time.</p>
 </div>
 <div class="section level3">
 <h3 id="step-7-getting-data-from-the-entire-batch">Step 7: Getting data from the entire batch<a class="anchor" aria-label="anchor" href="#step-7-getting-data-from-the-entire-batch"></a>
 </h3>
 <p>Once the batch is complete, we fetch all responses with
-<code><a href="../reference/fetch_openai_batch.html">fetch_openai_batch()</a></code>:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code><a href="../reference/fetch_batch.html">fetch_batch()</a></code>:</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://readr.tidyverse.org/reference/read_rds.html" class="external-link">read_rds</a></span><span class="op">(</span><span class="st">"document_batch.rds"</span><span class="op">)</span><span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/fetch_openai_batch.html">fetch_openai_batch</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu"><a href="../reference/fetch_batch.html">fetch_batch</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>We can then process the results into a table by mapping
 <code><a href="../reference/get_reply_data.html">get_reply_data()</a></code> and <code><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble()</a></code> over the
 batch output:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">docuemnt_table</span> <span class="op">&lt;-</span> <span class="va">results</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="va">get_reply_data</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://purrr.tidyverse.org/reference/map_dfr.html" class="external-link">map_dfr</a></span><span class="op">(</span><span class="va">as_tibble</span><span class="op">)</span></span>
 <span>  </span>
 <span><span class="va">docuemnt_table</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 24 × 9</span></span></span>
-<span><span class="co">#&gt;    Title  Authors SuggestedFilename Type  Empirics Theory MainPoint Contribution</span></span>
-<span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> A Met… Edward… 2018_Felten_etal… Rese… The doc… The p… The docu… The key con…</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> The R… Alexan… 2024_Bick_etal_R… Rese… The pap… The p… The docu… This docume…</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> THE A… Andrew… 2024_Caplin_etal… Rese… The doc… The p… The cent… This resear…</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> Large… John J… 2023_Horton_etal… Rese… The pap… The t… The cent… This docume…</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> The I… Sida P… 2023_Peng_etal_A… Rese… The stu… The t… The pape… This docume…</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> GPTs … Tyna E… 2023_Eloundou_et… Rese… The emp… The p… The cent… This docume…</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> Autom… Philip… 2023_Lergetporer… Rese… The emp… The t… The cent… The documen…</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> Artif… Andrew… 2024_Green_etal_… Rese… The rep… The a… The cent… This docume…</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> THE A… Andrew… 2024_Caplin_etal… Rese… The doc… Theor… The cent… This paper …</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> Autom… Daron … 2019_Acemoglu_Re… Rese… The pap… The d… The cent… This docume…</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 14 more rows</span></span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1 more variable: KeyCitations &lt;chr&gt;</span></span></span></code></pre></div>
+<span><span class="co">## <span style="color: #949494;"># A tibble: 24 × 9</span></span></span>
+<span><span class="co">##    Title  Authors SuggestedFilename Type  Empirics Theory MainPoint Contribution</span></span>
+<span><span class="co">##    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 1</span> A Met… Edward… 2018_Felten_etal… Rese… The doc… The p… The docu… The key con…</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 2</span> The R… Alexan… 2024_Bick_etal_R… Rese… The pap… The p… The docu… This docume…</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 3</span> THE A… Andrew… 2024_Caplin_etal… Rese… The doc… The p… The cent… This resear…</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 4</span> Large… John J… 2023_Horton_etal… Rese… The pap… The t… The cent… This docume…</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 5</span> The I… Sida P… 2023_Peng_etal_A… Rese… The stu… The t… The pape… This docume…</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 6</span> GPTs … Tyna E… 2023_Eloundou_et… Rese… The emp… The p… The cent… This docume…</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 7</span> Autom… Philip… 2023_Lergetporer… Rese… The emp… The t… The cent… The documen…</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 8</span> Artif… Andrew… 2024_Green_etal_… Rese… The rep… The a… The cent… This docume…</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 9</span> THE A… Andrew… 2024_Caplin_etal… Rese… The doc… Theor… The cent… This paper …</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">10</span> Autom… Daron … 2019_Acemoglu_Re… Rese… The pap… The d… The cent… This docume…</span></span>
+<span><span class="co">## <span style="color: #949494;"># ℹ 14 more rows</span></span></span>
+<span><span class="co">## <span style="color: #949494;"># ℹ 1 more variable: KeyCitations &lt;chr&gt;</span></span></span></code></pre></div>
 <p>This table can be exported to Excel with
 <code><a href="https://docs.ropensci.org/writexl/reference/write_xlsx.html" class="external-link">writexl::write_xlsx()</a></code> for further review. Additionally, we
 could programmatically rename the PDFs using the model’s suggested
@@ -388,9 +412,12 @@ context lengths. For more demanding tasks, larger local models like
 they require substantial hardware resources to run smoothly. Since
 Ollama has a default context length of just 2,048 tokens, you will
 likely need to adjust the context length with the <code>.num_ctx</code>
-option in <code><a href="../reference/ollama.html">ollama()</a></code>. Note that increasing context length
-will likely slow down processing due to higher memory usage. In these
-cases, reducing the number of pages may help.</p>
+option in <code><a href="../reference/ollama.html">ollama()</a></code>. Sending a message that is longer than
+the context length might lead to strange errors, since the input will be
+truncated by Ollama, which might lead to cases where only parts of the
+document are processed without your instructions. Note that increasing
+context length will likely slow down processing due to higher memory
+usage. In these cases, reducing the number of pages may help.</p>
 <blockquote>
 <p>⚠️ <strong>Note:</strong> When using paid remote models, it’s
 important to consider data privacy and security, especially if you’re
@@ -402,7 +429,7 @@ cases.</p>
 you use <code><a href="../reference/ollama.html">ollama()</a></code>, it currently only supports a simpler
 version of structured output where you have to put the desired schema in
 the prompt as JSON example and enable <code>.json = TRUE:</code></p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ollama_output</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">'</span></span>
 <span><span class="st">Below are the first 5 pages of a document. </span></span>
 <span><span class="st">Answer the following queries about the document in this provided JSON format:</span></span>
@@ -421,15 +448,15 @@ the prompt as JSON example and enable <code>.json = TRUE:</code></p>
 <span>  filename <span class="op">=</span> <span class="va">files</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>,</span>
 <span>  start_page <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  end_page <span class="op">=</span> <span class="fl">5</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/ollama.html">ollama</a></span><span class="op">(</span>.json<span class="op">=</span><span class="cn">TRUE</span>,.num_ctx <span class="op">=</span> <span class="fl">8192</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/ollama.html">ollama</a></span><span class="op">(</span>.json<span class="op">=</span><span class="cn">TRUE</span>,.num_ctx <span class="op">=</span> <span class="fl">8192</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ollama_output</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/get_reply_data.html">get_reply_data</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 9</span></span></span>
-<span><span class="co">#&gt;   Title                   Authors Filename DocType KeyCitations EmpiricalMethods</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>           </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> A Method to Link Advan… <span style="color: #949494;">"</span>Edwar… 2018_Fe… Resear… <span style="color: #949494;">"</span>  - Frey a… <span style="color: #949494;">"</span>The authors de…</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 3 more variables: TheoreticalFramework &lt;chr&gt;, MainPoint &lt;chr&gt;,</span></span></span>
-<span><span class="co">#&gt; <span style="color: #949494;">#   KeyContribution &lt;chr&gt;</span></span></span></code></pre></div>
+<span><span class="co">## <span style="color: #949494;"># A tibble: 1 × 9</span></span></span>
+<span><span class="co">##   Title                   Authors Filename DocType KeyCitations EmpiricalMethods</span></span>
+<span><span class="co">##   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>           </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">1</span> A Method to Link Advan… <span style="color: #949494;">"</span>Edwar… 2018_Fe… Resear… <span style="color: #949494;">"</span>  - Frey a… <span style="color: #949494;">"</span>The authors de…</span></span>
+<span><span class="co">## <span style="color: #949494;"># ℹ 3 more variables: TheoreticalFramework &lt;chr&gt;, MainPoint &lt;chr&gt;,</span></span></span>
+<span><span class="co">## <span style="color: #949494;">#   KeyContribution &lt;chr&gt;</span></span></span></code></pre></div>
 <p>While this worked for the current document, it is not clear that the
 model will adhere to a strict schema for every document, so you might
 have to manually clean cases where fields are missing. This is

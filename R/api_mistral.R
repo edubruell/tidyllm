@@ -17,7 +17,7 @@
 #' @param .max_tries Maximum retries to peform request
 #' @return Returns an updated `LLMMessage` object.
 #' @export
-mistral <- function(.llm,
+mistral_chat <- function(.llm,
                     .model = "mistral-large-latest",
                     .stream = FALSE,
                     .seed = NULL,
@@ -276,3 +276,27 @@ mistral_embedding <- function(.llm,
     stop("An error occurred during the API request - ", e$message)
   })
 }
+
+
+#' Mistral Provider Function
+#'
+#' The `mistral()` function acts as an interface for interacting with the Mistral API 
+#' through main `tidyllm` verbs such as `chat()` and `embed()`. 
+#' It dynamically routes requests to Mistral-specific functions 
+#' like `mistral_chat()` and `mistral_embedding()` based on the context of the call.
+#'
+#' @param ... Parameters to be passed to the appropriate Mistral-specific function, 
+#'   such as model configuration, input text, or API-specific options.
+#' @param .called_from An internal argument that specifies which action (e.g., 
+#'   `chat`, `embed`, `send_batch`) the function is being invoked from. 
+#'   This argument is automatically managed and should not be modified by the user.
+#'
+#' @return The result of the requested action, depending on the specific function invoked 
+#'   (e.g., an updated `LLMMessage` object for `chat()`, or a matrix for `embed()`).
+#' 
+#' @export
+mistral <- create_provider_function(
+  .name = "mistral",
+  chat  = mistral_chat,
+  embed = mistral_embedding
+)

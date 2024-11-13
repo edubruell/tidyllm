@@ -5,7 +5,7 @@
 #' specific to an API. It ensures that each API's rate limit data is stored separately.
 #'
 #' @param .api_name The name of the API for which to initialize or retrieve the environment
-#' @export
+#' @noRd
 initialize_api_env <- function(.api_name) {
   if (!exists(.api_name, envir = .tidyllm_rate_limit_env)) {
     .tidyllm_rate_limit_env[[.api_name]] <- new.env()
@@ -20,7 +20,7 @@ initialize_api_env <- function(.api_name) {
 #'
 #' @param .api_name The name of the API for which to initialize or retrieve the environment.
 #' @param .response_object A preparsed response object cotaining info on remaining requests, tokens and rest times
-#' @export
+#' @noRd
 update_rate_limit <- function(.api_name,.response_object){
   initialize_api_env(.api_name=.api_name)
   .tidyllm_rate_limit_env[[.api_name]]$last_request        <- .response_object$this_request_time
@@ -37,7 +37,7 @@ update_rate_limit <- function(.api_name,.response_object){
 #'
 #' @param .duration_str A duration string. 
 #' @return A numeric number of seconds 
-# Function to parse various time formats into seconds
+#' @noRd
 parse_duration_to_seconds <- function(.duration_str) {
   if(grepl("ms", .duration_str)) {
     # Format is in milliseconds, e.g., "176ms"
@@ -63,6 +63,7 @@ parse_duration_to_seconds <- function(.duration_str) {
 #' @param .response_headers Headers from the API response
 #' @param .api The API type ("claude", "openai","groq")
 #' @return A list containing rate limit information
+#' @noRd
 ratelimit_from_header <- function(.response_headers, .api) {
   switch(.api,
          "claude" = {
@@ -164,7 +165,6 @@ ratelimit_from_header <- function(.response_headers, .api) {
 #' @param .api_name (Optional) The name of the API whose rate limit info you want to get
 #'                   If not provided, the rate limit info for all APIs in the environment will be returned
 #' @return A tibble containing the rate limit information.
-
 #' @export
 rate_limit_info <- function(.api_name = NULL) {
   # If no API name is provided, print for all APIs in .tidyllm_rate_limit_env

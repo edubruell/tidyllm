@@ -31,7 +31,7 @@
 #' }
 #'
 #' @export
-claude <- function(.llm,
+claude_chat <- function(.llm,
                    .model = "claude-3-5-sonnet-20241022",
                    .max_tokens = 1024,
                    .temperature = NULL,
@@ -611,4 +611,32 @@ list_claude_batches <- function(.api_url = "https://api.anthropic.com/",
 
   return(batch_list)
 }
+
+#' Provider Function for Claude models on the Anthropic API
+#'
+#' The `claude()` function acts as an interface for interacting with the Anthropic API 
+#' through main `tidyllm` verbs such as `chat()`, `embed()`, and 
+#' `send_batch()`. It dynamically routes requests to Claude-specific functions 
+#' like `claude_chat()` and `send_claude_batch()` based on the context of the call.
+#'
+#' @param ... Parameters to be passed to the appropriate OpenAI-specific function, 
+#'   such as model configuration, input text, or API-specific options.
+#' @param .called_from An internal argument that specifies which action (e.g., 
+#'   `chat`, `send_batch`) the function is being invoked from. 
+#'   This argument is automatically managed and should not be modified by the user.
+#'
+#' @return The result of the requested action, depending on the specific function invoked 
+#'   (e.g., an updated `LLMMessage` object for `chat()`, or a matrix for `embed()`).
+#' 
+#' @export
+claude <- create_provider_function(
+  .name = "claude",
+  chat = claude_chat,
+  send_batch = send_claude_batch,
+  check_batch = check_claude_batch,
+  list_batches = list_claude_batches,
+  fetch_batch = fetch_claude_batch
+)
+
+
 
