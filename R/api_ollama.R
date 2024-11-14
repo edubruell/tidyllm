@@ -37,10 +37,10 @@
 #' @examples
 #' \dontrun{
 #' llm_message("user", "Hello, how are you?")
-#' response <- ollama(llm, .model = "gemma2", .temperature = 0.7)
+#' response <- ollama_chat(llm, .model = "gemma2", .temperature = 0.7)
 #' 
 #' # With custom parameters
-#' response <- ollama(
+#' response <- ollama_chat(
 #'   llm,
 #'   .model = "llama2",
 #'   .temperature = 0.8,
@@ -337,10 +337,9 @@ ollama_list_models <- function(.ollama_server = "http://localhost:11434") {
 
 #' Download a model from the Ollama API
 #'
-#' This function sends a request to the Ollama API to download a specified model.
-#' It can operate in a streaming mode where it provides live updates of the download status
-#' and progress, or a single response mode.
-#'
+#' This function sends a request to the Ollama API to download a specified model 
+#' from Ollama's large online library of models. 
+#' 
 #' @param .model The name of the model to download.
 #' @param .ollama_server The base URL of the Ollama API (default is "http://localhost:11434").
 #' @return NULL

@@ -13,7 +13,7 @@
 #' @param .safety_settings A list of safety settings (default: NULL).
 #' @param .tools Optional tools for function calling or code execution (default: NULL).
 #' @param .tool_config Optional configuration for the tools specified (default: NULL).
-#' @param .json_schema A JSON schema object as R list to enforce the output structure (If defined has precedence over JSON mode).
+#' @param .json_schema A JSON schema object as R list to enforce the output structure
 #' @param .timeout When should our connection time out (default: 120 seconds).
 #' @param .dry_run If TRUE, perform a dry run and return the request object.
 #' @param .max_tries Maximum retries to perform request (default: 3).

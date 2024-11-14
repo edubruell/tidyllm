@@ -4,7 +4,23 @@
 \alias{send_batch}
 \title{Send a batch of messages to a batch API}
 \usage{
-send_batch(.llms, .provider = getOption("tidyllm_sbatch_default"))
+send_batch(
+  .llms,
+  .provider = getOption("tidyllm_sbatch_default"),
+  .dry_run = NULL,
+  .temperature = NULL,
+  .timeout = NULL,
+  .top_p = NULL,
+  .max_tries = NULL,
+  .model = NULL,
+  .verbose = NULL,
+  .json_schema = NULL,
+  .seed = NULL,
+  .stop = NULL,
+  .frequency_penalty = NULL,
+  .presence_penalty = NULL,
+  .id_prefix = NULL
+)
 }
 \arguments{
 \item{.llms}{A list of \code{LLMMessage} objects containing conversation histories.}
@@ -12,6 +28,32 @@ send_batch(.llms, .provider = getOption("tidyllm_sbatch_default"))
 \item{.provider}{A function or function call specifying the language model provider and any additional parameters.
 This should be a call to a provider function like \code{openai()}, \code{claude()}, etc.
 You can also set a default provider function via the \code{tidyllm_sbatch_default} option.}
+
+\item{.dry_run}{Logical; if \code{TRUE}, simulates the request without sending it to the provider. Useful for testing.}
+
+\item{.temperature}{Numeric; controls the randomness of the model's output (0 = deterministic).}
+
+\item{.timeout}{Numeric; the maximum time (in seconds) to wait for a response.}
+
+\item{.top_p}{Numeric; nucleus sampling parameter, which limits the sampling to the top cumulative probability \code{p}.}
+
+\item{.max_tries}{Integer; the maximum number of retries for failed requests.}
+
+\item{.model}{Character; the model identifier to use (e.g., \code{"gpt-4"}).}
+
+\item{.verbose}{Logical; if \code{TRUE}, prints additional information about the request and response.}
+
+\item{.json_schema}{List; A JSON schema object as R list to enforce the output structure}
+
+\item{.seed}{Integer; sets a random seed for reproducibility.}
+
+\item{.stop}{Character vector; specifies sequences where the model should stop generating further tokens.}
+
+\item{.frequency_penalty}{Numeric; adjusts the likelihood of repeating tokens (positive values decrease repetition).}
+
+\item{.presence_penalty}{Numeric; adjusts the likelihood of introducing new tokens (positive values encourage novelty).}
+
+\item{.id_prefix}{Character string to specify a prefix for generating custom IDs when names in \code{.llms} are missing}
 }
 \value{
 An updated and named list of \code{.llms} with identifiers that align with batch responses, including a \code{batch_id} attribute.

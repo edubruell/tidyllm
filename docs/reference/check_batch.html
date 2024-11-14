@@ -11,7 +11,7 @@ It routes the input to the appropriate provider-specific batch API function."><m
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -51,7 +51,13 @@ It routes the input to the appropriate provider-specific batch API function.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">check_batch</span><span class="op">(</span><span class="va">.llms</span>, .provider <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"tidyllm_cbatch_default"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">check_batch</span><span class="op">(</span></span>
+<span>  <span class="va">.llms</span>,</span>
+<span>  .provider <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"tidyllm_cbatch_default"</span><span class="op">)</span>,</span>
+<span>  .dry_run <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  .max_tries <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  .timeout <span class="op">=</span> <span class="cn">NULL</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -66,6 +72,18 @@ It routes the input to the appropriate provider-specific batch API function.</p>
 <dd><p>A function or function call specifying the language model provider and any additional parameters.
 This should be a call to a provider function like <code><a href="openai.html">openai()</a></code>, <code><a href="claude.html">claude()</a></code>, etc.
 You can also set a default provider function via the <code>tidyllm_cbatch_default</code> option.</p></dd>
+
+
+<dt id="arg--dry-run">.dry_run<a class="anchor" aria-label="anchor" href="#arg--dry-run"></a></dt>
+<dd><p>Logical; if TRUE, returns the prepared request object without executing it</p></dd>
+
+
+<dt id="arg--max-tries">.max_tries<a class="anchor" aria-label="anchor" href="#arg--max-tries"></a></dt>
+<dd><p>Maximum retries to perform the request</p></dd>
+
+
+<dt id="arg--timeout">.timeout<a class="anchor" aria-label="anchor" href="#arg--timeout"></a></dt>
+<dd><p>Integer specifying the request timeout in seconds</p></dd>
 
 </dl></div>
     <div class="section level2">

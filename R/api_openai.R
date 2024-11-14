@@ -8,8 +8,6 @@
 #' @param .max_completion_tokens An upper bound for the number of tokens that can be generated for a completion, including visible output tokens and reasoning tokens.
 #' @param .frequency_penalty Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far.
 #' @param .logit_bias A named list modifying the likelihood of specified tokens appearing in the completion.
-#' @param .logprobs Whether to return log probabilities of the output tokens (default: FALSE).
-#' @param .top_logprobs An integer between 0 and 20 specifying the number of most likely tokens to return at each token position.
 #' @param .presence_penalty Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far.
 #' @param .seed If specified, the system will make a best effort to sample deterministically.
 #' @param .stop Up to 4 sequences where the API will stop generating further tokens.
@@ -36,8 +34,6 @@ openai_chat <- function(
     .max_completion_tokens = NULL,
     .frequency_penalty = NULL,
     .logit_bias = NULL,
-    .logprobs = FALSE,
-    .top_logprobs = NULL,
     .presence_penalty = NULL,
     .seed = NULL,
     .stop = NULL,
@@ -61,8 +57,6 @@ openai_chat <- function(
     "Input .max_completion_tokens must be NULL or a positive integer" = is.null(.max_completion_tokens) | (is_integer_valued(.max_completion_tokens) & .max_completion_tokens > 0),    
     "Input .frequency_penalty must be numeric or NULL" = is.null(.frequency_penalty) | is.numeric(.frequency_penalty),
     "Input .logit_bias must be a list or NULL" = is.null(.logit_bias) | is.list(.logit_bias),
-    "Input .logprobs must be logical or NULL" = is.null(.logprobs) | is.logical(.logprobs),
-    "Input .top_logprobs must be NULL or an integer between 0 and 20" = is.null(.top_logprobs) | (is_integer_valued(.top_logprobs) & .top_logprobs >= 0 & .top_logprobs <= 20),
     "Input .presence_penalty must be numeric or NULL" = is.null(.presence_penalty) | is.numeric(.presence_penalty),
     "Input .seed must be NULL or an integer" = is.null(.seed) | is_integer_valued(.seed),
     "Input .stop must be NULL or a character vector or string" = is.null(.stop) | is.character(.stop),
@@ -117,8 +111,6 @@ openai_chat <- function(
     messages = messages,
     frequency_penalty = .frequency_penalty,
     logit_bias = .logit_bias,
-    logprobs = .logprobs,
-    top_logprobs = .top_logprobs,
     max_completion_tokens = .max_completion_tokens,
     presence_penalty = .presence_penalty,
     response_format = response_format,
@@ -358,8 +350,6 @@ openai_embedding <- function(.llm,
 #' @param .max_completion_tokens Integer specifying the maximum tokens per response (default: NULL).
 #' @param .frequency_penalty Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far.
 #' @param .logit_bias A named list modifying the likelihood of specified tokens appearing in the completion.
-#' @param .logprobs Whether to return log probabilities of the output tokens (default: FALSE).
-#' @param .top_logprobs An integer between 0 and 20 specifying the number of most likely tokens to return at each token position.
 #' @param .presence_penalty Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far.
 #' @param .seed If specified, the system will make a best effort to sample deterministically.
 #' @param .stop Up to 4 sequences where the API will stop generating further tokens.
@@ -381,8 +371,6 @@ send_openai_batch <- function(.llms,
                               .max_completion_tokens = NULL,
                               .frequency_penalty = NULL,
                               .logit_bias = NULL,
-                              .logprobs = FALSE,
-                              .top_logprobs = NULL,
                               .presence_penalty = NULL,
                               .seed = NULL,
                               .stop = NULL,
@@ -402,8 +390,6 @@ send_openai_batch <- function(.llms,
     ".max_completion_tokens must be NULL or a positive integer" = is.null(.max_completion_tokens) | (is_integer_valued(.max_completion_tokens) & .max_completion_tokens > 0),
     ".frequency_penalty must be numeric or NULL" = is.null(.frequency_penalty) | is.numeric(.frequency_penalty),
     ".logit_bias must be a list or NULL" = is.null(.logit_bias) | is.list(.logit_bias),
-    ".logprobs must be logical or NULL" = is.null(.logprobs) | is.logical(.logprobs),
-    ".top_logprobs must be NULL or an integer between 0 and 20" = is.null(.top_logprobs) | (is_integer_valued(.top_logprobs) & .top_logprobs >= 0 & .top_logprobs <= 20),
     ".presence_penalty must be numeric or NULL" = is.null(.presence_penalty) | is.numeric(.presence_penalty),
     ".seed must be NULL or an integer" = is.null(.seed) | is_integer_valued(.seed),
     ".stop must be NULL or a character vector or string" = is.null(.stop) | is.character(.stop),
@@ -473,8 +459,6 @@ send_openai_batch <- function(.llms,
       messages = messages,
       frequency_penalty = .frequency_penalty,
       logit_bias = .logit_bias,
-      logprobs = .logprobs,
-      top_logprobs = .top_logprobs,
       max_completion_tokens = .max_completion_tokens,
       presence_penalty = .presence_penalty,
       response_format = response_format,

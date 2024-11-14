@@ -3,12 +3,11 @@ library(httptest2)
 
 test_that("openai function constructs a correct request and dry runs it", {
   # Create a mock LLMMessage object
-  llm <- LLMMessage$new()
-  llm$add_message("user", "Write a poem about a (stochastic) parrot")
+  llm <- llm_message("Write a poem about a (stochastic) parrot")
   
   # Call chatgpt with .dry_run = TRUE and perform the dry run
   request <- llm |>
-    openai(.dry_run = TRUE) 
+    chat(openai,.dry_run = TRUE) 
   
   dry_run <- request |>
     httr2::req_dry_run(redact_headers = TRUE, quiet = TRUE)
@@ -37,7 +36,7 @@ test_that("openai function constructs a correct request and dry runs it", {
   # Now check the body content to ensure the JSON is constructed as expected
   body_json <- request$body |> jsonlite::toJSON() |> as.character()
   
-  expected_json <- "{\"data\":{\"model\":[\"gpt-4o\"],\"messages\":[{\"role\":[\"system\"],\"content\":[\"You are a helpful assistant \"]},{\"role\":[\"user\"],\"content\":[\"Write a poem about a (stochastic) parrot \"]}],\"logprobs\":[false],\"stream\":[false]},\"type\":[\"json\"],\"content_type\":[\"application/json\"],\"params\":{\"auto_unbox\":[true],\"digits\":[22],\"null\":[\"null\"]}}"
+  expected_json <- "{\"data\":{\"model\":[\"gpt-4o\"],\"messages\":[{\"role\":[\"system\"],\"content\":[\"You are a helpful assistant \"]},{\"role\":[\"user\"],\"content\":[\"Write a poem about a (stochastic) parrot \"]}],\"stream\":[false]},\"type\":[\"json\"],\"content_type\":[\"application/json\"],\"params\":{\"auto_unbox\":[true],\"digits\":[22],\"null\":[\"null\"]}}"
   # Check if the JSON matches the expected JSON
   expect_equal(body_json, expected_json)
   
@@ -57,9 +56,9 @@ test_that("openai returns expected response", {
       Sys.setenv(OPENAI_API_KEY = "DUMMY_KEY_FOR_TESTING")
     }
     
-    llm <- llm_message("user", "Hello, world")
+    llm <- llm_message("Hello, world")
     
-    result <- openai(
+    result <- openai_chat(
       .llm = llm,
       .temperature = 0,
       .stream = FALSE

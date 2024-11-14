@@ -10,8 +10,6 @@ openai_chat(
   .max_completion_tokens = NULL,
   .frequency_penalty = NULL,
   .logit_bias = NULL,
-  .logprobs = FALSE,
-  .top_logprobs = NULL,
   .presence_penalty = NULL,
   .seed = NULL,
   .stop = NULL,
@@ -39,10 +37,6 @@ openai_chat(
 \item{.frequency_penalty}{Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far.}
 
 \item{.logit_bias}{A named list modifying the likelihood of specified tokens appearing in the completion.}
-
-\item{.logprobs}{Whether to return log probabilities of the output tokens (default: FALSE).}
-
-\item{.top_logprobs}{An integer between 0 and 20 specifying the number of most likely tokens to return at each token position.}
 
 \item{.presence_penalty}{Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far.}
 

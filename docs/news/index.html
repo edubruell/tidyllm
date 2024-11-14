@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -38,6 +38,19 @@
       <small>Source: <a href="https://github.com/edubruell/tidyllm/blob/HEAD/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.4" id="development-version-024">Development Version 0.2.4<a class="anchor" aria-label="anchor" href="#development-version-024"></a></h2>
+<div class="section level3">
+<h3 id="refinements-of-the-new-interface-0-2-4">Refinements of the new interface<a class="anchor" aria-label="anchor" href="#refinements-of-the-new-interface-0-2-4"></a></h3>
+<p>One disadvantage of the first iteration of the new interface was that all arguements that needed to be passed to provider-specific functions, were going through the provider function. This feels, unintuitive, because users expect common arguments (e.g., .model, .temperature) to be set directly in main verbs like <code><a href="../reference/chat.html">chat()</a></code> or <code><a href="../reference/send_batch.html">send_batch()</a></code>.Moreover, provider functions don’t expose arguments for autocomplete, making it harder for users to explore options. Therefore, the main API verbs now directly accept common arguements, and check them against the available arguements for each API.</p>
+</div>
+<div class="section level3">
+<h3 id="bug-fixes-0-2-4">Bug-fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-2-4"></a></h3>
+<ul><li>New error message for not setting a provider in main verbs</li>
+<li>Missing export of main verbs fixed</li>
+<li>Wrong documentation fixed</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.3" id="development-version-023">Development Version 0.2.3<a class="anchor" aria-label="anchor" href="#development-version-023"></a></h2>
 <div class="section level3">

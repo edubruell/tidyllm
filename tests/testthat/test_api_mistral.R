@@ -3,7 +3,8 @@ library(httptest2)
 
 test_that("mistral function constructs a correct request and dry runs it", {
   # Call mistral with .dry_run = TRUE and perform the dry run
-  request <- llm_message("Write a poem about the Gallic Rooster") |> mistral(.dry_run = TRUE)
+  request <- llm_message("Write a poem about the Gallic Rooster") |> 
+    chat(mistral,.dry_run = TRUE)
   
   dry_run <- request |>
     httr2::req_dry_run(redact_headers = TRUE, quiet = TRUE)
@@ -52,7 +53,7 @@ test_that("mistral returns expected response",{
     
     llm <- llm_message("Hello, world")
     
-    result <- mistral(
+    result <- mistral_chat(
       .llm = llm,
       .max_tokens = 1024,
       .temperature = 0,

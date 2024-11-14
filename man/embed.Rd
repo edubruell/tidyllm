@@ -2,9 +2,17 @@
 % Please edit documentation in R/llm_verbs.R
 \name{embed}
 \alias{embed}
-\title{Generate embeddings}
+\title{Generate text embeddings}
 \usage{
-embed(.llm, .provider = getOption("tidyllm_embed_default"))
+embed(
+  .llm,
+  .provider = getOption("tidyllm_embed_default"),
+  .model = NULL,
+  .truncate = NULL,
+  .timeout = NULL,
+  .dry_run = NULL,
+  .max_tries = NULL
+)
 }
 \arguments{
 \item{.llm}{An existing \code{LLMMessage} object (or a character vector of texts to embed)}
@@ -12,6 +20,16 @@ embed(.llm, .provider = getOption("tidyllm_embed_default"))
 \item{.provider}{A function or function call specifying the language model provider and any additional parameters.
 This should be a call to a provider function like \code{openai()}, \code{ollama()}, etc.
 You can also set a default provider function via the \code{tidyllm_embed_default} option.}
+
+\item{.model}{The embedding model to use}
+
+\item{.truncate}{Whether to truncate inputs to fit the model's context length}
+
+\item{.timeout}{Timeout for the API request in seconds}
+
+\item{.dry_run}{If TRUE, perform a dry run and return the request object.}
+
+\item{.max_tries}{Maximum retry attempts for requests}
 }
 \value{
 A matrix where each column corresponds to an vector embedding of a sent text

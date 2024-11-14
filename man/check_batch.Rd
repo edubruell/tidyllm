@@ -4,7 +4,13 @@
 \alias{check_batch}
 \title{Check Batch Processing Status}
 \usage{
-check_batch(.llms, .provider = getOption("tidyllm_cbatch_default"))
+check_batch(
+  .llms,
+  .provider = getOption("tidyllm_cbatch_default"),
+  .dry_run = NULL,
+  .max_tries = NULL,
+  .timeout = NULL
+)
 }
 \arguments{
 \item{.llms}{A list of \code{LLMMessage} objects or a character vector with a batch ID.}
@@ -12,6 +18,12 @@ check_batch(.llms, .provider = getOption("tidyllm_cbatch_default"))
 \item{.provider}{A function or function call specifying the language model provider and any additional parameters.
 This should be a call to a provider function like \code{openai()}, \code{claude()}, etc.
 You can also set a default provider function via the \code{tidyllm_cbatch_default} option.}
+
+\item{.dry_run}{Logical; if TRUE, returns the prepared request object without executing it}
+
+\item{.max_tries}{Maximum retries to perform the request}
+
+\item{.timeout}{Integer specifying the request timeout in seconds}
 }
 \value{
 A tibble with information about the status of batch processing.

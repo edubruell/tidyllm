@@ -66,10 +66,10 @@ This function sends a message history to the Groq Chat API and returns the assis
 \dontrun{
 # Basic usage
 msg <- llm_message("What is Groq?")
-result <- groq(msg)
+result <- groq_chat(msg)
 
 # With custom parameters
-result2 <- groq(msg, 
+result2 <- groq_chat(msg, 
                .model = "llama-3.2-vision",
                .temperature = 0.5, 
                .max_tokens = 512)

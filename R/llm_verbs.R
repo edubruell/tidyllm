@@ -10,18 +10,30 @@
 #'
 #' @return A function that dynamically routes to the appropriate action based on its 
 #'   inputs.
-#' @noRd
+#' @noRd 
 create_provider_function <- function(.name, ...) {
-  # Capture the named functions as a list
   function_map <- list(...)
+  
+  if ("metadata" %in% names(function_map)) {
+    stop(glue::glue("'metadata' is a reserved keyword and cannot be used as a function name in provider '{.name}'."))
+  }
+  
+  # Capture the arguments used in the provider function
+  supported_args <- purrr::map(function_map, formals) |> 
+    purrr::map(names)
   
   # Create the provider function
   provider_function <- function(..., .called_from = NULL) {
     args <- list(...)
     
     if (!is.null(.called_from)) {
-      # Check if the .called_from matches one of the named functions
-      if (.called_from %in% names(function_map)) {
+      if (.called_from == "metadata") {
+        # Return provider metadata
+        return(list(
+          provider_name = .name,
+          supported_args = supported_args
+        ))
+      } else if (.called_from %in% names(function_map)) {
         # Call the appropriate function
         return(do.call(function_map[[.called_from]], args))
       } else {
@@ -39,42 +51,93 @@ create_provider_function <- function(.name, ...) {
           "Please use either `chat({.name}(...))` for a verb-based approach, or `{.name}_chat()`."
         ))
       return(do.call(function_map[["chat"]], args))
-      
     }
     
-    # Construct and return an unevaluated call to the provider function
+    # Default: Construct and return an unevaluated call to the provider function
     return(rlang::call2(.name, !!!args))
   }
   
-  attr(provider_function, "name") <- .name
+  # Return the provider function with metadata accessible via "metadata" call
   provider_function
 }
 
 
+
 #' Chat with a Language Model
 #'
-#' The `chat()` function allows you to send a message to a language model via a specified provider.
-#' It routes the `LLMMessage` object to the appropriate provider-specific chat function.
+#' The `chat()` function sends a message to a language model via a specified provider and returns the response. 
+#' It routes the provided `LLMMessage` object to the appropriate provider-specific chat function, 
+#' while allowing for the specification of common arguments applicable across different providers.
 #'
 #' @param .llm An `LLMMessage` object containing the message or conversation history to send to the language model.
 #' @param .provider A function or function call specifying the language model provider and any additional parameters.
 #'   This should be a call to a provider function like `openai()`, `claude()`, etc. 
 #'   You can also set a default provider function via the `tidyllm_chat_default` option.
-#' @return An `LLMMessage`  object containing the response from the language model.
+#' @param .dry_run Logical; if `TRUE`, simulates the request without sending it to the provider. Useful for testing.
+#' @param .stream Logical; if `TRUE`, streams the response from the provider in real-time.
+#' @param .temperature Numeric; controls the randomness of the model's output (0 = deterministic).
+#' @param .timeout Numeric; the maximum time (in seconds) to wait for a response.
+#' @param .top_p Numeric; nucleus sampling parameter, which limits the sampling to the top cumulative probability `p`.
+#' @param .max_tries Integer; the maximum number of retries for failed requests.
+#' @param .model Character; the model identifier to use (e.g., `"gpt-4"`).
+#' @param .verbose Logical; if `TRUE`, prints additional information about the request and response.
+#' @param .json_schema List; A JSON schema object as R list to enforce the output structure 
+#' @param .seed Integer; sets a random seed for reproducibility.
+#' @param .stop Character vector; specifies sequences where the model should stop generating further tokens.
+#' @param .frequency_penalty Numeric; adjusts the likelihood of repeating tokens (positive values decrease repetition).
+#' @param .presence_penalty Numeric; adjusts the likelihood of introducing new tokens (positive values encourage novelty).
+#'
+#' @return An updated `LLMMessage` object containing the response from the language model.
+#'
 #' @examples
 #' \dontrun{
+#' # Basic usage with OpenAI provider
 #' llm_message("Hello World") |>
-#'    chat(openai(.model = "gpt-4o"))
+#'    chat(ollama(.ollama_server = "https://my-ollama-server.de"),.model="mixtral")
+#'    
+# llm_message("Hello World") |>
+#'    chat(mistral,.model="mixtral")
+#'
+#' # Use streaming with Claude provider
+#' llm_message("Tell me a story") |>
+#'    chat(claude(),.stream=TRUE)
 #' }
+#'
+#' @details
+#' The `chat()` function provides a unified interface for interacting with different language model providers.
+#' Common arguments such as `.temperature`, `.model`, and `.stream` are supported by most providers and can be
+#' passed directly to `chat()`. If a provider does not support a particular argument, an error will be raised.
+#'
+#' Advanced provider-specific configurations can be accessed via the provider functions. 
+#'
 #' @export
-chat <- function(.llm, .provider = getOption("tidyllm_chat_default")) {
-  # Ensure .llm is an LLMMessage object
+chat <- function(
+    .llm,
+    .provider = getOption("tidyllm_chat_default"),
+    .dry_run = NULL,
+    .stream = NULL,
+    .temperature = NULL,
+    .timeout = NULL,
+    .top_p = NULL,
+    .max_tries = NULL,
+    .model = NULL,
+    .verbose = NULL,
+    .json_schema = NULL,
+    .seed = NULL,
+    .stop = NULL,
+    .frequency_penalty = NULL,
+    .presence_penalty = NULL) {
+  
   if (!inherits(.llm, "LLMMessage")) {
     stop("Input .llm must be an LLMMessage object.")
   }
   
-  #Accept an unevaluated function
-  if(rlang::is_function(.provider)){
+  if (is.null(.provider)) {
+    stop("You need to specify a .provider function in chat().")
+  }
+  
+  # Evaluate or capture the provider
+  if (rlang::is_function(.provider)) {
     .provider <- .provider()
   }
   
@@ -85,18 +148,49 @@ chat <- function(.llm, .provider = getOption("tidyllm_chat_default")) {
     provider_expr <- .provider
   }
   
-  # Modify the provider call by injecting .llm and .called_from
-  modified_call <- rlang::call_modify(
-    provider_expr ,
-    .llm = .llm,
-    .called_from = "chat" 
-  )
+  provider_meta_data <- rlang::call_modify(provider_expr ,
+                                           .called_from = "metadata") |>
+    rlang::eval_tidy()
   
-  # Evaluate the modified provider call
+  supported_args <- provider_meta_data$supported_args$chat
+
+  # Collect common arguments only if they are not NULL
+  common_args <- list(
+    .llm = .llm,
+    .model = .model,
+    .verbose = .verbose,
+    .max_tries = .max_tries,
+    .stream = .stream,
+    .timeout = .timeout,
+    .temperature = .temperature,
+    .dry_run = .dry_run,
+    .top_p = .top_p,
+    .json_schema = .json_schema,
+    .seed = .seed,
+    .stop = .stop,
+    .frequency_penalty = .frequency_penalty,
+    .presence_penalty = .presence_penalty
+  )
+  common_args <- common_args[!sapply(common_args, is.null)]
+  
+  # Warn about unsupported arguments
+  unsupported_args <- setdiff(names(common_args), supported_args)
+  if (length(unsupported_args) > 0) {
+    stop(glue::glue(
+      "The following arguments are not supported by the provider's `chat()` function: {paste(unsupported_args, collapse = ', ')}."
+    ))
+  }
+  
+  # Inject valid arguments into the provider function call
+  valid_args <- common_args[names(common_args) %in% supported_args]
+  valid_args <- valid_args |> append(list(.called_from= "chat")) 
+  modified_call <- rlang::call_modify(provider_expr, !!!valid_args)
+  
   return(rlang::eval_tidy(modified_call))
 }
 
-#' Generate embeddings
+
+#' Generate text embeddings
 #'
 #' The `embed()` function allows you to embed a text via a specified provider.
 #' It routes the input to the appropriate provider-specific embedding function.
@@ -105,6 +199,11 @@ chat <- function(.llm, .provider = getOption("tidyllm_chat_default")) {
 #' @param .provider A function or function call specifying the language model provider and any additional parameters.
 #'   This should be a call to a provider function like `openai()`, `ollama()`, etc. 
 #'   You can also set a default provider function via the `tidyllm_embed_default` option.
+#' @param .model The embedding model to use
+#' @param .truncate Whether to truncate inputs to fit the model's context length
+#' @param .timeout Timeout for the API request in seconds
+#' @param .dry_run If TRUE, perform a dry run and return the request object.
+#' @param .max_tries Maximum retry attempts for requests
 #'@return A matrix where each column corresponds to an vector embedding of a sent text
 #' @examples
 #' \dontrun{
@@ -114,11 +213,18 @@ chat <- function(.llm, .provider = getOption("tidyllm_chat_default")) {
 #'  embed(gemini())
 #'  }
 #' @export
-embed <- function(.llm, .provider = getOption("tidyllm_embed_default")) {
-  
+embed <- function(.llm, 
+                  .provider = getOption("tidyllm_embed_default"),
+                  .model=NULL,
+                  .truncate=NULL,
+                  .timeout=NULL,
+                  .dry_run=NULL,
+                  .max_tries=NULL) {
+
   # Validate the inputs
   c(
-    "Input .llm must be an LLMMessage object or a character vector" = inherits(.llm, "LLMMessage") | is.character(.llm)
+    "Input .llm must be an LLMMessage object or a character vector" = inherits(.llm, "LLMMessage") | is.character(.llm),
+    "You need to specify a .provider function in embed()" = !is.null(.provider)
   ) |> validate_inputs()
   
   #Accept an unevaluated function
@@ -133,14 +239,37 @@ embed <- function(.llm, .provider = getOption("tidyllm_embed_default")) {
     provider_expr <- .provider
   }
   
-  # Modify the provider call by injecting .llm and .called_from
-  modified_call <- rlang::call_modify(
-    provider_expr ,
-    .llm = .llm,
-    .called_from = "embed" 
-  )
   
-  # Evaluate the modified provider call
+  provider_meta_data <- rlang::call_modify(provider_expr ,
+                                           .called_from = "metadata") |>
+    rlang::eval_tidy()
+  
+  supported_args <- provider_meta_data$supported_args$embed
+  
+  # Collect common arguments only if they are not NULL
+  common_args <- list(
+    .llm = .llm,
+    .model = .model,
+    .truncate = .truncate,
+    .max_tries = .max_tries,
+    .timeout = .timeout,
+    .dry_run = .dry_run
+  )
+  common_args <- common_args[!sapply(common_args, is.null)]
+  
+  # Throw an error for  unsupported arguments
+  unsupported_args <- setdiff(names(common_args), supported_args)
+  if (length(unsupported_args) > 0) {
+    stop(glue::glue(
+      "The following arguments are not supported by the provider's `embed()` function: {paste(unsupported_args, collapse = ', ')}."
+    ))
+  }
+  
+  # Inject valid arguments into the provider function call
+  valid_args <- common_args[names(common_args) %in% supported_args]
+  valid_args <- valid_args |> append(list(.called_from= "embed")) 
+  modified_call <- rlang::call_modify(provider_expr, !!!valid_args)
+  
   return(rlang::eval_tidy(modified_call))
 }
 
@@ -155,12 +284,41 @@ embed <- function(.llm, .provider = getOption("tidyllm_embed_default")) {
 #' @param .provider A function or function call specifying the language model provider and any additional parameters.
 #'   This should be a call to a provider function like `openai()`, `claude()`, etc. 
 #'   You can also set a default provider function via the `tidyllm_sbatch_default` option.
+#' @param .model Character; the model identifier to use (e.g., `"gpt-4"`).
+#' @param .temperature Numeric; controls the randomness of the model's output (0 = deterministic).
+#' @param .timeout Numeric; the maximum time (in seconds) to wait for a response.
+#' @param .top_p Numeric; nucleus sampling parameter, which limits the sampling to the top cumulative probability `p`.
+#' @param .max_tries Integer; the maximum number of retries for failed requests.
+#' @param .verbose Logical; if `TRUE`, prints additional information about the request and response.
+#' @param .json_schema List; A JSON schema object as R list to enforce the output structure 
+#' @param .seed Integer; sets a random seed for reproducibility.
+#' @param .stop Character vector; specifies sequences where the model should stop generating further tokens.
+#' @param .frequency_penalty Numeric; adjusts the likelihood of repeating tokens (positive values decrease repetition).
+#' @param .presence_penalty Numeric; adjusts the likelihood of introducing new tokens (positive values encourage novelty).
+#' @param .dry_run Logical; if `TRUE`, simulates the request without sending it to the provider. Useful for testing.
+#' @param .id_prefix Character string to specify a prefix for generating custom IDs when names in `.llms` are missing 
 #' @return An updated and named list of `.llms` with identifiers that align with batch responses, including a `batch_id` attribute.
-send_batch <- function(.llms, .provider = getOption("tidyllm_sbatch_default")) {
-  
+#' @export
+send_batch <- function(.llms, 
+                       .provider = getOption("tidyllm_sbatch_default"),
+                       .dry_run = NULL,
+                       .temperature = NULL,
+                       .timeout = NULL,
+                       .top_p = NULL,
+                       .max_tries = NULL,
+                       .model = NULL,
+                       .verbose = NULL,
+                       .json_schema = NULL,
+                       .seed = NULL,
+                       .stop = NULL,
+                       .frequency_penalty = NULL,
+                       .presence_penalty = NULL,
+                       .id_prefix = NULL){
+
   # Validate the inputs
   c(
-    ".llms must be a list of LLMMessage objects" = is.list(.llms) && all(sapply(.llms, inherits, "LLMMessage"))
+    ".llms must be a list of LLMMessage objects" = is.list(.llms) && all(sapply(.llms, inherits, "LLMMessage")),
+    "You need to specify a .provider function in send_batch()" = !is.null(.provider)
   ) |> validate_inputs()
   
   #Accept an unevaluated function
@@ -175,14 +333,44 @@ send_batch <- function(.llms, .provider = getOption("tidyllm_sbatch_default")) {
     provider_expr <- .provider
   }
   
-  # Modify the provider call by injecting .llm and .called_from
-  modified_call <- rlang::call_modify(
-    provider_expr ,
-    .llms = .llms,
-    .called_from = "send_batch" 
-  )
+  provider_meta_data <- rlang::call_modify(provider_expr ,
+                                           .called_from = "metadata") |>
+    rlang::eval_tidy()
   
-  # Evaluate the modified provider call
+  supported_args <- provider_meta_data$supported_args$send_batch
+  
+  # Collect common arguments only if they are not NULL
+  common_args <- list(
+    .llms = .llms,
+    .model = .model,
+    .verbose = .verbose,
+    .max_tries = .max_tries,
+    .timeout = .timeout,
+    .temperature = .temperature,
+    .dry_run = .dry_run,
+    .top_p = .top_p,
+    .json_schema = .json_schema,
+    .seed = .seed,
+    .stop = .stop,
+    .frequency_penalty = .frequency_penalty,
+    .presence_penalty = .presence_penalty,
+    .id_prefix = .id_prefix
+  )
+  common_args <- common_args[!sapply(common_args, is.null)]
+  
+  # Warn about unsupported arguments
+  unsupported_args <- setdiff(names(common_args), supported_args)
+  if (length(unsupported_args) > 0) {
+    stop(glue::glue(
+      "The following arguments are not supported by the provider's `send_batch()` function: {paste(unsupported_args, collapse = ', ')}."
+    ))
+  }
+  
+  # Inject valid arguments into the provider function call
+  valid_args <- common_args[names(common_args) %in% supported_args]
+  valid_args <- valid_args |> append(list(.called_from= "send_batch")) 
+  modified_call <- rlang::call_modify(provider_expr, !!!valid_args)
+  
   return(rlang::eval_tidy(modified_call))
 }
 
@@ -196,13 +384,21 @@ send_batch <- function(.llms, .provider = getOption("tidyllm_sbatch_default")) {
 #' @param .provider A function or function call specifying the language model provider and any additional parameters.
 #'   This should be a call to a provider function like `openai()`, `claude()`, etc. 
 #'   You can also set a default provider function via the `tidyllm_cbatch_default` option.
+#' @param .dry_run Logical; if TRUE, returns the prepared request object without executing it 
+#' @param .max_tries Maximum retries to perform the request
+#' @param .timeout Integer specifying the request timeout in seconds
 #' @return A tibble with information about the status of batch processing.
+#' @export
 check_batch <- function(.llms,
-                        .provider = getOption("tidyllm_cbatch_default")) {
+                        .provider = getOption("tidyllm_cbatch_default"),
+                        .dry_run  = NULL,
+                        .max_tries = NULL,
+                        .timeout = NULL) {
 
   # Validate the inputs
   c(
-    ".llms must be a list of LLMMessage objects or a character vector with a Batch ID" = (is.list(.llms) && all(sapply(.llms, inherits, "LLMMessage"))) | is.character(.llms)
+    ".llms must be a list of LLMMessage objects or a character vector with a Batch ID" = (is.list(.llms) && all(sapply(.llms, inherits, "LLMMessage"))) | is.character(.llms),
+    "You need to specify a .provider function in check_batch()" = !is.null(.provider)
   ) |> validate_inputs()
   
   
@@ -226,12 +422,18 @@ check_batch <- function(.llms,
     provider_expr <- .provider
   }
   
-  # Modify the provider call by injecting .llm and .called_from
-  modified_call <- rlang::call_modify(
-    provider_expr ,
+  
+  # Collect common arguments only if they are not NULL
+  common_args <- list(
     .batch_id = batch_id,
-    .called_from = "check_batch" 
+    .max_tries = .max_tries,
+    .timeout = .timeout,
+    .dry_run = .dry_run
   )
+  common_args <- common_args[!sapply(common_args, is.null)]
+  
+  valid_args <- common_args |> append(list(.called_from= "check_batch")) 
+  modified_call <- rlang::call_modify(provider_expr, !!!valid_args)
   
   # Evaluate the modified provider call
   return(rlang::eval_tidy(modified_call))
@@ -243,9 +445,13 @@ check_batch <- function(.llms,
 #'   This should be a call to a provider function like `openai()`, `claude()`, etc. 
 #'   You can also set a default provider function via the `tidyllm_lbatch_default` option.
 #' @return A tibble with information about the status of batch processing.
+#' @export
 list_batches <- function(.provider = getOption("tidyllm_lbatch_default")) {
   
-
+  if (is.null(.provider)) {
+    stop("You need to specify a .provider function in list_batches().")
+  }
+  
   #Accept an unevaluated function
   if(rlang::is_function(.provider)){
     .provider <- .provider()
@@ -281,12 +487,21 @@ list_batches <- function(.provider = getOption("tidyllm_lbatch_default")) {
 #' @param .provider A function or function call specifying the language model provider and any additional parameters.
 #'   This should be a call to a provider function like `openai()`, `claude()`, etc. 
 #'   You can also set a default provider function via the `tidyllm_fbatch_default` option.
+#' @param .dry_run Logical; if `TRUE`, returns the constructed request without executing it
+#' @param .max_tries Integer; maximum number of retries if the request fails
+#' @param .timeout Integer; request timeout in seconds
 #' @return A list of updated `LLMMessage` objects, each with the assistant's response added if successful.
-fetch_batch <- function(.llms, .provider = getOption("tidyllm_fbatch_default")) {
-  
+#' @export
+fetch_batch <- function(.llms, 
+                        .provider = getOption("tidyllm_fbatch_default"),
+                        .dry_run=NULL,
+                        .max_tries=NULL,
+                        .timeout=NULL) {
+
   # Validate the inputs
   c(
-    ".llms must be a list of LLMMessage objects with names as custom IDs" = is.list(.llms) && all(sapply(.llms, inherits, "LLMMessage"))
+    ".llms must be a list of LLMMessage objects with names as custom IDs" = is.list(.llms) && all(sapply(.llms, inherits, "LLMMessage")),
+    "You need to specify a .provider function in fetch_batch()" = !is.null(.provider)
   ) |> validate_inputs()
   
   #Accept an unevaluated function
@@ -301,12 +516,17 @@ fetch_batch <- function(.llms, .provider = getOption("tidyllm_fbatch_default")) 
     provider_expr <- .provider
   }
   
-  # Modify the provider call by injecting .llm and .called_from
-  modified_call <- rlang::call_modify(
-    provider_expr ,
+  # Collect common arguments only if they are not NULL
+  common_args <- list(
     .llms = .llms,
-    .called_from = "fetch_batch" 
+    .max_tries = .max_tries,
+    .timeout = .timeout,
+    .dry_run = .dry_run
   )
+  common_args <- common_args[!sapply(common_args, is.null)]
+  
+  valid_args <- common_args |> append(list(.called_from= "fetch_batch")) 
+  modified_call <- rlang::call_modify(provider_expr, !!!valid_args)
   
   # Evaluate the modified provider call
   return(rlang::eval_tidy(modified_call))

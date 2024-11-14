@@ -93,10 +93,10 @@ The function provides extensive control over the generation process through vari
 \examples{
 \dontrun{
 llm_message("user", "Hello, how are you?")
-response <- ollama(llm, .model = "gemma2", .temperature = 0.7)
+response <- ollama_chat(llm, .model = "gemma2", .temperature = 0.7)
 
 # With custom parameters
-response <- ollama(
+response <- ollama_chat(
   llm,
   .model = "llama2",
   .temperature = 0.8,

@@ -63,10 +63,10 @@ Interact with Claude AI models via the Anthropic API
 \dontrun{
 # Basic usage
 msg <- llm_message("What is R programming?")
-result <- claude(msg)
+result <- claude_chat(msg)
 
 # With custom parameters
-result2 <- claude(msg, 
+result2 <- claude_chat(msg, 
                  .temperature = 0.7, 
                  .max_tokens = 1000)
 }

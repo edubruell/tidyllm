@@ -83,7 +83,7 @@ conversation <- llm_message("What is the capital of France?") |>
 #Standard way that llm_messages are printed
 conversation
 ```
-```{r convo1_out,  eval=TRUE, echo=FALSE}
+```{r convo1_out,  eval=TRUE, echo=FALSE,message=FALSE}
 library(tidyllm)
 
 #Easier than mocking. httptest2 caused a few issues with my vignette
@@ -96,7 +96,7 @@ conversation
 # Continue the conversation with ChatGPT
 conversation <- conversation |>
   llm_message("What's a famous landmark in this city?") |>
-  chat(openai())
+  chat(openai)
 
 get_reply(conversation)
 ```
@@ -287,7 +287,7 @@ address_schema <- tidyllm_schema(
   country = "factor(Germany,France)"
 )
 address <- llm_message("Imagine an address in JSON format that matches the schema.") |>
-        chat(openai(.json_schema = address_schema))
+        chat(openai(),.json_schema = address_schema)
 address
 ```
 ```{r schema_out,  eval=TRUE, echo=FALSE}
@@ -306,22 +306,23 @@ The model responded in JSON format, organizing data into key-value pairs like sp
 address |> get_reply_data() |> str()
 ```
 
-The OpenAI and the Google Gemini API work with a schema provided by `tidyllm_schema()`. Other API providers like `ollama()`, `groq()`, and `mistral()` also support structured outputs through a simpler JSON mode, accessible with the `.json` argument. Since these APIs do not currently support native schema enforcement, you’ll need to prompt the model to follow a specified format directly in your messages. Although `get_reply_data()` can help extract structured data from these responses when you set `.json=TRUE` in each of the API functions, the model may not always adhere strictly to the specified structure. Once these APIs support native schema enforcement, **tidyllm** will integrate full schema functionality for them.
+The OpenAI and the Google Gemini API work with a schema provided by `tidyllm_schema()`. Other API providers like `ollama()`, `groq()`, and `mistral()` also support structured outputs through a simpler JSON mode, accessible with the `.json` argument in these provider functions. Since these APIs do not currently support native schema enforcement, you’ll need to prompt the model to follow a specified format directly in your messages. Although `get_reply_data()` can help extract structured data from these responses when you set `.json=TRUE` in each of the API provider functions, the model may not always adhere strictly to the specified structure. Once these APIs support native schema enforcement, **tidyllm** will integrate full schema functionality for them.
 
 ### API parameters
 
-Different API functions support different model parameters like, how deterministic the response should be via parameters like temperature. Please read API-documentation and the documentation of the model functions for specific examples.
-
+Different API functions support different model parameters like, how deterministic the response should be via parameters like temperature. You can set these parameters via arguments in the verbs or provider functions. Please read API-documentation and the documentation of the model functions for specific examples. Common arguments, such as temperature, can be specified directly through the main verbs like `chat()`. For example, `chat()` supports arguments such as `.model`,`.temperature`, `.json_schema` and more (see the full list in the `chat()` documentation) directly. 
 ```{r temperature,  eval=FALSE, echo=TRUE}
-  temp_example <- llm_message("Explain how temperature parameters work in large language models 
-                               and why temperature 0 gives you deterministic outputs in one sentence.")
+  temp_example <- llm_message("Explain how temperature parameters work 
+in large language models and why temperature 0 gives you deterministic outputs 
+in one sentence.")
   
   #per default it is non-zero
-  temp_example |> chat(ollama(.temperature=0))
+  temp_example |> chat(ollama(),.temperature=0)
 ```
 ```{r temperature_out,  eval=TRUE, echo=FALSE}
-  temp_example <- llm_message("Explain how temperature parameters work in large language models  
-                               and why temperature 0 gives you deterministic outputs in one sentence.")
+  temp_example <- llm_message("Explain how temperature parameters work 
+in large language models  and why temperature 0 gives you deterministic
+outputs in one sentence.")
 
   temp_example |>
     llm_message("In large language models, temperature parameters control the randomness of generated text by scaling the output probabilities, with higher temperatures introducing more uncertainty and lower temperatures favoring more likely outcomes; specifically, setting temperature to 0 effectively eliminates all randomness, resulting in deterministic outputs because it sets the probability of each token to its maximum likelihood value.",
@@ -330,12 +331,31 @@ Different API functions support different model parameters like, how determinist
 
 ```{r temp2,  eval=FALSE, echo=TRUE}
   #Retrying with .temperature=0
-  temp_example |> chat(ollama(.temperature=0))
+  temp_example |> chat(ollama(),.temperature=0)
 ```
 ```{r temp2_out,  eval=TRUE, echo=FALSE}
   temp_example |>
     llm_message("In large language models, temperature parameters control the randomness of generated text by scaling the output probabilities, with higher temperatures introducing more uncertainty and lower temperatures favoring more likely outcomes; specifically, setting temperature to 0 effectively eliminates all randomness, resulting in deterministic outputs because it sets the probability of each token to its maximum likelihood value.",
                 .role="assistant")
+```
+
+Provider-specific arguments—such as `.ollama_server` for `ollama()` or `.fileid` for `gemini()` — are set directly in the provider function:
+```{r, eval=FALSE}
+conversation <- llm_message("Hello") |> 
+  chat(ollama(.ollama_server = "http://localhost:11434"), 
+       .temperature = 0)
+```
+When an argument is provided in both `chat()` and the provider, the value specified in `chat()` takes precedence. For instance:
+```{r, eval=FALSE}
+#This uses GPT-4o
+conversation <- llm_message("Hello") |> 
+  chat(openai(.model="gpt-4o-mini"),
+       .model="gpt-4o")
+```
+If a common argument set in chat is not supported by a provider `chat()` will raise an error. For example, sending a `.json_schema` to a provider that does not support it will raise an error:
+```{r, eval = FALSE}
+address <- llm_message("Imagine an address in JSON format that matches the schema.") |>
+        chat(ollama(),.json_schema = address_schema)
 ```
 
 ### Embeddings
@@ -393,14 +413,14 @@ conversations <- readRDS("claude_batch.rds") |>
 
 poems <- map_chr(conversations, get_reply)
 ```
-The output is a list of message histories, each now updated with new assistant replies. You can further process these responses with **tidyllm's** standard tools.Before launching a large batch operation, it’s good practice to run a few test requests and review outputs with the standard `chat()` fuction. This approach helps confirm that prompt settings and model configurations produce the desired responses, minimizing potential errors or resource waste.
+The output is a list of message histories, each now updated with new assistant replies. You can further process these responses with **tidyllm's** standard tools. Before launching a large batch operation, it’s good practice to run a few test requests and review outputs with the standard `chat()` function. This approach helps confirm that prompt settings and model configurations produce the desired responses, minimizing potential errors or resource waste.
 
 ### Streaming back responses (Experimental)
 
-`chat()` supports real-time streaming of reply tokens to the console while the model works with the `.stream=TRUE` argument in the api provider, for most api providers. 
+`chat()` supports real-time streaming of reply tokens to the console while the model works with the `.stream=TRUE` argument in `chat()`, for most api providers. 
 ```{r, eval=FALSE}
 llm_message("Write a lengthy maagzine advertisement for an R package called tidyllm") |>
-  chat(claude(.stream=TRUE))
+  chat(claude,.stream=TRUE)
 ```
 While this feature offers slightly better feedback on model behavior in real-time, it’s not particularly useful for data-analysis workflows. We consider this feature experimental and recommend using non-streaming responses for production tasks. Note that error handling in streaming callbacks varies by API and differs in quality at this time.
 

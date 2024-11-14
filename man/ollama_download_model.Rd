@@ -12,7 +12,6 @@ ollama_download_model(.model, .ollama_server = "http://localhost:11434")
 \item{.ollama_server}{The base URL of the Ollama API (default is "http://localhost:11434").}
 }
 \description{
-This function sends a request to the Ollama API to download a specified model.
-It can operate in a streaming mode where it provides live updates of the download status
-and progress, or a single response mode.
+This function sends a request to the Ollama API to download a specified model
+from Ollama's large online library of models.
 }

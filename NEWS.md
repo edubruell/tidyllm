@@ -1,3 +1,15 @@
+# Development Version 0.2.4
+
+## Refinements of the new interface
+
+One disadvantage of the first iteration of the new interface was that all arguements that needed to be passed to provider-specific functions, were going through the provider function. This feels, unintuitive, because users expect common arguments (e.g., .model, .temperature) to be set directly in main verbs like `chat()` or `send_batch()`.Moreover,  provider functions don't expose arguments for autocomplete, making it harder for users to explore options. Therefore, the main API verbs now directly accept common arguements, and check them against the available arguements for each API.
+
+## Bug-fixes
+
+- New error message for not setting a provider in main verbs
+- Missing export of main verbs fixed
+- Wrong documentation fixed
+
 # Development Version 0.2.3
 
 ## Major Interface Overhaul

@@ -4,7 +4,7 @@ library(httptest2)
 test_that("ollama function constructs a correct request and dry runs it", {
   # Call groq with .dry_run = TRUE and perform the dry run
   request <- llm_message("Write a poem about porcupines") |> 
-    ollama(.model="gemma2",.temperature = 0,.dry_run = TRUE)
+    chat(ollama,.model="gemma2",.temperature = 0,.dry_run = TRUE)
   
   dry_run <- request |>
     httr2::req_dry_run(redact_headers = TRUE, quiet = TRUE)
@@ -85,9 +85,9 @@ test_that("ollama returns expected response", {
   with_mock_dir("ollama",expr = {
     
 
-    llm <- llm_message("user", "Hello, world")
+    llm <- llm_message("Hello, world")
     
-    result <- ollama(
+    result <- ollama_chat(
       .llm = llm,
       .temperature = 0,
       .model = "gemma2"

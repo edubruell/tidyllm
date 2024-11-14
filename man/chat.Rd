@@ -4,7 +4,23 @@
 \alias{chat}
 \title{Chat with a Language Model}
 \usage{
-chat(.llm, .provider = getOption("tidyllm_chat_default"))
+chat(
+  .llm,
+  .provider = getOption("tidyllm_chat_default"),
+  .dry_run = NULL,
+  .stream = NULL,
+  .temperature = NULL,
+  .timeout = NULL,
+  .top_p = NULL,
+  .max_tries = NULL,
+  .model = NULL,
+  .verbose = NULL,
+  .json_schema = NULL,
+  .seed = NULL,
+  .stop = NULL,
+  .frequency_penalty = NULL,
+  .presence_penalty = NULL
+)
 }
 \arguments{
 \item{.llm}{An \code{LLMMessage} object containing the message or conversation history to send to the language model.}
@@ -12,17 +28,59 @@ chat(.llm, .provider = getOption("tidyllm_chat_default"))
 \item{.provider}{A function or function call specifying the language model provider and any additional parameters.
 This should be a call to a provider function like \code{openai()}, \code{claude()}, etc.
 You can also set a default provider function via the \code{tidyllm_chat_default} option.}
+
+\item{.dry_run}{Logical; if \code{TRUE}, simulates the request without sending it to the provider. Useful for testing.}
+
+\item{.stream}{Logical; if \code{TRUE}, streams the response from the provider in real-time.}
+
+\item{.temperature}{Numeric; controls the randomness of the model's output (0 = deterministic).}
+
+\item{.timeout}{Numeric; the maximum time (in seconds) to wait for a response.}
+
+\item{.top_p}{Numeric; nucleus sampling parameter, which limits the sampling to the top cumulative probability \code{p}.}
+
+\item{.max_tries}{Integer; the maximum number of retries for failed requests.}
+
+\item{.model}{Character; the model identifier to use (e.g., \code{"gpt-4"}).}
+
+\item{.verbose}{Logical; if \code{TRUE}, prints additional information about the request and response.}
+
+\item{.json_schema}{List; A JSON schema object as R list to enforce the output structure}
+
+\item{.seed}{Integer; sets a random seed for reproducibility.}
+
+\item{.stop}{Character vector; specifies sequences where the model should stop generating further tokens.}
+
+\item{.frequency_penalty}{Numeric; adjusts the likelihood of repeating tokens (positive values decrease repetition).}
+
+\item{.presence_penalty}{Numeric; adjusts the likelihood of introducing new tokens (positive values encourage novelty).}
 }
 \value{
-An \code{LLMMessage}  object containing the response from the language model.
+An updated \code{LLMMessage} object containing the response from the language model.
 }
 \description{
-The \code{chat()} function allows you to send a message to a language model via a specified provider.
-It routes the \code{LLMMessage} object to the appropriate provider-specific chat function.
+The \code{chat()} function sends a message to a language model via a specified provider and returns the response.
+It routes the provided \code{LLMMessage} object to the appropriate provider-specific chat function,
+while allowing for the specification of common arguments applicable across different providers.
+}
+\details{
+The \code{chat()} function provides a unified interface for interacting with different language model providers.
+Common arguments such as \code{.temperature}, \code{.model}, and \code{.stream} are supported by most providers and can be
+passed directly to \code{chat()}. If a provider does not support a particular argument, an error will be raised.
+
+Advanced provider-specific configurations can be accessed via the provider functions.
 }
 \examples{
 \dontrun{
+# Basic usage with OpenAI provider
 llm_message("Hello World") |>
-   chat(openai(.model = "gpt-4o"))
+   chat(ollama(.ollama_server = "https://my-ollama-server.de"),.model="mixtral")
+   
+   chat(mistral,.model="mixtral")
+
+# Use streaming with Claude provider
+llm_message("Tell me a story") |>
+   chat(claude(),.stream=TRUE)
 }
+
 }

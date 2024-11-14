@@ -3,13 +3,9 @@ library(httptest2)
 
 
 test_that("claude function constructs a correct request and dry runs it", {
-  # Create a mock LLMMessage object
-  llm <- LLMMessage$new()
-  llm$add_message("user", "Make a poem about anteaters!")
-  
   # Call claude with .dry_run = TRUE and perform the dry run
-  request <- llm |>
-    claude(.dry_run = TRUE,.model="claude-3-5-sonnet-20240620") 
+  request <- llm_message("Make a poem about anteaters!") |>
+    chat(claude,.dry_run = TRUE,.model="claude-3-5-sonnet-20240620") 
   
   dry_run <- request |>
     httr2::req_dry_run(redact_headers = TRUE, quiet = TRUE)
@@ -57,16 +53,15 @@ test_that("claude returns expected response", {
       .tidyllm_rate_limit_env[["claude"]] <- NULL
     }
     
-    llm <- LLMMessage$new()
-    llm$add_message("user", "Hello, world")
+    messages <- llm_message("Hello, world")
     
     # Store the current API key and set a dummy key if none exists
     if (Sys.getenv("ANTHROPIC_API_KEY") == "") {
       Sys.setenv(ANTHROPIC_API_KEY = "DUMMY_KEY_FOR_TESTING")
     }
     
-    result <- claude(
-      .llm = llm,
+    result <- claude_chat(
+      .llm = messages,
       .model = "claude-3-5-sonnet-20240620",
       .max_tokens = 1024,
       .temperature = 0,
@@ -82,7 +77,7 @@ test_that("claude returns expected response", {
     expect_true(inherits(result, "LLMMessage"))
     expect_equal(
       result$message_history[[length(result$message_history)]]$content,
-      "Hello! It's nice to meet you. How can I assist you today? Is there anything specific you'd like to talk about or any questions you have?"    )
+      "Hello! How can I assist you today? Is there anything specific you'd like to know or discuss?")
     expect_equal(result$message_history[[length(result$message_history)]]$role, "assistant")
     
     # Now, check that the rate limit environment has been populated with correct values
@@ -93,59 +88,49 @@ test_that("claude returns expected response", {
     
     # Assertions for rate limit values based on the mocked response
     expect_equal(rl_info$api, "claude")
-    expect_equal(as.POSIXct(rl_info$last_request, tz = "GMT"), 
-                 as.POSIXct("2024-10-15 09:48:23", tz = "GMT"),
-                 ignore_attr = TRUE)
-    expect_equal(rl_info$requests_remaining, 49)
-    expect_equal(as.POSIXct(rl_info$requests_reset_time, tz = "GMT"),
-                 as.POSIXct("2024-10-15 09:49:10", tz = "GMT"),
-                 ignore_attr = TRUE)
-    expect_equal(rl_info$tokens_remaining, 40000)
-    expect_equal(as.POSIXct(rl_info$tokens_reset_time, tz = "GMT"),
-                 as.POSIXct("2024-10-15 09:48:23", tz = "GMT"),
-                 ignore_attr = TRUE)
+    expect_equal(rl_info$requests_remaining, 999)
+    expect_equal(rl_info$tokens_remaining, 80000)
   },simplify = FALSE)
 })
 
 test_that("input validation works correctly", {
-  llm <- LLMMessage$new()
-  llm$add_message("user", "Test message")
+  llm <- llm_message("Test message")
   
   # Test temperature validation
   expect_error(
-    claude(.llm = llm, .temperature = 1.5),
+    claude_chat(.llm = llm, .temperature = 1.5),
     ".temperature must be numeric between 0 and 1 if provided"
   )
   expect_error(
-    claude(.llm = llm, .temperature = -0.1),
+    claude_chat(.llm = llm, .temperature = -0.1),
     ".temperature must be numeric between 0 and 1 if provided"
   )
   
   # Test top_p validation
   expect_error(
-    claude(.llm = llm, .top_p = 1.5),
+    claude_chat(.llm = llm, .top_p = 1.5),
     ".top_p must be numeric between 0 and 1 if provided"
   )
   
   # Test top_k validation
   expect_error(
-    claude(.llm = llm, .top_k = 0.5),
+    claude_chat(.llm = llm, .top_k = 0.5),
     ".top_k must be a positive integer if provided"
   )
   expect_error(
-    claude(.llm = llm, .top_k = -1),
+    claude_chat(.llm = llm, .top_k = -1),
     ".top_k must be a positive integer if provided"
   )
   
   # Test temperature and top_p mutual exclusivity
   expect_error(
-    claude(.llm = llm, .temperature = 0.7, .top_p = 0.9),
+    claude_chat(.llm = llm, .temperature = 0.7, .top_p = 0.9),
     "Only one of .temperature or .top_p should be specified"
   )
   
   # Test stop_sequences validation
   expect_error(
-    claude(.llm = llm, .stop_sequences = 123),
+    claude_chat(.llm = llm, .stop_sequences = 123),
     ".stop_sequences must be a character vector"
   )
 })

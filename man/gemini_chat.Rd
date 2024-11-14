@@ -53,7 +53,7 @@ gemini_chat(
 
 \item{.tool_config}{Optional configuration for the tools specified (default: NULL).}
 
-\item{.json_schema}{A JSON schema object as R list to enforce the output structure (If defined has precedence over JSON mode).}
+\item{.json_schema}{A JSON schema object as R list to enforce the output structure}
 
 \item{.timeout}{When should our connection time out (default: 120 seconds).}
 

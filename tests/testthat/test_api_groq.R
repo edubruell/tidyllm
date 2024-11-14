@@ -8,7 +8,7 @@ test_that("groq function constructs a correct request and dry runs it", {
   }
   
   # Call groq with .dry_run = TRUE and perform the dry run
-  request <- llm_message("Write a poem about meerkats") |> groq(.dry_run = TRUE)
+  request <- llm_message("Write a poem about meerkats") |> chat(groq,.dry_run = TRUE)
   
   dry_run <- request |>
     httr2::req_dry_run(redact_headers = TRUE, quiet = TRUE)
@@ -57,7 +57,7 @@ test_that("groq returns expected response", {
       Sys.setenv(GROQ_API_KEY = "DUMMY_KEY_FOR_TESTING")
     }
     
-    result <- groq(
+    result <- groq_chat(
       .llm = llm,
       .max_tokens = 1024,
       .temperature = 0,

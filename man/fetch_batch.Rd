@@ -4,7 +4,13 @@
 \alias{fetch_batch}
 \title{Fetch Results from a Batch API}
 \usage{
-fetch_batch(.llms, .provider = getOption("tidyllm_fbatch_default"))
+fetch_batch(
+  .llms,
+  .provider = getOption("tidyllm_fbatch_default"),
+  .dry_run = NULL,
+  .max_tries = NULL,
+  .timeout = NULL
+)
 }
 \arguments{
 \item{.llms}{A list of \code{LLMMessage} objects containing conversation histories.}
@@ -12,6 +18,12 @@ fetch_batch(.llms, .provider = getOption("tidyllm_fbatch_default"))
 \item{.provider}{A function or function call specifying the language model provider and any additional parameters.
 This should be a call to a provider function like \code{openai()}, \code{claude()}, etc.
 You can also set a default provider function via the \code{tidyllm_fbatch_default} option.}
+
+\item{.dry_run}{Logical; if \code{TRUE}, returns the constructed request without executing it}
+
+\item{.max_tries}{Integer; maximum number of retries if the request fails}
+
+\item{.timeout}{Integer; request timeout in seconds}
 }
 \value{
 A list of updated \code{LLMMessage} objects, each with the assistant's response added if successful.

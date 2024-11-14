@@ -82,7 +82,7 @@ This function is work in progress and not fully tested
 \dontrun{
 # Basic usage
 msg <- llm_message("What is R programming?")
-result <- azure_openai(msg)
+result <- azure_openai_chat(msg)
 
 # With custom parameters
 result2 <- azure_openai_chat(msg, 
