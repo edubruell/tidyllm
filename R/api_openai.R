@@ -203,73 +203,47 @@ openai_chat <- function(
 
 
 
+
 #' Generate Embeddings Using OpenAI API
 #'
-#' @param .llm An existing LLMMessage object (or a character vector of texts to embed)
+#' @param .input An existing LLMMessage object (or a character vector of texts to embed)
 #' @param .model The embedding model identifier (default: "text-embedding-3-small").
 #' @param .truncate Whether to truncate inputs to fit the model's context length (default: TRUE).
 #' @param .timeout Timeout for the API request in seconds (default: 120).
 #' @param .dry_run If TRUE, perform a dry run and return the request object.
 #' @param .max_tries Maximum retry attempts for requests (default: 3).
-#' @return A matrix where each column corresponds to the embedding of a message in the message history.
+#' @return A tibble with two columns: `input` and `embeddings`. 
+#' The `input` column contains the texts sent to embed, and the `embeddings` column 
+#' is a list column where each row contains an embedding vector of the sent input.
 #' @export
-openai_embedding <- function(.llm,
+openai_embedding <- function(.input,
                              .model = "text-embedding-3-small",
                              .truncate = TRUE,
                              .timeout = 120,
                              .dry_run = FALSE,
                              .max_tries = 3) {
-  
+
   # Get the OpenAI API key
   api_key <- Sys.getenv("OPENAI_API_KEY")
-  if ((api_key == "") & .dry_run==FALSE){
+  if ((api_key == "") & .dry_run == FALSE) {
     stop("API key is not set. Please set it with: Sys.setenv(OPENAI_API_KEY = \"YOUR-KEY-GOES-HERE\")")
   }
   
   # Validate the inputs
   c(
-    "Input .llm must be an LLMMessage object or a character vector" = inherits(.llm, "LLMMessage") | is.character(.llm),
+    "Input .input must be an LLMMessage object or a character vector" = inherits(.input, "LLMMessage") | is.character(.input),
     "Input .model must be a string" = is.character(.model),
     "Input .truncate must be logical" = is.logical(.truncate),
     "Input .timeout must be an integer-valued numeric (seconds till timeout)" = is.numeric(.timeout) && .timeout > 0,
     ".dry_run must be logical" = is.logical(.dry_run)
   ) |> validate_inputs()
   
-  if (!is.character(.llm)) {
-    openai_history <- Filter(function(x) {
-      if ("role" %in% names(x)) {
-        return(x$role %in% c("user", "assistant"))
-      } else {
-        return(FALSE)
-      }
-    }, .llm$message_history)
-    
-    # Extract messages and combine content and text media
-    message_texts <- lapply(openai_history, function(m) {
-      base_content <- m$content
-      media_list <- m$media
-      text_media <- extract_media(media_list, "text")
-      text_media_combined <- paste(unlist(text_media), collapse = " ")
-      combined_text <- paste(base_content, text_media_combined, sep = " ")
-      combined_text
-    })
-  }
-  
-  if (is.character(.llm)) {
-    message_texts <- .llm
-  }
-  
+  input_texts <- parse_embedding_input(.input)
   # Prepare the request body
   request_body <- list(
     model = .model,
-    input = message_texts
+    input = input_texts
   )
-  
-  # If the rate limit environment is set, wait for the rate limit
-  #if(.wait==TRUE & !is.null(.tidyllm_rate_limit_env[["openai"]])){
-  #  wait_rate_limit("openai", .min_tokens_reset)
-  #}  
-  
   
   # Build the request
   request <- httr2::request("https://api.openai.com/v1/embeddings") |>
@@ -288,9 +262,11 @@ openai_embedding <- function(.llm,
   response <- request |>
     httr2::req_timeout(.timeout) |>
     httr2::req_error(is_error = function(resp) FALSE) |>
-    httr2::req_retry(max_tries = .max_tries,  
-                     retry_on_failure = TRUE,
-                     is_transient = \(resp) httr2::resp_status(resp) %in% c(429, 503)) |>
+    httr2::req_retry(
+      max_tries = .max_tries,
+      retry_on_failure = TRUE,
+      is_transient = \(resp) httr2::resp_status(resp) %in% c(429, 503)
+    ) |>
     httr2::req_perform()
   
   # Check for API errors
@@ -310,30 +286,32 @@ openai_embedding <- function(.llm,
       })
       
       stop(error_message)
-    }    
+    }
     # Parse the response and extract embeddings
-    # Parse the response
     response_content <- httr2::resp_body_json(response)
     
     # Parse and update rate limit info from headers
-    rl <- ratelimit_from_header(response$headers,"openai")
-    initialize_api_env("openai")
-    update_rate_limit("openai",rl)
+    rl <- ratelimit_from_header(response$headers, "openai")
+    update_rate_limit("openai", rl)
     
     # Extract the embeddings
-    embeddings <- response_content$data |> purrr::map("embedding")
+    embeddings <- response_content$data |> 
+      purrr::map("embedding") |>
+      purrr::map(unlist)
     
     # Check if embeddings are present
     if (is.null(embeddings)) {
       stop("No embeddings returned in the response.")
     }
     
-    # Convert embeddings to a matrix
-    embedding_matrix <- do.call(cbind, embeddings)
+    # Create a tibble with inputs and embeddings
+    result_tibble <- tibble::tibble(
+      input = input_texts,
+      embeddings = embeddings
+    )
     
-    
-    # Return the embeddings
-    return(embedding_matrix)
+    # Return the tibble
+    return(result_tibble)
     
   }, error = function(e) {
     stop("An error occurred during the API request - ", e$message)

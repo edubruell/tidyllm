@@ -5,7 +5,7 @@
 \title{Generate Embeddings Using Ollama API}
 \usage{
 ollama_embedding(
-  .llm,
+  .input,
   .model = "all-minilm",
   .truncate = TRUE,
   .ollama_server = "http://localhost:11434",
@@ -14,7 +14,7 @@ ollama_embedding(
 )
 }
 \arguments{
-\item{.llm}{An existing LLMMessage object (or a charachter vector of texts to embed)}
+\item{.input}{Aa charachter vector of texts to embed or an \code{LLMMessage} object}
 
 \item{.model}{The embedding model identifier (default: "all-minilm").}
 

@@ -1,0 +1,198 @@
+---
+title: "Embedding Models in tidyllm"
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE#,
+#  comment = "#>"
+)
+```
+> ⚠️ **Note:**  This article refers to the development version 0.2.5. of **tidyllm**, which has a chnaged interface compared to the last CRAN release. You can install the current development version directly from GitHub using devtools:
+
+```{r, eval= FALSE, echo=TRUE}
+# Install devtools if not already installed
+if (!requireNamespace("devtools", quietly = TRUE)) {
+  install.packages("devtools")
+}
+
+# Install TidyLLM from GitHub
+devtools::install_github("edubruell/tidyllm")
+```
+
+While most **tidyllm** use cases revolve around chat models, it also supports **embedding models** — another type of large language model. These models are designed to generate numerical vectors, which map input text to points in a high-dimensional space. Each point represents the semantic meaning of the text.:
+
+- **Similar meanings are close together:** For example, a text about a "cat" and another about a "kitten" would be mapped to nearby points.
+- **Different meanings are farther apart:** Conversely, a text about a "cat" and one about a "car" would have points that are much farther apart.
+
+## Semantic Search in Economics Paper Abstracts
+
+To demonstrate embeddings in action, we’ll implement a **semantic search** on a dataset of **22,960 economics paper abstracts published between 2010 and 2024**. Instead of relying on keyword matching, we’ll use embeddings to find papers with similar topics based on their underlying meaning.
+
+Let’s start by loading and exploring the data:
+
+```{r abstracts_file, message=FALSE}
+library(tidyverse)
+library(tidyllm)
+library(here)
+
+abstracts <- read_rds("abstracts_data.rds")
+#The structure of our file:
+print(abstracts,width = 60)
+
+target_abstract <-  "We use the expansion of the high-speed rail network in Germany  as a natural experiment to examine the causal effect of reductions in commuting time  betweenregions on the commuting decisions of workers and their choices regarding  where tolive and where to work. We exploit three key features in this setting:i) investmentin high-speed rail has, in some cases dramatically, reduced travel times between regions,ii) several small towns were connected to the high-speed rail network onlyfor political reasons, and iii) high-speed trains have left the transportation of goodsunaffected. Combining novel information on train schedules and the opening ofhigh-speed rail stations with panel data on all workers in Germany, we show that a reduction in travel time by one percent raises the number of commuters betweenregions by 0.25 percent. This effect is mainly driven by workers changing jobs to smaller cities while keeping their place of residence in larger ones. Our findings support the notion that benefits from infrastructure investments accrue in particular to peripheral regions, which gain access to a large pool of qualified workers with a preference for urban life. We find that the introduction of high-speed trains led to a modal shift towards rail transportation in particular on medium distances between 150 and 400 kilometers."
+```
+With the dataset ready, we’ll now use tidyllm to generate embeddings and perform a semantic search to find papers that are similar to the `target_abstract` from a Paper on commuting and the expansion of high-speed rail by [Heuerman and Schmieder (2018)](https://drive.google.com/file/d/1rKhTsrc9Qsi2gRUQg86zKKuUWvzx5HE1/view).  For this task, we'll use the `mxbai-embed-large` model. This model, developed by [Mixedbread.ai](https://www.mixedbread.ai/), achieves state-of-the-art performance among efficiently sized models and outperforms closed-source models like OpenAI's `text-embedding-ada-002`. If you have Ollama installed, you can download it using `ollama_download_model("mxbai-embed-large")`. It’s important to choose your embedding model carefully upfront, as each model produces unique numerical representations of text that are not interchangeable between models.
+
+Alternatively, embedding APIs are also available for `mistral()`, `gemini()`, and `openai()` (as well as `azure_openai()`). 
+
+### Step 1: Computing Embeddings for one abstract
+
+To compute an embedding of the target abstract we use the `embed()` function with `ollama()` as provider-function:
+```{r, eval=FALSE}
+target_tbl <- target_abstract |>
+  embed(ollama,.model="mxbai-embed-large:latest")
+
+target_tbl
+str(target_tbl)
+```
+```{r,echo=FALSE}
+target_tbl<- tibble(input=target_abstract,embeddings=list(runif(1024,min=-1,max=1)))
+target_tbl
+```
+
+The `embed()` function returns a `tibble` with two columns:
+  - **input:** The original text provided for embedding.
+  - **embeddings:** A list column containing the numerical vector representation (embedding) for each input text. 
+
+In our case we have a single input and the embeddings column contains a 1,024-dimenstional vector for this input:
+  
+```{r}
+str(target_tbl$embeddings)
+```
+
+### Step 2: Computing Embeddings for the entire abstract corpus
+
+When working with a large corpus like our **22,960** abstracts, embedding all entries in a single pass using `embed()` is impractical and often leads to errors. For commercial APIs, there are typically strict limits on the number of inputs allowed per request (usually there are caps of 50 or a 100 inputs). For local APIs, resource constraints such as memory and processing power impose similar restrictions.
+
+To efficiently handle this, we batch the data, processing a manageable number of abstracts at a time. The `generate_abstract_embeddings()`  function below takes a vector of abstracts as input and divides them into manageable batches of 200. For each batch, it uses the `embed()` function to compute embeddings via `ollama()`. Progress is logged to the console to keep track of batch completion and provide a clear view of the process. 
+
+Since long-running processes are prone to interruptions, such as network timeouts or unexpected system errors, it saves the results to disk as `.rds` files (consider `arrow::write_parquet()` or a database for really big workloads). On a MacBook Pro with an M1 Pro processor, this function completes embedding the entire dataset in approximately **25 minutes** and writes 207 MB of data to disk. The time may vary depending on system specifications and batch size. To compare multiple target abstracts against the entire collection, we of course only need to embed it once. 
+
+```{r, eval=FALSE}
+#Our batches embedding function
+generate_abstract_embeddings <- function(abstracts){
+  
+  #Preapre abstract batches
+  embedding_batches <- tibble(abstract = abstracts) |>
+    group_by(batch = floor(1:n() / 200)+1) |>
+    group_split()
+  
+  #Work with batches of 200 abstracts
+  n_batches <- length(embedding_batches)
+  glue("Processing {n_batches} batches of 200 abstracts") |> cat("\n")
+  
+  #Embed the batches via ollama mxbai-embed-large 
+  embedding_batches %>%
+    walk(~{
+      batch_number <- pull(.x,batch) |> unique() 
+      glue("Generate Text Embeddings for Abstract Batch: {batch_number}/{n_batches}") |> cat("\n")
+      
+      emb_matrix <- .x$abstract %>%
+        embed(ollama,.model="mxbai-embed-large:latest") |>
+        write_rds(here("embedded_asbtracts",paste0(batch_number,".rds")))
+    })
+}
+
+#Run the function over all abstracts
+abstracts |>
+  pull(abstract) |>
+  generate_abstract_embeddings()
+```
+```{r, echo=FALSE}
+"Processing 115 batches of 200 abstracts
+Generate Text Embeddings for Abstract Batch: 1/115
+Generate Text Embeddings for Abstract Batch: 2/115 
+Generate Text Embeddings for Abstract Batch: 3/115
+...\n" |> cat() 
+```
+After the function has finished, we  only need to load the computed embeddings:
+```{r, eval=FALSE}
+embedded_asbtracts <- here("embedded_asbtracts") |>
+  dir() |>
+  map_dfr(~read_rds(here("embedded_asbtracts",.x)))
+```
+
+### Step 3: Performing the Semantic Search
+
+With the embeddings precomputed, we can now perform a semantic search to find abstracts most similar to our target. For the search we will use cosine similarity to compare embedding vectors. **Cosine similarity** measures the similarity between two vectors by calculating the cosine of the angle between them. It ranges from **-1** (opposite directions) to **1** (identical directions). The formula is:
+
+\[
+\text{cosine_similarity}(\mathbf{a}, \mathbf{b}) = \frac{\sum_{i=1}^n a_i b_i}{\sqrt{\sum_{i=1}^n a_i^2} \cdot \sqrt{\sum_{i=1}^n b_i^2}}
+\]
+
+Where:
+
+- \( \sum a_i b_i \) is the **dot product**.
+- \( \sqrt{\sum a_i^2} \) and \( \sqrt{\sum b_i^2} \) are the magnitudes of the vectors.
+
+Vectors in an embedding space represent semantic meanings of texts. In this space:
+
+- Cosine similarity focuses on direction rather than magnitude.
+- Two vectors pointing in similar directions (small angle) will have a cosine similarity close to **1**.
+- Vectors at 90 degrees (orthogonal, no semantic overlap) have a cosine similarity of **0**.
+- Vectors pointing in opposite directions (large angle, entirely dissimilar) have a cosine similarity of **-1**.
+
+With the model we use each embedding vector represents a point in a high-dimensional space with 1,034 dimensions. Even though these dimensions are not spatially interpretable like in 2D or 3D, the underlying principle still holds: cosine similarity measures how much two vectors “lean” in the same direction. If two vectors have a cosine similarity of 0.25, it means the angle between them is relatively small, implying they share 25% of their directional alignment.
+
+To compute cosine similarity between two vectors we express it in a simple function:
+```{r}
+cosine_similarity <- function(a, b) {
+    sum(a * b) / (sqrt(sum(a^2)) * sqrt(sum(b^2)))
+}
+```
+We apply this function to compute the cosine similarity of abstracts in the corpus to
+the target paper to find the 10 most similar abstracts:
+
+```{r, eval=FALSE}
+top10_similar <- embedded_asbtracts %>%
+  mutate(cosine_sim = map_dbl(embeddings, 
+                              ~cosine_similarity(.x, 
+                                                 target_tbl$embeddings[[1]])))|>
+  arrange(desc(cosine_sim)) |>
+  slice(1:10) |> 
+  rename(abstract=input) |>
+  left_join(abstracts |>
+              select(year,authors,journal,abstract), by="abstract") |>
+  select(-embeddings)
+```
+
+The top ten most similar articles in the corpus based on our search are these:
+
+```{r}
+read_rds("top10_asbtracts.rds") |> 
+  mutate(abstract = stringr::str_wrap(abstract, width = 60)) |>  
+  kableExtra::kable("html", caption = "Top 10 Most Similar Abstracts") |>
+  kableExtra::kable_styling(full_width = FALSE, bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+```
+Unsurprisingly, the top result is the target abstract itself, presented with slight formatting differences. However, the remaining top results strongly align with the target’s thematic focus on the economic and social impacts of transportation infrastructure. The second result discusses the economic effects of German High-Speed Rail (HSR), while the third and fourth focus on Japan’s Shinkansen and China’s HSR network, respectively. These findings highlight the model's capability to identify semantically rich connections across diverse contexts, illustrating its superior ability to capture complex thematic overlaps—far beyond the reach of traditional keyword searches.
+
+
+###  Outlook: Clustering and Beyond
+
+While this article focused on semantic search, embeddings open the door to a wide range of advanced analytical techniques. 
+
+Here are some potential further use-cases for embeddings:
+
+- **Clustering for Topic Discovery:** Embeddings can be leveraged with unsupervised learning methods like K-means or hierarchical clustering to automatically group text into topics or themes. This approach is particularly beneficial for exploratory research, enabling users to uncover hidden patterns and structures within large corpora without predefined labels.
+
+- **Dimensionality Reduction and Visualization:** High-dimensional embedding vectors often need simplification for human interpretation. Techniques like **Principal Component Analysis (PCA)**, **t-SNE**, or **UMAP** allow us to project embeddings into lower-dimensional spaces (e.g., 2D or 3D). These visualizations can reveal clusters, trends, and outliers, providing insights at a glance.
+
+- **Retrieval augmented generation (RAG):** Embeddings play a crucial role in retrieval-augmented generation, a technique that enhances large language models (LLMs). In this workflow, an embedding search retrieves semantically similar documents from a corpus, which are then appended to the LLM's prompt. This process helps the model generate contextually rich and accurate responses, especially in knowledge-intensive tasks.
+
+- **Supporting Workflows in Qualitative Research:** Embeddings can also transform workflows in qualitative research, as discussed in [this paper by Kugler et al. (2023)](https://www.iaw.edu/iaw-diskussionspapiere.html?file=files/dokumente/ab%20Januar%202023/iaw_dp_143.pdf). The integration of Natural Language Processing (NLP) tools enables researchers to automate coding steps that traditionally require manual effort. Specifically, embeddings can assist in categorizing text data according to predefined themes, making research workflows more efficient and transparent. While these models bring significant advantages, challenges remain. The study highlights that off-the-shelf language models often struggle to discern implicit references and closely related topics as effectively as human researchers. However, more modern embedding models than the ones used in the study might help to deal with these challenges. 
+
+
+
+
+

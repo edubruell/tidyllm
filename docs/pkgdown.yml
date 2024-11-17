@@ -3,10 +3,11 @@ pkgdown: 2.1.1
 pkgdown_sha: ~
 articles:
   articles/tidyllm_classifiers: tidyllm_classifiers.html
+  articles/tidyllm_embed: tidyllm_embed.html
   articles/tidyllm-pdfquestions: tidyllm-pdfquestions.html
   articles/tidyllm-synthetic-data: tidyllm-synthetic-data.html
   tidyllm: tidyllm.html
-last_built: 2024-11-14T21:19Z
+last_built: 2024-11-17T19:48Z
 urls:
   reference: https://edubruell.github.io/tidyllm/reference
   article: https://edubruell.github.io/tidyllm/articles

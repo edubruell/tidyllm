@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -20,6 +20,7 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/tidyllm_classifiers.html">Classifying Texts with tidyllm</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_embed.html">Embedding models in tidyllm</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm-pdfquestions.html">Structured Question Answering from PDFs</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm-synthetic-data.html">Generate Synthetic Data with tidyllm</a></li>
   </ul></li>
@@ -46,7 +47,7 @@
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">gemini_embedding</span><span class="op">(</span></span>
-<span>  <span class="va">.llm</span>,</span>
+<span>  <span class="va">.input</span>,</span>
 <span>  .model <span class="op">=</span> <span class="st">"text-embedding-004"</span>,</span>
 <span>  .truncate <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  .timeout <span class="op">=</span> <span class="fl">120</span>,</span>
@@ -59,8 +60,8 @@
     <h2 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h2>
 
 
-<dl><dt id="arg--llm">.llm<a class="anchor" aria-label="anchor" href="#arg--llm"></a></dt>
-<dd><p>An existing LLMMessage object (or a character vector of texts to embed)</p></dd>
+<dl><dt id="arg--input">.input<a class="anchor" aria-label="anchor" href="#arg--input"></a></dt>
+<dd><p>A character vector of texts to embed or an <code>LLMMessage</code> object</p></dd>
 
 
 <dt id="arg--model">.model<a class="anchor" aria-label="anchor" href="#arg--model"></a></dt>

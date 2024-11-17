@@ -5,7 +5,7 @@
 \title{Generate Embeddings Using the Google Gemini API}
 \usage{
 gemini_embedding(
-  .llm,
+  .input,
   .model = "text-embedding-004",
   .truncate = TRUE,
   .timeout = 120,
@@ -14,7 +14,7 @@ gemini_embedding(
 )
 }
 \arguments{
-\item{.llm}{An existing LLMMessage object (or a character vector of texts to embed)}
+\item{.input}{A character vector of texts to embed or an \code{LLMMessage} object}
 
 \item{.model}{The embedding model identifier (default: "text-embedding-3-small").}
 

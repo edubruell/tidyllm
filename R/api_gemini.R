@@ -330,7 +330,7 @@ gemini_delete_file <- function(.file_name) {
 
 #' Generate Embeddings Using the Google Gemini API
 #'
-#' @param .llm An existing LLMMessage object (or a character vector of texts to embed)
+#' @param .input  A character vector of texts to embed or an `LLMMessage` object
 #' @param .model The embedding model identifier (default: "text-embedding-3-small").
 #' @param .truncate Whether to truncate inputs to fit the model's context length (default: TRUE).
 #' @param .timeout Timeout for the API request in seconds (default: 120).
@@ -338,13 +338,13 @@ gemini_delete_file <- function(.file_name) {
 #' @param .max_tries Maximum retry attempts for requests (default: 3).
 #' @return A matrix where each column corresponds to the embedding of a message in the message history.
 #' @export
-gemini_embedding <- function(.llm,
+gemini_embedding <- function(.input,
                              .model = "text-embedding-004",
                              .truncate = TRUE,
                              .timeout = 120,
                              .dry_run = FALSE,
                              .max_tries = 3) {
-  
+
   # Get the API key
   api_key <- Sys.getenv("GOOGLE_API_KEY")
   if ((api_key == "") & .dry_run == FALSE) {
@@ -353,7 +353,7 @@ gemini_embedding <- function(.llm,
   
   # Validate inputs
   c(
-    "Input .llm must be an LLMMessage object or a character vector" = inherits(.llm, "LLMMessage") | is.character(.llm),
+    "Input .input must be a character vector or an LLMMessage object" = inherits(.input, "LLMMessage") | is.character(.input),
     "Input .model must be a string" = is.character(.model),
     "Input .truncate must be logical" = is.logical(.truncate),
     "Input .timeout must be a positive numeric value" = is.numeric(.timeout) && .timeout > 0,
@@ -361,24 +361,11 @@ gemini_embedding <- function(.llm,
   ) |> validate_inputs()
   
   # Prepare message texts
-  if (!is.character(.llm)) {
-    openai_history <- Filter(function(x) {
-      "role" %in% names(x) && x$role %in% c("user", "assistant")
-    }, .llm$message_history)
-    
-    message_texts <- lapply(openai_history, function(m) {
-      base_content <- m$content
-      media_list <- m$media
-      text_media <- extract_media(media_list, "text")
-      paste(base_content, paste(unlist(text_media), collapse = " "), sep = " ")
-    })
-  } else {
-    message_texts <- .llm
-  }
+  input_texts <- parse_embedding_input(.input)
   
   # Prepare batch request
   request_body <- list(
-    requests = lapply(message_texts, function(text) {
+    requests = lapply(input_texts, function(text) {
       list(
         model = paste0("models/",.model),
         content = list(
@@ -426,10 +413,11 @@ gemini_embedding <- function(.llm,
     stop("No embeddings returned in the response.")
   }
   
-  # Convert embeddings to a matrix
-  embedding_matrix <- do.call(cbind, embeddings)
-  
-  embedding_matrix
+  # Create a tibble with inputs and embeddings
+  tibble::tibble(
+    input = input_texts,
+    embeddings = embeddings
+  )
 }
 
 #' Google Gemini Provider Function

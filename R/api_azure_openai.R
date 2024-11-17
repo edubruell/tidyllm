@@ -207,6 +207,123 @@ azure_openai_chat <- function(
   return(llm_copy)
 }
 
+
+#' Generate Embeddings Using OpenAI API on Azure
+#'
+#' @param .input Acharacter vector of texts to embed or an `LLMMesssage`object
+#' @param .deployment The embedding model identifier (default: "text-embedding-3-small").
+#' @param .endpoint_url Base URL for the API (default:  Sys.getenv("AZURE_ENDPOINT_URL")).
+#' @param .truncate Whether to truncate inputs to fit the model's context length (default: TRUE).
+#' @param .timeout Timeout for the API request in seconds (default: 120).
+#' @param .dry_run If TRUE, perform a dry run and return the request object.
+#' @param .max_tries Maximum retry attempts for requests (default: 3).
+#' @return A tibble with two columns: `input` and `embeddings`. 
+#' The `input` column contains the texts sent to embed, and the `embeddings` column 
+#' is a list column where each row contains an embedding vector of the sent input.
+#' @export
+azure_openai_embedding <- function(.input,
+                                   .deployment = "text-embedding-3-small",
+                                   .endpoint_url = Sys.getenv("AZURE_ENDPOINT_URL"),
+                                   .api_version = "2023-05-15",
+                                   .truncate = TRUE,
+                                   .timeout = 120,
+                                   .dry_run = FALSE,
+                                   .max_tries = 3) {
+
+  # Validate the inputs
+  c(
+    "Input .input must be an LLMMessage object or a character vector" = inherits(.input, "LLMMessage") | is.character(.input),
+    "Input .deployment must be a string" = is.character(.deployment),
+    "Input .truncate must be logical" = is.logical(.truncate),
+    "Input .timeout must be an integer-valued numeric (seconds till timeout)" = is.numeric(.timeout) && .timeout > 0,
+    ".dry_run must be logical" = is.logical(.dry_run)
+  ) |> validate_inputs()
+  
+  # Get the Azure OpenAI API key
+  api_key <- Sys.getenv("AZURE_OPENAI_API_KEY")
+  if ((api_key == "")& .dry_run==FALSE){
+    stop("API key is not set. Please set it with: Sys.setenv(AZURE_OPENAI_API_KEY = \"YOUR-KEY-GOES-HERE\")")
+  }
+  
+  input_texts <- parse_embedding_input(.input)
+  # Prepare the request body
+  request_body <- list(
+    input = input_texts
+  )
+  
+  # Build the request
+  request <- httr2::request(.endpoint_url) |>
+    httr2::req_url_path(paste0("openai/deployments/", .deployment,"/embeddings")) |>
+    httr2::req_url_query(`api-version` = .api_version) |>
+    httr2::req_headers(
+      `Content-Type` = "application/json",
+      `api-key` = api_key,
+    )  |>
+    httr2::req_body_json(data = request_body)
+  
+  # Return the request object if it's a dry run
+  if (.dry_run) {
+    return(request)
+  }
+  
+  # Perform the API request
+  response <- request |>
+    httr2::req_timeout(.timeout) |>
+    httr2::req_error(is_error = function(resp) FALSE) |>
+    httr2::req_retry(
+      max_tries = .max_tries,
+      retry_on_failure = TRUE,
+      is_transient = \(resp) httr2::resp_status(resp) %in% c(429, 503)
+    ) |>
+    httr2::req_perform()
+  
+  # Check for API errors
+  tryCatch({
+    # Check for HTTP errors
+    if (httr2::resp_is_error(response)) {
+      # Try to parse the JSON response body
+      error_message <- tryCatch({
+        json_content <- httr2::resp_body_json(response)
+        if (!is.null(json_content)) {
+          paste0("API error response - ", json_content$error$message)
+        } else {
+          "Unknown error occurred"
+        }
+      }, error = function(e) {
+        paste("HTTP error:", httr2::resp_status(response), "- Unable to parse error message")
+      })
+      
+      stop(error_message)
+    }
+    # Parse the response and extract embeddings
+    response_content <- httr2::resp_body_json(response)
+    
+    # Extract the embeddings
+    embeddings <- response_content$data |> 
+      purrr::map("embedding") |>
+      purrr::map(unlist)
+    
+    # Check if embeddings are present
+    if (is.null(embeddings)) {
+      stop("No embeddings returned in the response.")
+    }
+    
+    # Create a tibble with inputs and embeddings
+    result_tibble <- tibble::tibble(
+      input = input_texts,
+      embeddings = embeddings
+    )
+    
+    # Return the tibble
+    return(result_tibble)
+    
+  }, error = function(e) {
+    stop("An error occurred during the API request - ", e$message)
+  })
+  
+}
+
+
 #' Azure-OpenAI Endpoint Provider Function
 #'
 #' The `azure_openai()` function acts as an interface for interacting with the Azure OpenAI API 
@@ -226,5 +343,6 @@ azure_openai_chat <- function(
 #' @export
 azure_openai <- create_provider_function(
   .name = "azure_openai",
-  chat = azure_openai_chat
+  chat = azure_openai_chat,
+  embed = azure_openai_embedding
 )

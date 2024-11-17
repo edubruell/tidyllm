@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -20,6 +20,7 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/tidyllm_classifiers.html">Classifying Texts with tidyllm</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_embed.html">Embedding models in tidyllm</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm-pdfquestions.html">Structured Question Answering from PDFs</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm-synthetic-data.html">Generate Synthetic Data with tidyllm</a></li>
   </ul></li>
@@ -39,7 +40,18 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.2.4" id="development-version-024">Development Version 0.2.4<a class="anchor" aria-label="anchor" href="#development-version-024"></a></h2>
+<h2 class="pkg-version" data-toc-text="0.2.5" id="development-version-025">Development Version 0.2.5<a class="anchor" aria-label="anchor" href="#development-version-025"></a></h2>
+<div class="section level3">
+<h3 id="major-features-0-2-5">Major Features<a class="anchor" aria-label="anchor" href="#major-features-0-2-5"></a></h3>
+<p>Better embedding functions with improved output and error handling and new documentation. New article on using embeddings with <strong>tidyllm</strong>. Support for embedding models on azure with <code>azure_openai_embed()</code></p>
+</div>
+<div class="section level3">
+<h3 id="breaking-changes-0-2-5">Breaking Changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-2-5"></a></h3>
+<ul><li>The output format of <code><a href="../reference/embed.html">embed()</a></code> and the related API-specific functions was changed from a matrix to a tibble with an input column and a list column containing one embedding vector and one input per row.</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.4" id="version-024">Version 0.2.4<a class="anchor" aria-label="anchor" href="#version-024"></a></h2>
 <div class="section level3">
 <h3 id="refinements-of-the-new-interface-0-2-4">Refinements of the new interface<a class="anchor" aria-label="anchor" href="#refinements-of-the-new-interface-0-2-4"></a></h3>
 <p>One disadvantage of the first iteration of the new interface was that all arguements that needed to be passed to provider-specific functions, were going through the provider function. This feels, unintuitive, because users expect common arguments (e.g., .model, .temperature) to be set directly in main verbs like <code><a href="../reference/chat.html">chat()</a></code> or <code><a href="../reference/send_batch.html">send_batch()</a></code>.Moreover, provider functions don’t expose arguments for autocomplete, making it harder for users to explore options. Therefore, the main API verbs now directly accept common arguements, and check them against the available arguements for each API.</p>
@@ -52,7 +64,7 @@
 </ul></div>
 </div>
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.2.3" id="development-version-023">Development Version 0.2.3<a class="anchor" aria-label="anchor" href="#development-version-023"></a></h2>
+<h2 class="pkg-version" data-toc-text="0.2.3" id="version-023">Version 0.2.3<a class="anchor" aria-label="anchor" href="#version-023"></a></h2>
 <div class="section level3">
 <h3 id="major-interface-overhaul-0-2-3">Major Interface Overhaul<a class="anchor" aria-label="anchor" href="#major-interface-overhaul-0-2-3"></a></h3>
 <p><code>tidyllm</code> has introduced a verb-based interface overhaul to provide a more intuitive and flexible user experience. Previously, provider-specific functions like <code><a href="../reference/claude.html">claude()</a></code>, <code><a href="../reference/openai.html">openai()</a></code>, and others were directly used for chat-based workflows. Now, these functions primarily serve as provider configuration for some general verbs like <code><a href="../reference/chat.html">chat()</a></code>.</p>

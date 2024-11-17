@@ -195,7 +195,7 @@ chat <- function(
 #' The `embed()` function allows you to embed a text via a specified provider.
 #' It routes the input to the appropriate provider-specific embedding function.
 #'
-#' @param .llm An existing `LLMMessage` object (or a character vector of texts to embed)
+#' @param .input  A character vector of texts to embed or an `LLMMessage` object
 #' @param .provider A function or function call specifying the language model provider and any additional parameters.
 #'   This should be a call to a provider function like `openai()`, `ollama()`, etc. 
 #'   You can also set a default provider function via the `tidyllm_embed_default` option.
@@ -204,16 +204,18 @@ chat <- function(
 #' @param .timeout Timeout for the API request in seconds
 #' @param .dry_run If TRUE, perform a dry run and return the request object.
 #' @param .max_tries Maximum retry attempts for requests
-#'@return A matrix where each column corresponds to an vector embedding of a sent text
+#' @return A tibble with two columns: `input` and `embeddings`. 
+#' The `input` column contains the texts sent to embed, and the `embeddings` column 
+#' is a list column where each row contains an embedding vector of the sent input.
 #' @examples
 #' \dontrun{
-#'c("What is the meaning of life?",
+#'c("What is the meaning of life, the universe and everything?",
 #'  "How much wood would a woodchuck chuck?",
 #'  "How does the brain work?") |>
-#'  embed(gemini())
+#'  embed(gemini)
 #'  }
 #' @export
-embed <- function(.llm, 
+embed <- function(.input, 
                   .provider = getOption("tidyllm_embed_default"),
                   .model=NULL,
                   .truncate=NULL,
@@ -223,7 +225,7 @@ embed <- function(.llm,
 
   # Validate the inputs
   c(
-    "Input .llm must be an LLMMessage object or a character vector" = inherits(.llm, "LLMMessage") | is.character(.llm),
+    "Input .input must be a character vector or an LLMMessage object" = inherits(.input, "LLMMessage") | is.character(.input),
     "You need to specify a .provider function in embed()" = !is.null(.provider)
   ) |> validate_inputs()
   
@@ -248,7 +250,7 @@ embed <- function(.llm,
   
   # Collect common arguments only if they are not NULL
   common_args <- list(
-    .llm = .llm,
+    .input = .input,
     .model = .model,
     .truncate = .truncate,
     .max_tries = .max_tries,

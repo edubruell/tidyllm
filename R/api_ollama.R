@@ -181,7 +181,7 @@ ollama_chat <- function(.llm,
 
 #' Generate Embeddings Using Ollama API
 #'
-#' @param .llm An existing LLMMessage object (or a charachter vector of texts to embed)
+#' @param .input Aa charachter vector of texts to embed or an `LLMMessage` object
 #' @param .model The embedding model identifier (default: "all-minilm").
 #' @param .truncate Whether to truncate inputs to fit the model's context length (default: TRUE).
 #' @param .ollama_server The URL of the Ollama server to be used (default: "http://localhost:11434").
@@ -189,54 +189,28 @@ ollama_chat <- function(.llm,
 #' @param .dry_run If TRUE, perform a dry run and return the request object.
 #' @return A matrix where each column corresponds to the embedding of a message in the message history.
 #' @export
-ollama_embedding <- function(.llm,
+ollama_embedding <- function(.input,
                              .model = "all-minilm",
                              .truncate = TRUE,
                              .ollama_server = "http://localhost:11434",
                              .timeout = 120,
                              .dry_run=FALSE) {
-  
+
   # Validate the inputs
   c(
-    "Input .llm must be an LLMMessage object or a character vector" = inherits(.llm, "LLMMessage") | is.character(.llm),
+    "Input .input must be a character vector or an LLMMessage object" = inherits(.input, "LLMMessage") | is.character(.input),
     "Input .model must be a string" = is.character(.model),
     "Input .truncate must be logical" = is.logical(.truncate),
     "Input .timeout must be an integer-valued numeric (seconds till timeout)" = is.numeric(.timeout) && .timeout > 0,
     ".dry_run must be logical"                   = is.logical(.dry_run)
   ) |> validate_inputs()
   
-  if(!is.character(.llm)){
-    ollama_history <- Filter(function(x){
-      if ("role" %in% names(x)) {
-        return(x$role %in% c("user","assistant"))
-      } else {
-        return(FALSE)
-      }},.llm$message_history)
-    
-    # Extract messages and combine content and text media
-    message_texts <- lapply(ollama_history, function(m) {
-      # The basic text content supplied with the message
-      base_content <- m$content
-      
-      # Get the relevant media for the current message
-      media_list <- m$media
-      
-      # Extract the text content from media
-      text_media <- extract_media(media_list, "text")
-      text_media_combined <- paste(unlist(text_media), collapse = " ")
-      
-      # Combine base content and text media
-      combined_text <- paste(base_content, text_media_combined, sep = " ")
-      combined_text
-    })
-  }
-  
-  if(is.character(.llm)){message_texts <- .llm}
+  input_texts <- parse_embedding_input(.input)
   
   # Prepare the request body
   request_body <- list(
     model = .model,
-    input = message_texts,
+    input = input_texts,
     truncate = .truncate
   )
   
@@ -276,18 +250,22 @@ ollama_embedding <- function(.llm,
     }    
     # Parse the response and extract embeddings
     response_content <- httr2::resp_body_json(response)
-    embeddings <- response_content$embeddings
+    embeddings <- response_content$embeddings |> 
+      purrr::map(unlist)
     
     # Check if embeddings are present
     if (is.null(embeddings)) {
       stop("No embeddings returned in the response.")
     }
     
-    embeddings <- purrr::map(embeddings,~purrr::flatten_dbl(.x))
-    embedding_matrix <- do.call(cbind, embeddings)
+
+    results <- tibble::tibble(
+      input = input_texts,
+      embeddings = embeddings
+    )
     
     # Return the embeddings
-    return(embedding_matrix)
+    return(results)
     
   }, error = function(e) {
     stop("An error occurred during the API request - ", e$message)

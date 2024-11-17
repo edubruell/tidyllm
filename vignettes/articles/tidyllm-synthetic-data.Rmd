@@ -7,7 +7,7 @@ knitr::opts_chunk$set(
   collapse = TRUE
 )
 ```
-> ⚠️ **Note:**  This article refers to the development version 0.2.3. of **tidyllm**, which introduced a major interface change. You can install the current development version directly from GitHub using devtools:
+> ⚠️ **Note:**  This article refers to the development version 0.2.5. of **tidyllm**, which has a chnaged interface compared to the last CRAN release. You can install the current development version directly from GitHub using devtools:
 
 ```{r, eval= FALSE, echo=TRUE}
 # Install devtools if not already installed
@@ -18,6 +18,7 @@ if (!requireNamespace("devtools", quietly = TRUE)) {
 # Install TidyLLM from GitHub
 devtools::install_github("edubruell/tidyllm")
 ```
+
 As large language models (LLMs) evolve, their potential to simulate human-like behavior offers an exciting opportunity for researchers in various fields. Inspired by the work of [Horton et al (2023)](https://arxiv.org/abs/2301.07543) on running behivoural econonomics lab experiments with  a "homo silicus", LLMs acting as computational models of humans, this article explores how synthetic data generated from LLMs can be used to pretest survey designs before going into the field.
 
 Pretesting with synthetic data enables quick iterations on survey questions, helping you spot potential issues early on and save time during actual data collection. For example, if you're preparing a survey for lawyers on automation, you can use **tidyllm** to simulate survey responses based on real profiles. This allows you to write analysis code and identify ambiguities in question phrasing or logic flow, ensuring a smoother deployment when surveying real participants.

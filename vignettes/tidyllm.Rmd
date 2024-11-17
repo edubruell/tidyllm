@@ -6,7 +6,7 @@ vignette: >
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
-> ⚠️ **Note:**  This vignette refers to the development version 0.2.3. of **tidyllm**, which introduced a major interface change. I you are using the CRAN-version 0.2.0 please refer to the installed vignette by using `vignette("tidyllm")`. Version 0.2.3 is fully backward compatible to the old interface, but will throw deprecation warnings. 
+> ⚠️ **Note:**  This vignette refers to the development version 0.2.5. of **tidyllm**, which haa major interface differences compared to the last release. If you are using the CRAN-version 0.2.0 please refer to the installed vignette by using `vignette("tidyllm")`. Version 0.2.5 is fully backward compatible to the old interface, but will throw deprecation warnings for some use cases.
 
 # Introduction to tidyllm
 **tidyllm** is an R package providing a unified interface for interacting with various large language model APIs. This vignette will guide you through the basic setup and usage of **tidyllm**.
@@ -317,7 +317,7 @@ in large language models and why temperature 0 gives you deterministic outputs
 in one sentence.")
   
   #per default it is non-zero
-  temp_example |> chat(ollama(),.temperature=0)
+  temp_example |> chat(ollama,.temperature=0)
 ```
 ```{r temperature_out,  eval=TRUE, echo=FALSE}
   temp_example <- llm_message("Explain how temperature parameters work 
@@ -331,7 +331,7 @@ outputs in one sentence.")
 
 ```{r temp2,  eval=FALSE, echo=TRUE}
   #Retrying with .temperature=0
-  temp_example |> chat(ollama(),.temperature=0)
+  temp_example |> chat(ollama,.temperature=0)
 ```
 ```{r temp2_out,  eval=TRUE, echo=FALSE}
   temp_example |>
@@ -366,14 +366,17 @@ address <- llm_message("Imagine an address in JSON format that matches the schem
 c("What is the meaning of life?",
   "How much wood would a woodchuck chuck?",
   "How does the brain work?") |>
-  embed(ollama())
+  embed(ollama)
 ```
 ```{r embed_output, eval=TRUE, echo=FALSE}
-mock_embedding <- runif(min = -1,max=1,n=400*3)
-dim(mock_embedding)<-c(400,3)
-print(mock_embedding,max = 20)
+tibble::tibble(
+  input = c("What is the meaning of life?",
+            "How much wood would a woodchuck chuck?",
+            "How does the brain work?") ,
+  embeddings = purrr::map(1:3,~{runif(min = -1,max=1,n=384)}))
 ```
-Each column in the output matrix is a semantic vector representation of the three texts sent to the model
+The output is a `tibble` with two columns, the text input for the embedding and a list column that contains a
+vector of semantic embeddings for each input.
 
 ### Batch requests
 

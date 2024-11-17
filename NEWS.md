@@ -1,4 +1,14 @@
-# Development Version 0.2.4
+# Development Version 0.2.5
+
+## Major Features
+
+Better embedding functions with improved output and error handling and new documentation. New article on using embeddings with **tidyllm**. Support for embedding models on azure with `azure_openai_embedding()`
+
+## Breaking Changes
+
+- The output format of `embed()` and the related API-specific functions was changed from a matrix to a tibble with an input column and a list column containing one embedding vector and one input per row.
+
+# Version 0.2.4
 
 ## Refinements of the new interface
 
@@ -10,7 +20,7 @@ One disadvantage of the first iteration of the new interface was that all arguem
 - Missing export of main verbs fixed
 - Wrong documentation fixed
 
-# Development Version 0.2.3
+# Version 0.2.3
 
 ## Major Interface Overhaul
 

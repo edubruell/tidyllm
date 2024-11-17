@@ -168,19 +168,19 @@ mistral_chat <- function(.llm,
 
 #' Generate Embeddings Using Mistral API
 #'
-#' @param .llm An existing LLMMessage object (or a character vector of texts to embed)
+#' @param .input A character vector of texts to embed or an `LLMMessage` object
 #' @param .model The embedding model identifier (default: "mistral-embed").
 #' @param .timeout Timeout for the API request in seconds (default: 120).
 #' @param .dry_run If TRUE, perform a dry run and return the request object.
 #' @param .max_tries Maximum retries to peform request
 #' @return A matrix where each column corresponds to the embedding of a message in the message history.
 #' @export
-mistral_embedding <- function(.llm,
+mistral_embedding <- function(.input,
                               .model = "mistral-embed",
                               .timeout = 120,
                               .max_tries = 3,
                               .dry_run = FALSE) {
-  
+
   # Retrieve API key from environment variables
   api_key <- Sys.getenv("MISTRAL_API_KEY")
   if ((api_key == "")& .dry_run==FALSE){
@@ -188,40 +188,17 @@ mistral_embedding <- function(.llm,
   }
   # Validate the inputs
   c(
-    "Input .llm must be an LLMMessage object or a character vector" = inherits(.llm, "LLMMessage") | is.character(.llm),
+    "Input .llm must character vector or an LLMMessage object" = inherits(.input, "LLMMessage") | is.character(.input),
     "Input .model must be a string" = is.character(.model),
     "Input .timeout must be an integer-valued numeric (seconds till timeout)" = is.numeric(.timeout) && .timeout > 0,
     ".dry_run must be logical" = is.logical(.dry_run)
   ) |> validate_inputs()
   
-  if (!is.character(.llm)) {
-    mistral_history <- Filter(function(x) {
-      if ("role" %in% names(x)) {
-        return(x$role %in% c("user", "assistant"))
-      } else {
-        return(FALSE)
-      }
-    }, .llm$message_history)
-    
-    # Extract messages and combine content and text media
-    message_texts <- lapply(mistral_history, function(m) {
-      base_content <- m$content
-      media_list <- m$media
-      text_media <- extract_media(media_list, "text")
-      text_media_combined <- paste(unlist(text_media), collapse = " ")
-      combined_text <- paste(base_content, text_media_combined, sep = " ")
-      combined_text
-    })
-  }
-  
-  if (is.character(.llm)) {
-    message_texts <- .llm
-  }
-  
+  input_texts <- parse_embedding_input(.input)
   # Prepare the request body
   request_body <- list(
     model = .model,
-    input = message_texts
+    input = input_texts
   )
   
   # Build the request
@@ -266,11 +243,18 @@ mistral_embedding <- function(.llm,
     }    
     # Parse the response and extract embeddings
     response_content <- httr2::resp_body_json(response)
-    embeddings <- response_content$data |> purrr::map("embedding")
-    embedding_matrix <- do.call(cbind, embeddings)
     
+    embeddings <- response_content$data |> 
+      purrr::map("embedding")  |>
+      purrr::map(unlist)
+
+    results <- tibble::tibble(
+        input = input_texts,
+        embeddings = embeddings
+      )
+
     # Return the embeddings
-    return(embedding_matrix)
+    return(results)
     
   }, error = function(e) {
     stop("An error occurred during the API request - ", e$message)

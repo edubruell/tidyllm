@@ -100,7 +100,22 @@ test_that("mistral_embedding returns expected response", {
       Sys.setenv(MISTRAL_API_KEY = "")
     }
     
-    expect_equal(dim(result),c(1024,4))
+    # Test that the result is a tibble
+    expect_s3_class(result, "tbl_df")
+    
+    # Test that the tibble has two columns: input and embeddings
+    expect_named(result, c("input", "embeddings"))
+    
+    # Test that the input column contains the original input texts
+    expect_equal(result$input, c("It is not that I am mad, it is only that my head is different from yours",
+                                 "A man can do as he wills, but not will as he wills",
+                                 "Whereof one cannot speak, thereof one must be silent",
+                                 "The limits of my language mean the limits of my world"))
+    
+    
+    purrr::walk(result$embeddings, function(embedding) {
+      expect_equal(length(embedding), 1024)
+    })
     
   },simplify = FALSE)
 })

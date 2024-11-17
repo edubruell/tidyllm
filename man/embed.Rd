@@ -5,7 +5,7 @@
 \title{Generate text embeddings}
 \usage{
 embed(
-  .llm,
+  .input,
   .provider = getOption("tidyllm_embed_default"),
   .model = NULL,
   .truncate = NULL,
@@ -15,7 +15,7 @@ embed(
 )
 }
 \arguments{
-\item{.llm}{An existing \code{LLMMessage} object (or a character vector of texts to embed)}
+\item{.input}{A character vector of texts to embed or an \code{LLMMessage} object}
 
 \item{.provider}{A function or function call specifying the language model provider and any additional parameters.
 This should be a call to a provider function like \code{openai()}, \code{ollama()}, etc.
@@ -32,7 +32,9 @@ You can also set a default provider function via the \code{tidyllm_embed_default
 \item{.max_tries}{Maximum retry attempts for requests}
 }
 \value{
-A matrix where each column corresponds to an vector embedding of a sent text
+A tibble with two columns: \code{input} and \code{embeddings}.
+The \code{input} column contains the texts sent to embed, and the \code{embeddings} column
+is a list column where each row contains an embedding vector of the sent input.
 }
 \description{
 The \code{embed()} function allows you to embed a text via a specified provider.
@@ -40,9 +42,9 @@ It routes the input to the appropriate provider-specific embedding function.
 }
 \examples{
 \dontrun{
-c("What is the meaning of life?",
+c("What is the meaning of life, the universe and everything?",
  "How much wood would a woodchuck chuck?",
  "How does the brain work?") |>
- embed(gemini())
+ embed(gemini)
  }
 }

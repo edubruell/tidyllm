@@ -5,7 +5,7 @@
 \title{Generate Embeddings Using OpenAI API}
 \usage{
 openai_embedding(
-  .llm,
+  .input,
   .model = "text-embedding-3-small",
   .truncate = TRUE,
   .timeout = 120,
@@ -14,7 +14,7 @@ openai_embedding(
 )
 }
 \arguments{
-\item{.llm}{An existing LLMMessage object (or a character vector of texts to embed)}
+\item{.input}{An existing LLMMessage object (or a character vector of texts to embed)}
 
 \item{.model}{The embedding model identifier (default: "text-embedding-3-small").}
 
@@ -27,7 +27,9 @@ openai_embedding(
 \item{.max_tries}{Maximum retry attempts for requests (default: 3).}
 }
 \value{
-A matrix where each column corresponds to the embedding of a message in the message history.
+A tibble with two columns: \code{input} and \code{embeddings}.
+The \code{input} column contains the texts sent to embed, and the \code{embeddings} column
+is a list column where each row contains an embedding vector of the sent input.
 }
 \description{
 Generate Embeddings Using OpenAI API

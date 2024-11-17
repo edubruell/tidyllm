@@ -26,7 +26,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -41,6 +41,7 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/tidyllm_classifiers.html">Classifying Texts with tidyllm</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_embed.html">Embedding Models in tidyllm</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm-pdfquestions.html">Structured Question Answering from PDFs</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm-synthetic-data.html">Generate Synthetic Data with tidyllm</a></li>
   </ul>
@@ -75,11 +76,12 @@
     
 <blockquote>
 <p>⚠️ <strong>Note:</strong> This vignette refers to the development
-version 0.2.3. of <strong>tidyllm</strong>, which introduced a major
-interface change. I you are using the CRAN-version 0.2.0 please refer to
-the installed vignette by using <code><a href="../articles/tidyllm.html">vignette("tidyllm")</a></code>.
-Version 0.2.3 is fully backward compatible to the old interface, but
-will throw deprecation warnings.</p>
+version 0.2.5. of <strong>tidyllm</strong>, which haa major interface
+differences compared to the last release. If you are using the
+CRAN-version 0.2.0 please refer to the installed vignette by using
+<code><a href="../articles/tidyllm.html">vignette("tidyllm")</a></code>. Version 0.2.5 is fully backward
+compatible to the old interface, but will throw deprecation warnings for
+some use cases.</p>
 </blockquote>
 <div class="section level2">
 <h2 id="introduction-to-tidyllm">Introduction to tidyllm<a class="anchor" aria-label="anchor" href="#introduction-to-tidyllm"></a>
@@ -501,7 +503,7 @@ such as <code>.model</code>,<code>.temperature</code>,
 <span><span class="st">in one sentence."</span><span class="op">)</span></span>
 <span>  </span>
 <span>  <span class="co">#per default it is non-zero</span></span>
-<span>  <span class="va">temp_example</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/ollama.html">ollama</a></span><span class="op">(</span><span class="op">)</span>,.temperature<span class="op">=</span><span class="fl">0</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="va">temp_example</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="va">ollama</span>,.temperature<span class="op">=</span><span class="fl">0</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Message History:</span></span>
 <span><span class="co">## system: You are a helpful assistant</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span>
@@ -513,7 +515,7 @@ such as <code>.model</code>,<code>.temperature</code>,
 <span><span class="co">## --------------------------------------------------------------</span></span></code></pre>
 <div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span>  <span class="co">#Retrying with .temperature=0</span></span>
-<span>  <span class="va">temp_example</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/ollama.html">ollama</a></span><span class="op">(</span><span class="op">)</span>,.temperature<span class="op">=</span><span class="fl">0</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="va">temp_example</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="va">ollama</span>,.temperature<span class="op">=</span><span class="fl">0</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Message History:</span></span>
 <span><span class="co">## system: You are a helpful assistant</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span>
@@ -561,17 +563,16 @@ for each entry in a character vector:</p>
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"What is the meaning of life?"</span>,</span>
 <span>  <span class="st">"How much wood would a woodchuck chuck?"</span>,</span>
 <span>  <span class="st">"How does the brain work?"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/embed.html">embed</a></span><span class="op">(</span><span class="fu"><a href="../reference/ollama.html">ollama</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">##                 [,1]         [,2]         [,3]</span></span>
-<span><span class="co">##   [1,] -0.8384997249 -0.332353365  0.917455798</span></span>
-<span><span class="co">##   [2,]  0.6686660745  0.498545304 -0.280079755</span></span>
-<span><span class="co">##   [3,]  0.2015217724  0.826316021 -0.602027516</span></span>
-<span><span class="co">##   [4,] -0.6855831170 -0.591341874  0.452570635</span></span>
-<span><span class="co">##   [5,] -0.9852011176 -0.056488777 -0.663735099</span></span>
-<span><span class="co">##   [6,] -0.0672130054 -0.229633799 -0.547037341</span></span>
-<span><span class="co">##  [ reached getOption("max.print") -- omitted 394 rows ]</span></span></code></pre>
-<p>Each column in the output matrix is a semantic vector representation
-of the three texts sent to the model</p>
+<span>  <span class="fu"><a href="../reference/embed.html">embed</a></span><span class="op">(</span><span class="va">ollama</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 3 × 2</span></span></span>
+<span><span class="co">##   input                                  embeddings </span></span>
+<span><span class="co">##   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                                  <span style="color: #949494; font-style: italic;">&lt;list&gt;</span>     </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">1</span> What is the meaning of life?           <span style="color: #949494;">&lt;dbl [384]&gt;</span></span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">2</span> How much wood would a woodchuck chuck? <span style="color: #949494;">&lt;dbl [384]&gt;</span></span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">3</span> How does the brain work?               <span style="color: #949494;">&lt;dbl [384]&gt;</span></span></span></code></pre>
+<p>The output is a <code>tibble</code> with two columns, the text input
+for the embedding and a list column that contains a vector of semantic
+embeddings for each input.</p>
 </div>
 <div class="section level4">
 <h4 id="batch-requests">Batch requests<a class="anchor" aria-label="anchor" href="#batch-requests"></a>
@@ -587,7 +588,7 @@ either API.</p>
 API:</p>
 <div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">#Create a message batch and save it to disk to fetch it later</span></span>
-<span><span class="fu"><a href="https://glue.tidyverse.org/reference/glue.html" class="external-link">glue</a></span><span class="op">(</span><span class="st">"Write a poem about {x}"</span>, x<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cats"</span>,<span class="st">"dogs"</span>,<span class="st">"hamsters"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span><span class="fu">glue</span><span class="op">(</span><span class="st">"Write a poem about {x}"</span>, x<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cats"</span>,<span class="st">"dogs"</span>,<span class="st">"hamsters"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">purrr</span><span class="fu">::</span><span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="va">llm_message</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/send_batch.html">send_batch</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="st">"claude_batch.rds"</span><span class="op">)</span></span></code></pre></div>

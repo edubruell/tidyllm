@@ -5,7 +5,7 @@
 \title{Generate Embeddings Using Mistral API}
 \usage{
 mistral_embedding(
-  .llm,
+  .input,
   .model = "mistral-embed",
   .timeout = 120,
   .max_tries = 3,
@@ -13,7 +13,7 @@ mistral_embedding(
 )
 }
 \arguments{
-\item{.llm}{An existing LLMMessage object (or a character vector of texts to embed)}
+\item{.input}{A character vector of texts to embed or an \code{LLMMessage} object}
 
 \item{.model}{The embedding model identifier (default: "mistral-embed").}
 
