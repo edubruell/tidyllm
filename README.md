@@ -80,6 +80,7 @@ For detailed instructions and advanced features, see:
   - [Classifying Texts with tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_classifiers.html)
   - [Structured Question Answering from PDFs](https://edubruell.github.io/tidyllm/articles/tidyllm-pdfquestions.html)
   - [Generate Synthetic Survey Data](https://edubruell.github.io/tidyllm/articles/tidyllm-synthetic-data.html)
+  - [Using Embedding Models for Semantic Search](https://edubruell.github.io/tidyllm/articles/tidyllm_embed.html)
   
 ## Contributing
 
