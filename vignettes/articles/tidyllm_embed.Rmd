@@ -58,7 +58,7 @@ str(target_tbl)
 ```
 ```{r,echo=FALSE}
 target_tbl<- tibble(input=target_abstract,embeddings=list(runif(1024,min=-1,max=1)))
-target_tbl
+print(target_tbl, width=60)
 ```
 
 The `embed()` function returns a `tibble` with two columns:
@@ -143,7 +143,7 @@ Vectors in an embedding space represent semantic meanings of texts. In this spac
 - Vectors at 90 degrees (orthogonal, no semantic overlap) have a cosine similarity of **0**.
 - Vectors pointing in opposite directions (large angle, entirely dissimilar) have a cosine similarity of **-1**.
 
-With the model we use each embedding vector represents a point in a high-dimensional space with 1,034 dimensions. Even though these dimensions are not spatially interpretable like in 2D or 3D, the underlying principle still holds: cosine similarity measures how much two vectors “lean” in the same direction. If two vectors have a cosine similarity of 0.25, it means the angle between them is relatively small, implying they share 25% of their directional alignment.
+With the model we use each embedding vector represents a point in a high-dimensional space with 1,024 dimensions. Even though these dimensions are not spatially interpretable like in 2D or 3D, the underlying principle still holds: cosine similarity measures how much two vectors “lean” in the same direction. If two vectors have a cosine similarity of 0.25, it means the angle between them is relatively small, implying they share 25% of their directional alignment.
 
 To compute cosine similarity between two vectors we express it in a simple function:
 ```{r}
@@ -175,7 +175,7 @@ read_rds("top10_asbtracts.rds") |>
   kableExtra::kable("html", caption = "Top 10 Most Similar Abstracts") |>
   kableExtra::kable_styling(full_width = FALSE, bootstrap_options = c("striped", "hover", "condensed", "responsive"))
 ```
-Unsurprisingly, the top result is the target abstract itself, presented with slight formatting differences. However, the remaining top results strongly align with the target’s thematic focus on the economic and social impacts of transportation infrastructure. The second result discusses the economic effects of German High-Speed Rail (HSR), while the third and fourth focus on Japan’s Shinkansen and China’s HSR network, respectively. These findings highlight the model's capability to identify semantically rich connections across diverse contexts, illustrating its superior ability to capture complex thematic overlaps—far beyond the reach of traditional keyword searches.
+Unsurprisingly, the top result is the target abstract itself, presented with slight formatting differences. However, the remaining top results strongly align with the target’s thematic focus on the economic and social impacts of transportation (or specifically high speed reail) infrastructure. The second result discusses the economic effects of German High-Speed Rail (HSR), while the third and fourth focus on Japan’s Shinkansen and China’s HSR network, respectively. These findings highlight the model's capability to identify semantically rich connections across diverse contexts, illustrating its ability to capture complex thematic overlaps.
 
 
 ###  Outlook: Clustering and Beyond
@@ -190,7 +190,7 @@ Here are some potential further use-cases for embeddings:
 
 - **Retrieval augmented generation (RAG):** Embeddings play a crucial role in retrieval-augmented generation, a technique that enhances large language models (LLMs). In this workflow, an embedding search retrieves semantically similar documents from a corpus, which are then appended to the LLM's prompt. This process helps the model generate contextually rich and accurate responses, especially in knowledge-intensive tasks.
 
-- **Supporting Workflows in Qualitative Research:** Embeddings can also transform workflows in qualitative research, as discussed in [this paper by Kugler et al. (2023)](https://www.iaw.edu/iaw-diskussionspapiere.html?file=files/dokumente/ab%20Januar%202023/iaw_dp_143.pdf). The integration of Natural Language Processing (NLP) tools enables researchers to automate coding steps that traditionally require manual effort. Specifically, embeddings can assist in categorizing text data according to predefined themes, making research workflows more efficient and transparent. While these models bring significant advantages, challenges remain. The study highlights that off-the-shelf language models often struggle to discern implicit references and closely related topics as effectively as human researchers. However, more modern embedding models than the ones used in the study might help to deal with these challenges. 
+- **Supporting Workflows in Qualitative Research:** Embeddings can also transform workflows in qualitative research, as discussed in [this paper by Kugler et al. (2023)](https://www.iaw.edu/iaw-diskussionspapiere.html?file=files/dokumente/ab%20Januar%202023/iaw_dp_143.pdf). The integration of Natural Language Processing (NLP) tools enables researchers to automate coding steps that traditionally require manual effort. Specifically, embeddings can assist in categorizing text data according to predefined themes, making research workflows more efficient and transparent. While these models bring significant advantages, challenges remain. The study highlights that off-the-shelf language models often struggle to discern implicit references and closely related topics as effectively as human researchers. However, more modern embedding models than the ones used in the study might help to deal with some of these challenges. 
 
 
 

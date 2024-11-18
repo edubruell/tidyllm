@@ -167,9 +167,9 @@ provider-function:</p>
 <span><span class="va">target_tbl</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">target_tbl</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 1 × 2</span></span></span>
-<span><span class="co">##   input                                                               embeddings</span></span>
-<span><span class="co">##   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                                                               <span style="color: #949494; font-style: italic;">&lt;list&gt;</span>    </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">1</span> We use the expansion of the high-speed rail network in Germany  as… <span style="color: #949494;">&lt;dbl&gt;</span></span></span></code></pre>
+<span><span class="co">##   input                                           embeddings</span></span>
+<span><span class="co">##   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                                           <span style="color: #949494; font-style: italic;">&lt;list&gt;</span>    </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">1</span> We use the expansion of the high-speed rail ne… <span style="color: #949494;">&lt;dbl&gt;</span></span></span></code></pre>
 <p>The <code><a href="../reference/embed.html">embed()</a></code> function returns a <code>tibble</code> with
 two columns: - <strong>input:</strong> The original text provided for
 embedding. - <strong>embeddings:</strong> A list column containing the
@@ -220,13 +220,13 @@ to embed it once.</p>
 <span>  </span>
 <span>  <span class="co">#Work with batches of 200 abstracts</span></span>
 <span>  <span class="va">n_batches</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">embedding_batches</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://glue.tidyverse.org/reference/glue.html" class="external-link">glue</a></span><span class="op">(</span><span class="st">"Processing {n_batches} batches of 200 abstracts"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n"</span><span class="op">)</span></span>
+<span>  <span class="fu">glue</span><span class="op">(</span><span class="st">"Processing {n_batches} batches of 200 abstracts"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n"</span><span class="op">)</span></span>
 <span>  </span>
 <span>  <span class="co">#Embed the batches via ollama mxbai-embed-large </span></span>
 <span>  <span class="va">embedding_batches</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
 <span>    <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">walk</a></span><span class="op">(</span><span class="op">~</span><span class="op">{</span></span>
 <span>      <span class="va">batch_number</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/pull.html" class="external-link">pull</a></span><span class="op">(</span><span class="va">.x</span>,<span class="va">batch</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="op">)</span> </span>
-<span>      <span class="fu"><a href="https://glue.tidyverse.org/reference/glue.html" class="external-link">glue</a></span><span class="op">(</span><span class="st">"Generate Text Embeddings for Abstract Batch: {batch_number}/{n_batches}"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n"</span><span class="op">)</span></span>
+<span>      <span class="fu">glue</span><span class="op">(</span><span class="st">"Generate Text Embeddings for Abstract Batch: {batch_number}/{n_batches}"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n"</span><span class="op">)</span></span>
 <span>      </span>
 <span>      <span class="va">emb_matrix</span> <span class="op">&lt;-</span> <span class="va">.x</span><span class="op">$</span><span class="va">abstract</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
 <span>        <span class="fu"><a href="../reference/embed.html">embed</a></span><span class="op">(</span><span class="va">ollama</span>,.model<span class="op">=</span><span class="st">"mxbai-embed-large:latest"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -286,7 +286,7 @@ cosine similarity of <strong>0</strong>.</li>
 dissimilar) have a cosine similarity of <strong>-1</strong>.</li>
 </ul>
 <p>With the model we use each embedding vector represents a point in a
-high-dimensional space with 1,034 dimensions. Even though these
+high-dimensional space with 1,024 dimensions. Even though these
 dimensions are not spatially interpretable like in 2D or 3D, the
 underlying principle still holds: cosine similarity measures how much
 two vectors “lean” in the same direction. If two vectors have a cosine
@@ -626,13 +626,13 @@ Journal of Economic Geography
 <p>Unsurprisingly, the top result is the target abstract itself,
 presented with slight formatting differences. However, the remaining top
 results strongly align with the target’s thematic focus on the economic
-and social impacts of transportation infrastructure. The second result
-discusses the economic effects of German High-Speed Rail (HSR), while
-the third and fourth focus on Japan’s Shinkansen and China’s HSR
-network, respectively. These findings highlight the model’s capability
-to identify semantically rich connections across diverse contexts,
-illustrating its superior ability to capture complex thematic
-overlaps—far beyond the reach of traditional keyword searches.</p>
+and social impacts of transportation (or specifically high speed reail)
+infrastructure. The second result discusses the economic effects of
+German High-Speed Rail (HSR), while the third and fourth focus on
+Japan’s Shinkansen and China’s HSR network, respectively. These findings
+highlight the model’s capability to identify semantically rich
+connections across diverse contexts, illustrating its ability to capture
+complex thematic overlaps.</p>
 </div>
 <div class="section level3">
 <h3 id="outlook-clustering-and-beyond">Outlook: Clustering and Beyond<a class="anchor" aria-label="anchor" href="#outlook-clustering-and-beyond"></a>
@@ -673,7 +673,7 @@ bring significant advantages, challenges remain. The study highlights
 that off-the-shelf language models often struggle to discern implicit
 references and closely related topics as effectively as human
 researchers. However, more modern embedding models than the ones used in
-the study might help to deal with these challenges.</p></li>
+the study might help to deal with some of these challenges.</p></li>
 </ul>
 </div>
 </div>
