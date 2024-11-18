@@ -127,3 +127,41 @@ test_that("openai_embedding returns expected response", {
   },simplify = FALSE)
 })
 
+test_that("tidyllm_schema() handles single element correctly", {
+  with_mock_dir("openai_schema_single", {
+    if (exists("openai", envir = .tidyllm_rate_limit_env)) {
+      .tidyllm_rate_limit_env[["openai"]] <- NULL
+    }
+    
+    schema_single <- tidyllm_schema(
+      name = "AreaSchema",
+      area = "numeric"
+    )
+    message_single <- llm_message("Imagine an area in JSON format that matches the schema.") |>
+      chat(openai(), .json_schema = schema_single) %>%
+      get_metadata()
+    
+    expect_true("completion_tokens" %in% colnames(message_single))
+    expect_gt(message_single$total_tokens, 0)
+  }, simplify = FALSE)
+})
+
+test_that("tidyllm_schema() handles multiple elements correctly", {
+  with_mock_dir("openai_schema_multiple", {
+    if (exists("openai", envir = .tidyllm_rate_limit_env)) {
+      .tidyllm_rate_limit_env[["openai"]] <- NULL
+    }
+    
+    schema_multiple <- tidyllm_schema(
+      name = "AreaSchema",
+      area = "numeric",
+      population = "numeric"
+    )
+    message_multiple <- llm_message("Imagine an area and population in JSON format that matches the schema.") |>
+      chat(openai(), .json_schema = schema_multiple) %>%
+      get_metadata()
+    
+    expect_true("completion_tokens" %in% colnames(message_multiple))
+    expect_gt(message_multiple$total_tokens, 0)
+  }, simplify = FALSE)
+})
