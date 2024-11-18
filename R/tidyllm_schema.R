@@ -99,7 +99,7 @@ tidyllm_schema <- function(name, ...) {
     schema = list(
       type = "object",
       properties = properties,
-      required = names(fields)
+      required = I(names(fields))
     )
   )
   
