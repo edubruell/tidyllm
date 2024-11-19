@@ -81,6 +81,7 @@ For detailed instructions and advanced features, see:
   - [Structured Question Answering from PDFs](https://edubruell.github.io/tidyllm/articles/tidyllm-pdfquestions.html)
   - [Generate Synthetic Survey Data](https://edubruell.github.io/tidyllm/articles/tidyllm-synthetic-data.html)
   - [Using Embedding Models for Semantic Search](https://edubruell.github.io/tidyllm/articles/tidyllm_embed.html)
+  - [Video and Audio Data with the Gemini API](https://edubruell.github.io/tidyllm/articles/tidyllm_video.html)
   
 ## Contributing
 

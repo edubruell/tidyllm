@@ -180,6 +180,10 @@ To manage this, a common approach is to limit the number of pages sent to the mo
 
 Alternatively, for very large documents, you could split them into smaller sections and process each separately, covering more content without exceeding the model’s context window. However, splitting can disrupt the document’s flow, which may affect how well the model retains context across sections.
 
+### Gemini for image-heavy PDFs
+
+For `gemini()` there is an alternative to adding the text from a PDF with `llm_message()`. You can directly upload a PDF to Google's servers with `gemini_upload_file()` and use it in the context of your messages. The advantage of this approach is that Gemini can handle images in PDFs or are even image-only PDFs (such as scanned documents). See the article on [Video and Audio Data with the Gemini API](https://edubruell.github.io/tidyllm/articles/tidyllm_video.html) for an example how to use the `gemini_upload_file()` feature.
+
 ### Local Models
  
 Using open-source local models for PDF processing is also possible, though remote models like `gpt-4o-mini` tend to handle longer documents more effectively. Smaller local models, like `gemma2:9B` in `ollama()`, may struggle with large content and complex, structured queries, even if they support extended context lengths. For more demanding tasks, larger local models like `llama3:70B` may perform better with complex queries, but they require substantial hardware resources to run smoothly. Since Ollama has a default context length of just 2,048 tokens, you will likely need to adjust the context length with the `.num_ctx` option in `ollama()`. Sending a message that is longer than the context length might lead to strange errors, since the input will be truncated by Ollama, which might lead to cases where only parts of the document are processed without your instructions.  Note that increasing context length will likely slow down processing due to higher memory usage. In these cases, reducing the number of pages may help.

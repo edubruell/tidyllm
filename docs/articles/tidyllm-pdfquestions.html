@@ -42,6 +42,7 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/tidyllm_classifiers.html">Classifying Texts with tidyllm</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm_embed.html">Embedding Models in tidyllm</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_video.html">Video and Audio Data with the Gemini API</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm-pdfquestions.html">Structured Question Answering from PDFs</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm-synthetic-data.html">Generate Synthetic Data with tidyllm</a></li>
   </ul>
@@ -399,6 +400,18 @@ smaller sections and process each separately, covering more content
 without exceeding the model’s context window. However, splitting can
 disrupt the document’s flow, which may affect how well the model retains
 context across sections.</p>
+</div>
+<div class="section level3">
+<h3 id="gemini-for-image-heavy-pdfs">Gemini for image-heavy PDFs<a class="anchor" aria-label="anchor" href="#gemini-for-image-heavy-pdfs"></a>
+</h3>
+<p>For <code><a href="../reference/gemini.html">gemini()</a></code> there is an alternative to adding the text
+from a PDF with <code><a href="../reference/llm_message.html">llm_message()</a></code>. You can directly upload a
+PDF to Google’s servers with <code><a href="../reference/gemini_upload_file.html">gemini_upload_file()</a></code> and use
+it in the context of your messages. The advantage of this approach is
+that Gemini can handle images in PDFs or are even image-only PDFs (such
+as scanned documents). See the article on <a href="https://edubruell.github.io/tidyllm/articles/tidyllm_video.html">Video
+and Audio Data with the Gemini API</a> for an example how to use the
+<code><a href="../reference/gemini_upload_file.html">gemini_upload_file()</a></code> feature.</p>
 </div>
 <div class="section level3">
 <h3 id="local-models">Local Models<a class="anchor" aria-label="anchor" href="#local-models"></a>

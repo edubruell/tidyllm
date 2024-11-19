@@ -1,0 +1,164 @@
+---
+title: "Video and Audio Data with the Gemini API"
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE
+)
+```
+> ⚠️ **Note:**  This article refers to the development version 0.2.5. of **tidyllm**, which has a chnaged interface compared to the last CRAN release. You can install the current development version directly from GitHub using devtools:
+
+```{r, eval= FALSE, echo=TRUE}
+# Install devtools if not already installed
+if (!requireNamespace("devtools", quietly = TRUE)) {
+  install.packages("devtools")
+}
+
+# Install TidyLLM from GitHub
+devtools::install_github("edubruell/tidyllm")
+```
+
+The **tidyllm** package aims to implement some API-specific functionality beyond the main features that are available on all APIs. With the Google Gemini API, you can now upload files directly, supporting a range of formats, including video and audio. You can use uploaded files in the context of your messages through the `.fileid`-argument in `gemini_chat()`. This feature opens up a world of possibilities for interactive data analysis and communication.  
+
+### Sending an example video to Gemini
+We’ll explore how to leverage this functionality by uploading **The Thinking Machine**, an interesting 1960s TV segment on AI , and interact with Gemini using this file as context:
+<div style="text-align: center;">
+<iframe width="560" height="315" 
+        src="https://www.youtube.com/embed/aygSMgK3BEM" 
+        frameborder="0" 
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+        allowfullscreen>
+</iframe>
+</div>
+
+We have this segment on our PC as **mp4**-file and can simply use `gemini_upload_file()` to make it available in `gemini()` requests. 
+
+```{r, eval=FALSE, message=FALSE}
+library(tidyverse)
+library(tidyllm)
+upload_info <- gemini_upload_file("the_thinking_machine_1960s.mp4")
+upload_info
+str(upload_info)
+```
+```{r, echo=FALSE, message=FALSE}
+library(tidyverse)
+library(tidyllm)
+upload_info <- tibble(
+name = "files/wutpmcv9jve9",
+display_name = "the_thinking_machine_1960s.mp4",
+mime_type = "video/mp4",
+size_bytes = 6520447,
+create_time = "2024-11-18T09:40:29.603980Z",
+uri = "https://generativelanguage.googleapis.com/v1beta/files/wutpmcv9jve9",
+state = "PROCESSING")
+print(upload_info,width=60)
+str(upload_info)
+```
+When you use `gemini_upload_file()`, it returns a `tibble` containing detailed metadata about the uploaded file. The output includes several key columns: `name` (a unique identifier for the file on the server), `display_name` (the original file name), `mime_type` (the file's media type, e.g., *video/mp4*), `size_bytes` (the file size in bytes), `create_time` (timestamp indicating when the file was uploaded), `uri` (a URL pointing to the file's location on Google’s servers)  and `state` (indicating the current processing status of the file). 
+
+From this range of metadata, you primarily need the `name`, which you can use in the `.fileid` argument in `gemini()`:
+```{r, eval=FALSE}
+llm_message("Give me a detailed summary of this video") |>
+  chat(gemini(.fileid = upload_info$name)) 
+```
+```{r, echo=FALSE}
+llm_message("Give me a 200 word summary of this video") |>
+  llm_message("Here is a summary of the video.\n\nThis 1961 black and white Paramount News clip explores the burgeoning field of artificial intelligence. The host interviews Professor Jerome B. Wiesner, director of MIT's Research Laboratory of Electronics. Wiesner discusses the capabilities of computers, noting that while their abilities were previously limited, he suspects they'll be able to \"think\" within a few years.  The segment shows a computer playing checkers against a human opponent.  Other experts, including Oliver Selfridge and Claude Shannon, offer their perspectives on whether machines can truly think and the potential implications for the future, particularly in language translation.  One expert predicts that within 10–15 years, machines will be performing tasks previously considered the realm of human intelligence.  The film ends by showing a computer that translates Russian to English.  Despite this success, one expert notes that computers will not replace translators of poetry and novels.",.role="assistant")
+```
+Once a file is uploaded you can reuse it for different requests. Note that Gemini also supports `tidyllm_schema()`, allowing you to get structured responses for all file types that you can use with Gemini:
+```{r, eval=FALSE}
+structured_request <- llm_message("Extract some details about this video") |>
+  chat(gemini(.fileid = upload_info$name),
+       .json_schema = tidyllm_schema(name="videoschema",
+                                     Persons = "character[]",
+                                     ScientistQuotes = "character[]",
+                                     Topics = "character[]",
+                                     runtime = "numeric"))
+
+structured_request |>
+  get_reply_data()
+```
+```{r,echo=FALSE}
+list(
+  Persons = c("Professor Jerome B. Wiesner","Oliver G. Selfridge","Claude Shannon"),             
+  ScientistQuotes = c("Well, that's a very hard question to answer. If you'd asked me that question just a few years ago I'd have said it was very far fetched. And today I just have to admit I don't really know. I suspect that if you'd come back in four or five years I'll say sure they really do think.",                                                                                                                                              
+"I'm convinced that machines can and will think. I don't mean that machines will behave like men. I don't think for a very long time we're going to have a difficult problem distinguishing a man from a robot. And I don't think my daughter will ever marry a computer. But I think the computers will be doing the things that men do when we say they're thinking. I am convinced that machines can and will think in our lifetime.",
+"I confidently expect that within a matter of 10 or 15 years, something will emerge from the laboratories which is not too far from the robot of science fiction fame"),
+  Topics = c("Artificial Intelligence","Computer","Thinking Machine","Machine Translation","Russian to English Translation","Cold War"),                      
+  runtime = 172
+)
+```
+`gemini_list_files()` creates a tibble with an overview of files you have uploaded to Gemni. You can use it to check which files are currently available for use with Gemini.
+
+```{r, eval=FALSE}
+gemini_files <- gemini_list_files()
+gemini_files
+```
+```{r, echo=FALSE}
+gemini_files<- tibble(
+name =c("files/nzq2zw9u30y8","files/wutpmcv9jve9","files/9sq5auo45h0r"),
+display_name = c("example.mp3","the_thinking_machine_1960s.mp4","example_aktivrente.pdf"),        
+mime_type = c("audio/mp3","video/mp4","application/pdf"),
+size_bytes = c(2458836,6520447,193680),
+create_time =  c("2024-11-15T15:02:11.917279Z","2024-11-18T09:40:29.603980Z","2024-11-17T13:06:10.706085Z"),
+update_time = c("2024-11-15T18:02:12.817279Z","2024-11-18T09:40:35.614029Z","2024-11-17T13:06:10.706085Z"),
+expiration_time = c("2024-11-20T18:02:11.894030469Z","2024-11-20T09:40:29.592398554Z","2024-11-19T13:06:10.689448949Z"),
+sha256_hash = c("NTM1MWVjM2Q0ODg0NzFlMDA3ZTQxNjQ1OGRiOWRhYjliZDc2YzM4MzZjYTdjOTNiMWZjYTUyODVjYWQ1NzM3Nw==","YWFjMWE2NWI0Y2IyZmZkNjFkMzFlOTQ1NWU1M2UwNGJiOGE1Y2M3NjY3ZWMwYzZhMTQ0NDZkMmJhZDMwZGM3Zg=="
+,"NWE5MzBlZDFjZWMwNzkwMzkxOThiM2JlMTZlMTAwNjEyYWEwNjFjNDBiZTM5NmZmYWI1MTE0ZDExNGM1YzhkNg=="),
+uri= c("https://generativelanguage.googleapis.com/v1beta/files/nzq2zw9u30y8",
+"https://generativelanguage.googleapis.com/v1beta/files/wutpmcv9jve9",
+"https://generativelanguage.googleapis.com/v1beta/files/9sq5auo45h0r"),
+state =c("ACTIVE","ACTIVE","ACTIVE"))
+print(gemini_files,width=65)
+```
+For example, we can now ask `gemini()` what the audio file I uploaded  earlier is about:
+```{r, eval=FALSE}
+llm_message("What's in this audio file. Describe it in 100 words.") |>
+  gemini_chat(.fileid=gemini_files$name[1])
+```
+```{r, echo=FALSE}
+llm_message("What's in this audio file. Describe it in 100 words.")  |>
+  llm_message("This is an audio recording of an interview with Robert Bosch.  He discusses his early life, his career path from apprentice to founder of his renowned company, and his philosophy on business.  Bosch recounts his decision to become a precision mechanic, his travels to America and England, and the development of his famous magneto ignition system.  He emphasizes his principles of high-quality work, fair treatment of employees, and the importance of trust and reliability in business dealings.  The interview concludes with well wishes.",.role="assistant")
+```
+Once you have completed working with a file, you can delete it with `gemini_delete_file()`
+```{r, eval=FALSE}
+gemini_files$name[1] |>
+  gemini_delete_file()
+```
+```{r, echo=FALSE}
+message("File files/nzq2zw9u30y8 has been successfully deleted.")
+```
+### Supported file types
+The Google Gemini API supports a wide range of file formats, enabling seamless multimodal workflows. For documents, it handles **PDFs**, **plain text**, **HTML**, **CSS**, **Markdown**, **CSV-tables**, **XML**, and **RTF**. Uploading documents with `gemini_upload_file()` is useful, since the standard `llm_message()` function with the `.pdf` argument is designed to extract only the textual content from PDFs. In contrast, the Google Gemini API enhances this by supporting multimodal PDFs, including those that contain images or are image-only (such as scanned documents). This allows users to work with both textual and visual data in their interactions.
+
+For example, we can upload an old scan of a paper that contains no extractable text at all and ask gemini to extract all the references:
+
+```{r, eval=FALSE}
+neal1995 <- gemini_upload_file("1995_Neal_Industry_Specific.pdf")
+            
+bib <- llm_message("Extract all the references from this paper in the specified format") |>         
+            chat(gemini(.fileid=neal1995$name),
+                 .json_schema = tidyllm_schema(name="references",
+                                               APAreferences ="character[]")
+            )
+
+references <- bib |> get_reply_data()
+references[1:5]
+```
+```{r, echo=FALSE}
+references <- list(APAreferences = c(
+"Addison, John, and Portugal, Pedro. \"Job Displacement, Relative Wage Changes, and Duration of Unemployment.\" *Journal of Labor Economics* 7 (July 1989): 281–302." ,                                                            
+"Altonji, Joseph, and Shakotko, Robert. \"Do Wages Rise with Seniority?\" *Review of Economic Studies* 54 (July 1987): 437–59.",                                                                                                   
+"Becker, Gary. *Human Capital*. New York: Columbia University Press, 1975." ,                                                  "Carrington, William. \"Wage Losses for Displaced Workers: Is It Really the Firm That Matters?\" *Journal of Human Resources* 28 (Summer 1993): 435–62.",                                                                          
+"Carrington, William, and Zaman, Asad. \"Interindustry Variation in the Costs of Job Displacement.\" *Journal of Labor Economics* 12 (April 1994): 243–76.",                                                                       
+"Curme, M.; Hirsch, B.; and MacPherson, D. \"Union Membership and Contract Coverage in the United States.\" *Industrial and Labor Relations Review* 44 (October 1990): 5–33.",                                                     
+"Fallick, Bruce. \"The Industrial Mobility of Displaced Workers.\" *Journal of Labor Economics* 11 (April 1993): 302–23.",     "Gibbons, Robert, and Katz, Lawrence. \"Layoffs and Lemons.\" *Journal of Labor Economics* 9 (October 1991): 351–80."))
+ references$APAreferences[1:5]
+```
+
+Image formats for `gemini_upload_file()` include **PNG**, **JPEG**, **WEBP**, **HEIC**, and **HEIF**, while supported video formats cover **MP4**, **MPEG**, **MOV**, **AVI**, **FLV**, **MPG**, **WEBM**, **WMV**, and **3GPP**. For audio, the API works with **WAV**, **MP3**, **AIFF**, **AAC**, **OGG Vorbis**, and **FLAC**.  Code files such as **JavaScript** and **Python** are also supported. 
+
+### Conclusion
+
+The ability to work with diverse media types through the Gemini API opens up a wide range of applications across scientific disciplines. In **linguistics** and **humanities research**, text, audio, and video can be used to analyze language patterns, conduct speech recognition, or study historical footage. **Social scientists*** can process interview recordings, video observations, and there might other interesting application across a whole range of fields. By integrating text, audio, video, images, and code into a unified workflow, using the Gemini API with **tidyllm** offers many possibilities that are not available with the standard multimodal tools in `llm_message()`.
