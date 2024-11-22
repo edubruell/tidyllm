@@ -1,3 +1,66 @@
+
+#' The Ollama API provider stub
+#'
+#' At the moment this is just a stub but is needed for methods dispatch
+#'
+#' @noRd
+api_ollama <- new_class("Ollama", APIProvider)
+
+
+#' Convert LLMMessage to Ollama API-Compatible Format
+#'
+#' Converts the `message_history` of an `LLMMessage` object into the
+#' one needed for the Ollama API.
+#'
+#' @noRd
+method(to_api_format, list(LLMMessage, api_ollama)) <- function(llm, 
+                                                                api) {
+  
+  ollama_history <- filter_roles(llm@message_history, c("user", "assistant"))
+  lapply(ollama_history, function(m) {
+    formatted_message <- format_message(m)
+    if (!is.null(formatted_message$image)) {
+      list(
+        role = m$role,
+        content = formatted_message$content,
+        images = list(glue::glue("{formatted_message$image$data}"))
+      )
+    } else {
+      list(role = m$role, content = formatted_message$content)
+    }
+  })
+}
+
+#' A callback function generator for an OpenAI request 
+#' request
+#'
+#' @noRd
+method(generate_callback_function,api_ollama) <- function(api) {
+  callback_fn <- function(.data) {
+    stream_content <- rawToChar(.data, multiple = FALSE) |> 
+      jsonlite::fromJSON()
+    
+    stream_response <- stream_content$message$content 
+    .tidyllm_stream_env$stream <- paste0(.tidyllm_stream_env$stream,stream_response)
+    cat(stream_response)
+    utils::flush.console()
+    TRUE
+  }
+}
+
+#' A chat parsing method for Openai to extract the assitant response f
+#'
+#' @noRd
+method(parse_chat_function, api_ollama) <- function(api) {
+  function(body_json) {
+    if ("error" %in% names(body_json)) {
+      stop(sprintf("Error response from Ollama API: %s", body_json$error))
+    }  
+    body_json$message$content
+  }
+}  
+
+
 #' Interact with local AI models via the Ollama API
 #'
 #'
@@ -75,7 +138,7 @@ ollama_chat <- function(.llm,
   
   # Validate the inputs
   c(
-    "Input .llm must be an LLMMessage object" = inherits(.llm, "LLMMessage"),
+    "Input .llm must be an LLMMessage object" = S7_inherits(.llm, LLMMessage),
     "Input .model must be a string" = is.character(.model),
     "Input .stream must be logical if provided" = is.logical(.stream),
     "Input .json must be logical if provided" = is.logical(.json),
@@ -99,8 +162,9 @@ ollama_chat <- function(.llm,
   ) |>
     validate_inputs()
   
+  api_obj <- api_ollama(short_name = "ollama",long_name = "Ollama")
   # Get formatted message list for ollama models
-  ollama_messages <- .llm$to_api_format("ollama")
+  ollama_messages <-  to_api_format(.llm,api_obj)
   
   ollama_options <- list(
     temperature = .temperature,
@@ -117,9 +181,7 @@ ollama_chat <- function(.llm,
     repeat_penalty = .repeat_penalty,
     tfs_z = .tfs_z,
     stop = .stop
-  )
-  
-  ollama_options <- base::Filter(Negate(is.null), ollama_options)
+  ) |> purrr::compact()
   
   ollama_request_body <- list(
     model = .model,
@@ -143,39 +205,19 @@ ollama_chat <- function(.llm,
     httr2::req_url_path("/api/chat") |>
     httr2::req_body_json(ollama_request_body)
   
-  # Perform the API request
-  response <- perform_api_request(
-    .request = request,
-    .api = "ollama",
-    .stream = .stream,
-    .timeout = .timeout,
-    .parse_response_fn = function(body_json) {
-      if ("error" %in% names(body_json)) {
-        stop(sprintf("Error response from Ollama API: %s", body_json$error))
-      }  
-      assistant_reply <- body_json$message$content
-      return(assistant_reply)
-    },
-    .dry_run = .dry_run
-  )
-  
   # Return only the request object in a dry run.
   if (.dry_run) {
-    return(response)  
+    return(request)  
   }
   
-  assistant_reply <- response$assistant_reply
+  # Perform the API request
+  response <- perform_chat_request(request,api_obj,.stream,.timeout,3)
   
-  # Create a deep copy of the LLMMessage object
-  llm_copy <- .llm$clone_deep()
-  
-  # Add model's message to the history of the LLMMessage object
-  llm_copy$add_message(role    = "assistant", 
-                       content = assistant_reply, 
-                       json    = FALSE,
-                       meta    = response$meta)
-  
-  return(llm_copy)
+  add_message(llm     = .llm,
+              role    = "assistant", 
+              content = response$assistant_reply, 
+              json    = .json,
+              meta    = response$meta)
 }
 
 
@@ -198,7 +240,7 @@ ollama_embedding <- function(.input,
 
   # Validate the inputs
   c(
-    "Input .input must be a character vector or an LLMMessage object" = inherits(.input, "LLMMessage") | is.character(.input),
+    "Input .input must be a character vector or an LLMMessage object" = S7_inherits(.input, LLMMessage) | is.character(.input),
     "Input .model must be a string" = is.character(.model),
     "Input .truncate must be logical" = is.logical(.truncate),
     "Input .timeout must be an integer-valued numeric (seconds till timeout)" = is.numeric(.timeout) && .timeout > 0,

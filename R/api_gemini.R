@@ -1,3 +1,98 @@
+
+
+#' The Google Gemini API provider stub
+#'
+#' At the moment this is just a stub but is needed for methods dispatch
+#'
+#' @noRd
+api_gemini <- new_class("Google Gemini", APIProvider)
+
+#' Convert LLMMessage to Gemini API-Compatible Format
+#'
+#' Converts the `message_history` of an `LLMMessage` object into the
+#' one needed for the Google Gemini API.
+#'
+#' @noRd
+method(to_api_format, list(LLMMessage, api_gemini)) <- function(llm, 
+                                                                api) {
+  
+  # Filter to only include user and assistant messages
+  gemini_history <- filter_roles(llm@message_history, c("user", "assistant"))
+  
+  # Map each message to the expected Gemini format
+  lapply(gemini_history, function(m) {
+    
+    formatted_message <- format_message(m)
+    if (!is.null(formatted_message$image)) {
+      list(
+        role = ifelse(m$role == "user", "user", "model"), 
+        parts = list(
+          list(text = formatted_message$content),
+          list(
+            inline_data = list(
+              mime_type = formatted_message$image$media_type,
+              data      = formatted_message$image$data
+            )
+          )
+        )
+      )
+    } else {
+      list(
+        role = ifelse(m$role == "user", "user", "model"), 
+        parts = list(text = formatted_message$content)
+      )
+    }
+  })
+}
+
+
+#' A chat parsing method for Gemini to extract the assistant response 
+#'
+#' @noRd
+method(parse_chat_function, api_gemini) <- function(api) {
+  function(body_json) {
+    if ("error" %in% names(body_json)) {
+      stop(sprintf("Gemini API returned an Error:\nCode: %s\nMessage: %s",
+                   body_json$error$code, body_json$error$message))
+    }
+    if (!"candidates" %in% names(body_json) || length(body_json$candidates) == 0) {
+      stop("Received empty response from Gemini API")
+    }
+    body_json$candidates[[1]]$content$parts[[1]]$text
+  }
+}  
+
+
+#' A callback function generator for an Gemini Streaming requests 
+#'
+#' @noRd
+method(generate_callback_function,api_gemini) <- function(api) {
+  # Default testing callback implementation
+  function(.data) {
+    if(is.null(.tidyllm_stream_env$buffer)){
+      .tidyllm_stream_env$buffer <- ""
+    }
+    
+    # Append new data to the buffer
+    new_data <- rawToChar(.data, multiple = FALSE)
+    .tidyllm_stream_env$buffer <- paste0(.tidyllm_stream_env$buffer,new_data) 
+    
+    parts_section <- stringr::str_extract(.tidyllm_stream_env$buffer, 
+                                          '"parts":\\s*\\[\\s*\\{[^\\}]*\\}\\s*\\]')
+    
+    if(!is.na(parts_section)){
+      current_part <- jsonlite::fromJSON(paste0("{",parts_section,"}"))
+      stream_response <- current_part$parts$text
+      .tidyllm_stream_env$stream <- paste0(.tidyllm_stream_env$stream,stream_response)
+      cat(stream_response)
+      utils::flush.console()
+      .tidyllm_stream_env$buffer <- NULL
+    }
+    
+    TRUE
+  }
+}
+
 #' Send LLMMessage to Gemini API
 #'
 #' @param .llm An existing LLMMessage object or an initial text prompt.
@@ -40,9 +135,10 @@ gemini_chat <- function(.llm,
                    .max_tries = 3,
                    .verbose = FALSE,
                    .stream = FALSE) {
+  
   # Validate inputs
   c(
-    "Input .llm must be an LLMMessage object" = inherits(.llm, "LLMMessage"),
+    "Input .llm must be an LLMMessage object" = S7_inherits(.llm, LLMMessage),
     "Input .model must be a string" = is.character(.model) && length(.model) == 1,
     "Input .temperature must be NULL or in [0.0, 2.0]" = is.null(.temperature) | (.temperature >= 0.0 & .temperature <= 2.0),
     "Input .max_output_tokens must be NULL or an integer-valued numeric greater than 1" = is.null(.max_output_tokens) | (.max_output_tokens >= 1 & is_integer_valued(.max_output_tokens)),
@@ -63,8 +159,11 @@ gemini_chat <- function(.llm,
   ) |>
     validate_inputs()
   
+  api_obj <- api_gemini(short_name = "gemini",
+                        long_name  = "Google Gemini")
+  
   # Prepare message contents
-  gemini_contents <- .llm$to_api_format("gemini")
+  gemini_contents <- to_api_format(.llm,api_obj)
   
   # Inject file if provided
   if (!is.null(.fileid)) {
@@ -109,8 +208,8 @@ gemini_chat <- function(.llm,
     frequencyPenalty = .frequency_penalty,
     stopSequences = .stop_sequences
   ) |>
-    append(response_format)
-  generation_config <- base::Filter(Negate(is.null), generation_config)
+    append(response_format) |>
+    purrr::compact()
   
   # Construct the request body
   request_body <- list(
@@ -120,9 +219,9 @@ gemini_chat <- function(.llm,
     safetySettings = .safety_settings,
     tools = .tools,
     toolConfig = .tool_config
-  ) 
-  request_body <- base::Filter(Negate(is.null), request_body)
-  
+  ) |>
+    purrr::compact()
+
   # Retrieve API key
   api_key <- Sys.getenv("GOOGLE_API_KEY")
   if ((api_key == "") & .dry_run == FALSE) {
@@ -139,35 +238,16 @@ gemini_chat <- function(.llm,
     httr2::req_headers(`Content-Type` = "application/json") |>
     httr2::req_body_json(request_body)
   
+  if (.dry_run) return(request)
+  
   # Perform the API request
-  response <- perform_api_request(
-    .request = request,
-    .api = "gemini",
-    .stream = .stream,
-    .timeout = .timeout,
-    .max_tries = .max_tries,
-    .parse_response_fn = function(body_json) {
-      if ("error" %in% names(body_json)) {
-        stop(sprintf("Gemini API returned an Error:\nCode: %s\nMessage: %s",
-                     body_json$error$code, body_json$error$message))
-      }
-      if (!"candidates" %in% names(body_json) || length(body_json$candidates) == 0) {
-        stop("Received empty response from Gemini API")
-      }
-      body_json$candidates[[1]]$content$parts[[1]]$text
-    },
-    .dry_run = .dry_run
-  )
+  response <- perform_chat_request(request,api_obj,.stream,.timeout,.max_tries)
   
-  if (.dry_run) return(response)
-  assistant_reply <- response$assistant_reply
-  llm_copy <- .llm$clone_deep()
-  llm_copy$add_message(role = "assistant", 
-                       content = assistant_reply , 
-                       json    = json,
-                       meta    = response$meta)
-  
-  return(llm_copy)
+  add_message(llm     = .llm,
+              role    = "assistant", 
+              content = response$assistant_reply, 
+              json    = json,
+              meta    = response$meta)
 }
 
 
@@ -353,7 +433,7 @@ gemini_embedding <- function(.input,
   
   # Validate inputs
   c(
-    "Input .input must be a character vector or an LLMMessage object" = inherits(.input, "LLMMessage") | is.character(.input),
+    "Input .input must be a character vector or an LLMMessage object" = S7_inherits(.input, LLMMessage) | is.character(.input),
     "Input .model must be a string" = is.character(.model),
     "Input .truncate must be logical" = is.logical(.truncate),
     "Input .timeout must be a positive numeric value" = is.numeric(.timeout) && .timeout > 0,

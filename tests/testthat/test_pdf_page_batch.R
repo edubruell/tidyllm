@@ -14,11 +14,11 @@ test_that("pdf_page_batch processes the PDF correctly", {
   
   # Check that each message is an LLMMessage object
   lapply(messages, function(msg) {
-    expect_true(inherits(msg, "LLMMessage"))
+    expect_true(S7_inherits(msg, LLMMessage))
   })
   
   # Check that the first message contains the correct prompt and PDF text
-  first_message <- messages[[1]]$message_history[[2]]
+  first_message <- messages[[1]]@message_history[[2]]
   expect_match(first_message$content, "Extract everything you see on this page as markdown")
   expect_match(first_message$content, "Lorem ipsum dolor sit amet")
   
@@ -40,7 +40,7 @@ test_that("pdf_page_batch applies the page range correctly", {
   
   # Check that each message is an LLMMessage object
   lapply(messages, function(msg) {
-    expect_true(inherits(msg, "LLMMessage"))
+    expect_true(S7_inherits(msg, LLMMessage))
   })
 })
 
@@ -57,7 +57,7 @@ test_that("pdf_page_batch handles custom prompt function", {
   messages <- pdf_page_batch(.pdf = pdf_file, .general_prompt = "Extract", .prompt_fn = custom_prompt_fn)
   
   # Check that the custom prompt is applied
-  first_message <- messages[[1]]$message_history[[2]]
+  first_message <- messages[[1]]@message_history[[2]]
   expect_match(first_message$content, "Please summarize the following content")
   expect_match(first_message$content, "Lorem ipsum dolor sit amet")
 })
@@ -72,7 +72,7 @@ test_that("pdf_page_batch handles empty pages", {
   
   # Check that empty pages are handled correctly
   # (Assuming that page 4 is an empty page in the PDF)
-  fourth_message <- messages[[4]]$message_history[[2]]
+  fourth_message <- messages[[4]]@message_history[[2]]
   expect_match(fourth_message$content, "<pdf></pdf>")
   
   # Check that even empty pages have attached media (images)

@@ -1,3 +1,37 @@
+#' The Mistral API provider class
+#'
+#'Inherit most of the functionality from vanilla OpenAI API
+#'
+#' @noRd
+api_mistral <- new_class("Mistral", api_openai)
+
+
+#' Extract rate limit info from  Mistral API-Headers
+#'
+#' @noRd
+method(ratelimit_from_header, list(api_mistral,new_S3_class("httr2_headers"))) <- function(api,headers){
+  request_time <- strptime(headers[["date"]], format = "%a, %d %b %Y %H:%M:%S", tz = "GMT")
+  
+  # Extract tokens remaining and reset time
+  ratelimit_tokens_remaining <- as.integer(headers[["x-ratelimitbysize-remaining-minute"]])
+  ratelimit_tokens_limit <- as.integer(headers[["x-ratelimitbysize-limit-minute"]])
+  ratelimit_tokens_reset_dt <- as.integer(headers[["ratelimitbysize-reset"]])
+  ratelimit_tokens_reset_time <- request_time + ratelimit_tokens_reset_dt
+  
+  # For requests per second limit
+  ratelimit_requests_remaining <- 0
+  ratelimit_requests_reset_time <- request_time + 1  # Mistral allows 1 request per second
+  
+  list(
+    this_request_time = request_time,
+    ratelimit_requests_remaining = ratelimit_requests_remaining,
+    ratelimit_requests_reset_time = ratelimit_requests_reset_time,
+    ratelimit_tokens_remaining = ratelimit_tokens_remaining,
+    ratelimit_tokens_reset_time = ratelimit_tokens_reset_time
+  )
+}
+
+
 #' Send LLMMessage to Mistral API
 #'
 #' @param .llm An `LLMMessage` object.
@@ -32,10 +66,10 @@ mistral_chat <- function(.llm,
                     .min_tokens = NULL,
                     .dry_run = FALSE,
                     .verbose = FALSE) {
-  
+
   # Validate the inputs
   c(
-    "Input .llm must be an LLMMessage object" = inherits(.llm, "LLMMessage"),
+    "Input .llm must be an LLMMessage object" = S7_inherits(.llm, LLMMessage),
     "Input .model must be a string or NULL" = is.null(.model) || (is.character(.model) && length(.model) == 1),
     "Input .stream must be logical" = is.logical(.stream) && length(.stream) == 1,
     "Input .temperature must be numeric between 0 and 1.5" = is.null(.temperature) || (is.numeric(.temperature) && .temperature >= 0 && .temperature <= 1.5),
@@ -53,13 +87,17 @@ mistral_chat <- function(.llm,
   ) |>
     validate_inputs()
   
-  # Mistral and groq have the same OpenAI like format without a system prompt 
-  mistral_messages <- .llm$to_api_format("openai",no_system=TRUE)
+  api_obj <- api_mistral(short_name = "mistral",
+                        long_name  = "Mistral")
+  
+  messages <- to_api_format(llm=.llm,
+                            api=api_obj,
+                            no_system=TRUE)
   
   #set options
   mistral_request_body <- list(
     model    = .model,
-    messages = mistral_messages,
+    messages = messages,
     temperature = .temperature,
     random_seed = .seed,
     max_tokens  = .max_tokens,
@@ -68,8 +106,8 @@ mistral_chat <- function(.llm,
     top_p        = .top_p,          
     stop         = .stop,           
     safe_prompt  = .safe_prompt     
-  )
-  mistral_request_body <- base::Filter(Negate(is.null), mistral_request_body)
+  ) |>
+    purrr::compact()
   
   # Add format to request body if applicable
   if (.json == TRUE) {
@@ -92,76 +130,22 @@ mistral_chat <- function(.llm,
     ) |>
     httr2::req_body_json(mistral_request_body)
   
-  # Perform the API request
-  response <- perform_api_request(
-    .request = request,
-    .api = "mistral",
-    .stream = .stream,
-    .timeout = .timeout,
-    .max_tries = .max_tries,
-    .parse_response_fn = function(body_json) {
-      if(body_json$object=="error"){
-        sprintf("Mistral API returned an Error (code: %s)\nMessage: %s",
-                body_json$type,
-                body_json$message) |>
-          stop()
-      }
-      assistant_reply <- body_json$choices[[1]]$message$content
-      return(assistant_reply)
-    },
-    .dry_run = .dry_run
-  )
-  
   # Return only the request object in a dry run.
   if (.dry_run) {
-    return(response)  
+    return(request)  
   }
   
-  assistant_reply <- response$assistant_reply
+  response <- perform_chat_request(request,api_obj,.stream,.timeout,.max_tries)
   
   # Extract response headers for rate-limiting
-  # Extract response headers for rate-limiting
-  response_headers <- response$headers
-  request_time <- strptime(response_headers[["date"]], format = "%a, %d %b %Y %H:%M:%S", tz = "GMT")
-  
-  # Extract tokens remaining and reset time
-  ratelimit_tokens_remaining <- as.integer(response_headers[["x-ratelimitbysize-remaining-minute"]])
-  ratelimit_tokens_limit <- as.integer(response_headers[["x-ratelimitbysize-limit-minute"]])
-  ratelimit_tokens_reset_dt <- as.integer(response_headers[["ratelimitbysize-reset"]])
-  ratelimit_tokens_reset_time <- request_time + ratelimit_tokens_reset_dt
-  
-  # For requests per second limit
-  ratelimit_requests_remaining <- 0
-  ratelimit_requests_reset_time <- request_time + 1  # Mistral allows 1 request per second
-  
-  # Rate-limit list
-  rl <- list(
-    this_request_time = request_time,
-    ratelimit_requests_remaining = ratelimit_requests_remaining,
-    ratelimit_requests_reset_time = ratelimit_requests_reset_time,
-    ratelimit_tokens_remaining = ratelimit_tokens_remaining,
-    ratelimit_tokens_reset_time = ratelimit_tokens_reset_time
-  )
-  
-  # Update the rate-limit environment with info from rl
-  update_rate_limit("mistral", rl)
-  
-  # Show request rate limit info if verbose is enabled
-  if (.verbose == TRUE) {
-    glue::glue("Mistral API answer received at {rl$this_request_time}.
-                Remaining tokens: {rl$ratelimit_tokens_remaining}/{ratelimit_tokens_limit}
-                Tokens rate limit resets at: {rl$ratelimit_tokens_reset_time}\n\n") |> cat("\n")
-  }
-  
-  # Create a deep copy of the LLMMessage object
-  llm_copy <- .llm$clone_deep()
-  
+  track_rate_limit(api_obj,response$headers,.verbose)
+
   # Add model's message to the history of the LLMMessage object
-  llm_copy$add_message(role = "assistant", 
-                       content = assistant_reply , 
-                       json    = .json,
-                       meta    = response$meta)  
-  return(llm_copy)
+  add_message(llm= .llm,
+              role = "assistant", 
+              content =  response$assistant_reply, 
+              json    = .json,
+              meta    = response$meta)  
 }
 
 
@@ -188,7 +172,7 @@ mistral_embedding <- function(.input,
   }
   # Validate the inputs
   c(
-    "Input .llm must character vector or an LLMMessage object" = inherits(.input, "LLMMessage") | is.character(.input),
+    "Input .llm must character vector or an LLMMessage object" = S7_inherits(.input, LLMMessage) | is.character(.input),
     "Input .model must be a string" = is.character(.model),
     "Input .timeout must be an integer-valued numeric (seconds till timeout)" = is.numeric(.timeout) && .timeout > 0,
     ".dry_run must be logical" = is.logical(.dry_run)

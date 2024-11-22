@@ -26,7 +26,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -44,7 +44,6 @@
     <li><a class="dropdown-item" href="../articles/tidyllm_embed.html">Embedding Models in tidyllm</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm_video.html">Video and Audio Data with the Gemini API</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm-pdfquestions.html">Structured Question Answering from PDFs</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm-synthetic-data.html">Generate Synthetic Data with tidyllm</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -77,7 +76,7 @@
     
 <blockquote>
 <p>⚠️ <strong>Note:</strong> This article refers to the development
-version 0.2.5. of <strong>tidyllm</strong>, which has a chnaged
+version 0.2.6. of <strong>tidyllm</strong>, which has a chnaged
 interface compared to the last CRAN release. You can install the current
 development version directly from GitHub using devtools:</p>
 </blockquote>
@@ -87,7 +86,7 @@ development version directly from GitHub using devtools:</p>
 <span>  <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"devtools"</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span></span>
-<span><span class="co"># Install TidyLLM from GitHub</span></span>
+<span><span class="co"># Install tidyllm from GitHub</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"edubruell/tidyllm"</span><span class="op">)</span></span></code></pre></div>
 <p>Navigating through a large collection of academic papers can be
 time-consuming, especially when you’re trying to extract specific
@@ -240,10 +239,10 @@ structured responses from the model reply.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_reply_data.html">get_reply_data</a></span><span class="op">(</span><span class="va">example_task</span><span class="op">)</span></span>
 <span><span class="co">## $Title</span></span>
-<span><span class="co">## [1] "A Method to Link Advances in Artificial Intelligence to Occupational Abilities†"</span></span>
+<span><span class="co">## [1] "A Method to Link Advances in Artificial Intelligence to Occupational Abilities"</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $Authors</span></span>
-<span><span class="co">## [1] "Edward W. Felten, Manav Raj, and Robert Seamans, Princeton University, NYU Stern School of Business"</span></span>
+<span><span class="co">## [1] "Edward W. Felten (Princeton University), Manav Raj (NYU Stern School of Business), Robert Seamans (NYU Stern School of Business)"</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $SuggestedFilename</span></span>
 <span><span class="co">## [1] "2018_Felten_etal_AILinkOccupations.pdf"</span></span>
@@ -252,19 +251,19 @@ structured responses from the model reply.</p>
 <span><span class="co">## [1] "Research"</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $Empirics</span></span>
-<span><span class="co">## [1] "The paper leverages two main datasets: the Electronic Frontier Foundation (EFF) AI Progress Measurement Dataset and the Occupational Information Network (O*NET). It tracks AI advancements from 2010 to 2015 and correlates these to occupational abilities, focusing on the impact on U.S. occupations and their skill requirements, based on job descriptions and metric changes collected in those years."</span></span>
+<span><span class="co">## [1] "The paper employs empirical methods using two databases: the Electronic Frontier Foundation AI Progress Measurement dataset and the Occupational Information Network (O*NET) from the US Department of Labor. The authors collect data on AI progress metrics and correlate these with occupational definitions and the abilities required for various jobs to derive impact scores for the effect of AI advancements on occupations."</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $Theory</span></span>
-<span><span class="co">## [1] "The theoretical framework links AI advancements to occupational abilities. The authors develop a method for analyzing how different AI capabilities affect various skills required in the labor market, building on existing models that assess automation risk and labor economics, particularly regarding how tasks vary across occupations."</span></span>
+<span><span class="co">## [1] "The primary theoretical framework is based on task variation in occupations and the effects of AI on the bundle of skills required for specific occupations. The authors complement the work of previous scholars by linking advancements in AI technologies directly to job abilities, rather than relying solely on expert predictions about AI's future impact."</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $MainPoint</span></span>
-<span><span class="co">## [1] "The central argument is that while AI may contribute to economic growth, its effects on labor are complex and depend on the specific abilities required for different occupations. The paper introduces a method to quantitatively link AI progress to changes in occupational skill requirements, aiming to provide better insights for policymakers and researchers."</span></span>
+<span><span class="co">## [1] "The document presents a new methodology to link advancements in artificial intelligence to the abilities required in various occupations. It highlights how AI affects the nature of labor, suggesting significant implications for understanding job susceptibility to automation and changes in job requirements."</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $Contribution</span></span>
-<span><span class="co">## [1] "This document contributes a novel methodological framework to the study of AI's impact on labor, addressing the gap in systematic empirical research linking AI advancements to specific job-related skills and enabling a clearer understanding of how different occupations may be affected. It benefits researchers and policymakers by offering a structured way to analyze the implications of AI developments on the workforce."</span></span>
+<span><span class="co">## [1] "The key contribution of this research is the development of a systematic methodology to assess how AI advancements impact specific occupational abilities. This approach enables researchers, practitioners, and policymakers to analyze and compare the potential threats and opportunities posed by AI across different job sectors, guiding informed decisions and policies regarding technology and labor market adaptation."</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $KeyCitations</span></span>
-<span><span class="co">## [1] "Frey and Osborne (2017); Autor and Salomons (2017); Bessen (2017); Brynjolfsson, Mitchell, and Rock (2018)."</span></span></code></pre></div>
+<span><span class="co">## [1] "1. Autor, David H., and Anna Salomons. 2017; 2. Brynjolfsson, Erik, Tom Mitchell, and Daniel Rock. 2018; 3. Frey, Carl Benedikt, and Michael A. Osborne. 2017; 4. Graetz, Georg, and Guy Michaels. 2015."</span></span></code></pre></div>
 <p>The model seems to have reasonably answered our questions in the
 structured format we provided for our first example task. Here we can
 also look at the token usage of the example task:</p>
@@ -296,7 +295,7 @@ API rate limits are separate from the standard per-model limits, meaning
 batch usage doesn’t impact your regular API rate allocations.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">document_tasks</span> <span class="op">|&gt;</span> </span>
-<span>  <span class="fu">send__batch</span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.json_schema <span class="op">=</span> <span class="va">document_schema</span>,</span>
+<span>  <span class="fu"><a href="../reference/send_batch.html">send_batch</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.json_schema <span class="op">=</span> <span class="va">document_schema</span>,</span>
 <span>                     .model       <span class="op">=</span> <span class="st">"gpt-4o-mini"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://readr.tidyverse.org/reference/read_rds.html" class="external-link">write_rds</a></span><span class="op">(</span><span class="st">"document_batch.rds"</span><span class="op">)</span></span></code></pre></div>
 <p>After the batch is sent, the output of <code><a href="../reference/send_batch.html">send_batch()</a></code>
@@ -320,7 +319,7 @@ the mean time.</p>
 into <code><a href="../reference/check_openai_batch.html">check_openai_batch()</a></code>:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://readr.tidyverse.org/reference/read_rds.html" class="external-link">read_rds</a></span><span class="op">(</span><span class="st">"document_batch.rds"</span><span class="op">)</span><span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/check_batch.html">check_batch</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu"><a href="../reference/check_batch.html">check_batch</a></span><span class="op">(</span><span class="va">openai</span><span class="op">)</span></span></code></pre></div>
 <p>Alternatively you can list all OpenAI batches with
 <code><a href="../reference/list_openai_batches.html">list_openai_batches()</a></code>or
 <code>list_batchers(openai())</code>. Of course, you can also look into
@@ -337,7 +336,7 @@ time.</p>
 <code><a href="../reference/fetch_batch.html">fetch_batch()</a></code>:</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://readr.tidyverse.org/reference/read_rds.html" class="external-link">read_rds</a></span><span class="op">(</span><span class="st">"document_batch.rds"</span><span class="op">)</span><span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/fetch_batch.html">fetch_batch</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu"><a href="../reference/fetch_batch.html">fetch_batch</a></span><span class="op">(</span><span class="va">openai</span><span class="op">)</span></span></code></pre></div>
 <p>We can then process the results into a table by mapping
 <code><a href="../reference/get_reply_data.html">get_reply_data()</a></code> and <code><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble()</a></code> over the
 batch output:</p>
@@ -350,16 +349,16 @@ batch output:</p>
 <span><span class="co">## <span style="color: #949494;"># A tibble: 24 × 9</span></span></span>
 <span><span class="co">##    Title  Authors SuggestedFilename Type  Empirics Theory MainPoint Contribution</span></span>
 <span><span class="co">##    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 1</span> A Met… Edward… 2018_Felten_etal… Rese… The doc… The p… The docu… The key con…</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 2</span> The R… Alexan… 2024_Bick_etal_R… Rese… The pap… The p… The docu… This docume…</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 3</span> THE A… Andrew… 2024_Caplin_etal… Rese… The doc… The p… The cent… This resear…</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 4</span> Large… John J… 2023_Horton_etal… Rese… The pap… The t… The cent… This docume…</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 5</span> The I… Sida P… 2023_Peng_etal_A… Rese… The stu… The t… The pape… This docume…</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 6</span> GPTs … Tyna E… 2023_Eloundou_et… Rese… The emp… The p… The cent… This docume…</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 7</span> Autom… Philip… 2023_Lergetporer… Rese… The emp… The t… The cent… The documen…</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 8</span> Artif… Andrew… 2024_Green_etal_… Rese… The rep… The a… The cent… This docume…</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 9</span> THE A… Andrew… 2024_Caplin_etal… Rese… The doc… Theor… The cent… This paper …</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">10</span> Autom… Daron … 2019_Acemoglu_Re… Rese… The pap… The d… The cent… This docume…</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 1</span> A Met… Edward… 2018_Felten_etal… Rese… The doc… The t… The docu… This paper'…</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 2</span> The R… Alexan… 2024_Bick_etal_R… Rese… The pap… The f… The cent… The documen…</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 3</span> THE A… Andrew… 2024_Caplin_etal… Rese… The doc… The d… The cent… The paper's…</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 4</span> Large… John J… 2023_Horton_etal… Rese… The pap… The p… The cent… The documen…</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 5</span> The I… Sida P… 2023_Peng_etal_G… Rese… Conduct… Theor… The stud… This resear…</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 6</span> GPTs … Tyna E… 2023_Eloundou_et… Rese… The stu… The d… The cent… The paper p…</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 7</span> Autom… Philip… 2023_Lergetporer… Rese… The stu… The t… The docu… This resear…</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 8</span> Artif… Andrew… 2024_Green_etal_… Rese… The rep… The t… The cent… This docume…</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 9</span> THE A… Andrew… 2024_Caplin_etal… Rese… The res… The p… The docu… This docume…</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">10</span> Autom… Daron … 2019_Acemoglu_Re… Rese… The pap… The t… The docu… This paper …</span></span>
 <span><span class="co">## <span style="color: #949494;"># ℹ 14 more rows</span></span></span>
 <span><span class="co">## <span style="color: #949494;"># ℹ 1 more variable: KeyCitations &lt;chr&gt;</span></span></span></code></pre></div>
 <p>This table can be exported to Excel with
@@ -442,7 +441,8 @@ cases.</p>
 <p>Another current problem for local models, is structured output. If
 you use <code><a href="../reference/ollama.html">ollama()</a></code>, it currently only supports a simpler
 version of structured output where you have to put the desired schema in
-the prompt as JSON example and enable <code>.json = TRUE:</code></p>
+the prompt as JSON example and enable <code>.json = TRUE</code> and it
+is not guaranteed that the model will adhere to a schema:</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ollama_output</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">'</span></span>
 <span><span class="st">Below are the first 5 pages of a document. </span></span>
@@ -465,16 +465,19 @@ the prompt as JSON example and enable <code>.json = TRUE:</code></p>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/ollama.html">ollama</a></span><span class="op">(</span>.json<span class="op">=</span><span class="cn">TRUE</span>,.num_ctx <span class="op">=</span> <span class="fl">8192</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ollama_output</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/get_reply_data.html">get_reply_data</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">## <span style="color: #949494;"># A tibble: 1 × 9</span></span></span>
+<span><span class="co">## <span style="color: #949494;"># A tibble: 4 × 9</span></span></span>
 <span><span class="co">##   Title                   Authors Filename DocType KeyCitations EmpiricalMethods</span></span>
 <span><span class="co">##   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>           </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">1</span> A Method to Link Advan… <span style="color: #949494;">"</span>Edwar… 2018_Fe… Resear… <span style="color: #949494;">"</span>  - Frey a… <span style="color: #949494;">"</span>The authors de…</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">1</span> A Method to Link Advan… Edward… 2018_Fe… Resear… Frey and Os… The authors cor…</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">2</span> A Method to Link Advan… Edward… 2018_Fe… Resear… Acemoglu an… The authors cor…</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">3</span> A Method to Link Advan… Edward… 2018_Fe… Resear… Graetz and … The authors cor…</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">4</span> A Method to Link Advan… Edward… 2018_Fe… Resear… Arntz, Greg… The authors cor…</span></span>
 <span><span class="co">## <span style="color: #949494;"># ℹ 3 more variables: TheoreticalFramework &lt;chr&gt;, MainPoint &lt;chr&gt;,</span></span></span>
 <span><span class="co">## <span style="color: #949494;">#   KeyContribution &lt;chr&gt;</span></span></span></code></pre></div>
-<p>While this worked for the current document, it is not clear that the
-model will adhere to a strict schema for every document, so you might
-have to manually clean cases where fields are missing. This is
-especially a problem with nested outputs.</p>
+<p>Here we already see, that the <strong>gemma2</strong> model we used
+did not completely adhere to the required schema. In fact, we get a
+multirow <code>tibble</code> because the model did reply with a list for
+<code>KeyCitations</code> instead of a single string.</p>
 </div>
 </div>
 <div class="section level2">

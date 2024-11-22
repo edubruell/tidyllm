@@ -1,3 +1,4 @@
+
 #' Send LLM Messages to the Groq Chat API
 #'
 #' @description
@@ -55,7 +56,7 @@ groq_chat <- function(.llm,
 
   # Validate inputs
   c(
-    "Input .llm must be an LLMMessage object" = inherits(.llm, "LLMMessage"),
+    "Input .llm must be an LLMMessage object" = S7_inherits(.llm, LLMMessage),
     "Input .max_tokens must be an integer" = is_integer_valued(.max_tokens) & .max_tokens > 0,
     "Input .model must be a non-empty string" = is.character(.model) & nzchar(.model),
     "Input .api_url must be a valid URL" = is.character(.api_url) & nzchar(.api_url),
@@ -73,8 +74,13 @@ groq_chat <- function(.llm,
   ) |>
     validate_inputs()
   
+  api_obj <- api_openai(short_name = "groq",
+                        long_name  = "Groq")
+  
   # Get formatted message list for Groq models
-  messages <- .llm$to_api_format("openai",no_system=TRUE)
+  messages <- to_api_format(llm=.llm,
+                            api=api_obj,
+                            no_system=TRUE)
   
   # Retrieve API key from environment variables
   api_key <- Sys.getenv("GROQ_API_KEY")
@@ -94,15 +100,14 @@ groq_chat <- function(.llm,
     stop = .stop,
     seed = .seed,
     stream = .stream
-  )
-  request_body <- base::Filter(Negate(is.null), request_body)
+  ) |> purrr::compact()
   
   # Handle JSON mode
   if (.json == TRUE) {
     request_body$response_format <- list(type = "json_object")
   }
   
-  groq_request <- httr2::request(.api_url) |>
+  request <- httr2::request(.api_url) |>
     httr2::req_url_path("/openai/v1/chat/completions") |>
     httr2::req_headers(
       `Authorization` = sprintf("Bearer %s", api_key),
@@ -110,64 +115,23 @@ groq_chat <- function(.llm,
     ) |>
     httr2::req_body_json(data = request_body)
   
-  # Perform the API request using perform_api_request
-  response <- perform_api_request(
-    .request = groq_request,
-    .api = "groq",
-    .stream = .stream,
-    .timeout = .timeout,
-    .max_tries = .max_tries,
-    .parse_response_fn = function(body_json) {
-      if ("error" %in% names(body_json)) {
-        sprintf("Groq API returned an Error:\nType: %s\nMessage: %s",
-                body_json$error$type,
-                body_json$error$message) |>
-          stop()
-      }
-      
-      # Check if content is present in the response
-      if (!"choices" %in% names(body_json) || length(body_json$choices) == 0) {
-        stop("Received empty response from OpenAI API")
-      }
-      
-      assistant_reply <- body_json$choices[[1]]$message$content
-      return(assistant_reply)
-    },
-    .dry_run = .dry_run
-  )
-  
   # Return only the request object in a dry run.
   if (.dry_run) {
-    return(response)  
+    return(request)  
   }
+  
+  response <- perform_chat_request(request,api_obj,.stream,.timeout,.max_tries)
   
   # Extract assistant reply and rate limiting info from response headers
   assistant_reply <- response$assistant_reply
-  rl <- ratelimit_from_header(response$headers,"groq")
-  
-  # Update the rate-limit environment with info from rl
-  update_rate_limit("groq", rl)
-  
-  # Show request rate limit info if we are verbose
-  if (.verbose == TRUE) {
-    glue::glue("Groq API answer received at {rl$this_request_time}.
-              Remaining requests rate limit: {rl$ratelimit_requests_remaining}/{rl$ratelimit_requests}
-              Requests rate limit reset at: {rl$ratelimit_requests_reset_time} 
-              Remaining tokens   rate limit: {rl$ratelimit_tokens_remaining}/{rl$ratelimit_tokens}
-              Tokens rate limit reset at: {rl$ratelimit_tokens_reset_time} \n
-              ") |> cat("\n")
-  }
-  
-  # Create a deep copy of the LLMMessage object
-  llm_copy <- .llm$clone_deep()
+  track_rate_limit(api_obj,response$headers,.verbose)
   
   # Add model's message to the history of the LLMMessage object
-  llm_copy$add_message(role = "assistant", 
-                       content = assistant_reply , 
-                       json    = .json,
-                       meta    = response$meta)
-  
-  return(llm_copy)
+  add_message(llm     = .llm,
+              role    = "assistant", 
+              content = assistant_reply , 
+              json    = .json,
+              meta    = response$meta)
 }
 
 

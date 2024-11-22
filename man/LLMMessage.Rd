@@ -3,208 +3,26 @@
 \name{LLMMessage}
 \alias{LLMMessage}
 \title{Large Language Model Message Class}
-\description{
-Large Language Model Message Class
+\usage{
+LLMMessage(message_history = list(), system_prompt = character(0))
+}
+\arguments{
+\item{message_history}{A list containing messages. Each message is a named list with keys like \code{role}, \code{content}, \code{media}, etc.}
 
-Large Language Model Message Class
+\item{system_prompt}{A character string representing the default system prompt used for the conversation.}
+}
+\description{
+\code{LLMMessage} is an S7 class for managing a conversation history intended for use with large language models (LLMs). Please use
+\code{llm_message()}to create or modify \code{LLMMessage} objects.
 }
 \details{
-This class manages a history of messages and media interactions intended for use with large language  models.
-It allows for adding messages, converting messages for API usage, and printing the history in a structured format.
-}
-\section{Public fields}{
-\if{html}{\out{<div class="r6-fields">}}
-\describe{
-\item{\code{message_history}}{List to store all message interactions.}
-
-\item{\code{system_prompt}}{The system prompt used for a conversation}
-}
-\if{html}{\out{</div>}}
-}
-\section{Methods}{
-\subsection{Public methods}{
+The \code{LLMMessage} class includes the following features:
 \itemize{
-\item \href{#method-LLMMessage-new}{\code{LLMMessage$new()}}
-\item \href{#method-LLMMessage-clone_deep}{\code{LLMMessage$clone_deep()}}
-\item \href{#method-LLMMessage-add_message}{\code{LLMMessage$add_message()}}
-\item \href{#method-LLMMessage-to_api_format}{\code{LLMMessage$to_api_format()}}
-\item \href{#method-LLMMessage-has_image}{\code{LLMMessage$has_image()}}
-\item \href{#method-LLMMessage-remove_message}{\code{LLMMessage$remove_message()}}
-\item \href{#method-LLMMessage-print}{\code{LLMMessage$print()}}
-\item \href{#method-LLMMessage-clone}{\code{LLMMessage$clone()}}
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-LLMMessage-new"></a>}}
-\if{latex}{\out{\hypertarget{method-LLMMessage-new}{}}}
-\subsection{Method \code{new()}}{
-Initializes the LLMMessage object with an optional system prompt.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{LLMMessage$new(system_prompt = "You are a helpful assistant")}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{system_prompt}}{A string that sets the initial system prompt.}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-A new LLMMessage object.
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-LLMMessage-clone_deep"></a>}}
-\if{latex}{\out{\hypertarget{method-LLMMessage-clone_deep}{}}}
-\subsection{Method \code{clone_deep()}}{
-Deep Clone of LLMMessage Object
-
-This method creates a deep copy of the \code{LLMMessage} object. It ensures that
-all internal states, including message histories and settings, are copied
-so that the original object remains unchanged when mutations are applied
-to the copy. This is particularly useful for maintaining immutability in
-a tidyverse-like functional programming context where functions should
-not have side effects on their inputs.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{LLMMessage$clone_deep()}\if{html}{\out{</div>}}
-}
-
-\subsection{Returns}{
-A new \code{LLMMessage} object that is a deep copy of the original.
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-LLMMessage-add_message"></a>}}
-\if{latex}{\out{\hypertarget{method-LLMMessage-add_message}{}}}
-\subsection{Method \code{add_message()}}{
-Add a message
-
-Adds a message to the history. Optionally includes media.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{LLMMessage$add_message(role, content, media = NULL, json = FALSE, meta = NULL)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{role}}{The role of the message sender (e.g., "user", "assistant").}
-
-\item{\code{content}}{The textual content of the message.}
-
-\item{\code{media}}{Optional; media content to attach to the message.}
-
-\item{\code{json}}{Is the message a raw string that contains a json response?}
-
-\item{\code{meta}}{Optional, metadata returned by an API}
-}
-\if{html}{\out{</div>}}
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-LLMMessage-to_api_format"></a>}}
-\if{latex}{\out{\hypertarget{method-LLMMessage-to_api_format}{}}}
-\subsection{Method \code{to_api_format()}}{
-Convert to API format
-
-Converts the message history to a format suitable for various API calls.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{LLMMessage$to_api_format(
-  api_type,
-  cgpt_image_detail = "auto",
-  no_system = FALSE
-)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{api_type}}{The type of API (e.g., "claude","groq","openai").}
-
-\item{\code{cgpt_image_detail}}{Specific option for ChatGPT API (imagedetail - set to auto)}
-
-\item{\code{no_system}}{Without system prompt (default: FALSE)}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-A message history in the target API format
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-LLMMessage-has_image"></a>}}
-\if{latex}{\out{\hypertarget{method-LLMMessage-has_image}{}}}
-\subsection{Method \code{has_image()}}{
-Simple helper method to determine whether the message history contains
-an image.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{LLMMessage$has_image()}\if{html}{\out{</div>}}
-}
-
-\subsection{Returns}{
-Returns TRUE if the message hisotry contains images
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-LLMMessage-remove_message"></a>}}
-\if{latex}{\out{\hypertarget{method-LLMMessage-remove_message}{}}}
-\subsection{Method \code{remove_message()}}{
-Remove a Message by Index
-
-Removes a message from the message history at the specified index.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{LLMMessage$remove_message(index)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{index}}{A positive integer indicating the position of the message to remove.}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-The \code{LLMMessage} object, invisibly.
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-LLMMessage-print"></a>}}
-\if{latex}{\out{\hypertarget{method-LLMMessage-print}{}}}
-\subsection{Method \code{print()}}{
-Prints the current message history in a structured format.
-
-By default, this function respects the \code{tidyllm_print_metadata} option.
-If the option is set to \code{TRUE}, metadata for each message (if available) will be printed.
-
-Users can override the default behavior by explicitly passing a value to the \code{.meta} parameter.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{LLMMessage$print(.meta = getOption("tidyllm_print_metadata", FALSE))}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{.meta}}{Logical; if \code{TRUE}, prints metadata for each message.
-Defaults to the value of \code{getOption("tidyllm_print_metadata", FALSE)}.}
-}
-\if{html}{\out{</div>}}
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-LLMMessage-clone"></a>}}
-\if{latex}{\out{\hypertarget{method-LLMMessage-clone}{}}}
-\subsection{Method \code{clone()}}{
-The objects of this class are cloneable with this method.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{LLMMessage$clone(deep = FALSE)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{deep}}{Whether to make a deep clone.}
-}
-\if{html}{\out{</div>}}
-}
+\item Stores message history in a structured format.
+\item Supports attaching media and metadata to messages.
+\item Provides generics like \code{add_message()}, \code{has_image()}, and \code{remove_message()} for interaction.
+\item Enables API-specific formatting through the \code{to_api_format()} generic.
+\item \code{message_history}: A list containing messages. Each message is a named list with keys like \code{role}, \code{content}, \code{media}, etc.
+\item \code{system_prompt}: A character string representing the default system prompt used for the conversation.
 }
 }

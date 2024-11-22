@@ -1,3 +1,141 @@
+
+#' The OpenAI API provider class
+#'
+#' @noRd
+api_openai <- new_class("OpenAI", APIProvider)
+
+#' Convert LLMMessage to OpenAI API-Compatible Format
+#'
+#' Converts the `message_history` of an `LLMMessage` object into the
+#' for the OpenAI's Chat Completions API.
+#'
+#' @noRd
+method(to_api_format, list(LLMMessage, api_openai)) <- function(llm, 
+                                                                api,
+                                                                no_system=FALSE) {
+  openai_history <- if (no_system) filter_roles(llm@message_history, c("user", "assistant")) else llm@message_history
+  lapply(openai_history, function(m) {
+    formatted_message <- format_message(m)
+    if (!is.null(formatted_message$image)) {
+      list(
+        role = m$role,
+        content = list(
+          list(type = "text", text = formatted_message$content),
+          list(type = "image_url", image_url = list(
+            url = glue::glue("data:{formatted_message$image$media_type};base64,{formatted_message$image$data}")
+          ))
+        )
+      )
+    } else {
+      list(role = m$role, content = formatted_message$content)
+    }
+  })
+}
+
+
+#' Extract rate limit info from  Openai API-Headers
+#'
+#' @noRd
+method(ratelimit_from_header, list(api_openai,new_S3_class("httr2_headers"))) <- function(api,headers){
+  request_time <- strptime(headers["date"]$date, format="%a, %d %b %Y %H:%M:%S", tz="GMT")
+  
+  ratelimit_requests_reset_dt <- parse_duration_to_seconds(
+    headers["x-ratelimit-reset-requests"]$`x-ratelimit-reset-requests`)
+  ratelimit_tokens_reset_dt <- parse_duration_to_seconds(
+    headers["x-ratelimit-reset-tokens"]$`x-ratelimit-reset-tokens`)
+  
+  list(
+    this_request_time = request_time,
+    ratelimit_requests = as.integer(
+      headers["x-ratelimit-limit-requests"]),
+    ratelimit_requests_remaining = as.integer(
+      headers["x-ratelimit-remaining-requests"]),
+    ratelimit_requests_reset_time = request_time + ratelimit_requests_reset_dt,
+    ratelimit_tokens = as.integer(
+      headers["x-ratelimit-limit-tokens"]),
+    ratelimit_tokens_remaining = as.integer(
+      headers["x-ratelimit-remaining-tokens"]),
+    ratelimit_tokens_reset_time = request_time + ratelimit_tokens_reset_dt
+  )
+}
+
+#' A chat parsing method for Openai to extract the assitant response f
+#'
+#' @noRd
+method(parse_chat_function, api_openai) <- function(api) {
+  api_label <- api@long_name 
+  function(body_json){
+    if("error" %in% names(body_json)){
+      sprintf("%s returned an Error:\nType: %s\nMessage: %s",
+              api_label,
+              body_json$error$type,
+              body_json$error$message) |>
+        stop()
+    }
+    
+    if (length(body_json$choices) == 0) {
+      paste0("Received empty response from ",api_label) |>
+        stop()
+    }
+    body_json$choices[[1]]$message$content  
+  }
+}  
+
+
+#' A callback function generator for an OpenAI request 
+#' request
+#'
+#' @noRd
+method(generate_callback_function,api_openai) <- function(api) {
+  callback_fn <- function(.data) {
+    # Read the stream content and split into lines
+    lines <- .data |>
+      rawToChar(multiple = FALSE) |>
+      stringr::str_split("\n") |>
+      unlist()
+    
+    # Initialize a flag to control early exit
+    continue_processing <- TRUE
+    
+    # Process lines that start with "data: "
+    data_lines <- lines |>
+      purrr::keep(~ grepl("^data: ", .x) && .x != "")
+    
+    # Process data lines
+    purrr::walk(data_lines, ~ {
+      
+      json_part <- sub("^data: ", "", .x)
+      
+      if (json_part != "[DONE]") {
+        # Try to parse the JSON content
+        parsed_event <- tryCatch(
+          jsonlite::fromJSON(json_part, simplifyVector = FALSE, simplifyDataFrame = FALSE),
+          error = function(e) {
+            message("Failed to parse JSON: ", e$message)
+            return(NULL)
+          }
+        )
+        
+        if (!is.null(parsed_event)) {
+          if(length(parsed_event$choices)>=1){
+            delta_content <- parsed_event$choices[[1]]$delta$content
+            if (!is.null(delta_content)) {
+              .tidyllm_stream_env$stream <- paste0(.tidyllm_stream_env$stream, delta_content)
+              cat(delta_content)
+              utils::flush.console()
+            }
+          }
+        }
+      } else {
+        message("\n---------\nStream finished\n---------\n")
+        continue_processing <<- FALSE
+      }
+    })
+    
+    return(continue_processing)
+  }
+}
+
 #' Send LLM Messages to the OpenAI Chat Completions API
 #'
 #' @description
@@ -17,7 +155,6 @@
 #' @param .api_url Base URL for the API (default: "https://api.openai.com/").
 #' @param .timeout Request timeout in seconds (default: 60).
 #' @param .verbose Should additional information be shown after the API call (default: FALSE).
-#' @param .json Should output be in JSON mode (default: FALSE).
 #' @param .json_schema A JSON schema object as R list to enforce the output structure (If defined has precedence over JSON mode).
 #' @param .max_tries Maximum retries to perform request
 #' @param .dry_run If TRUE, perform a dry run and return the request object (default: FALSE).
@@ -43,7 +180,6 @@ openai_chat <- function(
     .api_url = "https://api.openai.com/",
     .timeout = 60,
     .verbose = FALSE,
-    .json = FALSE,
     .json_schema = NULL,
     .max_tries = 3,
     .dry_run = FALSE,
@@ -52,7 +188,7 @@ openai_chat <- function(
 ) {
   # Validate inputs
   c(
-    "Input .llm must be an LLMMessage object" = inherits(.llm, "LLMMessage"),
+    "Input .llm must be an LLMMessage object" = S7_inherits(.llm,LLMMessage),
     "Input .model must be a string" = is.character(.model),
     "Input .max_completion_tokens must be NULL or a positive integer" = is.null(.max_completion_tokens) | (is_integer_valued(.max_completion_tokens) & .max_completion_tokens > 0),    
     "Input .frequency_penalty must be numeric or NULL" = is.null(.frequency_penalty) | is.numeric(.frequency_penalty),
@@ -66,7 +202,6 @@ openai_chat <- function(
     "Input .api_url must be a string" = is.character(.api_url),
     "Input .timeout must be integer-valued numeric" = is_integer_valued(.timeout),
     "Input .verbose must be logical" = is.logical(.verbose),
-    "Input .json must be logical" = is.logical(.json),
     "Input .json_schema must be NULL or a list" = is.null(.json_schema) | is.list(.json_schema),
     "Input .max_tries must be integer-valued numeric" = is_integer_valued(.max_tries),
     "Input .dry_run must be logical" = is.logical(.dry_run),
@@ -74,15 +209,22 @@ openai_chat <- function(
     "Input .api_path must be a string" = is.character(.api_path)
   ) |> validate_inputs()
   
-  #This filters out the system prompt for reasoning models.
+  
+  api_obj <- api_openai(short_name = "openai",
+                        long_name  = "OpenAI")
+  
+  #Filter out the system prompt for reasoning models.
   no_system_prompt <- FALSE
   if(.model %in% c("o1-preview","o1-mini")){
     message("Note: Reasoning models do not support system prompts")
     no_system_prompt <- TRUE
   }
-  messages <- .llm$to_api_format("openai",no_system=no_system_prompt)
   
-
+  
+  messages <- to_api_format(llm=.llm,
+                            api=api_obj,
+                            no_system=no_system_prompt)
+  
   if (!.compatible) {
     api_key <- Sys.getenv("OPENAI_API_KEY")
     if ((api_key == "") & .dry_run == FALSE) {
@@ -90,20 +232,16 @@ openai_chat <- function(
     }
   }
   
-  
   # Handle JSON schema and JSON mode
   response_format <- NULL
+  json = FALSE
   if (!is.null(.json_schema)) {
-    .json=TRUE
+    json=TRUE
     response_format <- list(
       type = "json_schema",
       json_schema = .json_schema
     )
-  } else if (.json == TRUE) {
-    response_format <- list(
-      type = "json_object"
-    )
-  }
+  } 
   
   # Build the request body
   request_body <- list(
@@ -119,9 +257,9 @@ openai_chat <- function(
     stream = .stream,
     temperature = .temperature,
     top_p = .top_p
-  )
-  request_body <- base::Filter(Negate(is.null), request_body)
-
+  ) |> purrr::compact()
+  
+  
   # Build the request, omitting Authorization header if .compatible is TRUE
   request <- httr2::request(.api_url) |>
     httr2::req_url_path(.api_path) |>
@@ -136,71 +274,23 @@ openai_chat <- function(
     request <- request |> httr2::req_headers(`Content-Type` = "application/json")
   }
   
-  
-  # Perform the API request using perform_api_request
-  response <- perform_api_request(
-    .request = request,
-    .api = "openai",
-    .stream = .stream,
-    .timeout = .timeout,
-    .max_tries = .max_tries,
-    .parse_response_fn = function(body_json) {
-      if ("error" %in% names(body_json)) {
-        sprintf("Openai API returned an Error:\nType: %s\nMessage: %s",
-                body_json$error$type,
-                body_json$error$message) |>
-          stop()
-      }
-      
-      # Check if content is present in the response
-      if (!"choices" %in% names(body_json) || length(body_json$choices) == 0) {
-        stop("Received empty response from OpenAI API")
-      }
-      
-      assistant_reply <- body_json$choices[[1]]$message$content
-      return(assistant_reply)
-    },
-    .dry_run = .dry_run
-  )
-  
   # Return only the request object in a dry run.
   if (.dry_run) {
-    return(response)
+    return(request)
   }
+  
+  response <- perform_chat_request(request,api_obj,.stream,.timeout,.max_tries)
   
   # Extract assistant reply and rate limiting info from response headers
   assistant_reply <- response$assistant_reply
-  rl <- ratelimit_from_header(response$headers,"openai")
+  if (!.compatible) {track_rate_limit(api_obj,response$headers,.verbose)}
   
-  
-  # Skip rate-limit environment handling if .compatible is set
-  if (!.compatible) {
-    rl <- ratelimit_from_header(response$headers, "openai")
-    initialize_api_env("openai")
-    update_rate_limit("openai", rl)
-    
-    # Show rate limit info if verbose
-    if (.verbose == TRUE) {
-      glue::glue(
-        "OpenAI API answer received at {rl$this_request_time}.
-        Remaining requests rate limit: {rl$ratelimit_requests_remaining}/{rl$ratelimit_requests}
-        Requests rate limit reset at: {rl$ratelimit_requests_reset_time}
-        Remaining tokens rate limit: {rl$ratelimit_tokens_remaining}/{rl$ratelimit_tokens}
-        Tokens rate limit reset at: {rl$ratelimit_tokens_reset_time}\n"
-      ) |> cat()
-    }
-  }
-  
-  # Create a deep copy of the LLMMessage object and add the assistant's reply
-  llm_copy <- .llm$clone_deep()
-  llm_copy$add_message(role = "assistant", 
-                       content = assistant_reply , 
-                       json    = .json,
-                       meta    = response$meta)
-  
-  return(llm_copy)
+  add_message(llm     = .llm,
+              role    = "assistant", 
+              content = assistant_reply , 
+              json    = json,
+              meta    = response$meta)
 }
-
 
 
 
@@ -212,6 +302,7 @@ openai_chat <- function(
 #' @param .timeout Timeout for the API request in seconds (default: 120).
 #' @param .dry_run If TRUE, perform a dry run and return the request object.
 #' @param .max_tries Maximum retry attempts for requests (default: 3).
+#' @param .verbose Should information about current ratelimits be printed? (default: FALSE)
 #' @return A tibble with two columns: `input` and `embeddings`. 
 #' The `input` column contains the texts sent to embed, and the `embeddings` column 
 #' is a list column where each row contains an embedding vector of the sent input.
@@ -221,7 +312,8 @@ openai_embedding <- function(.input,
                              .truncate = TRUE,
                              .timeout = 120,
                              .dry_run = FALSE,
-                             .max_tries = 3) {
+                             .max_tries = 3,
+                             .verbose   = FALSE) {
 
   # Get the OpenAI API key
   api_key <- Sys.getenv("OPENAI_API_KEY")
@@ -231,7 +323,7 @@ openai_embedding <- function(.input,
   
   # Validate the inputs
   c(
-    "Input .input must be an LLMMessage object or a character vector" = inherits(.input, "LLMMessage") | is.character(.input),
+    "Input .input must be an LLMMessage object or a character vector" = S7_inherits(.input, LLMMessage) | is.character(.input),
     "Input .model must be a string" = is.character(.model),
     "Input .truncate must be logical" = is.logical(.truncate),
     "Input .timeout must be an integer-valued numeric (seconds till timeout)" = is.numeric(.timeout) && .timeout > 0,
@@ -291,8 +383,9 @@ openai_embedding <- function(.input,
     response_content <- httr2::resp_body_json(response)
     
     # Parse and update rate limit info from headers
-    rl <- ratelimit_from_header(response$headers, "openai")
-    update_rate_limit("openai", rl)
+    track_rate_limit(api_openai(short_name = "openai",
+                                long_name ="OpenAI"),
+                     response$headers,.verbose)
     
     # Extract the embeddings
     embeddings <- response_content$data |> 
@@ -361,10 +454,10 @@ send_openai_batch <- function(.llms,
                               .timeout = 60,
                               .verbose = FALSE,
                               .id_prefix = "tidyllm_openai_req_") {
-  
+
   # Input validation
   c(
-    ".llms must be a list of LLMMessage objects" = is.list(.llms) && all(sapply(.llms, inherits, "LLMMessage")),
+    ".llms must be a list of LLMMessage objects" = is.list(.llms) && all(sapply(.llms, S7_inherits, LLMMessage)),
     ".max_completion_tokens must be NULL or a positive integer" = is.null(.max_completion_tokens) | (is_integer_valued(.max_completion_tokens) & .max_completion_tokens > 0),
     ".frequency_penalty must be numeric or NULL" = is.null(.frequency_penalty) | is.numeric(.frequency_penalty),
     ".logit_bias must be a list or NULL" = is.null(.logit_bias) | is.list(.logit_bias),
@@ -411,9 +504,9 @@ send_openai_batch <- function(.llms,
   
   # Handle JSON schema and JSON mode
   response_format <- NULL
-  .json <- FALSE
+  json <- FALSE
   if (!is.null(.json_schema)) {
-    .json<-TRUE
+    json<-TRUE
     response_format <- list(
       type = "json_schema",
       json_schema = .json_schema
@@ -428,9 +521,12 @@ send_openai_batch <- function(.llms,
       names(.llms)[i] <<- custom_id  # Assign generated ID as the name of .llms
     }
     
-    # Get messages from LLMMessage object
-    messages <- .llms[[i]]$to_api_format("openai",no_system=no_system_prompt)
+    # Get messages from each LLMMessage object
+    messages <- to_api_format(llm=.llms[[i]],
+                              api=api_openai(),
+                              no_system=no_system_prompt)
     
+
     # Build the request body
     body <- list(
       model = .model,
@@ -444,10 +540,9 @@ send_openai_batch <- function(.llms,
       stop = .stop,
       temperature = .temperature,
       top_p = .top_p
-    )
+    ) |> purrr::compact()
     
-    body <- base::Filter(Negate(is.null), body)
-    
+   
     # Create the request line as JSON
     request_line <- list(
       custom_id = custom_id,
@@ -539,7 +634,7 @@ send_openai_batch <- function(.llms,
   # Attach batch_id as an attribute to .llms
   batch_id <- batch_response_body$id
   attr(.llms, "batch_id") <- batch_id
-  attr(.llms, "json") <- .json
+  attr(.llms, "json") <- json
   
   
   # Optionally, remove the temporary file
@@ -716,7 +811,7 @@ fetch_openai_batch <- function(.llms,
                                .max_tries = 3,
                                .timeout = 60) {
   c(
-    ".llms must be a list of LLMMessage objects with names as custom IDs" = is.list(.llms) && all(sapply(.llms, inherits, "LLMMessage")),
+    ".llms must be a list of LLMMessage objects with names as custom IDs" = is.list(.llms) && all(sapply(.llms, S7_inherits, LLMMessage)),
     ".batch_id must be a non-empty character string or NULL" = is.null(.batch_id) || (is.character(.batch_id) && nzchar(.batch_id)),
     ".dry_run must be logical" = is.logical(.dry_run),
     ".max_tries must be integer-valued numeric" = is_integer_valued(.max_tries),
@@ -818,12 +913,12 @@ fetch_openai_batch <- function(.llms,
     if (!is.null(result) && is.null(result$error) && result$response$status_code == 200) {
       assistant_reply <- result$response$body$choices$message$content
       meta_data <- extract_response_metadata(result$response$body)
-      llm_copy <- .llms[[custom_id]]$clone_deep()
-      llm_copy$add_message(role = "assistant", 
-                           content =  assistant_reply,
-                           json = .json,
-                           meta = meta_data)
-      return(llm_copy)
+      llm <- add_message(llm = .llms[[custom_id]],
+                              role = "assistant", 
+                              content =  assistant_reply,
+                              json = .json,
+                              meta = meta_data)
+      return(llm)
     } else {
       warning(sprintf("Result for custom_id %s was unsuccessful or not found", custom_id))
       return(.llms[[custom_id]])

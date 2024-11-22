@@ -7,7 +7,7 @@ knitr::opts_chunk$set(
   collapse = TRUE
 )
 ```
-> ⚠️ **Note:**  This article refers to the development version 0.2.5. of **tidyllm**, which has a chnaged interface compared to the last CRAN release. You can install the current development version directly from GitHub using devtools:
+> ⚠️ **Note:**  This article refers to the development version 0.2.6. of **tidyllm**, which has a chnaged interface compared to the last CRAN release. You can install the current development version directly from GitHub using devtools:
 
 ```{r, eval= FALSE, echo=TRUE}
 # Install devtools if not already installed
@@ -15,7 +15,7 @@ if (!requireNamespace("devtools", quietly = TRUE)) {
   install.packages("devtools")
 }
 
-# Install TidyLLM from GitHub
+# Install tidyllm from GitHub
 devtools::install_github("edubruell/tidyllm")
 ```
 
@@ -132,7 +132,7 @@ After confirming that our single-document analysis is working well, we can exten
 Batch APIs, like those from Anthropic and OpenAI, often offer up to 50% savings compared to single-interaction requests. In **tidyllm**, we can use `send_batch()` to submit batch requests. The OpenAI Batch API, supports up to 50,000 requests in a single batch with a maximum file size of 100 MB. Additionally, batch API rate limits are separate from the standard per-model limits, meaning batch usage doesn’t impact your regular API rate allocations.
 ```{r batch, eval=FALSE}
 document_tasks |> 
-  send__batch(openai(.json_schema = document_schema,
+  send_batch(openai(.json_schema = document_schema,
                      .model       = "gpt-4o-mini")) |>
   write_rds("document_batch.rds")
 ```
@@ -143,7 +143,7 @@ After the batch is sent, the output of  `send_batch()` contains the input list o
 To check whether a batch was compeleted you can load the output file into `check_openai_batch()`:
 ```{r, eval=FALSE}
 read_rds("document_batch.rds")|>
-  check_batch(openai())
+  check_batch(openai)
 ```
 Alternatively you can list all OpenAI batches with `list_openai_batches()`or `list_batchers(openai())`. Of course, you can also look into the [batches dashboard of the OpenAI platform](https://platform.openai.com/batches/) for the same overview. Since OpenAI batches are sent as `.jsonl` and saved on the OpenAI server, you can also look into the file tab of the dashboard to delete old files from time to time. 
 
@@ -152,7 +152,7 @@ Alternatively you can list all OpenAI batches with `list_openai_batches()`or `li
 Once the batch is complete, we fetch all responses with `fetch_batch()`:
 ```{r, eval=FALSE}
 results <- read_rds("document_batch.rds")|>
-  fetch_batch(openai())
+  fetch_batch(openai)
 ```
 ```{r results_hidden, echo=FALSE}
 results <- read_rds("document_results.rds")
@@ -190,7 +190,7 @@ Using open-source local models for PDF processing is also possible, though remot
 
 > ⚠️ **Note:** When using paid remote models, it's important to consider data privacy and security, especially if you're processing sensitive documents, as uploading data to external servers may introduce risks — local models provide more control in such cases. 
 
-Another current problem for local models, is structured output. If you use `ollama()`, it currently only supports a simpler version of structured output where you have to put the desired schema in the prompt as JSON example and enable `.json = TRUE:`
+Another current problem for local models, is structured output. If you use `ollama()`, it currently only supports a simpler version of structured output where you have to put the desired schema in the prompt as JSON example and enable `.json = TRUE` and it is not guaranteed that the model will adhere to a schema: 
 
 ```{r ollama_example, eval=FALSE}
 ollama_output <- llm_message('
@@ -219,7 +219,7 @@ ollama_output <- read_rds("ollama_reply.rds")
 ```{r}
 ollama_output |> get_reply_data() |> as_tibble()
 ```
-While this worked for the current document, it is not clear that the model will adhere to a strict schema for every document, so you might have to manually clean cases where fields are missing. This is especially a problem with nested outputs. 
+Here we already see, that the **gemma2** model we used did not completely adhere to the required schema. In fact, we get a multirow `tibble` because the model did reply with a list for `KeyCitations` instead of a single string. 
 
 ## Outlook
 

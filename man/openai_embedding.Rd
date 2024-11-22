@@ -10,7 +10,8 @@ openai_embedding(
   .truncate = TRUE,
   .timeout = 120,
   .dry_run = FALSE,
-  .max_tries = 3
+  .max_tries = 3,
+  .verbose = FALSE
 )
 }
 \arguments{
@@ -25,6 +26,8 @@ openai_embedding(
 \item{.dry_run}{If TRUE, perform a dry run and return the request object.}
 
 \item{.max_tries}{Maximum retry attempts for requests (default: 3).}
+
+\item{.verbose}{Should information about current ratelimits be printed? (default: FALSE)}
 }
 \value{
 A tibble with two columns: \code{input} and \code{embeddings}.

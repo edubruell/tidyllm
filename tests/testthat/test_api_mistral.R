@@ -65,12 +65,14 @@ test_that("mistral returns expected response",{
     }
     
     # Assertions based on the message in the captured mock response
-    expect_true(inherits(result, "LLMMessage"))
+    expect_true(S7_inherits(result, LLMMessage))
+    result_tbl <- as_tibble(result) 
+    
     expect_equal(
-      result$message_history[[length(result$message_history)]]$content,
+      result_tbl$content[3],
       "Hello! How can I assist you today? Let's chat about anything you'd like. 😊"
     )
-    expect_equal(result$message_history[[length(result$message_history)]]$role, "assistant")
+    expect_equal(result_tbl$role[3], "assistant")
     
     # Now, check that the rate limit environment has been populated with correct values
     expect_true(exists("mistral", envir = .tidyllm_rate_limit_env))

@@ -1,31 +1,25 @@
-#' Perform an API request to interact with language models
+#' Perform a Chat API request to interact with language models
 #'
 #' @param .request The httr2 request object.
-#' @param .api The API identifier (e.g., "claude", "openai").
+#' @param .api An api provider object
 #' @param .stream Stream the response if TRUE.
 #' @param .timeout Request timeout in seconds.
 #' @param .max_tries Maximum retry attempts for requests (default: 3).
-#' @param .parse_response_fn A function to parse the assistant's reply.
-#' @param .dry_run If TRUE, perform a dry run and return the request object.
 #'
 #' @return A list containing the assistant's reply and response headers.
 #' @noRd
-perform_api_request <- function(.request, 
+perform_chat_request <- function(.request, 
                                 .api, 
                                 .stream = FALSE, 
                                 .timeout = 60, 
-                                .max_tries = 3,
-                                .parse_response_fn = NULL,
-                                .dry_run =FALSE) {
-  # Return the request object if test mode is enabled
-  if (.dry_run) {
-    return(.request)
-  }
+                                .max_tries = 3) {
+
+  api_name <- .api@long_name
   
   if (.stream == TRUE) {
     # Initialize the streaming environment variable
     .tidyllm_stream_env$stream <- ""
-    message("\n---------\nStart ", .api, " streaming: \n---------\n")
+    message("\n---------\nStart ", api_name, " streaming: \n---------\n")
     
     # Generate the appropriate callback function
     callback_fn <- generate_callback_function(.api)
@@ -52,18 +46,14 @@ perform_api_request <- function(.request,
       httr2::req_timeout(.timeout) |>
       httr2::req_error(is_error = function(resp) FALSE) |>
       httr2::req_retry(max_tries = .max_tries,  
-                      retry_on_failure = TRUE,
-                      is_transient = \(resp) httr2::resp_status(resp) %in% c(429, 503)) |>
+                       retry_on_failure = TRUE,
+                       is_transient = \(resp) httr2::resp_status(resp) %in% c(429, 503)) |>
       httr2::req_perform()
     
     # Parse the response body as JSON when not streaming
     body_json <- httr2::resp_body_json(response)
-    # Use the parsing function provided
-    if (!is.null(.parse_response_fn)) {
-      assistant_reply <- .parse_response_fn(body_json)
-    } else {
-      stop("A parsing function must be provided for non-streaming responses.")
-    }
+    parse_chat_response <- parse_chat_function(.api)
+    assistant_reply <- parse_chat_response(body_json)
     
     # Capture response headers for rate limiting information
     response_headers <- httr2::resp_headers(response)

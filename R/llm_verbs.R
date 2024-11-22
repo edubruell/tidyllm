@@ -42,7 +42,7 @@ create_provider_function <- function(.name, ...) {
     }
     
     # Check if any argument is an LLMMessage
-    if (any(purrr::map_lgl(args, ~ inherits(.x, "LLMMessage")))) {
+    if (any(purrr::map_lgl(args, ~ S7_inherits(.x, LLMMessage)))) {
       lifecycle::deprecate_warn(
         when = "0.2.3",
         what = glue::glue("{.name}(.llm)"),
@@ -128,7 +128,7 @@ chat <- function(
     .frequency_penalty = NULL,
     .presence_penalty = NULL) {
   
-  if (!inherits(.llm, "LLMMessage")) {
+  if (!S7_inherits(.llm, LLMMessage)) {
     stop("Input .llm must be an LLMMessage object.")
   }
   
@@ -225,7 +225,7 @@ embed <- function(.input,
 
   # Validate the inputs
   c(
-    "Input .input must be a character vector or an LLMMessage object" = inherits(.input, "LLMMessage") | is.character(.input),
+    "Input .input must be a character vector or an LLMMessage object" = S7_inherits(.input, LLMMessage) | is.character(.input),
     "You need to specify a .provider function in embed()" = !is.null(.provider)
   ) |> validate_inputs()
   
@@ -319,7 +319,7 @@ send_batch <- function(.llms,
 
   # Validate the inputs
   c(
-    ".llms must be a list of LLMMessage objects" = is.list(.llms) && all(sapply(.llms, inherits, "LLMMessage")),
+    ".llms must be a list of LLMMessage objects" = is.list(.llms) && all(sapply(.llms, S7_inherits, LLMMessage)),
     "You need to specify a .provider function in send_batch()" = !is.null(.provider)
   ) |> validate_inputs()
   
@@ -399,13 +399,13 @@ check_batch <- function(.llms,
 
   # Validate the inputs
   c(
-    ".llms must be a list of LLMMessage objects or a character vector with a Batch ID" = (is.list(.llms) && all(sapply(.llms, inherits, "LLMMessage"))) | is.character(.llms),
+    ".llms must be a list of LLMMessage objects or a character vector with a Batch ID" = (is.list(.llms) && all(sapply(.llms, S7_inherits, LLMMessage))) | is.character(.llms),
     "You need to specify a .provider function in check_batch()" = !is.null(.provider)
   ) |> validate_inputs()
   
   
   # Extract batch_id
-  if((is.list(.llms) && all(sapply(.llms, inherits, "LLMMessage")))){
+  if((is.list(.llms) && all(sapply(.llms, S7_inherits, LLMMessage)))){
     batch_id <- attr(.llms, "batch_id")
   }
   if(is.character(.llms)){
@@ -502,7 +502,7 @@ fetch_batch <- function(.llms,
 
   # Validate the inputs
   c(
-    ".llms must be a list of LLMMessage objects with names as custom IDs" = is.list(.llms) && all(sapply(.llms, inherits, "LLMMessage")),
+    ".llms must be a list of LLMMessage objects with names as custom IDs" = is.list(.llms) && all(sapply(.llms, S7_inherits, LLMMessage)),
     "You need to specify a .provider function in fetch_batch()" = !is.null(.provider)
   ) |> validate_inputs()
   

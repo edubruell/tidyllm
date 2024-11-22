@@ -120,7 +120,7 @@ parse_embedding_input <- function(.input) {
       } else {
         return(FALSE)
       }
-    }, .input$message_history)
+    }, .input@message_history)
     
     # Extract messages and combine content and text media
     message_texts <- purrr::map_chr(history, function(m) {

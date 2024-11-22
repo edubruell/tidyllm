@@ -1,3 +1,133 @@
+#' The Claude API provider class
+#'
+#' @noRd
+api_claude <- new_class("Claude", APIProvider)
+
+
+#' Convert LLMMessage to Claude API-Compatible Format
+#'
+#' Converts the `message_history` of an `LLMMessage` object into the
+#' one needed for the Anthropic Claude API.
+#'
+#' @noRd
+method(to_api_format, list(LLMMessage, api_claude)) <- function(llm, 
+                                                                api) {
+  
+  claude_history <- filter_roles(llm@message_history, c("user", "assistant"))
+  lapply(claude_history, function(m) {
+    formatted_message <- format_message(m)
+    if (!is.null(formatted_message$image)) {
+      list(role = m$role, content = list(
+        list(type = "image", source = formatted_message$image),
+        list(type = "text", text = formatted_message$content)
+      ))
+    } else {
+      list(role = m$role, content = list(
+        list(type = "text", text = formatted_message$content)
+      ))
+    }
+  })
+}
+
+#' Extract rate limit info from  Claude API-Headers
+#'
+#' @noRd
+method(ratelimit_from_header, list(api_claude,new_S3_class("httr2_headers"))) <- function(api,headers){
+  list(
+    this_request_time = strptime(headers["date"], 
+                                 format="%a, %d %b %Y %H:%M:%S", tz="GMT"),
+    ratelimit_requests = as.integer(
+      headers["anthropic-ratelimit-requests-limit"]),
+    ratelimit_requests_remaining = as.integer(
+      headers["anthropic-ratelimit-requests-remaining"]),
+    ratelimit_requests_reset_time = as.POSIXct(
+      headers["anthropic-ratelimit-requests-reset"]$`anthropic-ratelimit-requests-reset`,
+      format="%Y-%m-%dT%H:%M:%SZ", tz="UTC"),
+    ratelimit_tokens = as.integer(
+      headers["anthropic-ratelimit-tokens-limit"]),
+    ratelimit_tokens_remaining = as.integer(
+      headers["anthropic-ratelimit-tokens-remaining"]),
+    ratelimit_tokens_reset_time = as.POSIXct(
+      headers["anthropic-ratelimit-tokens-reset"]$`anthropic-ratelimit-tokens-reset`,
+      format="%Y-%m-%dT%H:%M:%SZ", tz="UTC")
+  )
+}
+
+#' A chat pasring method for claude to extract the assitant response from a claude
+#' request
+#'
+#' @noRd
+method(parse_chat_function, api_claude) <- function(api) {
+  api_label <- api@long_name 
+  function(body_json){
+    if("error" %in% names(body_json)){
+      sprintf("%s returned an Error:\nType: %s\nMessage: %s",
+              api_label,
+              body_json$error$type,
+              body_json$error$message) |>
+        stop()
+    }
+    
+    if (!"content" %in% names(body_json) || length(body_json$content) == 0) {
+      paste0("Received empty response from ",api_label) |>
+      stop()
+    }
+    body_json$content[[1]]$text
+  }
+}
+
+#Default method for the streaming callback function
+method(generate_callback_function,api_claude) <- function(api) {
+  # Claude streaming callback function
+  function(.data) {
+    
+    # Read the stream content and split into lines
+    lines <- .data |>
+      rawToChar(multiple = FALSE) |>
+      stringr::str_split("\n") |>
+      unlist()
+    
+    # Initialize a flag to control early exit
+    continue_processing <- TRUE
+    
+    # Separate event and data lines
+    event_lines <- lines |>
+      purrr::keep(~ grepl("^event:", .x) && .x != "")
+    data_lines <- lines |>
+      purrr::keep(~ grepl("^data:", .x) && .x != "")
+    
+    # Process event lines
+    purrr::walk(event_lines, ~ {
+      if (grepl("message_start", .x)) {
+        .tidyllm_stream_env$stream <- ""
+      } else if (grepl("message_stop", .x)) {
+        message("\n---------\nStream finished\n---------\n")
+        continue_processing <<- FALSE
+      }
+    })
+    
+    # Process data lines
+    purrr::walk(data_lines, ~ {
+      json_part <- sub("^data: ", "", .x)
+      # Try to parse the JSON content
+      parsed_event <- tryCatch(
+        jsonlite::fromJSON(json_part),
+        error = function(e) {
+          message("Failed to parse JSON: ", e$message)
+          return(NULL)
+        }
+      )
+      if (!is.null(parsed_event) && parsed_event$type == "content_block_delta") {
+        delta_content <- parsed_event$delta$text
+        .tidyllm_stream_env$stream <- paste0(.tidyllm_stream_env$stream, delta_content)
+        cat(delta_content)
+        utils::flush.console()
+      }
+    })
+    
+    return(continue_processing)
+  }
+}
 
 #' Interact with Claude AI models via the Anthropic API
 #'
@@ -49,7 +179,7 @@ claude_chat <- function(.llm,
 
   # Validate inputs to the Claude function
   c(
-    ".llm must be an LLMMessage object" = inherits(.llm, "LLMMessage"),
+    ".llm must be an LLMMessage object" = S7_inherits(.llm, LLMMessage),
     ".max_tokens must be an integer" = is_integer_valued(.max_tokens),
     ".timeout must be an integer-valued numeric (seconds till timeout)" = is_integer_valued(.timeout),
     ".temperature must be numeric between 0 and 1 if provided" = 
@@ -76,8 +206,11 @@ claude_chat <- function(.llm,
     stop("API key is not set. Please set it with: Sys.setenv(ANTHROPIC_API_KEY = \"YOUR-KEY-GOES-HERE\").")
   }
   
+  api_obj <- api_claude(short_name = "claude",
+                        long_name  = "Anthropic Claude")
+  
   # Format message list for Claude model
-  messages <- .llm$to_api_format("claude")
+  messages <- to_api_format(.llm,api_obj)
   
   # Build request with httr2
   request <- httr2::request(.api_url) |>
@@ -92,7 +225,7 @@ claude_chat <- function(.llm,
       model = .model,
       max_tokens = .max_tokens,
       messages = messages,
-      system = .llm$system_prompt,
+      system = .llm@system_prompt,
       temperature = .temperature,
       top_k = .top_k,
       top_p = .top_p,
@@ -100,81 +233,25 @@ claude_chat <- function(.llm,
       stop_sequences = .stop_sequences,
       stream = .stream,
       tools = .tools
-    ) |> purrr::discard(is.null))  # Filter out NULL values
+    ) |> purrr::compact())  
   
-  # Perform API request with retries and backoff handled in perform_api_request
-  response <- tryCatch({
-    perform_api_request(
-      .request = request,
-      .api = "claude",
-      .stream = .stream,
-      .timeout = .timeout, 
-      .parse_response_fn = function(body_json) {
-        if("error" %in% names(body_json)){
-          sprintf("Anthropic API returned an Error:\nType: %s\nMessage: %s",
-                  body_json$error$type,
-                  body_json$error$message) |>
-            stop()
-        }
-          
-        if (!"content" %in% names(body_json) || length(body_json$content) == 0) {
-          stop("Received empty response from Claude API")
-        }
-        body_json$content[[1]]$text  # Return the parsed assistant reply
-      },
-      .dry_run = .dry_run
-    )
-  }, error = function(e) {
-    # Handle specific Claude API errors and HTTP errors
-    if (inherits(e, "httr2_error")) {
-      status <- attr(e, "status")
-      if (!is.null(status)) {
-        switch(as.character(status),
-               "401" = stop("Unauthorized: Invalid API key"),
-               "403" = stop("Forbidden: You don't have permission to use this model"),
-               "404" = stop("Not Found: The requested resource doesn't exist"),
-               "429" = stop("Rate limit exceeded. Please wait before making more requests"),
-               "500" = stop("Internal server error from Claude API"),
-               "503" = stop("Claude API is temporarily unavailable"),
-               stop(sprintf("HTTP error %d: %s", status, conditionMessage(e)))
-        )
-      }
-    }
-    stop(conditionMessage(e))  # Re-throw other errors
-  })
-  
-  # Return only the request object in a dry run.
+  # Return only the request object 
   if (.dry_run) {
-    return(response)  
+    return(request)  
   }
+
+  response <- perform_chat_request(request,api_obj,.stream,.timeout)
   
   # Extract the assistant reply and headers from response
   assistant_reply <- response$assistant_reply
-  response_headers <- response$headers
-  
-  # Update rate limits as before if you still need to track them for monitoring
-  rl <- ratelimit_from_header(response_headers, "claude")
-  update_rate_limit("claude",rl )
-  
-  # Show rate limit info if verbose
-  if (.verbose == TRUE) {
-    glue::glue(
-      "\nCLaude API answer received at {rl$this_request_time}.
-      Remaining requests rate limit: {rl$ratelimit_requests_remaining}/{rl$ratelimit_requests}
-      Requests rate limit reset at: {rl$ratelimit_requests_reset_time}
-      Remaining tokens rate limit: {rl$ratelimit_tokens_remaining}/{rl$ratelimit_tokens}
-      Tokens rate limit reset at: {rl$ratelimit_tokens_reset_time}\n"
-    ) |> cat()
-  }
-  
+  track_rate_limit(api_obj,response$headers,.verbose)
+
   # Return the updated LLMMessage object
-  llm_copy <- .llm$clone_deep()
-  llm_copy$add_message(role    = "assistant", 
-                       content = assistant_reply, 
-                       json    = FALSE,
-                       meta    = response$meta)
-  
-  return(llm_copy)
+   add_message(llm     = .llm, 
+               role    = "assistant", 
+               content = assistant_reply, 
+               json    = FALSE,
+               meta    = response$meta)
 }
 
 #' Send a Batch of Messages to Claude API
@@ -216,7 +293,7 @@ send_claude_batch <- function(.llms,
                               ) {
   # Input validation
   c(
-    ".llms must be a list of LLMMessage objects" = is.list(.llms) && all(sapply(.llms, inherits, "LLMMessage")),
+    ".llms must be a list of LLMMessage objects" = is.list(.llms) && all(sapply(.llms, S7_inherits, LLMMessage)),
     ".max_tokens must be an integer" = is_integer_valued(.max_tokens),
     ".temperature must be numeric between 0 and 1 if provided" = is.null(.temperature) || (.temperature >= 0 && .temperature <= 1),
     ".top_k must be a positive integer if provided" = is.null(.top_k) || (is.numeric(.top_k) && .top_k > 0 && floor(.top_k) == .top_k),
@@ -253,6 +330,11 @@ send_claude_batch <- function(.llms,
   }
   
   requests_list <- lapply(seq_along(.llms), function(i) { 
+    
+    # Get messages from each LLMMessage object
+    messages <- to_api_format(llm=.llms[[i]],
+                              api=api_claude())
+    
     custom_id <- names(.llms)[i]
     if (is.null(custom_id) || custom_id == "" || is.na(custom_id)) {
       custom_id <- paste0(.id_prefix, i)  # Generate a custom ID if name is missing
@@ -263,12 +345,12 @@ send_claude_batch <- function(.llms,
       params = list(
         model = .model,
         max_tokens = .max_tokens,
-        messages = .llms[[i]]$to_api_format("claude"),
+        messages = messages,
         temperature = .temperature,
         top_k = .top_k,
         top_p = .top_p,
         stop_sequences = .stop_sequences
-      ) |> purrr::discard(is.null)  # Remove NULL values
+      ) |> purrr::compact()  # Remove NULL values
     )
   })
   
@@ -424,7 +506,7 @@ fetch_claude_batch <- function(.llms,
                                .max_tries = 3,
                                .timeout = 60) {
   c(
-    ".llms must be a list of LLMMessage objects with names as custom IDs" = is.list(.llms) && all(sapply(.llms, inherits, "LLMMessage")),
+    ".llms must be a list of LLMMessage objects with names as custom IDs" = is.list(.llms) && all(sapply(.llms, S7_inherits, LLMMessage)),
     ".batch_id must be a non-empty character string or NULL" = is.null(.batch_id) || (is.character(.batch_id) && nzchar(.batch_id)),
     ".api_url must be a non-empty character string" = is.character(.api_url) && nzchar(.api_url),
     ".dry_run must be logical" = is.logical(.dry_run),
@@ -522,11 +604,11 @@ fetch_claude_batch <- function(.llms,
     
     if (!is.null(result) && result$result$type == "succeeded") {
       assistant_reply <- result$result$message$content$text
-      llm_copy <- .llms[[custom_id]]$clone_deep()
-      llm_copy$add_message(role = "assistant", 
-                           content = assistant_reply,
-                           meta = extract_response_metadata(result$result$message))
-      return(llm_copy)
+      llm <- add_message(llm = .llms[[custom_id]],
+                         role = "assistant", 
+                         content = assistant_reply,
+                         meta = extract_response_metadata(result$result$message))
+      return(llm)
     } else {
       warning(sprintf("Result for custom_id %s was unsuccessful or not found", custom_id))
       return(.llms[[custom_id]])

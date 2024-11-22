@@ -1,4 +1,21 @@
-# Development Version 0.2.5
+# Development Version 0.2.6
+
+## Large Refactor of package internals
+- Switch from `R6` to `S7` for the main `LLMMessage` class
+- Several bug-fixes for `df_llm_message()`
+- API formatting methods are now in the code files for API providers
+- Rate-limit header extraction for tracking and streaming callback generation are now methods for `APIProvider` classes 
+- All api-specific code is now in the `api_openai.R`,`api_gemini.R`,etc. files
+- Support for `as_tibble()` S3 Generic for `LLMMessage`
+- Rate limit tracking and output for verbose mode in API-functions moved to a single function `track_rate_limit()`
+- Unnecessary `.onattach()` removed
+- Bugfix in callback method of Gemini streaming responses (still not ideal, but works)
+- New tests for the Gemini API
+
+## Breaking Changes
+- Old `R6`-based `LLMMessage`-objects are not compatible with the new version anymore! This also applies to saved objects, like lists of batch files. 
+
+# Version 0.2.5
 
 ## Major Features
 

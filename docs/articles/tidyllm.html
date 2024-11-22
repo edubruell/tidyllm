@@ -26,7 +26,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -44,7 +44,6 @@
     <li><a class="dropdown-item" href="../articles/tidyllm_embed.html">Embedding Models in tidyllm</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm_video.html">Video and Audio Data with the Gemini API</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm-pdfquestions.html">Structured Question Answering from PDFs</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm-synthetic-data.html">Generate Synthetic Data with tidyllm</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -77,10 +76,10 @@
     
 <blockquote>
 <p>⚠️ <strong>Note:</strong> This vignette refers to the development
-version 0.2.5. of <strong>tidyllm</strong>, which haa major interface
+version 0.2.6. of <strong>tidyllm</strong>, which haa major interface
 differences compared to the last release. If you are using the
 CRAN-version 0.2.0 please refer to the installed vignette by using
-<code><a href="../articles/tidyllm.html">vignette("tidyllm")</a></code>. Version 0.2.5 is fully backward
+<code><a href="../articles/tidyllm.html">vignette("tidyllm")</a></code>. Version 0.2.6 is fully backward
 compatible to the old interface, but will throw deprecation warnings for
 some use cases.</p>
 </blockquote>
@@ -367,17 +366,25 @@ message to get:</p>
 Alternatively you can also use <code><a href="../reference/get_reply.html">last_reply()</a></code> as a shortcut
 for the latest response.</p>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co">#Getting the first </span></span>
+<code class="sourceCode R"><span><span class="co">#Getting the first reply</span></span>
 <span><span class="va">conversation</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/get_reply.html">get_reply</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## [1] "Let's imagine a German address: \n\nHerr Müller\nMusterstraße 12\n53111 Bonn"</span></span></code></pre>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">#By default it gets the last reply</span></span>
 <span><span class="va">conversation</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/get_reply.html">get_reply</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## [1] "Let's imagine another German address:\n\nFrau Schmidt\nFichtenweg 78\n42103 Wuppertal"</span></span></code></pre>
+<p>Or you can convert the text (without attachments) to a
+<code>tibble</code> with <code><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble()</a></code>:</p>
 <div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co">#Or if you can more easily remember last_reply this works too</span></span>
-<span><span class="va">conversation</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/get_reply.html">last_reply</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## [1] "Let's imagine another German address:\n\nFrau Schmidt\nFichtenweg 78\n42103 Wuppertal"</span></span></code></pre>
+<code class="sourceCode R"><span><span class="va">conversation</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 5 × 2</span></span></span>
+<span><span class="co">##   role      content                                                             </span></span>
+<span><span class="co">##   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                                                               </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">1</span> system    <span style="color: #949494;">"</span>You are a helpful assistant<span style="color: #949494;">"</span>                                       </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">2</span> user      <span style="color: #949494;">"</span>Imagine a German adress.<span style="color: #949494;">"</span>                                          </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">3</span> assistant <span style="color: #949494;">"</span>Let's imagine a German address: \n\nHerr Müller\nMusterstraße 12\n…</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">4</span> user      <span style="color: #949494;">"</span>Imagine another address<span style="color: #949494;">"</span>                                           </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">5</span> assistant <span style="color: #949494;">"</span>Let's imagine another German address:\n\nFrau Schmidt\nFichtenweg …</span></span></code></pre>
 <p>You can use the <code><a href="../reference/get_metadata.html">get_metadata()</a></code> function to retrieve
 metadata on models and token usage from assistant replies:</p>
 <div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">

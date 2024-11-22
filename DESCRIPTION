@@ -1,6 +1,6 @@
 Package: tidyllm
 Title: Tidy Integration of Large Language Models
-Version: 0.2.5
+Version: 0.2.6
 Authors@R: 
     person("Eduard", "Brüll", , "eduard.bruell@zew.de", role = c("aut", "cre"))
 Description: A tidy interface for integrating large language model (LLM) APIs such as 'Claude', 'Openai', 'Groq','Mistral' and local models via 'Ollama' into R workflows. The package supports text and media-based interactions, interactive message history, batch request APIs, and a tidy, pipeline-oriented interface for streamlined integration into data workflows. Web services are available at <https://www.anthropic.com>, <https://openai.com>, <https://groq.com>, <https://mistral.ai/> and <https://ollama.com>.
@@ -19,7 +19,7 @@ Suggests:
     httptest2,
     httpuv
 Imports: 
-    R6,
+    S7 (>= 0.2.0),
     base64enc,
     glue,
     jsonlite,
@@ -36,25 +36,26 @@ Imports:
     png,
     lifecycle
 Collate: 
-    'zzz.R'
     'tidyllm-package.R'
+    'utilites.R'
     'LLMMessage.R'
+    'APIProvider.R'
+    'llm_message.R'
     'llm_verbs.R'
     'media.R'
     'message_retrieval.R'
-    'perform_api_request.R'
-    'rate_limit_information.R'
-    'streaming_callback.R'
+    'perform_chat_request.R'
+    'rate_limits.R'
     'tidyllm_schema.R'
-    'utilites.R'
     'pdfbatch.R'
-    'api_azure_openai.R'
+    'api_openai.R'
     'api_claude.R'
     'api_gemini.R'
+    'api_ollama.R'
+    'api_azure_openai.R'
     'api_groq.R'
     'api_mistral.R'
-    'api_ollama.R'
-    'api_openai.R'
+    'zzz.R'
 Depends: 
     R (>= 4.2.0)
 Config/testthat/edition: 3

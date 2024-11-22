@@ -2,10 +2,7 @@
 <url><loc>https://edubruell.github.io/tidyllm/404.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/LICENSE-text.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/LICENSE.html</loc></url>
-<url><loc>https://edubruell.github.io/tidyllm/articles/articles/tidyllm-interface.html</loc></url>
-<url><loc>https://edubruell.github.io/tidyllm/articles/getting-started.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/articles/index.html</loc></url>
-<url><loc>https://edubruell.github.io/tidyllm/articles/tidyllm-interface.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/articles/tidyllm-pdfquestions.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/articles/tidyllm-synthetic-data.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/articles/tidyllm.html</loc></url>
@@ -26,7 +23,6 @@
 <url><loc>https://edubruell.github.io/tidyllm/reference/check_openai_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/claude.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/claude_chat.html</loc></url>
-<url><loc>https://edubruell.github.io/tidyllm/reference/create_provider_function.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/df_llm_message.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/embed.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/fetch_batch.html</loc></url>
@@ -39,7 +35,6 @@
 <url><loc>https://edubruell.github.io/tidyllm/reference/gemini_file_metadata.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/gemini_list_files.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/gemini_upload_file.html</loc></url>
-<url><loc>https://edubruell.github.io/tidyllm/reference/generate_callback_function.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/get_metadata.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/get_reply.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/get_reply_data.html</loc></url>
@@ -48,7 +43,6 @@
 <url><loc>https://edubruell.github.io/tidyllm/reference/groq_chat.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/groq_transcribe.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/index.html</loc></url>
-<url><loc>https://edubruell.github.io/tidyllm/reference/initialize_api_env.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/list_batches.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/list_claude_batches.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/list_openai_batches.html</loc></url>
@@ -64,17 +58,12 @@
 <url><loc>https://edubruell.github.io/tidyllm/reference/openai.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/openai_chat.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/openai_embedding.html</loc></url>
-<url><loc>https://edubruell.github.io/tidyllm/reference/parse_duration_to_seconds.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/pdf_page_batch.html</loc></url>
-<url><loc>https://edubruell.github.io/tidyllm/reference/perform_api_request.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/rate_limit_info.html</loc></url>
-<url><loc>https://edubruell.github.io/tidyllm/reference/ratelimit_from_header.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/send_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/send_claude_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/send_openai_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/tidyllm-package.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/tidyllm_schema.html</loc></url>
-<url><loc>https://edubruell.github.io/tidyllm/reference/update_rate_limit.html</loc></url>
-<url><loc>https://edubruell.github.io/tidyllm/reference/wait_rate_limit.html</loc></url>
 </urlset>
 

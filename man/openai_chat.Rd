@@ -19,7 +19,6 @@ openai_chat(
   .api_url = "https://api.openai.com/",
   .timeout = 60,
   .verbose = FALSE,
-  .json = FALSE,
   .json_schema = NULL,
   .max_tries = 3,
   .dry_run = FALSE,
@@ -55,8 +54,6 @@ openai_chat(
 \item{.timeout}{Request timeout in seconds (default: 60).}
 
 \item{.verbose}{Should additional information be shown after the API call (default: FALSE).}
-
-\item{.json}{Should output be in JSON mode (default: FALSE).}
 
 \item{.json_schema}{A JSON schema object as R list to enforce the output structure (If defined has precedence over JSON mode).}
 

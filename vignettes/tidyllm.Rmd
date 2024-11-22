@@ -6,7 +6,7 @@ vignette: >
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
-> ⚠️ **Note:**  This vignette refers to the development version 0.2.5. of **tidyllm**, which haa major interface differences compared to the last release. If you are using the CRAN-version 0.2.0 please refer to the installed vignette by using `vignette("tidyllm")`. Version 0.2.5 is fully backward compatible to the old interface, but will throw deprecation warnings for some use cases.
+> ⚠️ **Note:**  This vignette refers to the development version 0.2.6. of **tidyllm**, which haa major interface differences compared to the last release. If you are using the CRAN-version 0.2.0 please refer to the installed vignette by using `vignette("tidyllm")`. Version 0.2.6 is fully backward compatible to the old interface, but will throw deprecation warnings for some use cases.
 
 # Introduction to tidyllm
 **tidyllm** is an R package providing a unified interface for interacting with various large language model APIs. This vignette will guide you through the basic setup and usage of **tidyllm**.
@@ -233,12 +233,15 @@ conversation
 By default `get_reply()` gets the last assistant message. Alternatively you can also use `last_reply()` as a shortcut for the latest response.
 
 ```{r standard_last_reply,  eval=TRUE, echo=TRUE}
-#Getting the first 
+#Getting the first reply
 conversation |> get_reply(1)
 #By default it gets the last reply
 conversation |> get_reply()
-#Or if you can more easily remember last_reply this works too
-conversation |> last_reply()
+```
+
+Or you can convert the text (without attachments) to a `tibble` with `as_tibble()`:
+```{r as_tibble,  eval=TRUE, echo=TRUE}
+conversation |> as_tibble()
 ```
 
 You can use the `get_metadata()` function to retrieve metadata on models and token usage from assistant replies: 
@@ -291,12 +294,9 @@ address <- llm_message("Imagine an address in JSON format that matches the schem
 address
 ```
 ```{r schema_out,  eval=TRUE, echo=FALSE}
-address_base <- llm_message("Imagine an address in JSON format that matches the schema.") 
-address <- address_base$add_message(role = "assistant",
-                           content = '{"street":"Hauptstraße","houseNumber":123,"postcode":"10115","city":"Berlin","region":"Berlin","country":"Germany"}',
-                           media = NULL,
-                           json = TRUE) 
-
+address <- llm_message("Imagine an address in JSON format that matches the schema.") |>
+ llm_message('{"street":"Hauptstraße","houseNumber":123,"postcode":"10115","city":"Berlin","region":"Berlin","country":"Germany"}',.role="assistant")
+address@message_history[[3]]$json <- TRUE
 address
 ```
 

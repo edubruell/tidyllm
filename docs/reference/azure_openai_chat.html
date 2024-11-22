@@ -9,7 +9,7 @@ This function is work in progress and not fully tested"><meta property="og:image
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -25,7 +25,6 @@ This function is work in progress and not fully tested"><meta property="og:image
     <li><a class="dropdown-item" href="../articles/tidyllm_embed.html">Embedding Models in tidyllm</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm_video.html">Video and Audio Data with the Gemini API</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm-pdfquestions.html">Structured Question Answering from PDFs</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm-synthetic-data.html">Generate Synthetic Data with tidyllm</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -68,7 +67,6 @@ This function is work in progress and not fully tested</p>
 <span>  .top_p <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .timeout <span class="op">=</span> <span class="fl">60</span>,</span>
 <span>  .verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  .json <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  .json_schema <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .dry_run <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  .max_tries <span class="op">=</span> <span class="fl">3</span></span>
@@ -145,10 +143,6 @@ This function is work in progress and not fully tested</p>
 
 <dt id="arg--verbose">.verbose<a class="anchor" aria-label="anchor" href="#arg--verbose"></a></dt>
 <dd><p>Should additional information be shown after the API call (default: FALSE).</p></dd>
-
-
-<dt id="arg--json">.json<a class="anchor" aria-label="anchor" href="#arg--json"></a></dt>
-<dd><p>Should output be in JSON mode (default: FALSE).</p></dd>
 
 
 <dt id="arg--json-schema">.json_schema<a class="anchor" aria-label="anchor" href="#arg--json-schema"></a></dt>

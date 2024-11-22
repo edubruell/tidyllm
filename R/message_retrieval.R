@@ -17,13 +17,13 @@
 get_reply <- function(.llm, .index = NULL) {
   # Validate that .llm is an LLMMessage object and index is within bounds if provided
   validate_inputs(c(
-    "Input .llm must be an LLMMessage object" = inherits(.llm, "LLMMessage"),
+    "Input .llm must be an LLMMessage object" = S7_inherits(.llm, LLMMessage),
     "Index must be a positive integer within bounds" = is.null(.index) || 
-      (is.numeric(.index) && .index > 0 && .index <= length(Filter(function(x) x$role == "assistant", .llm$message_history)))
+      (is.numeric(.index) && .index > 0 && .index <= length(Filter(function(x) x$role == "assistant", .llm@message_history)))
   ))
   
   # Retrieve assistant replies
-  assistant_replies <-  filter_roles(.llm$message_history,"assistant")
+  assistant_replies <-  filter_roles(.llm@message_history,"assistant")
   
   # Check if any assistant replies are available
   if (length(assistant_replies) == 0) {
@@ -62,11 +62,11 @@ last_reply <- function(.llm) {
 get_reply_data <- function(.llm, .index = NULL) {
   # Validate inputs for .llm and .index
   validate_inputs(c(
-    "Input .llm must be an LLMMessage object" = inherits(.llm, "LLMMessage")
+    "Input .llm must be an LLMMessage object" = S7_inherits(.llm, LLMMessage)
   ))
   
   # Retrieve assistant replies with JSON flag
-  assistant_replies <- filter_roles(.llm$message_history, "assistant")
+  assistant_replies <- filter_roles(.llm@message_history, "assistant")
   
   # Check if any assistant replies are available
   if (length(assistant_replies) == 0) {
@@ -141,13 +141,13 @@ last_reply_data <- function(.llm) {
 get_metadata <- function(.llm, .index = NULL) {
   # Validate input
   validate_inputs(c(
-    "Input .llm must be an LLMMessage object" = inherits(.llm, "LLMMessage"),
+    "Input .llm must be an LLMMessage object" = S7_inherits(.llm, LLMMessage),
     "Index must be a positive integer within bounds" = is.null(.index) || 
-      (is.numeric(.index) && .index > 0 && .index <= length(filter_roles(.llm$message_history, "assistant")))
+      (is.numeric(.index) && .index > 0 && .index <= length(filter_roles(.llm@message_history, "assistant")))
   ))
   
   # Extract assistant replies
-  assistant_replies <- filter_roles(.llm$message_history, "assistant")
+  assistant_replies <- filter_roles(.llm@message_history, "assistant")
   
   # Check if any assistant replies are available
   if (length(assistant_replies) == 0) {
@@ -197,11 +197,11 @@ last_metadata <- function(.llm) {
 get_user_message <- function(.llm, .index = NULL) {
   # Validate inputs
   c(
-    "Input .llm must be an LLMMessage object" = inherits(.llm, "LLMMessage")
+    "Input .llm must be an LLMMessage object" = S7_inherits(.llm, LLMMessage)
   ) |> validate_inputs()
   
   # Filter to get all user messages
-  user_messages <- filter_roles(.llm$message_history,"user")
+  user_messages <- filter_roles(.llm@message_history,"user")
   
   # Return NULL if there are no user messages
   if (length(user_messages) == 0) {

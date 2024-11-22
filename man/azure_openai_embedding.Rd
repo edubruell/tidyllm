@@ -22,6 +22,8 @@ azure_openai_embedding(
 
 \item{.endpoint_url}{Base URL for the API (default:  Sys.getenv("AZURE_ENDPOINT_URL")).}
 
+\item{.api_version}{What API-Version othe Azure OpenAI API should be used (default: "2023-05-15")}
+
 \item{.truncate}{Whether to truncate inputs to fit the model's context length (default: TRUE).}
 
 \item{.timeout}{Timeout for the API request in seconds (default: 120).}

@@ -1,0 +1,10 @@
+structure(list(method = "POST", url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyDF-D_ZezJTqbqyW6tmjrHenB2cxZpPWMI", 
+    status_code = 200L, headers = structure(list(`content-type` = "application/json; charset=UTF-8", 
+        vary = "Origin", vary = "X-Origin", vary = "Referer", 
+        `content-encoding` = "gzip", date = "Fri, 22 Nov 2024 17:22:19 GMT", 
+        server = "scaffolding on HTTPServer2", `content-length` = "251", 
+        `x-xss-protection` = "0", `x-frame-options` = "SAMEORIGIN", 
+        `x-content-type-options` = "nosniff", `server-timing` = "gfet4t7; dur=602", 
+        `alt-svc` = "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"), class = "httr2_headers"), 
+    body = charToRaw("{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"text\": \"Hello, world!\\n\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"avgLogprobs\": -0.0078922443091869361\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 5,\n    \"candidatesTokenCount\": 5,\n    \"totalTokenCount\": 10\n  },\n  \"modelVersion\": \"gemini-1.5-flash-002\"\n}\n"), 
+    cache = new.env(parent = emptyenv())), class = "httr2_response")

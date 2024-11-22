@@ -1,3 +1,65 @@
+#' The Azure OpenAI API provider class
+#'
+#'Inherit most of the functionality from vanilla OpenAI API
+#'
+#' @noRd
+api_azure_openai <- new_class("Azure OpenAI", api_openai)
+
+
+#' Extract rate limit info from  Azure Openai API-Headers
+#'
+#' @noRd
+method(ratelimit_from_header, list(api_azure_openai,new_S3_class("httr2_headers"))) <- function(api,headers){
+  request_time <- strptime(headers["date"]$date, 
+                           format="%a, %d %b %Y %H:%M:%S", tz="GMT")
+  
+  # Extract remaining requests and tokens
+  ratelimit_requests_remaining <- as.integer(
+    headers["x-ratelimit-remaining-requests"]$`x-ratelimit-remaining-requests`)
+  ratelimit_tokens_remaining <- as.integer(
+    headers["x-ratelimit-remaining-tokens"]$`x-ratelimit-remaining-tokens`)
+  
+  # Assuming reset occurs every 60 seconds (at least I got minutes in my azure console)
+  reset_interval <- 60         
+  
+  ratelimit_requests_reset_time <- request_time + reset_interval
+  ratelimit_tokens_reset_time <- request_time + reset_interval
+  
+  list(
+    this_request_time = request_time,
+    ratelimit_requests = NA,
+    ratelimit_requests_remaining = ratelimit_requests_remaining,
+    ratelimit_requests_reset_time = ratelimit_requests_reset_time,
+    ratelimit_tokens = NA,
+    ratelimit_tokens_remaining = ratelimit_tokens_remaining,
+    ratelimit_tokens_reset_time = ratelimit_tokens_reset_time
+  )
+}
+
+
+#' A chat parsing method for Azure Openai to extract the assitant response
+#'
+#' @noRd
+method(parse_chat_function, api_azure_openai) <- function(api) {
+  api_label <- api@long_name 
+  function(body_json){
+    if("error" %in% names(body_json)){
+      sprintf("%s returned an Error:\nType: %s\nMessage: %s",
+              api_label,
+              body_json$error$code,
+              body_json$error$message) |>
+        stop()
+    }
+    
+    if (length(body_json$choices) == 0) {
+      paste0("Received empty response from ",api_label) |>
+        stop()
+    }
+    body_json$choices[[1]]$message$content  
+  }
+}  
+
+
 #' Send LLM Messages to an OpenAI Chat Completions endpoint on Azure 
 #'
 #' @description
@@ -21,7 +83,6 @@
 #' @param .top_p An alternative to sampling with temperature, called nucleus sampling.
 #' @param .timeout Request timeout in seconds (default: 60).
 #' @param .verbose Should additional information be shown after the API call (default: FALSE).
-#' @param .json Should output be in JSON mode (default: FALSE).
 #' @param .max_tries Maximum retries to perform request
 #' @param .json_schema A JSON schema object as R list to enforce the output structure (If defined has precedence over JSON mode).
 #' @param .dry_run If TRUE, perform a dry run and return the request object (default: FALSE).
@@ -60,20 +121,18 @@ azure_openai_chat <- function(
     .top_p = NULL,
     .timeout = 60,
     .verbose = FALSE,
-    .json = FALSE,
     .json_schema = NULL,
     .dry_run = FALSE,
     .max_tries = 3
 ) {
-  
-  #Check enpoint
+    #Check enpoint
   if (.endpoint_url == ""& .dry_run==FALSE){
    stop("No valid Azure endpoint defined. Please set it either as input to this function or with: Sys.setenv(AZURE_ENDPOINT_URL = \"https://endpoint.openai.azure.com/\")")
   }
   
   # Validate inputs
   c(
-    "Input .llm must be an LLMMessage object" = inherits(.llm, "LLMMessage"),
+    "Input .llm must be an LLMMessage object" = S7_inherits(.llm, LLMMessage),
     "Input .deployment must be a string" = is.character(.deployment),
     "Input .max_completion_tokens must be NULL or a positive integer" = is.null(.max_completion_tokens) | (is_integer_valued(.max_completion_tokens) & .max_completion_tokens > 0),    ".frequency_penalty must be numeric or NULL" = is.null(.frequency_penalty) | is.numeric(.frequency_penalty),
     "Input .logit_bias must be a list or NULL" = is.null(.logit_bias) | is.list(.logit_bias),
@@ -87,10 +146,13 @@ azure_openai_chat <- function(
     "Input .top_p must be numeric or NULL" = is.null(.top_p) | is.numeric(.top_p),
     "Input .timeout must be integer-valued numeric" = is_integer_valued(.timeout),
     "Input .verbose must be logical" = is.logical(.verbose),
-    "Input .json must be logical" = is.logical(.json),
     "Input .json_schema must be NULL or a list" = is.null(.json_schema) | is.list(.json_schema),
     "Input .dry_run must be logical" = is.logical(.dry_run)
   ) |> validate_inputs()
+  
+  
+  api_obj <- api_azure_openai(short_name = "azure_openai",
+                              long_name  = "Azure OpenAI")
   
   #This filters out the system prompt for reasoning models.
   no_system_prompt <- FALSE
@@ -98,7 +160,11 @@ azure_openai_chat <- function(
     message("Note: Reasoning models do not support system prompts")
     no_system_prompt <- TRUE
   }
-  messages <- .llm$to_api_format("openai",no_system=no_system_prompt)
+  
+  messages <- to_api_format(llm=.llm,
+                            api=api_obj,
+                            no_system=no_system_prompt)
+  
   
   # Get the OpenAI API key
   api_key <- Sys.getenv("AZURE_OPENAI_API_KEY")
@@ -106,20 +172,16 @@ azure_openai_chat <- function(
     stop("API key is not set. Please set it with: Sys.setenv(AZURE_OPENAI_API_KEY = \"YOUR-KEY-GOES-HERE\")")
   }
   
-  # Handle JSON schema and JSON mode
+  # Handle JSON schema
+  json <- FALSE
   response_format <- NULL
   if (!is.null(.json_schema)) {
-    .json=TRUE
+    json=TRUE
     response_format <- list(
       type = "json_schema",
       json_schema = .json_schema
     )
-  } else if (.json == TRUE) {
-    response_format <- list(
-      type = "json_object"
-    )
-  }
-  
+  } 
 
   # Build the request body
   request_body <- list(
@@ -136,9 +198,8 @@ azure_openai_chat <- function(
     stream = .stream,
     temperature = .temperature,
     top_p = .top_p
-  )
-  request_body <- base::Filter(Negate(is.null), request_body)
-  
+  ) |> purrr::compact()
+
   # Build the request
   request <- httr2::request(.endpoint_url) |>
     httr2::req_url_path(paste0("openai/deployments/", .deployment,"/chat/completions")) |>
@@ -149,62 +210,23 @@ azure_openai_chat <- function(
     )  |>
     httr2::req_body_json(data = request_body)
   
-  # Perform the API request using perform_api_request
-  response <- perform_api_request(
-    .request = request,
-    .api = "azure_openai",
-    .stream = .stream,
-    .timeout = .timeout,
-    .max_tries = .max_tries,
-    .parse_response_fn = function(body_json) {
-      if ("error" %in% names(body_json)) {
-        sprintf("Azure Openai API returned an Error Message: %s",
-                body_json$error$message) |>
-          stop()
-      }
-      
-      # Check if content is present in the response
-      if (!"choices" %in% names(body_json) || length(body_json$choices) == 0) {
-        stop("Received empty response from Azure OpenAI API")
-      }
-      
-      assistant_reply <- body_json$choices[[1]]$message$content
-      return(assistant_reply)
-    },
-    .dry_run = .dry_run
-  )
-  
   # Return only the request object in a dry run.
   if (.dry_run) {
-    return(response)
+    return(request)
   }
+  
+  response <- perform_chat_request(request,api_obj,.stream,.timeout,.max_tries)
+  
   
   # Extract assistant reply and rate limiting info from response headers
   assistant_reply <- response$assistant_reply
-  rl <- ratelimit_from_header(response$headers,"azure_openai")
+  track_rate_limit(api_obj,response$headers,.verbose)
   
-  # Update the rate-limit environment with info from rl
-  update_rate_limit("azure_openai", rl)
-  
-  # Show rate limit info if verbose
-  if (.verbose == TRUE) {
-    glue::glue(
-      "\nAzure OpenAI API answer received at {rl$this_request_time}.
-      Remaining requests rate limit: {rl$ratelimit_requests_remaining}/{rl$ratelimit_requests}
-      Requests rate limit reset at: {rl$ratelimit_requests_reset_time}
-      Remaining tokens rate limit: {rl$ratelimit_tokens_remaining}/{rl$ratelimit_tokens}
-      Tokens rate limit reset at: {rl$ratelimit_tokens_reset_time}\n"
-    ) |> cat("\n")
-  }
-  
-  # Create a deep copy of the LLMMessage object and add the assistant's reply
-  llm_copy <- .llm$clone_deep()
-  llm_copy$add_message(role = "assistant", 
-                       content = assistant_reply , 
-                       json    = .json,
-                       meta    = response$meta)
-  
-  return(llm_copy)
+    add_message(llm = .llm,
+                role = "assistant", 
+                content = assistant_reply , 
+                json    = json,
+                meta    = response$meta)
 }
 
 
@@ -217,6 +239,7 @@ azure_openai_chat <- function(
 #' @param .timeout Timeout for the API request in seconds (default: 120).
 #' @param .dry_run If TRUE, perform a dry run and return the request object.
 #' @param .max_tries Maximum retry attempts for requests (default: 3).
+#' @param .api_version What API-Version othe Azure OpenAI API should be used (default: "2023-05-15")
 #' @return A tibble with two columns: `input` and `embeddings`. 
 #' The `input` column contains the texts sent to embed, and the `embeddings` column 
 #' is a list column where each row contains an embedding vector of the sent input.
@@ -232,7 +255,7 @@ azure_openai_embedding <- function(.input,
 
   # Validate the inputs
   c(
-    "Input .input must be an LLMMessage object or a character vector" = inherits(.input, "LLMMessage") | is.character(.input),
+    "Input .input must be an LLMMessage object or a character vector" = S7_inherits(.input, LLMMessage) | is.character(.input),
     "Input .deployment must be a string" = is.character(.deployment),
     "Input .truncate must be logical" = is.logical(.truncate),
     "Input .timeout must be an integer-valued numeric (seconds till timeout)" = is.numeric(.timeout) && .timeout > 0,
