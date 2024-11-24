@@ -1,6 +1,7 @@
 testthat::skip_if_not_installed("httptest2")
 library(httptest2)
 
+
 test_that("gemini_chat function constructs a correct request and dry runs it", {
   # Create a mock LLMMessage object
   llm <- llm_message("Write a poem about an evil online search monopolist")
@@ -40,7 +41,9 @@ test_that("gemini_chat function constructs a correct request and dry runs it", {
   
 })
 
-
+#The mocking-based tests for gemini are uncommented because the google API-key is in the query parameter and not the headers
+#Need to find a way to redact that.
+if(FALSE){
 test_that("gemini_chat returns expected response", {
   with_mock_dir("gemini",expr = {
     
@@ -112,3 +115,4 @@ test_that("gemini_embedding returns expected response", {
     
   },simplify = FALSE)
 })
+}

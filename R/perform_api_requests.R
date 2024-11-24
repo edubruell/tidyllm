@@ -68,3 +68,50 @@ perform_chat_request <- function(.request,
 }
 
 
+#' Perform Embedding Request
+#'
+#' A utility function to perform embedding requests.
+#'
+#' @param .request The prepared httr2 request object.
+#' @param .timeout Timeout for the API request in seconds.
+#' @param .max_tries Maximum number of retry attempts.
+#' @param .fn_extract_embeddings A functiont to extract embeddings
+#' @return An embedding response tibble
+#' @keywords internal
+#' @noRd
+perform_embedding_request <- function(.request, 
+                                      .timeout, 
+                                      .max_tries,
+                                      .input_texts,
+                                      .fn_extract_embeddings
+                                      ) {
+  response <- .request |>
+    httr2::req_timeout(.timeout) |>
+    httr2::req_error(is_error = function(resp) FALSE) |>
+    httr2::req_retry(
+      max_tries = .max_tries,
+      retry_on_failure = TRUE,
+      is_transient = function(resp) httr2::resp_status(resp) %in% c(429, 503)
+    ) |>
+    httr2::req_perform()
+  
+  response_content <- httr2::resp_body_json(response)
+  response_headers <- httr2::resp_headers(response)
+  
+  # Parse the response and extract embeddings
+  embeddings <- .fn_extract_embeddings(response_content,
+                                       httr2::resp_is_error(response),
+                                       response_headers)
+    
+  # Check if embeddings are present
+  if (is.null(embeddings) | length(embeddings)==0) {
+    stop("No embeddings returned in the response.")
+  }
+  
+  tibble::tibble(
+    input = .input_texts,
+    embeddings = embeddings
+  )
+}
+
+

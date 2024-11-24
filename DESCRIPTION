@@ -44,7 +44,7 @@ Collate:
     'llm_verbs.R'
     'media.R'
     'message_retrieval.R'
-    'perform_chat_request.R'
+    'perform_api_requests.R'
     'rate_limits.R'
     'tidyllm_schema.R'
     'pdfbatch.R'

@@ -49,13 +49,14 @@
 <li>API formatting methods are now in the code files for API providers</li>
 <li>Rate-limit header extraction for tracking and streaming callback generation are now methods for <code>APIProvider</code> classes</li>
 <li>All api-specific code is now in the <code>api_openai.R</code>,<code>api_gemini.R</code>,etc. files</li>
-<li>Support for <code><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble()</a></code> S3 Generic for <code>LLMMessage</code>
+<li>Support for <code>as_tibble()</code> S3 Generic for <code>LLMMessage</code>
 </li>
 <li>Rate limit tracking and output for verbose mode in API-functions moved to a single function <code>track_rate_limit()</code>
 </li>
 <li>Unnecessary <code>.onattach()</code> removed</li>
 <li>Bugfix in callback method of Gemini streaming responses (still not ideal, but works)</li>
-<li>New tests for the Gemini API</li>
+<li>Embedding functions refactored to reduce repeated code</li>
+<li>Small test code to look at potential interoperability with elmner or using elmer-type schemata</li>
 </ul></div>
 <div class="section level3">
 <h3 id="breaking-changes-0-2-6">Breaking Changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-2-6"></a></h3>

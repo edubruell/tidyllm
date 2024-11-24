@@ -9,6 +9,7 @@ APIProvider <- new_class("APIProvider",properties = list(
 generate_callback_function <- new_generic("generate_callback_function","api")
 ratelimit_from_header      <- new_generic("ratelimit_from_header",c("api", "headers"))
 parse_chat_function        <- new_generic("parse_chat_response","api")
+parse_embedding_function   <- new_generic("parse_embedding_function","api")
 
 
 #Default method for the streaming callback function

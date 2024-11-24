@@ -202,7 +202,7 @@ openai_chat <- function(
     "Input .api_url must be a string" = is.character(.api_url),
     "Input .timeout must be integer-valued numeric" = is_integer_valued(.timeout),
     "Input .verbose must be logical" = is.logical(.verbose),
-    "Input .json_schema must be NULL or a list" = is.null(.json_schema) | is.list(.json_schema),
+    #"Input .json_schema must be NULL or a list" = is.null(.json_schema) | is.list(.json_schema) | S7_inherits(.json_schema,elmer:::TypeObject),
     "Input .max_tries must be integer-valued numeric" = is_integer_valued(.max_tries),
     "Input .dry_run must be logical" = is.logical(.dry_run),
     "Input .compatible must be logical" = is.logical(.compatible),
@@ -232,6 +232,15 @@ openai_chat <- function(
     }
   }
   
+  if("elmer" %in% loadedNamespaces()){
+    #Handle elmer json schemata Objects
+    if(S7_inherits(.json_schema,elmer:::TypeObject)){
+      .json_schema <- list(
+        name = "Elmer_Schema",  # Schema name
+        schema = to_schema(.json_schema)
+      )
+    }
+  }
   # Handle JSON schema and JSON mode
   response_format <- NULL
   json = FALSE
@@ -350,66 +359,28 @@ openai_embedding <- function(.input,
     return(request)
   }
   
-  # Perform the API request
-  response <- request |>
-    httr2::req_timeout(.timeout) |>
-    httr2::req_error(is_error = function(resp) FALSE) |>
-    httr2::req_retry(
-      max_tries = .max_tries,
-      retry_on_failure = TRUE,
-      is_transient = \(resp) httr2::resp_status(resp) %in% c(429, 503)
-    ) |>
-    httr2::req_perform()
-  
-  # Check for API errors
-  tryCatch({
-    # Check for HTTP errors
-    if (httr2::resp_is_error(response)) {
-      # Try to parse the JSON response body
-      error_message <- tryCatch({
-        json_content <- httr2::resp_body_json(response)
-        if (!is.null(json_content)) {
-          paste0("API error response - ", json_content$error$message)
-        } else {
-          "Unknown error occurred"
-        }
-      }, error = function(e) {
-        paste("HTTP error:", httr2::resp_status(response), "- Unable to parse error message")
-      })
-      
-      stop(error_message)
+  extract_embeddings_fn <- function(response_content,error,response_headers){
+    if(error){
+      paste0("API error response - ", response_content$error$message) |>
+        stop()
     }
-    # Parse the response and extract embeddings
-    response_content <- httr2::resp_body_json(response)
     
     # Parse and update rate limit info from headers
     track_rate_limit(api_openai(short_name = "openai",
                                 long_name ="OpenAI"),
-                     response$headers,.verbose)
+                     response_headers,.verbose)
     
-    # Extract the embeddings
-    embeddings <- response_content$data |> 
+    response_content$data |> 
       purrr::map("embedding") |>
       purrr::map(unlist)
-    
-    # Check if embeddings are present
-    if (is.null(embeddings)) {
-      stop("No embeddings returned in the response.")
-    }
-    
-    # Create a tibble with inputs and embeddings
-    result_tibble <- tibble::tibble(
-      input = input_texts,
-      embeddings = embeddings
-    )
-    
-    # Return the tibble
-    return(result_tibble)
-    
-  }, error = function(e) {
-    stop("An error occurred during the API request - ", e$message)
-  })
+  }
   
+  # Perform a standard embedding API request
+  perform_embedding_request(.request = request,
+                            .timeout = .timeout,
+                            .max_tries = 3,
+                            .input_texts = input_texts, 
+                            .fn_extract_embeddings = extract_embeddings_fn)
 }
 
 #' Send a Batch of Messages to OpenAI Batch API

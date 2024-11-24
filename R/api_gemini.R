@@ -469,35 +469,21 @@ gemini_embedding <- function(.input,
     return(request)
   }
   
-  # Execute request
-  response <- request |>
-    httr2::req_timeout(.timeout) |>
-    httr2::req_error(is_error = function(resp) FALSE) |>
-    httr2::req_retry(max_tries = .max_tries,
-                     retry_on_failure = TRUE,
-                     is_transient = \(resp) httr2::resp_status(resp) %in% c(429, 503)) |>
-    httr2::req_perform()
-  
-  # Handle the response
-  if (httr2::resp_status(response) != 200) {
-    stop("API request failed: ", httr2::resp_status(response), " - ", httr2::resp_body_json(response)$error$message)
+  extract_embeddings_fn <- function(response_content,error,headers){
+    if(error){
+      paste0("API error response - ", response_content$error$message) |>
+        stop()
+    }
+    response_content$embeddings |>
+      purrr:::map(unlist)
   }
   
-  response_json <- httr2::resp_body_json(response) 
-  # Extract the embeddings
-  embeddings <- response_json$embeddings |> 
-    purrr::map(unlist)
-  
-  # Check if embeddings are present
-  if (is.null(embeddings)) {
-    stop("No embeddings returned in the response.")
-  }
-  
-  # Create a tibble with inputs and embeddings
-  tibble::tibble(
-    input = input_texts,
-    embeddings = embeddings
-  )
+  # Perform a standard embedding API request
+  perform_embedding_request(.request = request,
+                            .timeout = .timeout,
+                            .max_tries = 3,
+                            .input_texts = input_texts, 
+                            .fn_extract_embeddings = extract_embeddings_fn)
 }
 
 #' Google Gemini Provider Function

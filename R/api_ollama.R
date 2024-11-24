@@ -266,52 +266,21 @@ ollama_embedding <- function(.input,
     return(request)  
   }
   
-  # Perform the API request
-  response <- request |>
-    httr2::req_error(is_error = function(resp) FALSE) |>
-    httr2::req_timeout(.timeout) |>
-    httr2::req_perform()
-  
-  # Check for API errors
-  tryCatch({
-    # Check for HTTP errors
-    if (httr2::resp_is_error(response)) {
-      # Try to parse the JSON response body
-      error_message <- tryCatch({
-        json_content <- httr2::resp_body_json(response)
-        if (!is.null(json_content)) {
-          paste0("API error response - ", json_content$error)
-        } else {
-          "Unknown error occurred"
-        }
-      }, error = function(e) {
-        paste("HTTP error:", httr2::resp_status(response), "- Unable to parse error message")
-      })
-      
-      stop(error_message)
-    }    
-    # Parse the response and extract embeddings
-    response_content <- httr2::resp_body_json(response)
-    embeddings <- response_content$embeddings |> 
-      purrr::map(unlist)
-    
-    # Check if embeddings are present
-    if (is.null(embeddings)) {
-      stop("No embeddings returned in the response.")
+  extract_embeddings_fn <- function(response_content,error,headers){
+    if(error){
+      paste0("API error response - ", response_content$error) |>
+        stop()
     }
-    
-
-    results <- tibble::tibble(
-      input = input_texts,
-      embeddings = embeddings
-    )
-    
-    # Return the embeddings
-    return(results)
-    
-  }, error = function(e) {
-    stop("An error occurred during the API request - ", e$message)
-  })
+    response_content$embeddings |>
+      purrr:::map(unlist)
+  }
+  
+  # Perform a standard embedding API request
+ perform_embedding_request(.request = request,
+                           .timeout = .timeout,
+                           .max_tries = 3,
+                           .input_texts = input_texts, 
+                           .fn_extract_embeddings = extract_embeddings_fn)
 }
 
 

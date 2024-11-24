@@ -117,7 +117,7 @@ mistral_chat <- function(.llm,
   # Retrieve API key from environment variables
   api_key <- Sys.getenv("MISTRAL_API_KEY")
   if ((api_key == "")& .dry_run==FALSE){
-    stop("API key is not set. Please set it with: Sys.setenv(GROQ_API_KEY = \"YOUR-KEY-GOES-HERE\")")
+    stop("API key is not set. Please set it with: Sys.setenv(MISTRAL_API_KEY = \"YOUR-KEY-GOES-HERE\")")
   }
   
   # Build the request
@@ -168,7 +168,7 @@ mistral_embedding <- function(.input,
   # Retrieve API key from environment variables
   api_key <- Sys.getenv("MISTRAL_API_KEY")
   if ((api_key == "")& .dry_run==FALSE){
-    stop("API key is not set. Please set it with: Sys.setenv(GROQ_API_KEY = \"YOUR-KEY-GOES-HERE\")")
+    stop("API key is not set. Please set it with: Sys.setenv(MISTRAL_API_KEY = \"YOUR-KEY-GOES-HERE\")")
   }
   # Validate the inputs
   c(
@@ -189,60 +189,32 @@ mistral_embedding <- function(.input,
   request <- httr2::request("https://api.mistral.ai/v1/embeddings") |>
     httr2::req_headers(
       "Content-Type" = "application/json",
-      "Authorization" = paste("Bearer", api_key)
+      "Authorization" = paste("Bearer", api_key),
+      .redact = "Authorization"
     ) |>
     httr2::req_body_json(request_body)
   
-  # Return the request object if it's a dry run
+  # Dry run
   if (.dry_run) {
     return(request)
   }
   
-  # Perform the API request
-  response <- request |>
-    httr2::req_timeout(.timeout) |>
-    httr2::req_error(is_error = function(resp) FALSE) |>
-    httr2::req_retry(max_tries = .max_tries,  
-                     retry_on_failure = TRUE,
-                     is_transient = \(resp) httr2::resp_status(resp) %in% c(429, 503)) |>
-    httr2::req_perform()
-  
-  # Check for API errors
-  tryCatch({
-    # Check for HTTP errors
-    if (httr2::resp_is_error(response)) {
-      # Try to parse the JSON response body
-      error_message <- tryCatch({
-        json_content <- httr2::resp_body_json(response)
-        if (!is.null(json_content)) {
-          paste0("API error response (Code ", json_content$code ,") ", json_content$message)
-        } else {
-          "Unknown error occurred"
-        }
-      }, error = function(e) {
-        paste("HTTP error:", httr2::resp_status(response), "- Unable to parse error message")
-      })
-      
-      stop(error_message)
-    }    
-    # Parse the response and extract embeddings
-    response_content <- httr2::resp_body_json(response)
-    
-    embeddings <- response_content$data |> 
+  extract_embeddings_fn <- function(response_content,error,headers){
+    if(error){
+      paste0("API error response (Code ", response_content$code ,") ", response_content$message)|>
+        stop()
+    }
+    response_content$data |> 
       purrr::map("embedding")  |>
       purrr::map(unlist)
-
-    results <- tibble::tibble(
-        input = input_texts,
-        embeddings = embeddings
-      )
-
-    # Return the embeddings
-    return(results)
-    
-  }, error = function(e) {
-    stop("An error occurred during the API request - ", e$message)
-  })
+  }
+  
+  # Perform a standard embedding API request
+  perform_embedding_request(.request = request,
+                            .timeout = .timeout,
+                            .max_tries = .max_tries,
+                            .input_texts = input_texts, 
+                            .fn_extract_embeddings = extract_embeddings_fn)
 }
 
 

@@ -10,7 +10,8 @@
 - Rate limit tracking and output for verbose mode in API-functions moved to a single function `track_rate_limit()`
 - Unnecessary `.onattach()` removed
 - Bugfix in callback method of Gemini streaming responses (still not ideal, but works)
-- New tests for the Gemini API
+- Embedding functions refactored to reduce repeated code
+- Small test code to look at potential interoperability with elmner or using elmer-type schemata
 
 ## Breaking Changes
 - Old `R6`-based `LLMMessage`-objects are not compatible with the new version anymore! This also applies to saved objects, like lists of batch files. 
