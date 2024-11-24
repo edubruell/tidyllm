@@ -126,6 +126,7 @@ method(print.LLMMessage,LLMMessage) <- function(x,...,.meta = getOption("tidyllm
     # Print message separator
     cat("--------------------------------------------------------------\n")
   })
+  invisible(x)
 }
 
 method(remove_message,LLMMessage) <- function(llm,index) {
