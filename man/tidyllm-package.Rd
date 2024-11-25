@@ -21,5 +21,10 @@ Useful links:
 \author{
 \strong{Maintainer}: Eduard Brüll \email{eduard.bruell@zew.de}
 
+Other contributors:
+\itemize{
+  \item Jia Zhang [contributor]
+}
+
 }
 \keyword{internal}
