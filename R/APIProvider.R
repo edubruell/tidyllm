@@ -11,6 +11,7 @@ generate_callback_function <- new_generic("generate_callback_function","api")
 ratelimit_from_header      <- new_generic("ratelimit_from_header",c("api", "headers"))
 parse_chat_function        <- new_generic("parse_chat_response","api")
 get_api_key                <- new_generic("get_api_key","api")
+prepare_llms_for_batch     <- new_generic("prepare_llms_for_batch","api")
 
 
 #Default method for the streaming callback function
@@ -43,6 +44,40 @@ method(get_api_key, APIProvider) <- function(api,dry_run=FALSE) {
   }
   return(api_key)
 }
+
+
+#Prepare a list of LLMs for batch requests 
+#'
+#' @noRd
+method(prepare_llms_for_batch, APIProvider) <- function(api, .llms, .id_prefix, .overwrite = FALSE) {
+  # Check for unique non-missing names
+  non_missing_names <- names(.llms)[!(is.na(names(.llms)) | names(.llms) == "")]
+  if (anyDuplicated(non_missing_names)) {
+    rlang::abort("Each specified name in .llms must be unique. Please ensure that all non-missing names are unique.")
+  }
+  
+  # Check for existing batch_id
+  if (!is.null(attr(.llms, "batch_id"))) {
+    if (.overwrite) {
+      rlang::warn("Batch ID is already set in the provided list. Overwriting with a new batch ID.")
+    } else {
+      rlang::abort("Batch ID is already set in the provided list. Set .overwrite = TRUE to overwrite.")
+    }
+  }
+  
+  # Generate custom IDs for missing names
+  names(.llms) <- lapply(seq_along(.llms), function(i) {
+    current_name <- names(.llms)[i]
+    if (is.null(current_name) || current_name == "" || is.na(current_name)) {
+      paste0(.id_prefix, i)
+    } else {
+      current_name
+    }
+  })
+  
+  return(.llms)
+}
+
 
 #api_fart <- APIProvider(short_name = "Fart",long_name = "fart.ai",api_key_env_var = "FOPENAI_API_KEY" )
 #get_api_key(api_fart,TRUE)

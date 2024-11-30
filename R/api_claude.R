@@ -312,32 +312,18 @@ send_claude_batch <- function(.llms,
   
   api_key <- get_api_key(api_obj,.dry_run)
   
-  # Check for unique non-missing names (excluding NA and empty strings)
-  non_missing_names <- names(.llms)[!(is.na(names(.llms)) | names(.llms) == "")]
-  if (anyDuplicated(non_missing_names)) {
-    stop("Each specified name in .llms must be unique. Please ensure that all non-missing names are unique.")
-  }
+  prepared_llms  <- prepare_llms_for_batch(api_obj,
+                                           .llms=.llms,
+                                           .id_prefix=.id_prefix,
+                                           .overwrite = .overwrite)
   
-  # Check for existing batch_id
-  if (!is.null(attr(.llms, "batch_id"))) {
-    if (.overwrite) {
-      warning("Batch ID is already set in the provided list. Overwriting with a new batch ID.")
-    } else {
-      stop("Batch ID is already set in the provided list. Set .overwrite = TRUE to overwrite.")
-    }
-  }
-  
-  requests_list <- lapply(seq_along(.llms), function(i) { 
+  requests_list <- lapply(seq_along(prepared_llms), function(i) { 
     
     # Get messages from each LLMMessage object
     messages <- to_api_format(llm=.llms[[i]],
                               api=api_obj)
     
-    custom_id <- names(.llms)[i]
-    if (is.null(custom_id) || custom_id == "" || is.na(custom_id)) {
-      custom_id <- paste0(.id_prefix, i)  # Generate a custom ID if name is missing
-      names(.llms)[i] <<- custom_id  # Assign generated ID as the name of .llms
-    }
+    custom_id <- names(prepared_llms)[i]
     list(
       custom_id = custom_id,
       params = list(
@@ -368,32 +354,26 @@ send_claude_batch <- function(.llms,
   }
   
   response <- request |>
-    httr2::req_timeout(.timeout) |>
-    httr2::req_error(is_error = function(resp) FALSE) |>
-    httr2::req_retry(
-      max_tries = .max_tries,
-      retry_on_failure = TRUE,
-      is_transient = function(resp) httr2::resp_status(resp) %in% c(429, 503)
-    ) |>
-    httr2::req_perform()
+    perform_generic_request(.timeout=.timeout,
+                            .max_tries = .max_tries)
   
-  response_body <- httr2::resp_body_json(response)
-  if("error" %in% names(response_body)){
+
+  if("error" %in% names(response$content)){
     sprintf("Anthropic API returned an Error:\nType: %s\nMessage: %s",
-            response_body$error$type,
-            response_body$error$message) |>
+            response$content$error$type,
+            response$content$error$message) |>
       stop()
   }
   
   # Attach batch_id as an attribute to .llms
-  batch_id <- response_body$id
-  attr(.llms, "batch_id") <- batch_id
+  batch_id <- response$content$id
+  attr(prepared_llms, "batch_id") <- batch_id
   
   if (.verbose) {
     message("Batch submitted successfully. Batch ID: ", batch_id)
   }
   
-  return(.llms)
+  return(prepared_llms)
 }
 
 
@@ -445,18 +425,12 @@ check_claude_batch <- function(.llms = NULL,
     )
   
   # Perform request with retries and error handling
-  response <- request |>
-    httr2::req_timeout(.timeout) |>
-    httr2::req_error(is_error = function(resp) FALSE) |>
-    httr2::req_retry(
-      max_tries = .max_tries,
-      retry_on_failure = TRUE,
-      is_transient = function(resp) httr2::resp_status(resp) %in% c(429, 503)
-    ) |>
-    httr2::req_perform()
+  response <- request  |>
+    perform_generic_request(.timeout=.timeout,
+                            .max_tries = .max_tries)
   
   # Parse response
-  response_body <- httr2::resp_body_json(response)
+  response_body <- response$content
   if("error" %in% names(response_body)){
     sprintf("Anthropic API returned an Error:\nType: %s\nMessage: %s",
             response_body$error$type,
@@ -465,7 +439,7 @@ check_claude_batch <- function(.llms = NULL,
   }
   
   # Create tibble with batch details
-  result_tbl <- tibble::tibble(
+  tibble::tibble(
     batch_id = response_body$id,
     status = response_body$processing_status,
     created_at = lubridate::ymd_hms(response_body$created_at, tz = "UTC"),
@@ -475,8 +449,6 @@ check_claude_batch <- function(.llms = NULL,
     req_expired    = response_body$request_counts$expired,
     req_canceled   = response_body$request_counts$canceled
   )
-  
-  return(result_tbl)
 }
 
 
@@ -545,16 +517,10 @@ fetch_claude_batch <- function(.llms,
   }
   
   response <- request |>
-    httr2::req_timeout(.timeout) |>
-    httr2::req_error(is_error = function(resp) FALSE) |>
-    httr2::req_retry(
-      max_tries = .max_tries,
-      retry_on_failure = TRUE,
-      is_transient = function(resp) httr2::resp_status(resp) %in% c(429, 503)
-    ) |>
-    httr2::req_perform()
+    perform_generic_request(.timeout=.timeout,
+                            .max_tries = .max_tries)
   
-  response_body <- httr2::resp_body_json(response)
+  response_body <- response$content
   if ("error" %in% names(response_body)) {
     sprintf("Anthropic API returned an Error:\nType: %s\nMessage: %s",
             response_body$error$type,
@@ -622,7 +588,6 @@ fetch_claude_batch <- function(.llms,
   return(updated_llms)
 }
 
-
 #' List Claude Batch Requests
 #'
 #' Retrieves batch request details from the Claude API.
@@ -659,23 +624,16 @@ list_claude_batches <- function(.api_url = "https://api.anthropic.com/",
   
   # Perform the request with retries and error handling
   response <- request |>
-    httr2::req_timeout(.timeout) |>
-    httr2::req_error(is_error = function(resp) FALSE) |>
-    httr2::req_retry(
-      max_tries = .max_tries,
-      retry_on_failure = TRUE,
-      is_transient = function(resp) httr2::resp_status(resp) %in% c(429, 503)
-    ) |>
-    httr2::req_perform()
+    perform_generic_request(.timeout=.timeout,
+                            .max_tries = .max_tries)
   
   # Parse response and handle any errors
-  response_body <- httr2::resp_body_json(response)
-  if ("error" %in% names(response_body)) {
-    stop(sprintf("Anthropic API Error: %s - %s", response_body$error$type, response_body$error$message))
+  if ("error" %in% names(response$content)) {
+    stop(sprintf("Anthropic API Error: %s - %s", response$content$error$type, response$content$error$message))
   }
   
   # Extract batch list details with parsed dates
-  batch_list <- purrr::map_dfr(response_body$data, function(batch) {
+  batch_list <- purrr::map_dfr(response$content$data, function(batch) {
     tibble::tibble(
       batch_id = batch$id,
       status = batch$processing_status,

@@ -14,6 +14,7 @@
 - Embedding functions refactored to reduce repeated code
 - Small test code to look at potential interoperability with [elmer](https://github.com/tidyverse/elmer) for using elmer-type schemata. 
 - API-key check moved into API-object method
+- Slight refactoring for batch functions (there is still quite a bit of potential to reduce duplication)
 
 ## Breaking Changes
 

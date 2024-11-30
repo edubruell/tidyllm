@@ -449,21 +449,7 @@ send_openai_batch <- function(.llms,
   
   api_key <- get_api_key(api_obj,.dry_run)
 
-  # Check for unique non-missing names (excluding NA and empty strings)
-  non_missing_names <- names(.llms)[!(is.na(names(.llms)) | names(.llms) == "")]
-  if (anyDuplicated(non_missing_names)) {
-    stop("Each specified name in .llms must be unique. Please ensure that all non-missing names are unique.")
-  }
-  
-  # Check for existing batch_id
-  if (!is.null(attr(.llms, "batch_id"))) {
-    if (.overwrite) {
-      warning("Batch ID is already set in the provided list. Overwriting with a new batch ID.")
-    } else {
-      stop("Batch ID is already set in the provided list. Set .overwrite = TRUE to overwrite.")
-    }
-  }
-  
+
   #This filters out the system prompt for reasoning models.
   no_system_prompt <- FALSE
   if(.model %in% c("o1-preview","o1-mini")){
@@ -482,19 +468,19 @@ send_openai_batch <- function(.llms,
     )
   } 
   
+ prepared_llms  <- prepare_llms_for_batch(api_obj,
+                                          .llms=.llms,
+                                          .id_prefix=.id_prefix,
+                                          .overwrite = .overwrite)
+  
   # Prepare the request lines
-  request_lines <- lapply(seq_along(.llms), function(i) { 
-    custom_id <- names(.llms)[i]
-    if (is.null(custom_id) || custom_id == "" || is.na(custom_id)) {
-      custom_id <- paste0(.id_prefix, i)  # Generate a custom ID if name is missing
-      names(.llms)[i] <<- custom_id  # Assign generated ID as the name of .llms
-    }
-    
+  request_lines <- lapply(seq_along(prepared_llms), function(i) { 
+    custom_id <- names(prepared_llms)[i]
+
     # Get messages from each LLMMessage object
     messages <- to_api_format(llm=.llms[[i]],
                               api=api_obj,
                               no_system=no_system_prompt)
-    
 
     # Build the request body
     body <- list(
@@ -544,27 +530,20 @@ send_openai_batch <- function(.llms,
     )
   
   upload_response <- upload_request |>
-    httr2::req_timeout(.timeout) |>
-    httr2::req_error(is_error = function(resp) FALSE) |>
-    httr2::req_retry(
-      max_tries = .max_tries,
-      retry_on_failure = TRUE,
-      is_transient = function(resp) httr2::resp_status(resp) %in% c(429, 503)
-    ) |>
-    httr2::req_perform()
-  
-  upload_response_body <- httr2::resp_body_json(upload_response)
+    perform_generic_request(.timeout=.timeout,
+                            .max_tries = .max_tries)
+    
   
   if(.verbose){message("Batch request file uploaded via files API")}
   
-  if ("error" %in% names(upload_response_body)) {
+  if ("error" %in% names(upload_response$content)) {
     sprintf("OpenAI API returned an Error during file upload:\nType: %s\nMessage: %s",
-            upload_response_body$error$type,
-            upload_response_body$error$message) |>
+            upload_response$content$error$type,
+            upload_response$content$error$message) |>
       stop()
   }
   
-  input_file_id <- upload_response_body$id
+  input_file_id <- upload_response$content$id
   
   # Now, create the batch
   batch_request_body <- list(
@@ -581,16 +560,10 @@ send_openai_batch <- function(.llms,
     httr2::req_body_json(batch_request_body)
   
   batch_response <- batch_request |>
-    httr2::req_timeout(.timeout) |>
-    httr2::req_error(is_error = function(resp) FALSE) |>
-    httr2::req_retry(
-      max_tries = .max_tries,
-      retry_on_failure = TRUE,
-      is_transient = function(resp) httr2::resp_status(resp) %in% c(429, 503)
-    ) |>
-    httr2::req_perform()
+    perform_generic_request(.timeout=.timeout,
+                            .max_tries = .max_tries)
   
-  batch_response_body <- httr2::resp_body_json(batch_response)
+  batch_response_body <- batch_response$content
   
   if(.verbose){message("Batch request for file sent")}
   if ("error" %in% names(batch_response_body)) {
@@ -602,14 +575,14 @@ send_openai_batch <- function(.llms,
   
   # Attach batch_id as an attribute to .llms
   batch_id <- batch_response_body$id
-  attr(.llms, "batch_id") <- batch_id
-  attr(.llms, "json") <- json
+  attr(prepared_llms, "batch_id") <- batch_id
+  attr(prepared_llms, "json") <- json
   
   
   # Optionally, remove the temporary file
   unlink(temp_file)
   
-  return(.llms)
+  return(prepared_llms)
 }
 
 
@@ -663,17 +636,11 @@ check_openai_batch <- function(.llms = NULL,
   
   # Perform request with retries and error handling
   response <- request |>
-    httr2::req_timeout(.timeout) |>
-    httr2::req_error(is_error = function(resp) FALSE) |>
-    httr2::req_retry(
-      max_tries = .max_tries,
-      retry_on_failure = TRUE,
-      is_transient = function(resp) httr2::resp_status(resp) %in% c(429, 503)
-    ) |>
-    httr2::req_perform()
+    perform_generic_request(.timeout=.timeout,
+                            .max_tries = .max_tries)
   
   # Parse response
-  response_body <- httr2::resp_body_json(response)
+  response_body <- response$content
   if("error" %in% names(response_body)){
     sprintf("OpenAI API returned an Error:\nType: %s\nMessage: %s",
             response_body$error$type,
@@ -726,17 +693,11 @@ list_openai_batches <- function(.limit = 20,
   
   # Perform the request with retries and error handling
   response <- request |>
-    httr2::req_timeout(.timeout) |>
-    httr2::req_error(is_error = function(resp) FALSE) |>
-    httr2::req_retry(
-      max_tries = .max_tries,
-      retry_on_failure = TRUE,
-      is_transient = function(resp) httr2::resp_status(resp) %in% c(429, 503)
-    ) |>
-    httr2::req_perform()
+    perform_generic_request(.timeout=.timeout,
+                            .max_tries = .max_tries)
   
-  response_body <- httr2::resp_body_json(response)
-  
+  # Parse response
+  response_body <- response$content
   if ("error" %in% names(response_body)) {
     sprintf("OpenAI API returned an Error:\nType: %s\nMessage: %s",
             response_body$error$type,
@@ -819,18 +780,12 @@ fetch_openai_batch <- function(.llms,
   if (.dry_run) {
     return(request)
   }
-  
+
   response <- request |>
-    httr2::req_timeout(.timeout) |>
-    httr2::req_error(is_error = function(resp) FALSE) |>
-    httr2::req_retry(
-      max_tries = .max_tries,
-      retry_on_failure = TRUE,
-      is_transient = function(resp) httr2::resp_status(resp) %in% c(429, 503)
-    ) |>
-    httr2::req_perform()
+    perform_generic_request(.timeout=.timeout,
+                            .max_tries = .max_tries)
   
-  response_body <- httr2::resp_body_json(response)
+  response_body <- response$content
   if ("error" %in% names(response_body)) {
     sprintf("OpenAI API returned an Error:\nType: %s\nMessage: %s",
             response_body$error$type,
