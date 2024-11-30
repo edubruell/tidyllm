@@ -75,18 +75,15 @@ groq_chat <- function(.llm,
     validate_inputs()
   
   api_obj <- api_openai(short_name = "groq",
-                        long_name  = "Groq")
+                        long_name  = "Groq",
+                        api_key_env_var = "GROQ_API_KEY")
   
   # Get formatted message list for Groq models
   messages <- to_api_format(llm=.llm,
                             api=api_obj,
                             no_system=TRUE)
   
-  # Retrieve API key from environment variables
-  api_key <- Sys.getenv("GROQ_API_KEY")
-  if ((api_key == "")& .dry_run==FALSE){
-    stop("API key is not set. Please set it with: Sys.setenv(GROQ_API_KEY = \"YOUR-KEY-GOES-HERE\")")
-  }
+  api_key <- get_api_key(api_obj,.dry_run)
   
   # Fill the request body
   request_body <- list(

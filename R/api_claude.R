@@ -200,14 +200,11 @@ claude_chat <- function(.llm,
     validate_inputs()
   
 
-  # Retrieve API key from environment variables
-  api_key <- base::Sys.getenv("ANTHROPIC_API_KEY")
-  if ((api_key == "") & .dry_run==FALSE){
-    stop("API key is not set. Please set it with: Sys.setenv(ANTHROPIC_API_KEY = \"YOUR-KEY-GOES-HERE\").")
-  }
-  
   api_obj <- api_claude(short_name = "claude",
-                        long_name  = "Anthropic Claude")
+                        long_name  = "Anthropic Claude",
+                        api_key_env_var = "ANTHROPIC_API_KEY")
+
+  api_key <- get_api_key(api_obj,.dry_run)
   
   # Format message list for Claude model
   messages <- to_api_format(.llm,api_obj)
@@ -308,11 +305,12 @@ send_claude_batch <- function(.llms,
     ".timeout must be an integer" = is_integer_valued(.timeout)
   ) |> validate_inputs()
   
-  # Retrieve API key from environment variables
-  api_key <- Sys.getenv("ANTHROPIC_API_KEY")
-  if (api_key == "" && !.dry_run) {
-    stop("API key is not set. Please set it with: Sys.setenv(ANTHROPIC_API_KEY = \"YOUR-KEY-GOES-HERE\").")
-  }
+  
+  api_obj <- api_claude(short_name = "claude",
+                        long_name  = "Anthropic Claude",
+                        api_key_env_var = "ANTHROPIC_API_KEY")
+  
+  api_key <- get_api_key(api_obj,.dry_run)
   
   # Check for unique non-missing names (excluding NA and empty strings)
   non_missing_names <- names(.llms)[!(is.na(names(.llms)) | names(.llms) == "")]
@@ -333,7 +331,7 @@ send_claude_batch <- function(.llms,
     
     # Get messages from each LLMMessage object
     messages <- to_api_format(llm=.llms[[i]],
-                              api=api_claude())
+                              api=api_obj)
     
     custom_id <- names(.llms)[i]
     if (is.null(custom_id) || custom_id == "" || is.na(custom_id)) {

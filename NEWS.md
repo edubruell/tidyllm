@@ -1,6 +1,7 @@
 # Development Version 0.2.6
 
 ## Large Refactor of package internals
+
 - Switch from `R6` to `S7` for the main `LLMMessage` class
 - Several bug-fixes for `df_llm_message()`
 - API formatting methods are now in the code files for API providers
@@ -11,10 +12,28 @@
 - Unnecessary `.onattach()` removed
 - Bugfix in callback method of Gemini streaming responses (still not ideal, but works)
 - Embedding functions refactored to reduce repeated code
-- Small test code to look at potential interoperability with elmner or using elmer-type schemata
+- Small test code to look at potential interoperability with [elmer](https://github.com/tidyverse/elmer) for using elmer-type schemata. 
+- API-key check moved into API-object method
 
 ## Breaking Changes
+
 - Old `R6`-based `LLMMessage`-objects are not compatible with the new version anymore! This also applies to saved objects, like lists of batch files. 
+
+## Minor Features
+
+- Google Gemini now supports working with multiple files in one message for the file upload functionality
+
+```r
+here::here("local_wip","example.mp3") |> gemini_upload_file()
+here::here("local_wip","legrille.mp4") |> gemini_upload_file()
+
+file_tibble <- gemini_list_files()
+
+llm_message("What are these two files about?") |>
+  gemini_chat(.fileid=file_tibble$name)
+```
+
+
 
 # Version 0.2.5
 

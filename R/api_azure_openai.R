@@ -152,7 +152,10 @@ azure_openai_chat <- function(
   
   
   api_obj <- api_azure_openai(short_name = "azure_openai",
-                              long_name  = "Azure OpenAI")
+                              long_name  = "Azure OpenAI",
+                              api_key_env_var = "AZURE_OPENAI_API_KEY")
+  
+  api_key <- get_api_key(api_obj,.dry_run)
   
   #This filters out the system prompt for reasoning models.
   no_system_prompt <- FALSE
@@ -165,12 +168,6 @@ azure_openai_chat <- function(
                             api=api_obj,
                             no_system=no_system_prompt)
   
-  
-  # Get the OpenAI API key
-  api_key <- Sys.getenv("AZURE_OPENAI_API_KEY")
-  if ((api_key == "")& .dry_run==FALSE){
-    stop("API key is not set. Please set it with: Sys.setenv(AZURE_OPENAI_API_KEY = \"YOUR-KEY-GOES-HERE\")")
-  }
   
   # Handle JSON schema
   json <- FALSE
@@ -232,7 +229,7 @@ azure_openai_chat <- function(
 
 #' Generate Embeddings Using OpenAI API on Azure
 #'
-#' @param .input Acharacter vector of texts to embed or an `LLMMesssage`object
+#' @param .input A character vector of texts to embed or an `LLMMesssage`object
 #' @param .deployment The embedding model identifier (default: "text-embedding-3-small").
 #' @param .endpoint_url Base URL for the API (default:  Sys.getenv("AZURE_ENDPOINT_URL")).
 #' @param .truncate Whether to truncate inputs to fit the model's context length (default: TRUE).

@@ -272,7 +272,7 @@ ollama_embedding <- function(.input,
         stop()
     }
     response_content$embeddings |>
-      purrr:::map(unlist)
+      purrr::map(unlist)
   }
   
   # Perform a standard embedding API request

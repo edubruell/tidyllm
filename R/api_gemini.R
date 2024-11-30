@@ -93,11 +93,65 @@ method(generate_callback_function,api_gemini) <- function(api) {
   }
 }
 
+
+#' Inject files into Gemini message contents
+#'
+#' @param .gemini_contents The existing gemini contents list
+#' @param .file_ids A vector or list of file IDs to inject
+#' @return Updated gemini_contents with files injected
+#' @noRd
+gemini_inject_files <- function(.gemini_contents, 
+                                .file_ids) {
+  # If file_ids is NULL or empty, just return gemini_contents
+  if (is.null(.file_ids) || length(.file_ids) == 0) {
+    return(.gemini_contents)
+  }
+
+  # For each file ID, get the metadata and create file_data
+  file_data_list <- lapply(.file_ids, function(file_id) {
+    file_info <- gemini_file_metadata(file_id)
+    list(
+      fileData = list(
+        fileUri = file_info$uri,
+        mimeType = file_info$mime_type
+      )
+    )
+  })
+  
+  # Now, inject the file_data into the parts of the last user message
+  # First, get the last message
+  last_msg <- .gemini_contents[[length(.gemini_contents)]]
+  
+  # Ensure the last message is a user message
+  if (last_msg$role != "user") {
+    stop("The last message must be a user message to inject files")
+  }
+  
+  # Ensure that last_msg$parts is a list of parts
+  if (!is.list(last_msg$parts)) {
+    stop("The 'parts' of the last message is not a list")
+  }
+  
+  # Check if last_msg$parts[[1]] is a list; if not, wrap it
+  if (!is.list(last_msg$parts[[1]])) {
+    last_msg$parts <- list(last_msg$parts)
+  }
+  
+  # Append the file_data_list to the parts
+  last_msg$parts <- c(
+    last_msg$parts,
+    file_data_list
+  )
+  
+  .gemini_contents[[length(.gemini_contents)]] <- last_msg
+}
+
+
 #' Send LLMMessage to Gemini API
 #'
 #' @param .llm An existing LLMMessage object or an initial text prompt.
 #' @param .model The model identifier (default: "gemini-1.5-flash").
-#' @param .fileid Optional file name for a file uploaded via `gemini_upload_file()`(default: NULL)
+#' @param .fileid Optional vector of file IDs uploaded via `gemini_upload_file()` (default: NULL).
 #' @param .temperature Controls randomness in generation (default: NULL, range: 0.0-2.0).
 #' @param .max_output_tokens Maximum tokens in the response (default: NULL).
 #' @param .top_p Controls nucleus sampling (default: NULL, range: 0.0-1.0).
@@ -135,11 +189,11 @@ gemini_chat <- function(.llm,
                    .max_tries = 3,
                    .verbose = FALSE,
                    .stream = FALSE) {
-  
   # Validate inputs
   c(
     "Input .llm must be an LLMMessage object" = S7_inherits(.llm, LLMMessage),
     "Input .model must be a string" = is.character(.model) && length(.model) == 1,
+    "Input .fileid must be NULL or a charcater vector of file IDs" = is.null(.fileid) | is.character(.fileid) ,
     "Input .temperature must be NULL or in [0.0, 2.0]" = is.null(.temperature) | (.temperature >= 0.0 & .temperature <= 2.0),
     "Input .max_output_tokens must be NULL or an integer-valued numeric greater than 1" = is.null(.max_output_tokens) | (.max_output_tokens >= 1 & is_integer_valued(.max_output_tokens)),
     "Input .top_p must be NULL or in [0.0, 1.0]" = is.null(.top_p) | (.top_p >= 0.0 & .top_p <= 1.0),
@@ -160,27 +214,14 @@ gemini_chat <- function(.llm,
     validate_inputs()
   
   api_obj <- api_gemini(short_name = "gemini",
-                        long_name  = "Google Gemini")
+                        long_name  = "Google Gemini",
+                        api_key_env_var = "GOOGLE_API_KEY")
   
-  # Prepare message contents
-  gemini_contents <- to_api_format(.llm,api_obj)
+  api_key <- get_api_key(api_obj,.dry_run)
   
-  # Inject file if provided
-  if (!is.null(.fileid)) {
-    file_info <- gemini_file_metadata(.fileid)  
-    file_data <- list(
-      file_data = list(
-        mime_type = file_info$mime_type,
-        file_uri = file_info$uri
-      )
-    )
-    
-    # Injecting file data as a new "part" in the last user message
-    gemini_contents[[length(gemini_contents)]]$parts <- c(
-      list(gemini_contents[[length(gemini_contents)]]$parts),
-      list(file_data)
-    )
-  }
+  # Prepare message contents (inject files if available)
+  gemini_contents <- to_api_format(.llm,api_obj) |>
+    gemini_inject_files(.fileid)
   
   # Handle JSON schema
   response_format <- NULL
@@ -222,12 +263,6 @@ gemini_chat <- function(.llm,
   ) |>
     purrr::compact()
 
-  # Retrieve API key
-  api_key <- Sys.getenv("GOOGLE_API_KEY")
-  if ((api_key == "") & .dry_run == FALSE) {
-    stop("API key is not set. Please set it with: Sys.setenv(GOOGLE_API_KEY = 'YOUR-KEY-GOES-HERE')")
-  }
-  
   if(.stream==FALSE) request_type <- ":generateContent"
   if(.stream==TRUE)  request_type <- ":streamGenerateContent"
   
@@ -475,7 +510,7 @@ gemini_embedding <- function(.input,
         stop()
     }
     response_content$embeddings |>
-      purrr:::map(unlist)
+      purrr::map(unlist)
   }
   
   # Perform a standard embedding API request

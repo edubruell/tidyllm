@@ -107,7 +107,7 @@ tidyllm_schema <- function(name, ...) {
 }
 
 to_schema <- new_generic("to_schema","x")
-if("elmer" %in% loadedNamespaces()){
+if (requireNamespace("elmer", quietly = TRUE)) {
   method(to_schema, elmer:::TypeBasic) <- function(x) {
     list(type = x@type, description = x@description %||% "")
   }

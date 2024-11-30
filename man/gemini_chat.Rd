@@ -31,7 +31,7 @@ gemini_chat(
 
 \item{.model}{The model identifier (default: "gemini-1.5-flash").}
 
-\item{.fileid}{Optional file name for a file uploaded via \code{gemini_upload_file()}(default: NULL)}
+\item{.fileid}{Optional vector of file IDs uploaded via \code{gemini_upload_file()} (default: NULL).}
 
 \item{.temperature}{Controls randomness in generation (default: NULL, range: 0.0-2.0).}
 

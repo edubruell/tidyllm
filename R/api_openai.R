@@ -211,7 +211,8 @@ openai_chat <- function(
   
   
   api_obj <- api_openai(short_name = "openai",
-                        long_name  = "OpenAI")
+                        long_name  = "OpenAI",
+                        api_key_env_var = "OPENAI_API_KEY")
   
   #Filter out the system prompt for reasoning models.
   no_system_prompt <- FALSE
@@ -220,19 +221,15 @@ openai_chat <- function(
     no_system_prompt <- TRUE
   }
   
-  
   messages <- to_api_format(llm=.llm,
                             api=api_obj,
                             no_system=no_system_prompt)
   
   if (!.compatible) {
-    api_key <- Sys.getenv("OPENAI_API_KEY")
-    if ((api_key == "") & .dry_run == FALSE) {
-      stop("API key is not set. Please set it with: Sys.setenv(OPENAI_API_KEY = \"YOUR-KEY-GOES-HERE\")")
-    }
+    api_key <- get_api_key(api_obj,.dry_run)
   }
   
-  if("elmer" %in% loadedNamespaces()){
+  if (requireNamespace("elmer", quietly = TRUE)) {
     #Handle elmer json schemata Objects
     if(S7_inherits(.json_schema,elmer:::TypeObject)){
       .json_schema <- list(
@@ -241,6 +238,7 @@ openai_chat <- function(
       )
     }
   }
+  
   # Handle JSON schema and JSON mode
   response_format <- NULL
   json = FALSE
@@ -445,12 +443,12 @@ send_openai_batch <- function(.llms,
     ".timeout must be integer-valued numeric" = is_integer_valued(.timeout)
   ) |> validate_inputs()
   
-  # Retrieve API key from environment variables
-  api_key <- Sys.getenv("OPENAI_API_KEY")
-  if (api_key == "" && !.dry_run) {
-    stop("API key is not set. Please set it with: Sys.setenv(OPENAI_API_KEY = \"YOUR-KEY-GOES-HERE\").")
-  }
+  api_obj <- api_openai(short_name = "openai",
+                        long_name  = "OpenAI",
+                        api_key_env_var = "OPENAI_API_KEY")
   
+  api_key <- get_api_key(api_obj,.dry_run)
+
   # Check for unique non-missing names (excluding NA and empty strings)
   non_missing_names <- names(.llms)[!(is.na(names(.llms)) | names(.llms) == "")]
   if (anyDuplicated(non_missing_names)) {
@@ -494,7 +492,7 @@ send_openai_batch <- function(.llms,
     
     # Get messages from each LLMMessage object
     messages <- to_api_format(llm=.llms[[i]],
-                              api=api_openai(),
+                              api=api_obj,
                               no_system=no_system_prompt)
     
 

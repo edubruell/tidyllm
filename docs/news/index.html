@@ -49,19 +49,32 @@
 <li>API formatting methods are now in the code files for API providers</li>
 <li>Rate-limit header extraction for tracking and streaming callback generation are now methods for <code>APIProvider</code> classes</li>
 <li>All api-specific code is now in the <code>api_openai.R</code>,<code>api_gemini.R</code>,etc. files</li>
-<li>Support for <code><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble()</a></code> S3 Generic for <code>LLMMessage</code>
+<li>Support for <code>as_tibble()</code> S3 Generic for <code>LLMMessage</code>
 </li>
 <li>Rate limit tracking and output for verbose mode in API-functions moved to a single function <code>track_rate_limit()</code>
 </li>
 <li>Unnecessary <code>.onattach()</code> removed</li>
 <li>Bugfix in callback method of Gemini streaming responses (still not ideal, but works)</li>
 <li>Embedding functions refactored to reduce repeated code</li>
-<li>Small test code to look at potential interoperability with elmner or using elmer-type schemata</li>
+<li>Small test code to look at potential interoperability with <a href="https://github.com/tidyverse/elmer" class="external-link">elmer</a> for using elmer-type schemata.</li>
+<li>API-key check moved into API-object method</li>
 </ul></div>
 <div class="section level3">
 <h3 id="breaking-changes-0-2-6">Breaking Changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-2-6"></a></h3>
 <ul><li>Old <code>R6</code>-based <code>LLMMessage</code>-objects are not compatible with the new version anymore! This also applies to saved objects, like lists of batch files.</li>
 </ul></div>
+<div class="section level3">
+<h3 id="minor-features-0-2-6">Minor Features<a class="anchor" aria-label="anchor" href="#minor-features-0-2-6"></a></h3>
+<ul><li>Google Gemini now supports working with multiple files in one message for the file upload functionality</li>
+</ul><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">here</span><span class="fu">::</span><span class="fu"><a href="https://here.r-lib.org//reference/here.html" class="external-link">here</a></span><span class="op">(</span><span class="st">"local_wip"</span>,<span class="st">"example.mp3"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/gemini_upload_file.html">gemini_upload_file</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="fu">here</span><span class="fu">::</span><span class="fu"><a href="https://here.r-lib.org//reference/here.html" class="external-link">here</a></span><span class="op">(</span><span class="st">"local_wip"</span>,<span class="st">"legrille.mp4"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/gemini_upload_file.html">gemini_upload_file</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">file_tibble</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gemini_list_files.html">gemini_list_files</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"What are these two files about?"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/gemini_chat.html">gemini_chat</a></span><span class="op">(</span>.fileid<span class="op">=</span><span class="va">file_tibble</span><span class="op">$</span><span class="va">name</span><span class="op">)</span></span></code></pre></div>
+</div>
 </div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.5" id="version-025">Version 0.2.5<a class="anchor" aria-label="anchor" href="#version-025"></a></h2>
@@ -105,13 +118,13 @@
 </div>
 <div class="section level4">
 <h4 id="old-usage-0-2-3">Old Usage:<a class="anchor" aria-label="anchor" href="#old-usage-0-2-3"></a></h4>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Hello World"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-4o"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="new-usage-0-2-3">New Usage:<a class="anchor" aria-label="anchor" href="#new-usage-0-2-3"></a></h4>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Recommended Verb-Based Approach</span></span>
 <span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Hello World"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-4o"</span><span class="op">)</span><span class="op">)</span></span>
@@ -141,7 +154,7 @@
 <h3 id="major-features-0-2-2">Major Features<a class="anchor" aria-label="anchor" href="#major-features-0-2-2"></a></h3>
 <ul><li>Added functions to work with the Google Gemini API, with the new <code><a href="../reference/gemini.html">gemini()</a></code> main API-function</li>
 <li>Support for the file upload workflows for Gemini:</li>
-</ul><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+</ul><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">#Upload a file for use with gemini</span></span>
 <span><span class="va">upload_info</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gemini_upload_file.html">gemini_upload_file</a></span><span class="op">(</span><span class="st">"example.mp3"</span><span class="op">)</span></span>
 <span></span>
@@ -264,7 +277,7 @@
 <h3 id="major-features-0-2-1">Major Features:<a class="anchor" aria-label="anchor" href="#major-features-0-2-1"></a></h3>
 <ul><li>Added <code><a href="../reference/get_metadata.html">get_metadata()</a></code> function to retrieve and format metadata from <code>LLMMessage</code> objects.</li>
 <li>Enhanced the <code>print</code> method for <code>LLMMessage</code> to support printing metadata, controlled via the new <code>tidyllm_print_metadata</code> option or a new <code>.meta</code>-arguement for the print method.</li>
-</ul><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+</ul><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">conversation</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Write a short poem about software development"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>  </span>

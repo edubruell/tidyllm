@@ -88,7 +88,10 @@ mistral_chat <- function(.llm,
     validate_inputs()
   
   api_obj <- api_mistral(short_name = "mistral",
-                        long_name  = "Mistral")
+                        long_name  = "Mistral",
+                        api_key_env_var = "MISTRAL_API_KEY")
+  
+  api_key <- get_api_key(api_obj,.dry_run)
   
   messages <- to_api_format(llm=.llm,
                             api=api_obj,
@@ -114,11 +117,7 @@ mistral_chat <- function(.llm,
     mistral_request_body$response_format <- list(type="json_object")
   }
   
-  # Retrieve API key from environment variables
-  api_key <- Sys.getenv("MISTRAL_API_KEY")
-  if ((api_key == "")& .dry_run==FALSE){
-    stop("API key is not set. Please set it with: Sys.setenv(MISTRAL_API_KEY = \"YOUR-KEY-GOES-HERE\")")
-  }
+
   
   # Build the request
   request <- httr2::request("https://api.mistral.ai") |>

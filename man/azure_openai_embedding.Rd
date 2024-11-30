@@ -16,7 +16,7 @@ azure_openai_embedding(
 )
 }
 \arguments{
-\item{.input}{Acharacter vector of texts to embed or an \code{LLMMesssage}object}
+\item{.input}{A character vector of texts to embed or an \code{LLMMesssage}object}
 
 \item{.deployment}{The embedding model identifier (default: "text-embedding-3-small").}
 
