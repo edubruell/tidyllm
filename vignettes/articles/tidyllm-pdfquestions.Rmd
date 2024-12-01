@@ -7,7 +7,7 @@ knitr::opts_chunk$set(
   collapse = TRUE
 )
 ```
-> ⚠️ **Note:**  This article refers to the development version 0.2.6. of **tidyllm**, which has a chnaged interface compared to the last CRAN release. You can install the current development version directly from GitHub using devtools:
+> ⚠️ **Note:**  This article refers to the development version 0.2.7. of **tidyllm**, which has a chnaged interface compared to the last CRAN release. You can install the current development version directly from GitHub using devtools:
 
 ```{r, eval= FALSE, echo=TRUE}
 # Install devtools if not already installed

@@ -1,4 +1,10 @@
-# Development Version 0.2.6
+# Development Version 0.2.7
+
+## Major Features
+
+- Batch API functions for the Mistral API
+
+# Version 0.2.6
 
 ## Large Refactor of package internals
 

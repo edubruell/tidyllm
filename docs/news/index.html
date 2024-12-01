@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.7</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -40,7 +40,14 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.2.6" id="development-version-026">Development Version 0.2.6<a class="anchor" aria-label="anchor" href="#development-version-026"></a></h2>
+<h2 class="pkg-version" data-toc-text="0.2.7" id="development-version-027">Development Version 0.2.7<a class="anchor" aria-label="anchor" href="#development-version-027"></a></h2>
+<div class="section level3">
+<h3 id="major-features-0-2-7">Major Features<a class="anchor" aria-label="anchor" href="#major-features-0-2-7"></a></h3>
+<ul><li>Batch API functions for the Mistral API</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.6" id="version-026">Version 0.2.6<a class="anchor" aria-label="anchor" href="#version-026"></a></h2>
 <div class="section level3">
 <h3 id="large-refactor-of-package-internals-0-2-6">Large Refactor of package internals<a class="anchor" aria-label="anchor" href="#large-refactor-of-package-internals-0-2-6"></a></h3>
 <ul><li>Switch from <code>R6</code> to <code>S7</code> for the main <code>LLMMessage</code> class</li>
@@ -49,7 +56,7 @@
 <li>API formatting methods are now in the code files for API providers</li>
 <li>Rate-limit header extraction for tracking and streaming callback generation are now methods for <code>APIProvider</code> classes</li>
 <li>All api-specific code is now in the <code>api_openai.R</code>,<code>api_gemini.R</code>,etc. files</li>
-<li>Support for <code>as_tibble()</code> S3 Generic for <code>LLMMessage</code>
+<li>Support for <code><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble()</a></code> S3 Generic for <code>LLMMessage</code>
 </li>
 <li>Rate limit tracking and output for verbose mode in API-functions moved to a single function <code>track_rate_limit()</code>
 </li>

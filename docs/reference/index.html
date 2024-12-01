@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.7</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -246,6 +246,12 @@
         <dd>List OpenAI Batch Requests</dd>
       </dl><dl><dt>
 
+          <code><a href="cancel_openai_batch.html">cancel_openai_batch()</a></code>
+
+        </dt>
+        <dd>Cancel an In-Progress OpenAI Batch</dd>
+      </dl><dl><dt>
+
           <code><a href="openai_embedding.html">openai_embedding()</a></code>
 
         </dt>
@@ -339,75 +345,6 @@
         </dt>
         <dd>Delete a File from Gemini API</dd>
       </dl></div><div class="section level2">
-      <h2 id="groq-specific-functions">Groq-Specific Functions<a class="anchor" aria-label="anchor" href="#groq-specific-functions"></a></h2>
-
-      <div class="section-desc"><p>Functions for interacting with Groq services, such as chat and transcription.</p></div>
-
-
-    </div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="groq_chat.html">groq_chat()</a></code>
-
-        </dt>
-        <dd>Send LLM Messages to the Groq Chat API</dd>
-      </dl><dl><dt>
-
-          <code><a href="groq_transcribe.html">groq_transcribe()</a></code>
-
-        </dt>
-        <dd>Transcribe an Audio File Using Groq transcription API</dd>
-      </dl></div><div class="section level2">
-      <h2 id="mistral-specific-functions">Mistral-Specific Functions<a class="anchor" aria-label="anchor" href="#mistral-specific-functions"></a></h2>
-
-      <div class="section-desc"><p>Functions for interacting with the Mistral API .</p></div>
-
-
-    </div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="mistral_chat.html">mistral_chat()</a></code>
-
-        </dt>
-        <dd>Send LLMMessage to Mistral API</dd>
-      </dl><dl><dt>
-
-          <code><a href="mistral_embedding.html">mistral_embedding()</a></code>
-
-        </dt>
-        <dd>Generate Embeddings Using Mistral API</dd>
-      </dl></div><div class="section level2">
-      <h2 id="azure-specific-functions">Azure-Specific Functions<a class="anchor" aria-label="anchor" href="#azure-specific-functions"></a></h2>
-
-      <div class="section-desc"><p>Functions for interacting with the Azure OpenAI API .</p></div>
-
-
-    </div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="azure_openai_chat.html">azure_openai_chat()</a></code>
-
-        </dt>
-        <dd>Send LLM Messages to an OpenAI Chat Completions endpoint on Azure</dd>
-      </dl><dl><dt>
-
-          <code><a href="azure_openai_embedding.html">azure_openai_embedding()</a></code>
-
-        </dt>
-        <dd>Generate Embeddings Using OpenAI API on Azure</dd>
-      </dl></div><div class="section level2">
       <h2 id="ollama-specific-functions">Ollama-Specific Functions<a class="anchor" aria-label="anchor" href="#ollama-specific-functions"></a></h2>
 
       <div class="section-desc"><p>Functions for engaging with Ollama services, including chat, embedding, and model management.</p></div>
@@ -442,6 +379,99 @@
 
         </dt>
         <dd>Retrieve and return model information from the Ollama API</dd>
+      </dl></div><div class="section level2">
+      <h2 id="mistral-specific-functions">Mistral-Specific Functions<a class="anchor" aria-label="anchor" href="#mistral-specific-functions"></a></h2>
+
+      <div class="section-desc"><p>Functions for interacting with the Mistral API .</p></div>
+
+
+    </div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="mistral_chat.html">mistral_chat()</a></code>
+
+        </dt>
+        <dd>Send LLMMessage to Mistral API</dd>
+      </dl><dl><dt>
+
+          <code><a href="mistral_embedding.html">mistral_embedding()</a></code>
+
+        </dt>
+        <dd>Generate Embeddings Using Mistral API</dd>
+      </dl><dl><dt>
+
+          <code><a href="send_mistral_batch.html">send_mistral_batch()</a></code>
+
+        </dt>
+        <dd>Send a Batch of Requests to the Mistral API</dd>
+      </dl><dl><dt>
+
+          <code><a href="check_mistral_batch.html">check_mistral_batch()</a></code>
+
+        </dt>
+        <dd>Check Batch Processing Status for Mistral Batch API</dd>
+      </dl><dl><dt>
+
+          <code><a href="fetch_mistral_batch.html">fetch_mistral_batch()</a></code>
+
+        </dt>
+        <dd>Fetch Results for an Mistral Batch</dd>
+      </dl><dl><dt>
+
+          <code><a href="list_mistral_batches.html">list_mistral_batches()</a></code>
+
+        </dt>
+        <dd>List Mistral Batch Requests</dd>
+      </dl></div><div class="section level2">
+      <h2 id="groq-specific-functions">Groq-Specific Functions<a class="anchor" aria-label="anchor" href="#groq-specific-functions"></a></h2>
+
+      <div class="section-desc"><p>Functions for interacting with Groq services, such as chat and transcription.</p></div>
+
+
+    </div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="groq_chat.html">groq_chat()</a></code>
+
+        </dt>
+        <dd>Send LLM Messages to the Groq Chat API</dd>
+      </dl><dl><dt>
+
+          <code><a href="groq_transcribe.html">groq_transcribe()</a></code>
+
+        </dt>
+        <dd>Transcribe an Audio File Using Groq transcription API</dd>
+      </dl></div><div class="section level2">
+      <h2 id="azure-specific-functions">Azure-Specific Functions<a class="anchor" aria-label="anchor" href="#azure-specific-functions"></a></h2>
+
+      <div class="section-desc"><p>Functions for interacting with the Azure OpenAI API .</p></div>
+
+
+    </div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="azure_openai_chat.html">azure_openai_chat()</a></code>
+
+        </dt>
+        <dd>Send LLM Messages to an OpenAI Chat Completions endpoint on Azure</dd>
+      </dl><dl><dt>
+
+          <code><a href="azure_openai_embedding.html">azure_openai_embedding()</a></code>
+
+        </dt>
+        <dd>Generate Embeddings Using OpenAI API on Azure</dd>
       </dl></div><div class="section level2">
       <h2 id="pdf-processing">PDF Processing<a class="anchor" aria-label="anchor" href="#pdf-processing"></a></h2>
 

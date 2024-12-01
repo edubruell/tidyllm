@@ -6,7 +6,7 @@ vignette: >
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
-> ⚠️ **Note:**  This vignette refers to the development version 0.2.6. of **tidyllm**, which haa major interface differences compared to the last release. If you are using the CRAN-version 0.2.0 please refer to the installed vignette by using `vignette("tidyllm")`. Version 0.2.6 is fully backward compatible to the old interface, but will throw deprecation warnings for some use cases.
+> ⚠️ **Note:**  This vignette refers to the development version 0.2.7. of **tidyllm**, which haa major interface differences compared to the last release. If you are using the CRAN-version 0.2.0 please refer to the installed vignette by using `vignette("tidyllm")`. Version 0.2.7. is fully backward compatible to the old interface, but will throw deprecation warnings for some use cases.
 
 # Introduction to tidyllm
 **tidyllm** is an R package providing a unified interface for interacting with various large language model APIs. This vignette will guide you through the basic setup and usage of **tidyllm**.
@@ -380,7 +380,7 @@ vector of semantic embeddings for each input.
 
 ### Batch requests
 
-Anthropic and OpenAI, offer batch request options that are around 50% cheaper than standard single-interaction APIs. Batch processing allows you to submit multiple message histories at once, which are then processed together on the model providers servers, usually within a 24-hour period. In **tidyllm**, you can use the `send_batch()` function to submit these batch requests to either API.
+Anthropic, OpenAI and Mistral offer batch request options that are around 50% cheaper than standard single-interaction APIs. Batch processing allows you to submit multiple message histories at once, which are then processed together on the model providers servers, usually within a 24-hour period. In **tidyllm**, you can use the `send_batch()` function to submit these batch requests to either API.
 
 Here’s an example of how to send a batch request to Claude’s batch API:
 

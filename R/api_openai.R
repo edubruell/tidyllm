@@ -860,6 +860,83 @@ fetch_openai_batch <- function(.llms,
   return(updated_llms)
 }
 
+#' Cancel an In-Progress OpenAI Batch
+#'
+#' This function cancels an in-progress batch created through the OpenAI API.
+#' The batch will be moved to a "cancelling" state and, eventually, "cancelled."
+#'
+#' @param .batch_id Character; the unique identifier for the batch to cancel.
+#' @param .dry_run Logical; if `TRUE`, returns the constructed request without executing it (default: `FALSE`).
+#' @param .max_tries Integer; maximum number of retries if the request fails (default: `3`).
+#' @param .timeout Integer; request timeout in seconds (default: `60`).
+#'
+#' @return A list containing the response from the OpenAI API about the cancellation status.
+#' @export
+cancel_openai_batch <- function(.batch_id,
+                                .dry_run = FALSE,
+                                .max_tries = 3,
+                                .timeout = 60) {
+  # Validate inputs
+  c(
+    ".batch_id must be a non-empty character string" = is.character(.batch_id) && nzchar(.batch_id),
+    ".dry_run must be logical" = is.logical(.dry_run),
+    ".max_tries must be integer-valued numeric" = is_integer_valued(.max_tries),
+    ".timeout must be integer-valued numeric" = is_integer_valued(.timeout)
+  ) |> validate_inputs()
+  
+  # Retrieve API key
+  api_key <- Sys.getenv("OPENAI_API_KEY")
+  if (api_key == "" && !.dry_run) {
+    stop("API key is not set. Please set it with: Sys.setenv(OPENAI_API_KEY = \"YOUR-KEY-GOES-HERE\").")
+  }
+  
+  # Construct the cancellation request URL
+  request_url <- paste0("https://api.openai.com/v1/batches/", .batch_id, "/cancel")
+  
+  # Create the request
+  request <- httr2::request(request_url) |>
+    httr2::req_headers(
+      Authorization = sprintf("Bearer %s", api_key),
+      `Content-Type` = "application/json"
+    ) |>
+    httr2::req_method("POST")
+  
+  # Return the request object if it's a dry run
+  if (.dry_run) {
+    return(request)
+  }
+  
+  # Perform the request with retries
+  response <- request |>
+    perform_generic_request(.timeout = .timeout, .max_tries = .max_tries)
+  
+  # Parse the response
+  response_body <- response$content
+  if ("error" %in% names(response_body)) {
+    sprintf("OpenAI API returned an Error:\nType: %s\nMessage: %s",
+            response_body$error$type,
+            response_body$error$message) |>
+      stop()
+  }
+  
+  tibble::tibble(
+    batch_id = response_body$id,
+    status = response_body$status,
+    created_at = lubridate::as_datetime(response_body$created_at),
+    cancelling_at = lubridate::as_datetime(response_body$cancelling_at),
+    cancelled_at = lubridate::as_datetime(response_body$cancelled_at),
+    expires_at = lubridate::as_datetime(response_body$expires_at),
+    total_requests = response_body$request_counts$total,
+    completed_requests = response_body$request_counts$completed,
+    failed_requests = response_body$request_counts$failed,
+    batch_description = response_body$metadata$batch_description
+  )
+  
+}
+
+
+
+
 #' OpenAI Provider Function
 #'
 #' The `openai()` function acts as an interface for interacting with the OpenAI API 

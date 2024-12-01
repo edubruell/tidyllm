@@ -54,6 +54,7 @@ reference:
       - check_openai_batch
       - fetch_openai_batch
       - list_openai_batches
+      - cancel_openai_batch
       - openai_embedding
 
   - title: "Claude-Specific Functions"
@@ -78,28 +79,7 @@ reference:
       - gemini_list_files
       - gemini_file_metadata
       - gemini_delete_file
-
-  - title: "Groq-Specific Functions"
-    desc: >
-      Functions for interacting with Groq services, such as chat and transcription.
-    contents:
-      - groq_chat
-      - groq_transcribe
-      
-  - title: "Mistral-Specific Functions"
-    desc: >
-      Functions for interacting with the Mistral API .
-    contents:
-      - mistral_chat
-      - mistral_embedding
-      
-  - title: "Azure-Specific Functions"
-    desc: >
-      Functions for interacting with the Azure OpenAI API .
-    contents:
-      - azure_openai_chat
-      - azure_openai_embedding
-      
+  
   - title: "Ollama-Specific Functions"
     desc: >
       Functions for engaging with Ollama services, including chat, embedding,
@@ -109,6 +89,31 @@ reference:
       - ollama_embedding
       - ollama_download_model
       - ollama_list_models
+      
+  - title: "Mistral-Specific Functions"
+    desc: >
+      Functions for interacting with the Mistral API .
+    contents:
+      - mistral_chat
+      - mistral_embedding
+      - send_mistral_batch
+      - check_mistral_batch
+      - fetch_mistral_batch
+      - list_mistral_batches
+      
+  - title: "Groq-Specific Functions"
+    desc: >
+      Functions for interacting with Groq services, such as chat and transcription.
+    contents:
+      - groq_chat
+      - groq_transcribe
+      
+  - title: "Azure-Specific Functions"
+    desc: >
+      Functions for interacting with the Azure OpenAI API .
+    contents:
+      - azure_openai_chat
+      - azure_openai_embedding
       
   - title: "PDF Processing"
     desc: >

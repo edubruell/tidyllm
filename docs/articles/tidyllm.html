@@ -26,7 +26,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.7</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -76,10 +76,10 @@
     
 <blockquote>
 <p>⚠️ <strong>Note:</strong> This vignette refers to the development
-version 0.2.6. of <strong>tidyllm</strong>, which haa major interface
+version 0.2.7. of <strong>tidyllm</strong>, which haa major interface
 differences compared to the last release. If you are using the
 CRAN-version 0.2.0 please refer to the installed vignette by using
-<code><a href="../articles/tidyllm.html">vignette("tidyllm")</a></code>. Version 0.2.6 is fully backward
+<code><a href="../articles/tidyllm.html">vignette("tidyllm")</a></code>. Version 0.2.7. is fully backward
 compatible to the old interface, but will throw deprecation warnings for
 some use cases.</p>
 </blockquote>
@@ -585,13 +585,13 @@ embeddings for each input.</p>
 <div class="section level4">
 <h4 id="batch-requests">Batch requests<a class="anchor" aria-label="anchor" href="#batch-requests"></a>
 </h4>
-<p>Anthropic and OpenAI, offer batch request options that are around 50%
-cheaper than standard single-interaction APIs. Batch processing allows
-you to submit multiple message histories at once, which are then
-processed together on the model providers servers, usually within a
-24-hour period. In <strong>tidyllm</strong>, you can use the
-<code><a href="../reference/send_batch.html">send_batch()</a></code> function to submit these batch requests to
-either API.</p>
+<p>Anthropic, OpenAI and Mistral offer batch request options that are
+around 50% cheaper than standard single-interaction APIs. Batch
+processing allows you to submit multiple message histories at once,
+which are then processed together on the model providers servers,
+usually within a 24-hour period. In <strong>tidyllm</strong>, you can
+use the <code><a href="../reference/send_batch.html">send_batch()</a></code> function to submit these batch
+requests to either API.</p>
 <p>Here’s an example of how to send a batch request to Claude’s batch
 API:</p>
 <div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
