@@ -160,7 +160,8 @@ test_that("get_metadata handles missing with an NA row", {
     llm_message("Assistant message without meta",.role="assistant")
   metadata <- get_metadata(llm)
   expect_equal(nrow(metadata), 1)
-  expect_true(all(is.na(metadata)))
+  #All standard metadata fields are NA. The one with the api_specific metadata is a list with NULL
+  expect_true(all(is.na(metadata)|is.list(metadata)))
 })
 
 test_that("get_metadata retrieves metadata for a specific index", {

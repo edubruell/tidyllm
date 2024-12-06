@@ -1,4 +1,28 @@
 
+#' The Grow API provider class (inherits from OpenAI)
+#'
+#' @noRd
+api_groq <- new_class("Groq", api_openai)
+
+#' A function to get metadata from Openai responses
+#'
+#' @noRd
+method(extract_metadata, list(api_groq,class_list))<- function(api,response) {
+  list(
+    model             = response$model,
+    timestamp         = lubridate::as_datetime(response$created),
+    prompt_tokens     = response$usage$prompt_tokens,
+    completion_tokens = response$usage$completion_tokens,
+    total_tokens      = response$usage$completion_tokens,
+    specific_metadata = list(
+      system_fingerprint        = response$system_fingerprint,
+      completion_time           = response$usage$completion_time,
+      total_time                = response$usage$total_time,
+      groq_id                   = response$x_groq$id
+    ) 
+  )
+}  
+
 #' Send LLM Messages to the Groq Chat API
 #'
 #' @description
@@ -74,9 +98,9 @@ groq_chat <- function(.llm,
   ) |>
     validate_inputs()
   
-  api_obj <- api_openai(short_name = "groq",
-                        long_name  = "Groq",
-                        api_key_env_var = "GROQ_API_KEY")
+  api_obj <- api_groq(short_name = "groq",
+                    long_name  = "Groq",
+                    api_key_env_var = "GROQ_API_KEY")
   
   # Get formatted message list for Groq models
   messages <- to_api_format(llm=.llm,

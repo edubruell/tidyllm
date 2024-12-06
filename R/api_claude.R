@@ -76,6 +76,25 @@ method(parse_chat_function, api_claude) <- function(api) {
   }
 }
 
+#' A function to get metadata from Claude responses
+#'
+#' @noRd
+method(extract_metadata, list(api_claude,class_list))<- function(api,response) {
+  list(
+    model             = response$model,
+    timestamp         = lubridate::as_datetime(lubridate::now()),
+    prompt_tokens     = response$usage$input_tokens,
+    completion_tokens = response$usage$output_tokens,
+    total_tokens      = response$usage$input_tokens + response$usage$output_tokens,
+    specific_metadata = list(
+      stop_reason    = response$stop_reason,
+      id             = response$id,
+      stop_sequence  = response$stop_sequence
+    ) 
+  )
+}  
+
+
 #Default method for the streaming callback function
 method(generate_callback_function,api_claude) <- function(api) {
   # Claude streaming callback function
@@ -495,10 +514,11 @@ fetch_claude_batch <- function(.llms,
     }
   }
   
-  api_key <- Sys.getenv("ANTHROPIC_API_KEY")
-  if (api_key == "" && !.dry_run) {
-    stop("API key is not set. Please set it with: Sys.setenv(ANTHROPIC_API_KEY = \"YOUR-KEY-GOES-HERE\").")
-  }
+  api_obj <- api_claude(short_name = "claude",
+                        long_name  = "Anthropic Claude",
+                        api_key_env_var = "ANTHROPIC_API_KEY")
+  
+  api_key <- get_api_key(api_obj,.dry_run)
   
   # Construct request URL to get batch details
   batch_details_url <- paste0(.api_url, "v1/messages/batches/", .batch_id)
@@ -571,7 +591,7 @@ fetch_claude_batch <- function(.llms,
       llm <- add_message(llm = .llms[[custom_id]],
                          role = "assistant", 
                          content = assistant_reply,
-                         meta = extract_response_metadata(result$result$message))
+                         meta = extract_metadata(api_obj,result$result$message))
       return(llm)
     } else {
       warning(sprintf("Result for custom_id %s was unsuccessful or not found", custom_id))

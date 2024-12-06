@@ -12,6 +12,7 @@ ratelimit_from_header      <- new_generic("ratelimit_from_header",c("api", "head
 parse_chat_function        <- new_generic("parse_chat_response","api")
 get_api_key                <- new_generic("get_api_key","api")
 prepare_llms_for_batch     <- new_generic("prepare_llms_for_batch","api")
+extract_metadata           <- new_generic("extract_metadata",c("api", "response"))
 
 
 #Default method for the streaming callback function
@@ -32,6 +33,24 @@ method(generate_callback_function,APIProvider) <- function(api) {
     TRUE
   }
 }
+
+
+#Default method for metadata extraction
+#' A function to get metadata from Claude responses
+#'
+#' @noRd
+method(extract_metadata, list(APIProvider,class_list))<- function(api,response) {
+  list(
+    model             = NA_character_,
+    timestamp         = lubridate::as_datetime(lubridate::now()),
+    prompt_tokens     = NA_integer_,
+    completion_tokens = NA_integer_,
+    total_tokens      = NA_integer_,
+    specific_metadata = list() 
+  )
+}  
+
+
 
 #Default method for the API key checks
 #'

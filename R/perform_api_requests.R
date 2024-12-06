@@ -78,7 +78,8 @@ perform_chat_request <- function(.request,
     assistant_reply <- parse_chat_response(response_data$content)
     # Capture response headers for rate limiting information
     response_headers <- response_data$headers
-    metadata <- extract_response_metadata(response_data$content)
+    metadata <- extract_metadata(.api,response_data$content)
+    #metadata <- extract_response_metadata(response_data$content)
   }
   
   if(.stream == TRUE)  metadata <- NULL

@@ -94,6 +94,24 @@ method(generate_callback_function,api_gemini) <- function(api) {
 }
 
 
+#' A function to get metadata from Openai responses
+#'
+#' @noRd
+method(extract_metadata, list(api_gemini,class_list))<- function(api,response) {
+  list(
+    model             = response$modelVersion,
+    timestamp         = lubridate::as_datetime(now()),
+    prompt_tokens     = response$usageMetadata$promptTokenCount,
+    completion_tokens = response$usageMetadata$candidatesTokenCount,
+    total_tokens      = response$usageMetadata$totalTokenCount,
+    specific_metadata = list(
+      finishReason = response$candidates[[1]]$finishReason,
+      avgLogprobs  = response$candidates[[1]]$avgLogprobs,
+      groundingMetadata = response$candidates[[1]]$groundingMetadata
+      ) 
+  )
+}  
+
 #' Inject files into Gemini message contents
 #'
 #' @param .gemini_contents The existing gemini contents list
@@ -106,7 +124,7 @@ gemini_inject_files <- function(.gemini_contents,
   if (is.null(.file_ids) || length(.file_ids) == 0) {
     return(.gemini_contents)
   }
-
+  
   # For each file ID, get the metadata and create file_data
   file_data_list <- lapply(.file_ids, function(file_id) {
     file_info <- gemini_file_metadata(file_id)
@@ -147,6 +165,8 @@ gemini_inject_files <- function(.gemini_contents,
 }
 
 
+
+
 #' Send LLMMessage to Gemini API
 #'
 #' @param .llm An existing LLMMessage object or an initial text prompt.
@@ -160,9 +180,10 @@ gemini_inject_files <- function(.gemini_contents,
 #' @param .frequency_penalty Penalizes frequent tokens (default: NULL, range: -2.0 to 2.0).
 #' @param .stop_sequences Optional character sequences to stop generation (default: NULL, up to 5).
 #' @param .safety_settings A list of safety settings (default: NULL).
-#' @param .tools Optional tools for function calling or code execution (default: NULL).
-#' @param .tool_config Optional configuration for the tools specified (default: NULL).
 #' @param .json_schema A JSON schema object as R list to enforce the output structure
+#' @param  .grounding_threshold A grounding threshold between 0 and 1. With lower 
+#' grounding thresholds  Gemini will use Google to search for relevant information 
+#' before answering.  (default: NULL).
 #' @param .timeout When should our connection time out (default: 120 seconds).
 #' @param .dry_run If TRUE, perform a dry run and return the request object.
 #' @param .max_tries Maximum retries to perform request (default: 3).
@@ -177,12 +198,11 @@ gemini_chat <- function(.llm,
                    .max_output_tokens = NULL,
                    .top_p = NULL,
                    .top_k = NULL,
+                   .grounding_threshold = NULL, 
                    .presence_penalty = NULL,
                    .frequency_penalty = NULL,
                    .stop_sequences = NULL,
                    .safety_settings = NULL,
-                   .tools = NULL,
-                   .tool_config = NULL,
                    .json_schema = NULL,
                    .timeout = 120,
                    .dry_run = FALSE,
@@ -198,12 +218,11 @@ gemini_chat <- function(.llm,
     "Input .max_output_tokens must be NULL or an integer-valued numeric greater than 1" = is.null(.max_output_tokens) | (.max_output_tokens >= 1 & is_integer_valued(.max_output_tokens)),
     "Input .top_p must be NULL or in [0.0, 1.0]" = is.null(.top_p) | (.top_p >= 0.0 & .top_p <= 1.0),
     "Input .top_k must be NULL or non-negative" = is.null(.top_k) | (.top_k >= 0),
+    "Input .grounding_threshold must be NULL or in [0.0, 1.0]" = is.null(.grounding_threshold) | (.grounding_threshold >= 0.0 & .grounding_threshold <= 1.0),
     "Input .presence_penalty must be NULL or in [-2.0, 2.0]" = is.null(.presence_penalty) | (.presence_penalty >= -2.0 & .presence_penalty <= 2.0),
     "Input .frequency_penalty must be NULL or in [-2.0, 2.0]" = is.null(.frequency_penalty) | (.frequency_penalty >= -2.0 & .frequency_penalty <= 2.0),
     "Input .stop_sequences must be NULL or a list of up to 5 strings" = is.null(.stop_sequences) | (is.list(.stop_sequences) & length(.stop_sequences) <= 5),
     "Input .safety_settings must be NULL or a list" = is.null(.safety_settings) | is.list(.safety_settings),
-    "Input .tools must be NULL or a list" = is.null(.tools) | is.list(.tools),
-    "Input .tool_config must be NULL or a list" = is.null(.tool_config) | is.list(.tool_config),
     "Input .json_schema must be NULL or a list" = is.null(.json_schema) | is.list(.json_schema),
     "Input .timeout must be an integer-valued numeric and positive" = is_integer_valued(.timeout) & .timeout > 0,
     "Input .max_tries must be integer-valued numeric and positive" = is_integer_valued(.max_tries) & .max_tries > 0,
@@ -257,12 +276,24 @@ gemini_chat <- function(.llm,
     model = .model,
     contents = list(gemini_contents),
     generationConfig = generation_config,
-    safetySettings = .safety_settings,
-    tools = .tools,
-    toolConfig = .tool_config
+    safetySettings = .safety_settings
   ) |>
     purrr::compact()
 
+  # Add grounding tool configuration if grounding_threshold is set
+  if (!is.null(.grounding_threshold)) {
+    grounding_tool <- list(
+      google_search_retrieval = list(
+        dynamic_retrieval_config = list(
+          mode = "MODE_DYNAMIC",
+          dynamic_threshold = .grounding_threshold
+        )
+      )
+    )
+    request_body$tools <- list(grounding_tool)
+  }
+  
+  
   if(.stream==FALSE) request_type <- ":generateContent"
   if(.stream==TRUE)  request_type <- ":streamGenerateContent"
   

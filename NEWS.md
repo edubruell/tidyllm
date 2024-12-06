@@ -3,6 +3,16 @@
 ## Major Features
 
 - Batch API functions for the Mistral API
+- Search Grounding with the `.grounding_threshold` argument added to  the `gemini_chat()` function allowing you to use Google searches to ground model responses to a search result Gemini models. For example, asking about the maintainer of an obscure R package works with grounding but does only lead to a hallucination without: 
+```r
+llm_message("What is tidyllm and who maintains this package?") |>
+  gemini_chat(.grounding_threshold = 0.3)
+```
+
+
+## Improvements
+
+- Metadata extraction is now handled by api-specific methods. `get_metadata()` returns a list column with API-specific metadata
 
 # Version 0.2.6
 

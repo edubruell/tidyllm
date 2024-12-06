@@ -128,7 +128,8 @@ last_reply_data <- function(.llm) {
 #' - `prompt_tokens`: The number of tokens in the input prompt.
 #' - `completion_tokens`: The number of tokens in the assistant's reply.
 #' - `total_tokens`: The total number of tokens (prompt + completion).
-#'
+#' - `api_specific`: A list column with API-specific metadata.
+#' 
 #' For convenience, [last_metadata()] is provided to retrieve the metadata for the last message.
 #'
 #' @param .llm An `LLMMessage` object containing the message history.
@@ -159,20 +160,18 @@ get_metadata <- function(.llm, .index = NULL) {
   selected_replies <- if (is.null(.index)) assistant_replies else list(assistant_replies[[.index]])
   
   # Extract metadata
-  metadata <- lapply(selected_replies, function(reply) {
+  purrr::map_dfr(selected_replies, function(reply) {
     meta <- reply$meta
     
-    list(
+    tibble::tibble(
       model = if (!is.null(meta$model)) meta$model else NA_character_,
       timestamp = if (!is.null(meta$timestamp)) meta$timestamp else NA_character_,
       prompt_tokens = if (!is.null(meta$prompt_tokens)) meta$prompt_tokens else NA_integer_,
       completion_tokens = if (!is.null(meta$completion_tokens)) meta$completion_tokens else NA_integer_,
-      total_tokens = if (!is.null(meta$total_tokens)) meta$total_tokens else NA_integer_
+      total_tokens = if (!is.null(meta$total_tokens)) meta$total_tokens else NA_integer_,
+      api_specific = list(meta$specific_metadata)
     )
   })
-  
-  # Convert metadata to a tibble
-  tibble::as_tibble(do.call(rbind, lapply(metadata, as.data.frame)))
 }
 
 #' @export

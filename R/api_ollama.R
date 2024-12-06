@@ -31,6 +31,26 @@ method(to_api_format, list(LLMMessage, api_ollama)) <- function(llm,
   })
 }
 
+#' A function to get metadata from Ollama responses
+#'
+#' @noRd
+method(extract_metadata, list(api_ollama,class_list))<- function(api,response) {
+  list(
+    model             = response$model,
+    timestamp         = lubridate::as_datetime(response$created_at),
+    prompt_tokens     = response$prompt_eval_count,
+    completion_tokens = response$eval_count,
+    total_tokens      = response$prompt_eval_count + response$eval_count,
+    specific_metadata = list(
+      done_reason     = response$done_reason,
+      total_duration_ns  = response$total_duration,
+      load_duration_ns   = response$load_duration,
+      eval_duration_ns   = response$eval_duration
+    ) 
+  )
+}  
+
+
 #' A callback function generator for an OpenAI request 
 #' request
 #'
@@ -135,7 +155,7 @@ ollama_chat <- function(.llm,
                    .timeout = 120,
                    .keep_alive = NULL,
                    .dry_run = FALSE) {
-  
+
   # Validate the inputs
   c(
     "Input .llm must be an LLMMessage object" = S7_inherits(.llm, LLMMessage),

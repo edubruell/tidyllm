@@ -30,6 +30,7 @@ Metadata columns may include:
 \item \code{prompt_tokens}: The number of tokens in the input prompt.
 \item \code{completion_tokens}: The number of tokens in the assistant's reply.
 \item \code{total_tokens}: The total number of tokens (prompt + completion).
+\item \code{api_specific}: A list column with API-specific metadata.
 }
 
 For convenience, \code{\link[=last_metadata]{last_metadata()}} is provided to retrieve the metadata for the last message.

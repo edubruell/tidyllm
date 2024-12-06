@@ -81,6 +81,24 @@ method(parse_chat_function, api_openai) <- function(api) {
   }
 }  
 
+#' A function to get metadata from Openai responses
+#'
+#' @noRd
+method(extract_metadata, list(api_openai,class_list))<- function(api,response) {
+  list(
+    model             = response$model,
+    timestamp         = lubridate::as_datetime(response$created),
+    prompt_tokens     = response$usage$prompt_tokens,
+    completion_tokens = response$usage$completion_tokens,
+    total_tokens      = response$usage$completion_tokens,
+    specific_metadata = list(
+      system_fingerprint        = response$system_fingerprint,
+      completion_tokens_details = response$usage$completion_tokens_details,
+      prompt_tokens_details     = response$usage$prompt_tokens_details
+      ) 
+  )
+}  
+
 
 #' A callback function generator for an OpenAI request 
 #' request
@@ -216,7 +234,7 @@ openai_chat <- function(
   
   #Filter out the system prompt for reasoning models.
   no_system_prompt <- FALSE
-  if(.model %in% c("o1-preview","o1-mini")){
+  if(.model %in% c("o1","o1-mini")){
     message("Note: Reasoning models do not support system prompts")
     no_system_prompt <- TRUE
   }
@@ -452,7 +470,7 @@ send_openai_batch <- function(.llms,
 
   #This filters out the system prompt for reasoning models.
   no_system_prompt <- FALSE
-  if(.model %in% c("o1-preview","o1-mini")){
+  if(.model %in% c("o1","o1-mini")){
     message("Note: Reasoning models do not support system prompts")
     no_system_prompt <- TRUE
   }
@@ -762,10 +780,11 @@ fetch_openai_batch <- function(.llms,
   .json <- attr(.llms, "json")
   if (is.null(.json)) {.json <- FALSE}
   
-  api_key <- Sys.getenv("OPENAI_API_KEY")
-  if (api_key == "" && !.dry_run) {
-    stop("API key is not set. Please set it with: Sys.setenv(OPENAI_API_KEY = \"YOUR-KEY-GOES-HERE\").")
-  }
+  api_obj <- api_openai(short_name = "openai",
+                        long_name  = "OpenAI",
+                        api_key_env_var = "OPENAI_API_KEY")
+  
+  api_key <- get_api_key(api_obj,.dry_run)
   
   # Construct request URL to get batch details
   batch_details_url <- paste0("https://api.openai.com/v1/batches/", .batch_id)
@@ -773,7 +792,8 @@ fetch_openai_batch <- function(.llms,
   request <- httr2::request(batch_details_url) |>
     httr2::req_headers(
       Authorization = sprintf("Bearer %s", api_key),
-      `Content-Type` = "application/json"
+      `Content-Type` = "application/json",
+      .redact = "Authorization"
     )
   
   # If .dry_run is TRUE, return the request object for inspection
@@ -836,7 +856,7 @@ fetch_openai_batch <- function(.llms,
     
     if (!is.null(result) && is.null(result$error) && result$response$status_code == 200) {
       assistant_reply <- result$response$body$choices$message$content
-      meta_data <- extract_response_metadata(result$response$body)
+      meta_data <- extract_metadata(api_obj,result$response$body)
       llm <- add_message(llm = .llms[[custom_id]],
                               role = "assistant", 
                               content =  assistant_reply,

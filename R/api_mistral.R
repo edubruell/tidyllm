@@ -535,6 +535,7 @@ fetch_mistral_batch <- function(.llms,
                                .dry_run = FALSE,
                                .max_tries = 3,
                                .timeout = 60) {
+
   c(
     ".llms must be a list of LLMMessage objects with names as custom IDs" = is.list(.llms) && all(sapply(.llms, S7_inherits, LLMMessage)),
     ".batch_id must be a non-empty character string or NULL" = is.null(.batch_id) || (is.character(.batch_id) && nzchar(.batch_id)),
@@ -555,18 +556,18 @@ fetch_mistral_batch <- function(.llms,
   }
   
   #Get batch infos
-  batch_info <- check_mistral_batch(.llms = .llms)
+  batch_info <- check_mistral_batch(.batch_id = .batch_id)
   # Check if batch has completed processing
   if (batch_info$status != "SUCCESS") {
     stop("Batch processing has not completed yet. Please check again later.")
   }
   
 
-  api_key <- Sys.getenv("MISTRAL_API_KEY")
-  if (api_key == "" && !.dry_run) {
-    stop("API key is not set. Please set it with: Sys.setenv(MISTRAL_API_KEY = \"YOUR-KEY-GOES-HERE\").")
-  }
+  api_obj <- api_mistral(short_name = "mistral",
+                         long_name  = "Mistral",
+                         api_key_env_var = "MISTRAL_API_KEY")
   
+  api_key <- get_api_key(api_obj,.dry_run)
 
   # Download the output file
   results_url <- paste0("https://api.mistral.ai/v1/files/",  batch_info$output_file, "/content")
@@ -600,7 +601,7 @@ fetch_mistral_batch <- function(.llms,
     
     if (!is.null(result) && is.null(result$error) && result$response$status_code == 200) {
       assistant_reply <- result$response$body$choices$message$content
-      meta_data <- extract_response_metadata(result$response$body)
+      meta_data <- extract_metadata(api_obj,result$response$body)
       llm <- add_message(llm = .llms[[custom_id]],
                          role = "assistant", 
                          content =  assistant_reply,

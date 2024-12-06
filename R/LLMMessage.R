@@ -109,9 +109,9 @@ method(print.LLMMessage,LLMMessage) <- function(x,...,.meta = getOption("tidyllm
     # Print metadata if .meta is TRUE and metadata is available
     if (.meta && !is.null(message$meta)) {
       cat("\n  Metadata:\n")
-      lapply(names(message$meta), function(key) {
+      meta_fields <- names(message$meta)
+      lapply(meta_fields[meta_fields!="specific_metadata"], function(key) {
         meta_value <- message$meta[[key]]
-        
         # Ensure proper formatting of timestamp
         if (inherits(meta_value, "POSIXct")) {
           meta_value <- format(meta_value, "%Y-%m-%d %H:%M:%S")

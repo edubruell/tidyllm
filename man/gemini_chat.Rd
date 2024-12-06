@@ -12,12 +12,11 @@ gemini_chat(
   .max_output_tokens = NULL,
   .top_p = NULL,
   .top_k = NULL,
+  .grounding_threshold = NULL,
   .presence_penalty = NULL,
   .frequency_penalty = NULL,
   .stop_sequences = NULL,
   .safety_settings = NULL,
-  .tools = NULL,
-  .tool_config = NULL,
   .json_schema = NULL,
   .timeout = 120,
   .dry_run = FALSE,
@@ -41,6 +40,10 @@ gemini_chat(
 
 \item{.top_k}{Controls diversity in token selection (default: NULL, range: 0 or more).}
 
+\item{.grounding_threshold}{A grounding threshold between 0 and 1. With lower
+grounding thresholds  Gemini will use Google to search for relevant information
+before answering.  (default: NULL).}
+
 \item{.presence_penalty}{Penalizes new tokens (default: NULL, range: -2.0 to 2.0).}
 
 \item{.frequency_penalty}{Penalizes frequent tokens (default: NULL, range: -2.0 to 2.0).}
@@ -48,10 +51,6 @@ gemini_chat(
 \item{.stop_sequences}{Optional character sequences to stop generation (default: NULL, up to 5).}
 
 \item{.safety_settings}{A list of safety settings (default: NULL).}
-
-\item{.tools}{Optional tools for function calling or code execution (default: NULL).}
-
-\item{.tool_config}{Optional configuration for the tools specified (default: NULL).}
 
 \item{.json_schema}{A JSON schema object as R list to enforce the output structure}
 
