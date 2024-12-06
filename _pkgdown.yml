@@ -101,6 +101,13 @@ reference:
       - fetch_mistral_batch
       - list_mistral_batches
       
+  - title: "Perplexity-Specific Functions"
+    desc: >
+      Functions for the Perplexity API
+    contents:
+      - perplexity_chat
+      - perplexity
+      
   - title: "Groq-Specific Functions"
     desc: >
       Functions for interacting with Groq services, such as chat and transcription.

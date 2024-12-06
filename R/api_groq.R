@@ -13,7 +13,7 @@ method(extract_metadata, list(api_groq,class_list))<- function(api,response) {
     timestamp         = lubridate::as_datetime(response$created),
     prompt_tokens     = response$usage$prompt_tokens,
     completion_tokens = response$usage$completion_tokens,
-    total_tokens      = response$usage$completion_tokens,
+    total_tokens      = response$usage$total_tokens,
     specific_metadata = list(
       system_fingerprint        = response$system_fingerprint,
       completion_time           = response$usage$completion_time,

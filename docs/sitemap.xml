@@ -63,6 +63,8 @@
 <url><loc>https://edubruell.github.io/tidyllm/reference/openai_chat.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/openai_embedding.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/pdf_page_batch.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/perplexity.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/perplexity_chat.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/rate_limit_info.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/send_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/send_claude_batch.html</loc></url>

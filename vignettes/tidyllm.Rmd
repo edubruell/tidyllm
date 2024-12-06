@@ -58,6 +58,11 @@ Sys.setenv(MISTRAL_API_KEY = "YOUR-MISTRAL-API-KEY")
 Sys.setenv(GROQ_API_KEY = "YOUR-GROQ-API-KEY")
 ```
 
+6. For Perplexity  you can get an API key in the [API settings](https://www.perplexity.ai/settings/api):
+```{r, eval= FALSE, echo=TRUE}
+Sys.setenv(PERPLEXITY_API_KEY = "YOUR-PERPLEXITY-API-KEY")
+```
+
 Alternatively, for persistent storage, add these keys to your `.Renviron` file:
 
 For this, run `usethis::edit_r_environ()`, and add a line with with an API key in this file, for example:
@@ -65,7 +70,6 @@ For this, run `usethis::edit_r_environ()`, and add a line with with an API key i
 ```{r, eval= FALSE, echo=TRUE}
 ANTHROPIC_API_KEY="YOUR-ANTHROPIC-API-KEY"
 ```
-
 
 If you want to work with local large lange models via `ollama` you need to install it from [the official project website](https://ollama.com/). Ollama sets up a local large language model server that you can use to run open-source models on your own devices. 
 
@@ -254,12 +258,13 @@ tibble::tibble(
   timestamp = as.POSIXct(c("2024-11-08 14:25:43", "2024-11-08 14:26:02")),
   prompt_tokens = c(20, 80),
   completion_tokens = c(45, 40),
-  total_tokens = prompt_tokens + completion_tokens
+  total_tokens = prompt_tokens + completion_tokens,
+  api_specific = list(list(name1 = "",name2=20,name=30))
 ) |>
   print(width=60)
 ```
 
-By default it collects metadata for the whole message history, but you can also set an `.index` to only get metadata for a specific reply. Alternatively you can print out metadata with the standard print method with the `.meta`-argument in `print()` or via the `tidyllm_print_metadata` option.
+By default it collects metadata for the whole message history, but you can also set an `.index` to only get metadata for a specific reply. Alternatively you can print out metadata with the standard print method with the `.meta`-argument in `print()` or via the `tidyllm_print_metadata` option. The list column `api_specific` contains special metadata that only applies to one API like citations for models with search grounding, or special information on model loading for local APIs.
 
 ### Working with structured model outputs
 
@@ -339,7 +344,7 @@ outputs in one sentence.")
                 .role="assistant")
 ```
 
-Provider-specific arguments—such as `.ollama_server` for `ollama()` or `.fileid` for `gemini()` — are set directly in the provider function:
+Provider-specific arguments—such as `.ollama_server` for `ollama()` or `.fileid` for `gemini()` are set directly in the provider function:
 ```{r, eval=FALSE}
 conversation <- llm_message("Hello") |> 
   chat(ollama(.ollama_server = "http://localhost:11434"), 
@@ -422,21 +427,26 @@ The output is a list of message histories, each now updated with new assistant r
 
 `chat()` supports real-time streaming of reply tokens to the console while the model works with the `.stream=TRUE` argument in `chat()`, for most api providers. 
 ```{r, eval=FALSE}
-llm_message("Write a lengthy maagzine advertisement for an R package called tidyllm") |>
+llm_message("Write a lengthy magazine advertisement for an R package called tidyllm") |>
   chat(claude,.stream=TRUE)
 ```
-While this feature offers slightly better feedback on model behavior in real-time, it’s not particularly useful for data-analysis workflows. We consider this feature experimental and recommend using non-streaming responses for production tasks. Note that error handling in streaming callbacks varies by API and differs in quality at this time.
+While this feature offers slightly better feedback on model behavior in real-time, it’s not particularly useful for data-analysis workflows. Metadata is not collected for streaming mode. We consider this feature experimental and recommend using non-streaming responses for production tasks. Note that error handling in streaming callbacks varies by API and differs in quality at this time.
 
 ### Choosing the Right Model and API
 
 tidyllm supports multiple APIs, each offering distinct large language models with varying strengths. The choice of which model or API to use often depends on the specific task, cost considerations, and data privacy concerns.
 
-1. **Anthropic API:** [Claude](https://docs.anthropic.com/en/docs/welcome) is known for generating thoughtful, nuanced responses, making it ideal for tasks that require more human-like reasoning, such as summarization or creative writing. Claude Sonnet 3.5 currently is one of the top-performing models on many benchmarks. However, it can sometimes be more verbose than necessary, and it lacks direct JSON support, which requires additional prompting and validation to ensure structured output. 
 
+1. **OpenAI API:** Models by [OpenAI API](https://platform.openai.com/docs/api-reference/chat), particularly the GPT-4o model, are extremely versatile and perform well across a wide range of tasks, including text generation, code completion, and multimodal analysis. In addition the o1-reasoning models offer very good performance for a set of specific task (at a relatively high price). There is also an `azure_openai()` provider function if you prefer to use the OpenAI API on Microsoft Azure. 
 
-2. **OpenAI API:** Models by [OpenAI API](https://platform.openai.com/docs/api-reference/chat), particularly the GPT-4o model, are extremely versatile and perform well across a wide range of tasks, including text generation, code completion, and multimodal analysis. In addition the o1-reasoning models offer very good performance for a set of specific task (at a relatively high price). There is also an `azure_openai()` provider function if you prefer to use the OpenAI API on Microsoft Azure. 
+2. **Anthropic API:** [Claude](https://docs.anthropic.com/en/docs/welcome) is known for generating thoughtful, nuanced responses, making it ideal for tasks that require more human-like reasoning, such as summarization or creative writing.  However, it can sometimes be more verbose than necessary, and it lacks direct JSON support, which requires additional prompting and validation to ensure structured output. 
 
-3. **Google Gemini API:**  Google Gemini is great for long-context tasks — it can handle up to a million tokens! Moreover, with the Gemini API you are able to upload a wide range of media files and use them in the prompts of your models with functions like `gemini_upload_file()`. Using this, Gemini models can be used to process video and audio together with your messages. Here is an example of summarizing a speech:
+3. **Google Gemini API:**  Google Gemini is great for long-context tasks — it can handle up to a million tokens! In addition, you can use the `.grounding_threshold`-parameter in the `gemini_chat()` function to ground responses based on Google searches. The lower the threshold is the more Gemini relies on the search instead of its internal knowledge:
+```{r, eval=FALSE}
+llm_message("What is tidyllm and who maintains this package?") |>
+  gemini_chat(.grounding_threshold = 0.3)
+```
+Moreover, with the Gemini API you are able to upload a wide range of media files and use them in the prompts of your models with functions like `gemini_upload_file()`. Using this, Gemini models can be used to process video and audio together with your messages. Here is an example of summarizing a speech:
 ```{r, eval=FALSE}
 #Upload a file for use with gemini
 upload_info <- gemini_upload_file("example.mp3")
@@ -453,9 +463,11 @@ gemini_delete_file(upload_info$name)
 
 5. **Groq API (Fast):** [Groq](https://console.groq.com/docs/quickstart) offers a unique advantage with its custom AI accelerator hardware, that get you the fastest output available on any API. It delivers high performance at low costs, especially for tasks that require fast execution. It hosts many strong open-source models, like **lamma3:70b**. There is also a `groq_transcribe()` function available that allows you to transcribe audio files with the Whipser-Large model on the Groq API.
 
-6. **Ollama (Local Models):** If data privacy is a priority, running open-source models like **gemma2::9B** locally via [ollama](https://ollama.com/) gives you full control over model execution and data. However, the trade-off is that local models require significant computational resources, and are often not quite as powerful as the large API-providers. The [ollama blog](https://ollama.com/blog) regularly has posts about new models and their advantages that you can download via `ollama_download_model()`.
+6. **Perplexity API (Search and Citations):** [Perplexity](https://docs.perplexity.ai/api-reference/chat-completions) combines current finetuned Llama models with real-time web search capabilities. This allows for up-to-date information retrieval and integration into responses. All answers contain links to citations which can be accesed via the `api_specific` column of `get_metadata()` 
 
-7. **Other OpenAI-compatible Local Models:** Besides ollama, there are many solutions to run local models that are mostly compatible to the OpenAI API like [llama.cpp](https://github.com/ggerganov/llama.cpp/blob/master/examples/server/README.md), [vllm](https://github.com/vllm-project/vllm) and [many more](https://www.reddit.com/r/LocalLLaMA/comments/16csz5n/best_openai_api_compatible_application_server/). To use such an API you can set the base url of the api with `.api_url` as well as the path to the model-endpoint with `.api_path` argument in the `openai()` provider function. Set `.compatible=TRUE` to skip api-key checks and rate-limit tracking.  Compatibility with local models solutions may vary depending on the specific API’s implementation, and full functionality cannot be guaranteed. Ideally you can save complicated configurations like these in an object:
+7. **Ollama (Local Models):** If data privacy is a priority, running open-source models like **gemma2::9B** locally via [ollama](https://ollama.com/) gives you full control over model execution and data. However, the trade-off is that local models require significant computational resources, and are often not quite as powerful as the large API-providers. The [ollama blog](https://ollama.com/blog) regularly has posts about new models and their advantages that you can download via `ollama_download_model()`.
+
+8. **Other OpenAI-compatible Local Models:** Besides ollama, there are many solutions to run local models that are mostly compatible to the OpenAI API like [llama.cpp](https://github.com/ggerganov/llama.cpp/blob/master/examples/server/README.md), [vllm](https://github.com/vllm-project/vllm) and [many more](https://www.reddit.com/r/LocalLLaMA/comments/16csz5n/best_openai_api_compatible_application_server/). To use such an API you can set the base url of the api with `.api_url` as well as the path to the model-endpoint with `.api_path` argument in the `openai()` provider function. Set `.compatible=TRUE` to skip api-key checks and rate-limit tracking.  Compatibility with local models solutions may vary depending on the specific API’s implementation, and full functionality cannot be guaranteed. Ideally you can save complicated configurations like these in an object:
 ```{r, eval=FALSE}
 my_provider <- openai(.model="llama3.2:90b",
           .api_url="http://localhost:11434",

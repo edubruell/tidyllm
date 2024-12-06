@@ -3,12 +3,13 @@
 ## Major Features
 
 - Batch API functions for the Mistral API
-- Search Grounding with the `.grounding_threshold` argument added to  the `gemini_chat()` function allowing you to use Google searches to ground model responses to a search result Gemini models. For example, asking about the maintainer of an obscure R package works with grounding but does only lead to a hallucination without: 
+- Search Grounding with the `.grounding_threshold` argument added of  the `gemini_chat()` function allowing you to use Google searches to ground model responses to a search result Gemini models. For example, asking about the maintainer of an obscure R package works with grounding but does only lead to a hallucination without: 
 ```r
 llm_message("What is tidyllm and who maintains this package?") |>
   gemini_chat(.grounding_threshold = 0.3)
 ```
 
+- Perplexity as additional API provider available through `perplexity_chat()`. The neat feature of perplexity is the up-to-date web search it does with detailed citations. Cited sources are available in the `api_specific`-list column of `get_metadata()`
 
 ## Improvements
 

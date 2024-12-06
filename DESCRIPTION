@@ -58,6 +58,7 @@ Collate:
     'api_azure_openai.R'
     'api_groq.R'
     'api_mistral.R'
+    'api_perplexity.R'
     'zzz.R'
 Depends: 
     R (>= 4.2.0)

@@ -569,7 +569,7 @@ gemini_embedding <- function(.input,
 #'   This argument is automatically managed by the `tidyllm` verbs and should not be modified by the user.
 #'
 #' @return The result of the requested action, depending on the specific function invoked 
-#'   (e.g., an updated `LLMMessage` object for `chat()`, or a matrix for `embed()`).
+#'   (e.g., an updated `LLMMessage` object for `chat()`).
 #'
 #' @export
 gemini <- create_provider_function(

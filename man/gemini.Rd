@@ -16,7 +16,7 @@ This argument is automatically managed by the \code{tidyllm} verbs and should no
 }
 \value{
 The result of the requested action, depending on the specific function invoked
-(e.g., an updated \code{LLMMessage} object for \code{chat()}, or a matrix for \code{embed()}).
+(e.g., an updated \code{LLMMessage} object for \code{chat()}).
 }
 \description{
 The \code{gemini()} function acts as a provider interface for interacting with the Google Gemini API

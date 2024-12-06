@@ -14,8 +14,8 @@
 <link rel="apple-touch-icon" type="image/png" sizes="60x60" href="apple-touch-icon-60x60.png">
 <script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.4.2/css/all.min.css" rel="stylesheet">
-<link href="deps/font-awesome-6.4.2/css/v4-shims.min.css" rel="stylesheet">
+<script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Tidy Integration of Large Language Models">
 <meta name="description" content="A tidy interface for integrating large language model (LLM) APIs such as Claude, Openai, Groq,Mistral and local models via Ollama into R workflows. The package supports text and media-based interactions, interactive message history, batch request APIs, and a tidy, pipeline-oriented interface for streamlined integration into data workflows. Web services are available at &lt;https://www.anthropic.com&gt;, &lt;https://openai.com&gt;, &lt;https://groq.com&gt;, &lt;https://mistral.ai/&gt; and &lt;https://ollama.com&gt;.">
 <meta property="og:description" content="A tidy interface for integrating large language model (LLM) APIs such as Claude, Openai, Groq,Mistral and local models via Ollama into R workflows. The package supports text and media-based interactions, interactive message history, batch request APIs, and a tidy, pipeline-oriented interface for streamlined integration into data workflows. Web services are available at &lt;https://www.anthropic.com&gt;, &lt;https://openai.com&gt;, &lt;https://groq.com&gt;, &lt;https://mistral.ai/&gt; and &lt;https://ollama.com&gt;.">
@@ -70,7 +70,7 @@
 </h1>
 </div>
 <p><a href="https://opensource.org/licenses/MIT" class="external-link"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a> <a href="https://cran.r-project.org/package=tidyllm" class="external-link"><img src="https://www.r-pkg.org/badges/version/tidyllm" alt="CRAN Status"></a></p>
-<p><strong>tidyllm</strong> is an R package designed to access various large language model APIs, including <strong>Anthropic Claude</strong>, <strong>OpenAI</strong>,<strong>Google Gemini</strong>, <strong>Groq</strong>, <strong>Mistral</strong>, and local models via <strong>Ollama</strong> or OpenAI-compatible APIS. Built for simplicity and functionality, it helps you generate text, analyze media, and integrate model feedback into your data workflows with ease.</p>
+<p><strong>tidyllm</strong> is an R package designed to access various large language model APIs, including <strong>Anthropic Claude</strong>, <strong>OpenAI</strong>,<strong>Google Gemini</strong>, <strong>Perplexity</strong>,<strong>Groq</strong>, <strong>Mistral</strong>, and local models via <strong>Ollama</strong> or OpenAI-compatible APIs. Built for simplicity and functionality, it helps you generate text, analyze media, and integrate model feedback into your data workflows with ease.</p>
 <div class="section level2">
 <h2 id="features">Features<a class="anchor" aria-label="anchor" href="#features"></a>
 </h2>
@@ -82,7 +82,7 @@
 <li>
 <strong>Interactive Messaging History</strong>: Manage an ongoing conversation with models, maintaining a structured history of messages and media interactions, which are automatically formatted for each API</li>
 <li>
-<strong>Batch processing:</strong> Efficiently handle large workloads with Anthropic and OpenAI batch processing APIs, reducing costs by up to 50%.</li>
+<strong>Batch processing:</strong> Efficiently handle large workloads with Anthropic, OpenAI or Mistral batch processing APIs, reducing costs by up to 50%.</li>
 <li>
 <strong>Tidy Workflow</strong>: Use R’s functional programming features for a side-effect-free, pipeline-oriented operation style.</li>
 </ul>
