@@ -360,7 +360,7 @@ conversation <- llm_message("Hello") |>
 If a common argument set in chat is not supported by a provider `chat()` will raise an error. For example, sending a `.json_schema` to a provider that does not support it will raise an error:
 ```{r, eval = FALSE}
 address <- llm_message("Imagine an address in JSON format that matches the schema.") |>
-        chat(ollama(),.json_schema = address_schema)
+        chat(groq(),.json_schema = address_schema)
 ```
 
 ### Embeddings
