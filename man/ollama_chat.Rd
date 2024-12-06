@@ -9,7 +9,7 @@ ollama_chat(
   .model = "gemma2",
   .stream = FALSE,
   .seed = NULL,
-  .json = FALSE,
+  .json_schema = NULL,
   .temperature = NULL,
   .num_ctx = 2048,
   .num_predict = NULL,
@@ -38,7 +38,7 @@ ollama_chat(
 
 \item{.seed}{Integer; seed for reproducible generation (default: NULL)}
 
-\item{.json}{Logical; whether to format response as JSON (default: FALSE)}
+\item{.json_schema}{A JSON schema object as R list to enforce the output structure (default: NULL)}
 
 \item{.temperature}{Float between 0-2; controls randomness in responses (default: NULL)}
 

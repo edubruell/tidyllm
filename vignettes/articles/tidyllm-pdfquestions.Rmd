@@ -190,37 +190,6 @@ Using open-source local models for PDF processing is also possible, though remot
 
 > ⚠️ **Note:** When using paid remote models, it's important to consider data privacy and security, especially if you're processing sensitive documents, as uploading data to external servers may introduce risks — local models provide more control in such cases. 
 
-Another current problem for local models, is structured output. If you use `ollama()`, it currently only supports a simpler version of structured output where you have to put the desired schema in the prompt as JSON example and enable `.json = TRUE` and it is not guaranteed that the model will adhere to a schema: 
-
-```{r ollama_example, eval=FALSE}
-ollama_output <- llm_message('
-Below are the first 5 pages of a document. 
-Answer the following queries about the document in this provided JSON format:
-
-{
-  "Title": "Full, exact title of the document as it appears on the first page.",
-  "Authors": "List of all authors as stated in the document, including any institutional affiliations if mentioned.",
-  "Filename": "Suggested filename in the format \'ReleaseYear_Author_etal_ShortTitle.pdf\'. Use the publication year if available; otherwise, use \'XXXX\'.",
-  "DocType": "Specify if this is a \'Policy Report\' or a \'Research Paper\' based on the document’s style, structure, and purpose.",
-  "KeyCitations": "The four most frequently cited or critical references in the first 5 pages that support the document’s primary claims or background.",
-  "EmpiricalMethods": "Description of any empirical methods used, including data collection, statistical techniques, or analysis methods mentioned.",
-  "TheoreticalFramework": "Outline of the primary theoretical framework or models discussed, if any, that underpin the analysis or arguments.",
-  "MainPoint": "Summary of the central argument or main point the document presents.",
-  "KeyContribution": "Explanation of the unique contribution of this document, particularly what it adds to the field or topic."
-}',   .pdf = list(
-  filename = files[[1]],
-  start_page = 1,
-  end_page = 5)) |>
-  chat(ollama(.json=TRUE,.num_ctx = 8192))
-```
-```{r ollama_example_hidden, echo=FALSE}
-ollama_output <- read_rds("ollama_reply.rds")
-```
-```{r}
-ollama_output |> get_reply_data() |> as_tibble()
-```
-Here we already see, that the **gemma2** model we used did not completely adhere to the required schema. In fact, we get a multirow `tibble` because the model did reply with a list for `KeyCitations` instead of a single string. 
-
 ## Outlook
 
 This structured question-answering workflow not only streamlines the extraction of key insights from academic papers, but can also be adapted for other document-heavy tasks. Whether you're working with reports, policy documents, or news articles this approach can quickly help you summarize and categorize information for further analysis. 

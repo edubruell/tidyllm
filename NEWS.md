@@ -10,6 +10,7 @@ llm_message("What is tidyllm and who maintains this package?") |>
 ```
 
 - Perplexity as additional API provider available through `perplexity_chat()`. The neat feature of perplexity is the up-to-date web search it does with detailed citations. Cited sources are available in the `api_specific`-list column of `get_metadata()`
+- `.json_schema` support for `ollama()` available with Ollama 0.5.0
 
 ## Improvements
 

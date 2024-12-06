@@ -420,11 +420,11 @@ that models reply with structured outputs in <a href="https://de.wikipedia.org/w
 (JavaScript Object Notation)</a> following your specifications. JSON is
 a standard format for organizing data in simple key-value pairs, which
 is both human-readable and machine-friendly.</p>
-<p>Currently, <code><a href="../reference/openai.html">openai()</a></code> and <code><a href="../reference/gemini.html">gemini()</a></code> are the
-only API provider functions in <strong>tidyllm</strong> that support
-schema enforcement through the <code>.json_schema</code> argument. This
-ensures that replies conform to a pre-defined consistent data
-formatting.</p>
+<p>Currently, <code><a href="../reference/openai.html">openai()</a></code>, <code><a href="../reference/gemini.html">gemini()</a></code> and
+<code><a href="../reference/ollama.html">ollama()</a></code> are the only API provider functions in
+<strong>tidyllm</strong> that support schema enforcement through the
+<code>.json_schema</code> argument. This ensures that replies conform to
+a pre-defined consistent data formatting.</p>
 <p>To create schemas, you can use the <code><a href="../reference/tidyllm_schema.html">tidyllm_schema()</a></code>
 function, which translates your data format specifications into the <a href="https://json-schema.org/" class="external-link">JSON-schema format</a> the API requires.
 This helper function standardizes the data layout by ensuring flat
@@ -487,19 +487,19 @@ list for easier handling with <code><a href="../reference/get_reply_data.html">g
 <span><span class="co">##  $ city       : chr "Berlin"</span></span>
 <span><span class="co">##  $ region     : chr "Berlin"</span></span>
 <span><span class="co">##  $ country    : chr "Germany"</span></span></code></pre>
-<p>The OpenAI and the Google Gemini API work with a schema provided by
-<code><a href="../reference/tidyllm_schema.html">tidyllm_schema()</a></code>. Other API providers like
-<code><a href="../reference/ollama.html">ollama()</a></code>, <code><a href="../reference/groq.html">groq()</a></code>, and <code><a href="../reference/mistral.html">mistral()</a></code>
-also support structured outputs through a simpler JSON mode, accessible
-with the <code>.json</code> argument in these provider functions. Since
-these APIs do not currently support native schema enforcement, you’ll
-need to prompt the model to follow a specified format directly in your
-messages. Although <code><a href="../reference/get_reply_data.html">get_reply_data()</a></code> can help extract
-structured data from these responses when you set
-<code>.json=TRUE</code> in each of the API provider functions, the model
-may not always adhere strictly to the specified structure. Once these
-APIs support native schema enforcement, <strong>tidyllm</strong> will
-integrate full schema functionality for them.</p>
+<p>Ollama, OpenAI and the Google Gemini API work with a schema provided
+by <code><a href="../reference/tidyllm_schema.html">tidyllm_schema()</a></code>. Other API providers like
+<code><a href="../reference/groq.html">groq()</a></code>, and <code><a href="../reference/mistral.html">mistral()</a></code> only support structured
+outputs through a simpler JSON mode, accessible with the
+<code>.json</code> argument in these provider functions. Since these
+APIs do not currently support native schema enforcement, you’ll need to
+prompt the model to follow a specified format directly in your messages.
+Although <code><a href="../reference/get_reply_data.html">get_reply_data()</a></code> can help extract structured data
+from these responses when you set <code>.json=TRUE</code> in each of the
+API provider functions, the model may not always adhere strictly to the
+specified structure. Once these APIs support native schema enforcement,
+<strong>tidyllm</strong> will integrate full schema functionality for
+them.</p>
 </div>
 <div class="section level4">
 <h4 id="api-parameters">API parameters<a class="anchor" aria-label="anchor" href="#api-parameters"></a>
@@ -605,7 +605,7 @@ requests to either API.</p>
 API:</p>
 <div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">#Create a message batch and save it to disk to fetch it later</span></span>
-<span><span class="fu">glue</span><span class="op">(</span><span class="st">"Write a poem about {x}"</span>, x<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cats"</span>,<span class="st">"dogs"</span>,<span class="st">"hamsters"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span><span class="fu"><a href="https://glue.tidyverse.org/reference/glue.html" class="external-link">glue</a></span><span class="op">(</span><span class="st">"Write a poem about {x}"</span>, x<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cats"</span>,<span class="st">"dogs"</span>,<span class="st">"hamsters"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">purrr</span><span class="fu">::</span><span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="va">llm_message</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/send_batch.html">send_batch</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="st">"claude_batch.rds"</span><span class="op">)</span></span></code></pre></div>

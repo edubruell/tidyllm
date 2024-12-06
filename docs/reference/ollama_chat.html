@@ -51,7 +51,7 @@
 <span>  .model <span class="op">=</span> <span class="st">"gemma2"</span>,</span>
 <span>  .stream <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  .seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  .json <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  .json_schema <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .temperature <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .num_ctx <span class="op">=</span> <span class="fl">2048</span>,</span>
 <span>  .num_predict <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -92,8 +92,8 @@
 <dd><p>Integer; seed for reproducible generation (default: NULL)</p></dd>
 
 
-<dt id="arg--json">.json<a class="anchor" aria-label="anchor" href="#arg--json"></a></dt>
-<dd><p>Logical; whether to format response as JSON (default: FALSE)</p></dd>
+<dt id="arg--json-schema">.json_schema<a class="anchor" aria-label="anchor" href="#arg--json-schema"></a></dt>
+<dd><p>A JSON schema object as R list to enforce the output structure (default: NULL)</p></dd>
 
 
 <dt id="arg--temperature">.temperature<a class="anchor" aria-label="anchor" href="#arg--temperature"></a></dt>

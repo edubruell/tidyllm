@@ -270,7 +270,7 @@ By default it collects metadata for the whole message history, but you can also 
 
 To make model responses easy to interpret and integrate into your workflow, **tidyllm** supports defining schemas to ensure that models reply with structured outputs in [JSON (JavaScript Object Notation)](https://de.wikipedia.org/wiki/JavaScript_Object_Notation) following your specifications. JSON is a standard format for organizing data in simple key-value pairs, which is both human-readable and machine-friendly.
 
-Currently, `openai()` and `gemini()` are the only API provider functions in **tidyllm** that support schema enforcement through the `.json_schema` argument. This ensures that replies conform to a pre-defined consistent data formatting.
+Currently, `openai()`, `gemini()` and `ollama()` are the only API provider functions in **tidyllm** that support schema enforcement through the `.json_schema` argument. This ensures that replies conform to a pre-defined consistent data formatting.
 
 To create schemas, you can use the `tidyllm_schema()` function, which translates your data format specifications into the  [JSON-schema format](https://json-schema.org/) the API requires. This helper function standardizes the data layout by ensuring flat (non-nested) JSON structures with defined data types. Here’s how to define a schema:
 
@@ -311,7 +311,7 @@ The model responded in JSON format, organizing data into key-value pairs like sp
 address |> get_reply_data() |> str()
 ```
 
-The OpenAI and the Google Gemini API work with a schema provided by `tidyllm_schema()`. Other API providers like `ollama()`, `groq()`, and `mistral()` also support structured outputs through a simpler JSON mode, accessible with the `.json` argument in these provider functions. Since these APIs do not currently support native schema enforcement, you’ll need to prompt the model to follow a specified format directly in your messages. Although `get_reply_data()` can help extract structured data from these responses when you set `.json=TRUE` in each of the API provider functions, the model may not always adhere strictly to the specified structure. Once these APIs support native schema enforcement, **tidyllm** will integrate full schema functionality for them.
+Ollama, OpenAI and the Google Gemini API work with a schema provided by `tidyllm_schema()`. Other API providers like  `groq()`, and `mistral()` only support structured outputs through a simpler JSON mode, accessible with the `.json` argument in these provider functions. Since these APIs do not currently support native schema enforcement, you’ll need to prompt the model to follow a specified format directly in your messages. Although `get_reply_data()` can help extract structured data from these responses when you set `.json=TRUE` in each of the API provider functions, the model may not always adhere strictly to the specified structure. Once these APIs support native schema enforcement, **tidyllm** will integrate full schema functionality for them.
 
 ### API parameters
 

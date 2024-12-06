@@ -438,46 +438,6 @@ processing sensitive documents, as uploading data to external servers
 may introduce risks — local models provide more control in such
 cases.</p>
 </blockquote>
-<p>Another current problem for local models, is structured output. If
-you use <code><a href="../reference/ollama.html">ollama()</a></code>, it currently only supports a simpler
-version of structured output where you have to put the desired schema in
-the prompt as JSON example and enable <code>.json = TRUE</code> and it
-is not guaranteed that the model will adhere to a schema:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">ollama_output</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">'</span></span>
-<span><span class="st">Below are the first 5 pages of a document. </span></span>
-<span><span class="st">Answer the following queries about the document in this provided JSON format:</span></span>
-<span><span class="st"></span></span>
-<span><span class="st">{</span></span>
-<span><span class="st">  "Title": "Full, exact title of the document as it appears on the first page.",</span></span>
-<span><span class="st">  "Authors": "List of all authors as stated in the document, including any institutional affiliations if mentioned.",</span></span>
-<span><span class="st">  "Filename": "Suggested filename in the format \'ReleaseYear_Author_etal_ShortTitle.pdf\'. Use the publication year if available; otherwise, use \'XXXX\'.",</span></span>
-<span><span class="st">  "DocType": "Specify if this is a \'Policy Report\' or a \'Research Paper\' based on the document’s style, structure, and purpose.",</span></span>
-<span><span class="st">  "KeyCitations": "The four most frequently cited or critical references in the first 5 pages that support the document’s primary claims or background.",</span></span>
-<span><span class="st">  "EmpiricalMethods": "Description of any empirical methods used, including data collection, statistical techniques, or analysis methods mentioned.",</span></span>
-<span><span class="st">  "TheoreticalFramework": "Outline of the primary theoretical framework or models discussed, if any, that underpin the analysis or arguments.",</span></span>
-<span><span class="st">  "MainPoint": "Summary of the central argument or main point the document presents.",</span></span>
-<span><span class="st">  "KeyContribution": "Explanation of the unique contribution of this document, particularly what it adds to the field or topic."</span></span>
-<span><span class="st">}'</span>,   .pdf <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>  filename <span class="op">=</span> <span class="va">files</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>,</span>
-<span>  start_page <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>  end_page <span class="op">=</span> <span class="fl">5</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/ollama.html">ollama</a></span><span class="op">(</span>.json<span class="op">=</span><span class="cn">TRUE</span>,.num_ctx <span class="op">=</span> <span class="fl">8192</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">ollama_output</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/get_reply_data.html">get_reply_data</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">## <span style="color: #949494;"># A tibble: 4 × 9</span></span></span>
-<span><span class="co">##   Title                   Authors Filename DocType KeyCitations EmpiricalMethods</span></span>
-<span><span class="co">##   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>           </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">1</span> A Method to Link Advan… Edward… 2018_Fe… Resear… Frey and Os… The authors cor…</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">2</span> A Method to Link Advan… Edward… 2018_Fe… Resear… Acemoglu an… The authors cor…</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">3</span> A Method to Link Advan… Edward… 2018_Fe… Resear… Graetz and … The authors cor…</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">4</span> A Method to Link Advan… Edward… 2018_Fe… Resear… Arntz, Greg… The authors cor…</span></span>
-<span><span class="co">## <span style="color: #949494;"># ℹ 3 more variables: TheoreticalFramework &lt;chr&gt;, MainPoint &lt;chr&gt;,</span></span></span>
-<span><span class="co">## <span style="color: #949494;">#   KeyContribution &lt;chr&gt;</span></span></span></code></pre></div>
-<p>Here we already see, that the <strong>gemma2</strong> model we used
-did not completely adhere to the required schema. In fact, we get a
-multirow <code>tibble</code> because the model did reply with a list for
-<code>KeyCitations</code> instead of a single string.</p>
 </div>
 </div>
 <div class="section level2">

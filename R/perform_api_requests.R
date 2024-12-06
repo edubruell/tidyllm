@@ -86,7 +86,8 @@ perform_chat_request <- function(.request,
   
   list(assistant_reply  = assistant_reply, 
        headers          = response_headers,
-       meta             = metadata)
+       meta             = metadata,
+       raw              = response_data)
 }
 
 

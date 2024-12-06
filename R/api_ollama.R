@@ -88,7 +88,7 @@ method(parse_chat_function, api_ollama) <- function(api) {
 #' @param .model Character string specifying the Ollama model to use (default: "gemma2")
 #' @param .stream Logical; whether to stream the response (default: FALSE)
 #' @param .seed Integer; seed for reproducible generation (default: NULL)
-#' @param .json Logical; whether to format response as JSON (default: FALSE)
+#' @param .json_schema A JSON schema object as R list to enforce the output structure (default: NULL)
 #' @param .temperature Float between 0-2; controls randomness in responses (default: NULL)
 #' @param .num_ctx Integer; sets the context window size (default: 2048)
 #' @param .num_predict Integer; maximum number of tokens to predict (default: NULL)
@@ -137,7 +137,7 @@ ollama_chat <- function(.llm,
                    .model = "gemma2",
                    .stream = FALSE,
                    .seed = NULL,
-                   .json = FALSE,
+                   .json_schema = NULL,
                    .temperature = NULL,
                    .num_ctx = 2048,
                    .num_predict = NULL,
@@ -161,7 +161,7 @@ ollama_chat <- function(.llm,
     "Input .llm must be an LLMMessage object" = S7_inherits(.llm, LLMMessage),
     "Input .model must be a string" = is.character(.model),
     "Input .stream must be logical if provided" = is.logical(.stream),
-    "Input .json must be logical if provided" = is.logical(.json),
+    "Input .json_schema must be NULL or a list" = is.null(.json_schema) | is.list(.json_schema),
     "Input .temperature must be numeric between 0 and 2 if provided" = is.null(.temperature) || (is.numeric(.temperature) && .temperature >= 0 && .temperature <= 2),
     "Input .seed must be an integer-valued numeric if provided" = is.null(.seed) || is_integer_valued(.seed),
     "Input .num_ctx must be a positive integer if provided" = is.null(.num_ctx) || (is_integer_valued(.num_ctx) && .num_ctx > 0),
@@ -186,6 +186,17 @@ ollama_chat <- function(.llm,
   # Get formatted message list for ollama models
   ollama_messages <-  to_api_format(.llm,api_obj)
   
+  # Handle JSON schema
+ format <- NULL
+  json=FALSE
+  if (!is.null(.json_schema)) {
+    #Deal with the different schema format for gemini compared to the tidyllm_schema output for openai
+    if("schema" %in% names(.json_schema)) {
+      .json_schema <- .json_schema$schema
+    }
+    json=TRUE
+  } 
+  
   ollama_options <- list(
     temperature = .temperature,
     seed = .seed,
@@ -207,19 +218,15 @@ ollama_chat <- function(.llm,
     model = .model,
     messages = ollama_messages,
     options = ollama_options,
-    stream = .stream
-  )
+    stream = .stream,
+    format = .json_schema
+  )  |> purrr::compact()
   
   # Add keep_alive to request body only if it's provided
   if (!is.null(.keep_alive)) {
     ollama_request_body$keep_alive <- .keep_alive
   }
-  
-  # Add format to request body if applicable
-  if (.json == TRUE) {
-    ollama_request_body$format <- "json"
-  }
-  
+
   # Build the request
   request <- httr2::request(.ollama_server) |>
     httr2::req_url_path("/api/chat") |>
@@ -236,7 +243,7 @@ ollama_chat <- function(.llm,
   add_message(llm     = .llm,
               role    = "assistant", 
               content = response$assistant_reply, 
-              json    = .json,
+              json    = json,
               meta    = response$meta)
 }
 
