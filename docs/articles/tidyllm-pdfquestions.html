@@ -26,7 +26,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -75,19 +75,9 @@
     
     
 <blockquote>
-<p>⚠️ <strong>Note:</strong> This article refers to the development
-version 0.2.7. of <strong>tidyllm</strong>, which has a chnaged
-interface compared to the last CRAN release. You can install the current
-development version directly from GitHub using devtools:</p>
+<p>⚠️ <strong>Note:</strong> This vignette refers to the development
+version of <strong>tidyllm</strong> 0.3.0. which is not yet on CRAN</p>
 </blockquote>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Install devtools if not already installed</span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"devtools"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"devtools"</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span></span>
-<span><span class="co"># Install tidyllm from GitHub</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"edubruell/tidyllm"</span><span class="op">)</span></span></code></pre></div>
 <p>Navigating through a large collection of academic papers can be
 time-consuming, especially when you’re trying to extract specific
 insights or determine the relevance of each document to your research.
@@ -105,7 +95,7 @@ model targeted questions, and returns the answers in a structured format
 </h2>
 <p>Imagine your folder looks something like this—many downloaded papers,
 but no structure yet:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tidyverse.tidyverse.org" class="external-link">tidyverse</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://edubruell.github.io/tidyllm/">tidyllm</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">dir</a></span><span class="op">(</span><span class="st">"aipapers"</span><span class="op">)</span></span>
@@ -142,7 +132,7 @@ about and to give them good file names.</p>
 each document. This structured prompt asks for specific metadata like
 title, authors, and type, along with deeper content-related questions
 about empirical methods and theoretical frameworks.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="va">document_prompt</span> <span class="op">&lt;-</span> <span class="st">'</span></span>
 <span><span class="st">Below are the first 5 pages of a document. Answer the questions below in detail.</span></span>
@@ -174,7 +164,7 @@ can process up to 128,000 tokens -approximately 80-90 pages of English
 text- we limit the input to five pages for demonstration purposes and to
 maintain focus on the introduction that is usually enough to get a first
 overview of a paper.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">document_tasks</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="va">files</span>,<span class="op">~</span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="va">document_prompt</span>, </span>
 <span>            .pdf <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>              filename <span class="op">=</span> <span class="va">.x</span>,</span>
@@ -190,7 +180,7 @@ types for each field in the model’s responses. This schema enables the
 large language model to return answers in a structured, consistent
 format that can later be converted into a table, making it easy to
 analyze and compare results across documents.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">document_schema</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tidyllm_schema.html">tidyllm_schema</a></span><span class="op">(</span></span>
 <span>  name <span class="op">=</span> <span class="st">"DocumentAnalysisSchema"</span>,</span>
 <span>  Title <span class="op">=</span> <span class="st">"character"</span>,</span>
@@ -203,21 +193,21 @@ analyze and compare results across documents.</p>
 <span>  Contribution <span class="op">=</span> <span class="st">"character"</span>,</span>
 <span>  KeyCitations <span class="op">=</span> <span class="st">"character"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>In <code><a href="../reference/tidyllm_schema.html">tidyllm_schema()</a></code>, we begin by naming the schema with
-a character string, which is required by the OpenAI API. Then, we
-specify each field along with its expected data type. Supported types
-include <code>character</code> (with <code>string</code> as an accepted
-synonym), <code>logical</code>, and <code>numeric</code>. For fields
-where categorical responses are needed, we can use <code><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor()</a></code>
-to define specific allowed options. For instance,
-<code>factor(Policy, Research)</code> creates a categorical field with
-the choices “Policy” and “Research.” To indicate that a field should
-return a list of values, we append <code>[]</code> to the type. For
-example, setting <code>Authors = "character[]"</code> allows multiple
-entries in a list format for the Authors field. However, we
-intentionally avoid lists here to maintain a flat structure. This
+<p>In <code><a href="../reference/tidyllm_schema.html">tidyllm_schema()</a></code>, we specify each field along with
+its expected data type. Supported types include <code>character</code>
+(with <code>string</code> as an accepted synonym), <code>logical</code>,
+and <code>numeric</code>. For fields where categorical responses are
+needed, we can use <code><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor()</a></code> to define specific allowed
+options. For instance, <code>factor(Policy, Research)</code> creates a
+categorical field with the choices “Policy” and “Research.” To indicate
+that a field should return a list of values, we append <code>[]</code>
+to the type. For example, setting <code>Authors = "character[]"</code>
+allows multiple entries in a list format for the Authors field. However,
+we intentionally avoid lists here to maintain a flat structure. This
 ensures that the output can be easily converted to a single-row
-<code>tibble</code>.</p>
+<code>tibble</code>. <code>name</code> is a special field, which creates
+an identifier for a schema. By default it is
+<code>"tidyllm_schema"</code></p>
 </div>
 <div class="section level3">
 <h3 id="step-4-running-the-analysis-on-a-sample-document">Step 4: Running the Analysis on a Sample Document<a class="anchor" aria-label="anchor" href="#step-4-running-the-analysis-on-a-sample-document"></a>
@@ -225,7 +215,7 @@ ensures that the output can be easily converted to a single-row
 <p>To test the setup, we run the analysis on a single document with the
 standard <code><a href="../reference/chat.html">chat()</a></code> function, using the schema to ensure
 structured output.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example_task</span> <span class="op">&lt;-</span> <span class="va">document_tasks</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span> <span class="op">|&gt;</span> </span>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.json_schema <span class="op">=</span> <span class="va">document_schema</span>,</span>
 <span>              .model       <span class="op">=</span> <span class="st">"gpt-4o-mini"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
@@ -236,7 +226,7 @@ task<a class="anchor" aria-label="anchor" href="#step-5-extracting-and-formattin
 </h3>
 <p>We use <code><a href="../reference/get_reply_data.html">get_reply_data()</a></code> to extract the model’s
 structured responses from the model reply.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_reply_data.html">get_reply_data</a></span><span class="op">(</span><span class="va">example_task</span><span class="op">)</span></span>
 <span><span class="co">## $Title</span></span>
 <span><span class="co">## [1] "A Method to Link Advances in Artificial Intelligence to Occupational Abilities"</span></span>
@@ -267,7 +257,7 @@ structured responses from the model reply.</p>
 <p>The model seems to have reasonably answered our questions in the
 structured format we provided for our first example task. Here we can
 also look at the token usage of the example task:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_reply_data.html">get_reply_data</a></span><span class="op">(</span><span class="va">example_task</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">##   model         timestamp           prompt_tokens completion_tokens total_tokens</span></span>
@@ -293,7 +283,7 @@ batch requests. The OpenAI Batch API, supports up to 50,000 requests in
 a single batch with a maximum file size of 100 MB. Additionally, batch
 API rate limits are separate from the standard per-model limits, meaning
 batch usage doesn’t impact your regular API rate allocations.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">document_tasks</span> <span class="op">|&gt;</span> </span>
 <span>  <span class="fu"><a href="../reference/send_batch.html">send_batch</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.json_schema <span class="op">=</span> <span class="va">document_schema</span>,</span>
 <span>                     .model       <span class="op">=</span> <span class="st">"gpt-4o-mini"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -317,7 +307,7 @@ the mean time.</p>
 </blockquote>
 <p>To check whether a batch was compeleted you can load the output file
 into <code><a href="../reference/check_openai_batch.html">check_openai_batch()</a></code>:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://readr.tidyverse.org/reference/read_rds.html" class="external-link">read_rds</a></span><span class="op">(</span><span class="st">"document_batch.rds"</span><span class="op">)</span><span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/check_batch.html">check_batch</a></span><span class="op">(</span><span class="va">openai</span><span class="op">)</span></span></code></pre></div>
 <p>Alternatively you can list all OpenAI batches with
@@ -334,13 +324,13 @@ time.</p>
 </h3>
 <p>Once the batch is complete, we fetch all responses with
 <code><a href="../reference/fetch_batch.html">fetch_batch()</a></code>:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://readr.tidyverse.org/reference/read_rds.html" class="external-link">read_rds</a></span><span class="op">(</span><span class="st">"document_batch.rds"</span><span class="op">)</span><span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/fetch_batch.html">fetch_batch</a></span><span class="op">(</span><span class="va">openai</span><span class="op">)</span></span></code></pre></div>
 <p>We can then process the results into a table by mapping
 <code><a href="../reference/get_reply_data.html">get_reply_data()</a></code> and <code><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble()</a></code> over the
 batch output:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">docuemnt_table</span> <span class="op">&lt;-</span> <span class="va">results</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="va">get_reply_data</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://purrr.tidyverse.org/reference/map_dfr.html" class="external-link">map_dfr</a></span><span class="op">(</span><span class="va">as_tibble</span><span class="op">)</span></span>

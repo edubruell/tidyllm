@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -40,12 +40,79 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.2.7" id="development-version-027">Development Version 0.2.7<a class="anchor" aria-label="anchor" href="#development-version-027"></a></h2>
+<h2 class="pkg-version" data-toc-text="0.3.0" id="version-030">Version 0.3.0<a class="anchor" aria-label="anchor" href="#version-030"></a></h2>
+<p>Version 0.3.0 is currently being prepared for CRAN. This release represents a major milestone for <strong>tidyllm</strong></p>
+<p>The largest changes compared to <strong>0.2.0</strong> are:</p>
+<div class="section level3">
+<h3 id="new-verb-based-interface-0-3-0">New Verb-Based Interface<a class="anchor" aria-label="anchor" href="#new-verb-based-interface-0-3-0"></a></h3>
+<ul><li>
+<strong>New Verb-Based Interface</strong>: Users can now use verbs like <code><a href="../reference/chat.html">chat()</a></code>, <code><a href="../reference/embed.html">embed()</a></code>, <code><a href="../reference/send_batch.html">send_batch()</a></code>, <code><a href="../reference/check_batch.html">check_batch()</a></code>, and <code><a href="../reference/fetch_batch.html">fetch_batch()</a></code> to interact with APIs. These functions always work with a combination of verbs and providers:
+<ul><li>
+<strong>Verbs</strong> (e.g., <code><a href="../reference/chat.html">chat()</a></code>, <code><a href="../reference/embed.html">embed()</a></code>, <code><a href="../reference/send_batch.html">send_batch()</a></code>) define the type of action you want to perform.</li>
+<li>
+<strong>Providers</strong> (e.g., <code><a href="../reference/openai.html">openai()</a></code>, <code><a href="../reference/claude.html">claude()</a></code>, <code><a href="../reference/ollama.html">ollama()</a></code>) are an arguement of verbs and specify the API to handle the action with and take provider-specific arguments</li>
+</ul></li>
+</ul><p>Each verb and provider combination routes the interaction to provider-specific functions like <code><a href="../reference/openai_chat.html">openai_chat()</a></code> or <code><a href="../reference/claude_chat.html">claude_chat()</a></code> that do the work in the background. These functions can also be called directly as an alternative more verbose and provider-specific interface.</p>
+<div class="section level4">
+<h4 id="old-usage-0-3-0">Old Usage:<a class="anchor" aria-label="anchor" href="#old-usage-0-3-0"></a></h4>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Hello World"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-4o"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level4">
+<h4 id="new-usage-0-3-0">New Usage:<a class="anchor" aria-label="anchor" href="#new-usage-0-3-0"></a></h4>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Recommended Verb-Based Approach</span></span>
+<span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Hello World"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-4o"</span><span class="op">)</span><span class="op">)</span></span>
+<span>  </span>
+<span><span class="co"># Or even configuring a provider outside</span></span>
+<span><span class="va">my_ollama</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ollama.html">ollama</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"llama3.2-vision:90B"</span>,</span>
+<span>       .ollama_server <span class="op">=</span> <span class="st">"https://ollama.example-server.de"</span>,</span>
+<span>       .temperature <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Hello World"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="va">my_ollama</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Alternative Approach is to use more verbose specific functions:</span></span>
+<span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Hello World"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/openai_chat.html">openai_chat</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-4o"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level4">
+<h4 id="backward-compatibility-0-3-0">Backward Compatibility:<a class="anchor" aria-label="anchor" href="#backward-compatibility-0-3-0"></a></h4>
+<ul><li>The old functions (<code><a href="../reference/openai.html">openai()</a></code>, <code><a href="../reference/claude.html">claude()</a></code>, etc.) still work if you directly supply an <code>LLMMessage</code> as arguement, but issue deprecation warnings when used directly for chat.</li>
+<li>Users are encouraged to transition to the new interface for future-proof workflows.</li>
+</ul></div>
+</div>
+<div class="section level3">
+<h3 id="breaking-changes-0-3-0">Breaking Changes:<a class="anchor" aria-label="anchor" href="#breaking-changes-0-3-0"></a></h3>
+<ul><li>The output format of embedding APIs was changed from a matrix to a tibble with an input column and a list column containing one embedding vector and one input per row.</li>
+<li>
+<code>R6</code>-based saved <code>LLMMessage</code> objects are no longer compatible with the new version. Saved objects from earlier versions need to be re-created</li>
+</ul></div>
+<div class="section level3">
+<h3 id="other-major-features-0-3-0">Other Major Features:<a class="anchor" aria-label="anchor" href="#other-major-features-0-3-0"></a></h3>
+<ul><li>
+<code><a href="../reference/gemini.html">gemini()</a></code> and <code><a href="../reference/perplexity.html">perplexity()</a></code> as new supported API providers. <code><a href="../reference/gemini.html">gemini()</a></code> brings interesting Video and Audio features as well as search grounding to <strong>tidyllm</strong>. <code><a href="../reference/perplexity.html">perplexity()</a></code> also offers well cited search grounded assitant replies</li>
+<li>Batch-Processing for <code><a href="../reference/mistral.html">mistral()</a></code>
+</li>
+<li>New Metadata-Extraction function <code>get_reply_metadata()</code> to get information on token usage, or on other relevant metadata (like sources used for grounding)</li>
+</ul></div>
+<div class="section level3">
+<h3 id="improvements-0-3-0">Improvements:<a class="anchor" aria-label="anchor" href="#improvements-0-3-0"></a></h3>
+<ul><li>Refactored Package Internals:
+<ul><li>Transitioned from <code>R6</code> to <code>S7</code> for the main <code>LLMMessage</code> class, improving maintainability, interoperability, and future-proofing.</li>
+<li>Consolidated all API-specific functionality into dedicated files</li>
+</ul></li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.7" id="version-027">Version 0.2.7<a class="anchor" aria-label="anchor" href="#version-027"></a></h2>
 <div class="section level3">
 <h3 id="major-features-0-2-7">Major Features<a class="anchor" aria-label="anchor" href="#major-features-0-2-7"></a></h3>
 <ul><li>Batch API functions for the Mistral API</li>
 <li>Search Grounding with the <code>.grounding_threshold</code> argument added of the <code><a href="../reference/gemini_chat.html">gemini_chat()</a></code> function allowing you to use Google searches to ground model responses to a search result Gemini models. For example, asking about the maintainer of an obscure R package works with grounding but does only lead to a hallucination without:</li>
-</ul><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+</ul><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"What is tidyllm and who maintains this package?"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/gemini_chat.html">gemini_chat</a></span><span class="op">(</span>.grounding_threshold <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span></span></code></pre></div>
 <ul><li>Perplexity as additional API provider available through <code><a href="../reference/perplexity_chat.html">perplexity_chat()</a></code>. The neat feature of perplexity is the up-to-date web search it does with detailed citations. Cited sources are available in the <code>api_specific</code>-list column of <code><a href="../reference/get_metadata.html">get_metadata()</a></code>
@@ -68,7 +135,7 @@
 <li>API formatting methods are now in the code files for API providers</li>
 <li>Rate-limit header extraction for tracking and streaming callback generation are now methods for <code>APIProvider</code> classes</li>
 <li>All api-specific code is now in the <code>api_openai.R</code>,<code>api_gemini.R</code>,etc. files</li>
-<li>Support for <code><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble()</a></code> S3 Generic for <code>LLMMessage</code>
+<li>Support for <code>as_tibble()</code> S3 Generic for <code>LLMMessage</code>
 </li>
 <li>Rate limit tracking and output for verbose mode in API-functions moved to a single function <code>track_rate_limit()</code>
 </li>
@@ -86,7 +153,7 @@
 <div class="section level3">
 <h3 id="minor-features-0-2-6">Minor Features<a class="anchor" aria-label="anchor" href="#minor-features-0-2-6"></a></h3>
 <ul><li>Google Gemini now supports working with multiple files in one message for the file upload functionality</li>
-</ul><div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+</ul><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">here</span><span class="fu">::</span><span class="fu"><a href="https://here.r-lib.org//reference/here.html" class="external-link">here</a></span><span class="op">(</span><span class="st">"local_wip"</span>,<span class="st">"example.mp3"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/gemini_upload_file.html">gemini_upload_file</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">here</span><span class="fu">::</span><span class="fu"><a href="https://here.r-lib.org//reference/here.html" class="external-link">here</a></span><span class="op">(</span><span class="st">"local_wip"</span>,<span class="st">"legrille.mp4"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/gemini_upload_file.html">gemini_upload_file</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
@@ -138,13 +205,13 @@
 </div>
 <div class="section level4">
 <h4 id="old-usage-0-2-3">Old Usage:<a class="anchor" aria-label="anchor" href="#old-usage-0-2-3"></a></h4>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Hello World"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-4o"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="new-usage-0-2-3">New Usage:<a class="anchor" aria-label="anchor" href="#new-usage-0-2-3"></a></h4>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Recommended Verb-Based Approach</span></span>
 <span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Hello World"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-4o"</span><span class="op">)</span><span class="op">)</span></span>
@@ -174,7 +241,7 @@
 <h3 id="major-features-0-2-2">Major Features<a class="anchor" aria-label="anchor" href="#major-features-0-2-2"></a></h3>
 <ul><li>Added functions to work with the Google Gemini API, with the new <code><a href="../reference/gemini.html">gemini()</a></code> main API-function</li>
 <li>Support for the file upload workflows for Gemini:</li>
-</ul><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+</ul><div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">#Upload a file for use with gemini</span></span>
 <span><span class="va">upload_info</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gemini_upload_file.html">gemini_upload_file</a></span><span class="op">(</span><span class="st">"example.mp3"</span><span class="op">)</span></span>
 <span></span>
@@ -297,7 +364,7 @@
 <h3 id="major-features-0-2-1">Major Features:<a class="anchor" aria-label="anchor" href="#major-features-0-2-1"></a></h3>
 <ul><li>Added <code><a href="../reference/get_metadata.html">get_metadata()</a></code> function to retrieve and format metadata from <code>LLMMessage</code> objects.</li>
 <li>Enhanced the <code>print</code> method for <code>LLMMessage</code> to support printing metadata, controlled via the new <code>tidyllm_print_metadata</code> option or a new <code>.meta</code>-arguement for the print method.</li>
-</ul><div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+</ul><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">conversation</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Write a short poem about software development"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>  </span>

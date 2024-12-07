@@ -26,7 +26,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -76,12 +76,7 @@
     
 <blockquote>
 <p>⚠️ <strong>Note:</strong> This vignette refers to the development
-version 0.2.7. of <strong>tidyllm</strong>, which haa major interface
-differences compared to the last release. If you are using the
-CRAN-version 0.2.0 please refer to the installed vignette by using
-<code><a href="../articles/tidyllm.html">vignette("tidyllm")</a></code>. Version 0.2.7. is fully backward
-compatible to the old interface, but will throw deprecation warnings for
-some use cases.</p>
+version of <strong>tidyllm</strong> 0.3.0. which is not yet on CRAN</p>
 </blockquote>
 <div class="section level2">
 <h2 id="introduction-to-tidyllm">Introduction to tidyllm<a class="anchor" aria-label="anchor" href="#introduction-to-tidyllm"></a>
@@ -407,9 +402,9 @@ specific reply. Alternatively you can print out metadata with the
 standard print method with the <code>.meta</code>-argument in
 <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> or via the <code>tidyllm_print_metadata</code>
 option. The list column <code>api_specific</code> contains special
-metadata that only applies to one API like citations for models with
-search grounding, or special information on model loading for local
-APIs.</p>
+metadata that is only available to some APIs (like citations for models
+with search grounding on <code><a href="../reference/perplexity.html">perplexity()</a></code> or special
+information on model loading for local APIs).</p>
 </div>
 <div class="section level4">
 <h4 id="working-with-structured-model-outputs">Working with structured model outputs<a class="anchor" aria-label="anchor" href="#working-with-structured-model-outputs"></a>
@@ -432,8 +427,8 @@ This helper function standardizes the data layout by ensuring flat
 define a schema:</p>
 <ul>
 <li>
-<strong><code>name</code></strong>: A name identifier for the schema
-(which is needed by the API).</li>
+<strong><code>name</code></strong>: A name identifier for the
+schema. By default this name is <code>"tidyllm_schema"</code>.</li>
 <li>
 <strong><code>...</code> (fields)</strong>: Named arguments for
 field names and their data types, including:
@@ -605,7 +600,7 @@ requests to either API.</p>
 API:</p>
 <div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">#Create a message batch and save it to disk to fetch it later</span></span>
-<span><span class="fu">glue</span><span class="op">(</span><span class="st">"Write a poem about {x}"</span>, x<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cats"</span>,<span class="st">"dogs"</span>,<span class="st">"hamsters"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span><span class="fu"><a href="https://glue.tidyverse.org/reference/glue.html" class="external-link">glue</a></span><span class="op">(</span><span class="st">"Write a poem about {x}"</span>, x<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cats"</span>,<span class="st">"dogs"</span>,<span class="st">"hamsters"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">purrr</span><span class="fu">::</span><span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="va">llm_message</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/send_batch.html">send_batch</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="st">"claude_batch.rds"</span><span class="op">)</span></span></code></pre></div>
@@ -664,7 +659,8 @@ in real-time, it’s not particularly useful for data-analysis workflows.
 Metadata is not collected for streaming mode. We consider this feature
 experimental and recommend using non-streaming responses for production
 tasks. Note that error handling in streaming callbacks varies by API and
-differs in quality at this time.</p>
+differs in quality at this time. Metadata is currently not supported for
+streaming responses.</p>
 </div>
 <div class="section level4">
 <h4 id="choosing-the-right-model-and-api">Choosing the Right Model and API<a class="anchor" aria-label="anchor" href="#choosing-the-right-model-and-api"></a>

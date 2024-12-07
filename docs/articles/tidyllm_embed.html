@@ -26,7 +26,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -75,19 +75,9 @@
     
     
 <blockquote>
-<p>⚠️ <strong>Note:</strong> This article refers to the development
-version 0.2.7. of <strong>tidyllm</strong>, which has a chnaged
-interface compared to the last CRAN release. You can install the current
-development version directly from GitHub using devtools:</p>
+<p>⚠️ <strong>Note:</strong> This vignette refers to the development
+version of <strong>tidyllm</strong> 0.3.0. which is not yet on CRAN</p>
 </blockquote>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Install devtools if not already installed</span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"devtools"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"devtools"</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span></span>
-<span><span class="co"># Install TidyLLM from GitHub</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"edubruell/tidyllm"</span><span class="op">)</span></span></code></pre></div>
 <p>While most <strong>tidyllm</strong> use cases revolve around chat
 models, it also supports <strong>embedding models</strong> — another
 type of large language model. These models are designed to generate
@@ -112,7 +102,7 @@ economics paper abstracts published between 2010 and 2024</strong>.
 Instead of relying on keyword matching, we’ll use embeddings to find
 papers with similar topics based on their underlying meaning.</p>
 <p>Let’s start by loading and exploring the data:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tidyverse.tidyverse.org" class="external-link">tidyverse</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://edubruell.github.io/tidyllm/">tidyllm</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://here.r-lib.org/" class="external-link">here</a></span><span class="op">)</span></span>
@@ -160,7 +150,7 @@ between models.</p>
 <p>To compute an embedding of the target abstract we use the
 <code><a href="../reference/embed.html">embed()</a></code> function with <code><a href="../reference/ollama.html">ollama()</a></code> as
 provider-function:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">target_tbl</span> <span class="op">&lt;-</span> <span class="va">target_abstract</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/embed.html">embed</a></span><span class="op">(</span><span class="va">ollama</span>,.model<span class="op">=</span><span class="st">"mxbai-embed-large:latest"</span><span class="op">)</span></span>
 <span></span>
@@ -176,7 +166,7 @@ embedding. - <strong>embeddings:</strong> A list column containing the
 numerical vector representation (embedding) for each input text.</p>
 <p>In our case we have a single input and the embeddings column contains
 a 1,024-dimenstional vector for this input:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">target_tbl</span><span class="op">$</span><span class="va">embeddings</span><span class="op">)</span></span>
 <span><span class="co">## List of 1</span></span>
 <span><span class="co">##  $ : num [1:1024] -0.838 0.669 0.202 -0.686 -0.985 ...</span></span></code></pre></div>
@@ -209,7 +199,7 @@ minutes</strong> and writes 207 MB of data to disk. The time may vary
 depending on system specifications and batch size. To compare multiple
 target abstracts against the entire collection, we of course only need
 to embed it once.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">#Our batches embedding function</span></span>
 <span><span class="va">generate_abstract_embeddings</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">abstracts</span><span class="op">)</span><span class="op">{</span></span>
 <span>  </span>
@@ -245,7 +235,7 @@ to embed it once.</p>
 <span><span class="co">## ...</span></span></code></pre>
 <p>After the function has finished, we only need to load the computed
 embeddings:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">embedded_asbtracts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://here.r-lib.org//reference/here.html" class="external-link">here</a></span><span class="op">(</span><span class="st">"embedded_asbtracts"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">dir</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://purrr.tidyverse.org/reference/map_dfr.html" class="external-link">map_dfr</a></span><span class="op">(</span><span class="op">~</span><span class="fu"><a href="https://readr.tidyverse.org/reference/read_rds.html" class="external-link">read_rds</a></span><span class="op">(</span><span class="fu"><a href="https://here.r-lib.org//reference/here.html" class="external-link">here</a></span><span class="op">(</span><span class="st">"embedded_asbtracts"</span>,<span class="va">.x</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
@@ -294,14 +284,14 @@ similarity of 0.25, it means the angle between them is relatively small,
 implying they share 25% of their directional alignment.</p>
 <p>To compute cosine similarity between two vectors we express it in a
 simple function:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cosine_similarity</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">a</span>, <span class="va">b</span><span class="op">)</span> <span class="op">{</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">a</span> <span class="op">*</span> <span class="va">b</span><span class="op">)</span> <span class="op">/</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">a</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">b</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
 <p>We apply this function to compute the cosine similarity of abstracts
 in the corpus to the target paper to find the 10 most similar
 abstracts:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">top10_similar</span> <span class="op">&lt;-</span> <span class="va">embedded_asbtracts</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>cosine_sim <span class="op">=</span> <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map_dbl</a></span><span class="op">(</span><span class="va">embeddings</span>, </span>
 <span>                              <span class="op">~</span><span class="fu">cosine_similarity</span><span class="op">(</span><span class="va">.x</span>, </span>

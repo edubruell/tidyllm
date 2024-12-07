@@ -7,17 +7,7 @@ knitr::opts_chunk$set(
   collapse = TRUE
 )
 ```
-> ⚠️ **Note:**  This article refers to the development version 0.2.7. of **tidyllm**, which has a chnaged interface compared to the last CRAN release. You can install the current development version directly from GitHub using devtools:
-
-```{r, eval= FALSE, echo=TRUE}
-# Install devtools if not already installed
-if (!requireNamespace("devtools", quietly = TRUE)) {
-  install.packages("devtools")
-}
-
-# Install tidyllm from GitHub
-devtools::install_github("edubruell/tidyllm")
-```
+> ⚠️ **Note:**  This vignette refers to the development version of **tidyllm** 0.3.0. which is not yet on CRAN
 
 Navigating through a large collection of academic papers can be time-consuming, especially when you're trying to extract specific insights or determine the relevance of each document to your research. With **tidyllm**, you can streamline this process by automating the extraction of structured answers directly from PDF documents using large language models.
 
@@ -92,7 +82,7 @@ document_schema <- tidyllm_schema(
 )
 ```
 
-In `tidyllm_schema()`, we begin by naming the schema with a character string, which is required by the OpenAI API. Then, we specify each field along with its expected data type. Supported types include `character` (with `string` as an accepted synonym), `logical`, and `numeric`. For fields where categorical responses are needed, we can use `factor()` to define specific allowed options. For instance, `factor(Policy, Research)` creates a categorical field with the choices "Policy" and "Research." To indicate that a field should return a list of values, we append `[]` to the type. For example, setting `Authors = "character[]"` allows multiple entries in a list format for the Authors field. However, we intentionally avoid lists here to maintain a flat structure. This ensures that the output can be easily converted to a single-row `tibble`.
+In `tidyllm_schema()`, we specify each field along with its expected data type. Supported types include `character` (with `string` as an accepted synonym), `logical`, and `numeric`. For fields where categorical responses are needed, we can use `factor()` to define specific allowed options. For instance, `factor(Policy, Research)` creates a categorical field with the choices "Policy" and "Research." To indicate that a field should return a list of values, we append `[]` to the type. For example, setting `Authors = "character[]"` allows multiple entries in a list format for the Authors field. However, we intentionally avoid lists here to maintain a flat structure. This ensures that the output can be easily converted to a single-row `tibble`. `name` is a special field, which creates an identifier for a schema. By default it is `"tidyllm_schema"`
 
 ### Step 4: Running the Analysis on a Sample Document
 To test the setup, we run the analysis on a single document with the standard `chat()` function, using the schema to ensure structured output.

@@ -6,7 +6,7 @@ vignette: >
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
-> ⚠️ **Note:**  This vignette refers to the development version 0.2.7. of **tidyllm**, which haa major interface differences compared to the last release. If you are using the CRAN-version 0.2.0 please refer to the installed vignette by using `vignette("tidyllm")`. Version 0.2.7. is fully backward compatible to the old interface, but will throw deprecation warnings for some use cases.
+> ⚠️ **Note:**  This vignette refers to the development version of **tidyllm** 0.3.0. which is not yet on CRAN
 
 # Introduction to tidyllm
 **tidyllm** is an R package providing a unified interface for interacting with various large language model APIs. This vignette will guide you through the basic setup and usage of **tidyllm**.
@@ -264,7 +264,7 @@ tibble::tibble(
   print(width=60)
 ```
 
-By default it collects metadata for the whole message history, but you can also set an `.index` to only get metadata for a specific reply. Alternatively you can print out metadata with the standard print method with the `.meta`-argument in `print()` or via the `tidyllm_print_metadata` option. The list column `api_specific` contains special metadata that only applies to one API like citations for models with search grounding, or special information on model loading for local APIs.
+By default it collects metadata for the whole message history, but you can also set an `.index` to only get metadata for a specific reply. Alternatively you can print out metadata with the standard print method with the `.meta`-argument in `print()` or via the `tidyllm_print_metadata` option. The list column `api_specific` contains special metadata that is only available to some APIs (like citations for models with search grounding on `perplexity()` or special information on model loading for local APIs).
 
 ### Working with structured model outputs
 
@@ -274,7 +274,7 @@ Currently, `openai()`, `gemini()` and `ollama()` are the only API provider funct
 
 To create schemas, you can use the `tidyllm_schema()` function, which translates your data format specifications into the  [JSON-schema format](https://json-schema.org/) the API requires. This helper function standardizes the data layout by ensuring flat (non-nested) JSON structures with defined data types. Here’s how to define a schema:
 
-- **`name`**: A name identifier for the schema (which is needed by the API).
+- **`name`**: A name identifier for the schema. By default this name is `"tidyllm_schema"`.
 - **`...` (fields)**: Named arguments for field names and their data types, including:
   - `"character"` or `"string"`: Text fields.
   - `"factor(...)"`: Enumerations with allowable values, like `factor(Germany, France)`.
@@ -430,7 +430,7 @@ The output is a list of message histories, each now updated with new assistant r
 llm_message("Write a lengthy magazine advertisement for an R package called tidyllm") |>
   chat(claude,.stream=TRUE)
 ```
-While this feature offers slightly better feedback on model behavior in real-time, it’s not particularly useful for data-analysis workflows. Metadata is not collected for streaming mode. We consider this feature experimental and recommend using non-streaming responses for production tasks. Note that error handling in streaming callbacks varies by API and differs in quality at this time.
+While this feature offers slightly better feedback on model behavior in real-time, it’s not particularly useful for data-analysis workflows. Metadata is not collected for streaming mode. We consider this feature experimental and recommend using non-streaming responses for production tasks. Note that error handling in streaming callbacks varies by API and differs in quality at this time. Metadata is currently not supported for streaming responses.
 
 ### Choosing the Right Model and API
 

@@ -1,4 +1,64 @@
-# Development Version 0.2.7
+# Version 0.3.0 
+
+Version 0.3.0 is currently being prepared for CRAN. This release represents a major milestone for **tidyllm**
+
+The largest changes compared to **0.2.0** are:
+
+## New Verb-Based Interface  
+
+- **New Verb-Based Interface**: Users can now use verbs like `chat()`, `embed()`, `send_batch()`, `check_batch()`, and `fetch_batch()` to interact with APIs. These functions always work with a combination of verbs and providers:
+  - **Verbs** (e.g., `chat()`, `embed()`, `send_batch()`) define the type of action you want to perform.
+  - **Providers** (e.g., `openai()`, `claude()`, `ollama()`) are an arguement of verbs and specify the API to handle the action with and take provider-specific arguments
+
+Each verb and provider combination routes the interaction to provider-specific functions like `openai_chat()` or `claude_chat()` that do the work in the background. These functions can  also be called directly as an alternative more verbose and  provider-specific interface. 
+
+### Old Usage:  
+```r
+llm_message("Hello World") |>
+  openai(.model = "gpt-4o")
+```
+
+### New Usage:
+```r
+# Recommended Verb-Based Approach
+llm_message("Hello World") |>
+  chat(openai(.model = "gpt-4o"))
+  
+# Or even configuring a provider outside
+my_ollama <- ollama(.model = "llama3.2-vision:90B",
+       .ollama_server = "https://ollama.example-server.de",
+       .temperature = 0)
+
+llm_message("Hello World") |>
+  chat(my_ollama)
+
+# Alternative Approach is to use more verbose specific functions:
+llm_message("Hello World") |>
+  openai_chat(.model = "gpt-4o")
+```
+
+### Backward Compatibility:
+
+  - The old functions (`openai()`, `claude()`, etc.) still work if you directly supply an `LLMMessage` as arguement, but issue deprecation warnings when used directly for chat.
+  - Users are encouraged to transition to the new interface for future-proof workflows.
+
+## Breaking Changes:
+
+- The output format of embedding APIs was changed from a matrix to a tibble with an input column and a list column containing one embedding vector and one input per row.
+- `R6`-based saved `LLMMessage` objects are no longer compatible with the new version. Saved objects from earlier versions need to be re-created
+
+## Other Major Features:
+
+- `gemini()` and `perplexity()` as new supported API providers. `gemini()` brings interesting Video and Audio features as well as search grounding to **tidyllm**.  `perplexity()` also offers well cited search grounded assitant replies
+- Batch-Processing for `mistral()`
+- New Metadata-Extraction function `get_reply_metadata()` to get information on token usage, or on other relevant metadata (like sources used for grounding)
+
+## Improvements:
+- Refactored Package Internals: 
+  - Transitioned from `R6` to `S7` for the main `LLMMessage` class, improving maintainability, interoperability, and future-proofing.
+  - Consolidated all API-specific functionality into dedicated files
+  
+# Version 0.2.7
 
 ## Major Features
 

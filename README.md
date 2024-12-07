@@ -82,6 +82,12 @@ For detailed instructions and advanced features, see:
   - [Using Embedding Models for Semantic Search](https://edubruell.github.io/tidyllm/articles/tidyllm_embed.html)
   - [Video and Audio Data with the Gemini API](https://edubruell.github.io/tidyllm/articles/tidyllm_video.html)
   
+## Similar packages
+The are some similar R packages for working with LLMs:
+
+  - [elmer](https://elmer.tidyverse.org/) is espiacially great for asynchronous workflows, chatbots in Shiny and advanced tool-calling capabilities. Its schema functions offer robust support for complex structured data extraction, making it a great choice for applications that require highly interactive or structured LLM interactions. While **elmer**’s feature set overlaps with **tidyllm** in some areas, its interface and design philosophy are very different.
+  - [rollama](https://jbgruber.github.io/rollama/) is specifically designed to support the Ollama API, enabling seamless interaction with local LLM models. A key strength of **rollama** lies in its specialized Ollama API functionalities, such as `copy`, `create`, and `delete`, which are not currently available in **tidyllm**. These features make **rollama** particularly suited for workflows requiring model management or deployment within the Ollama ecosystem.
+  
 ## Contributing
 
 We welcome contributions! Feel free to open issues or submit pull requests on [GitHub](https://github.com/edubruell/tidyllm).

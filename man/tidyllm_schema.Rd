@@ -4,10 +4,10 @@
 \alias{tidyllm_schema}
 \title{Create a JSON schema for structured outputs}
 \usage{
-tidyllm_schema(name, ...)
+tidyllm_schema(name = "tidyllm_schema", ...)
 }
 \arguments{
-\item{name}{A character vector specifying the schema name. This serves as an identifier for the schema.}
+\item{name}{A character vector specifying the schema name. This serves as an identifier for the schema (Default: "tidyllm_schema").}
 
 \item{...}{Named arguments where each name represents a field in the schema and each value specifies the type. Supported types include R data types:
 \itemize{

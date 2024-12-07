@@ -26,7 +26,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -75,19 +75,9 @@
     
     
 <blockquote>
-<p>⚠️ <strong>Note:</strong> This article refers to the development
-version 0.2.7. of <strong>tidyllm</strong>, which has a chnaged
-interface compared to the last CRAN release. You can install the current
-development version directly from GitHub using devtools:</p>
+<p>⚠️ <strong>Note:</strong> This vignette refers to the development
+version of <strong>tidyllm</strong> 0.3.0. which is not yet on CRAN</p>
 </blockquote>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Install devtools if not already installed</span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"devtools"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"devtools"</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span></span>
-<span><span class="co"># Install TidyLLM from GitHub</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"edubruell/tidyllm"</span><span class="op">)</span></span></code></pre></div>
 <p>The <strong>tidyllm</strong> package aims to implement some
 API-specific functionality beyond the main features that are available
 on all APIs. With the Google Gemini API, you can now upload files
@@ -109,7 +99,7 @@ on AI , and interact with Gemini using this file as context:
 <p>We have this segment on our PC as <strong>mp4</strong>-file and can
 simply use <code><a href="../reference/gemini_upload_file.html">gemini_upload_file()</a></code> to make it available in
 <code><a href="../reference/gemini.html">gemini()</a></code> requests.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tidyverse.tidyverse.org" class="external-link">tidyverse</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://edubruell.github.io/tidyllm/">tidyllm</a></span><span class="op">)</span></span>
 <span><span class="va">upload_info</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gemini_upload_file.html">gemini_upload_file</a></span><span class="op">(</span><span class="st">"the_thinking_machine_1960s.mp4"</span><span class="op">)</span></span>
@@ -141,7 +131,7 @@ processing status of the file).</p>
 <p>From this range of metadata, you primarily need the
 <code>name</code>, which you can use in the <code>.fileid</code>
 argument in <code><a href="../reference/gemini.html">gemini()</a></code>:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Give me a detailed summary of this video"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/gemini.html">gemini</a></span><span class="op">(</span>.fileid <span class="op">=</span> <span class="va">upload_info</span><span class="op">$</span><span class="va">name</span><span class="op">)</span><span class="op">)</span> </span></code></pre></div>
 <pre><code><span><span class="co">## Message History:</span></span>
@@ -157,7 +147,7 @@ argument in <code><a href="../reference/gemini.html">gemini()</a></code>:</p>
 that Gemini also supports <code><a href="../reference/tidyllm_schema.html">tidyllm_schema()</a></code>, allowing you to
 get structured responses for all file types that you can use with
 Gemini:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">structured_request</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Extract some details about this video"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/gemini.html">gemini</a></span><span class="op">(</span>.fileid <span class="op">=</span> <span class="va">upload_info</span><span class="op">$</span><span class="va">name</span><span class="op">)</span>,</span>
 <span>       .json_schema <span class="op">=</span> <span class="fu"><a href="../reference/tidyllm_schema.html">tidyllm_schema</a></span><span class="op">(</span>name<span class="op">=</span><span class="st">"videoschema"</span>,</span>
@@ -187,7 +177,7 @@ Gemini:</p>
 <p><code><a href="../reference/gemini_list_files.html">gemini_list_files()</a></code> creates a tibble with an overview of
 files you have uploaded to Gemni. You can use it to check which files
 are currently available for use with Gemini.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">gemini_files</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gemini_list_files.html">gemini_list_files</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">gemini_files</span></span></code></pre></div>
 <pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 3 × 10</span></span></span>
@@ -200,7 +190,7 @@ are currently available for use with Gemini.</p>
 <span><span class="co">## <span style="color: #949494;">#   uri &lt;chr&gt;, state &lt;chr&gt;</span></span></span></code></pre>
 <p>For example, we can now ask <code><a href="../reference/gemini.html">gemini()</a></code> what the audio file
 I uploaded earlier is about:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"What's in this audio file. Describe it in 100 words."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/gemini_chat.html">gemini_chat</a></span><span class="op">(</span>.fileid<span class="op">=</span><span class="va">gemini_files</span><span class="op">$</span><span class="va">name</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Message History:</span></span>
@@ -212,7 +202,7 @@ I uploaded earlier is about:</p>
 <span><span class="co">## --------------------------------------------------------------</span></span></code></pre>
 <p>Once you have completed working with a file, you can delete it with
 <code><a href="../reference/gemini_delete_file.html">gemini_delete_file()</a></code></p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">gemini_files</span><span class="op">$</span><span class="va">name</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/gemini_delete_file.html">gemini_delete_file</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## File files/nzq2zw9u30y8 has been successfully deleted.</span></span></code></pre>
@@ -236,7 +226,7 @@ in their interactions.</p>
 <p>For example, we can upload an old scan of a paper that contains no
 extractable text at all and ask gemini to extract all the
 references:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">neal1995</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gemini_upload_file.html">gemini_upload_file</a></span><span class="op">(</span><span class="st">"1995_Neal_Industry_Specific.pdf"</span><span class="op">)</span></span>
 <span>            </span>
 <span><span class="va">bib</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Extract all the references from this paper in the specified format"</span><span class="op">)</span> <span class="op">|&gt;</span>         </span>

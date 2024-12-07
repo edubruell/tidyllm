@@ -8,17 +8,7 @@ knitr::opts_chunk$set(
 #  comment = "#>"
 )
 ```
-> ⚠️ **Note:**  This article refers to the development version 0.2.7. of **tidyllm**, which has a chnaged interface compared to the last CRAN release. You can install the current development version directly from GitHub using devtools:
-
-```{r, eval= FALSE, echo=TRUE}
-# Install devtools if not already installed
-if (!requireNamespace("devtools", quietly = TRUE)) {
-  install.packages("devtools")
-}
-
-# Install TidyLLM from GitHub
-devtools::install_github("edubruell/tidyllm")
-```
+> ⚠️ **Note:**  This vignette refers to the development version of **tidyllm** 0.3.0. which is not yet on CRAN
 
 While most **tidyllm** use cases revolve around chat models, it also supports **embedding models** — another type of large language model. These models are designed to generate numerical vectors, which map input text to points in a high-dimensional space. Each point represents the semantic meaning of the text.:
 
