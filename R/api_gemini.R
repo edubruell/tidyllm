@@ -100,7 +100,7 @@ method(generate_callback_function,api_gemini) <- function(api) {
 method(extract_metadata, list(api_gemini,class_list))<- function(api,response) {
   list(
     model             = response$modelVersion,
-    timestamp         = lubridate::as_datetime(now()),
+    timestamp         = lubridate::as_datetime(lubridate::now()),
     prompt_tokens     = response$usageMetadata$promptTokenCount,
     completion_tokens = response$usageMetadata$candidatesTokenCount,
     total_tokens      = response$usageMetadata$totalTokenCount,
@@ -246,15 +246,10 @@ gemini_chat <- function(.llm,
   response_format <- NULL
   json=FALSE
   if (!is.null(.json_schema)) {
-    #Deal with the different schema format for gemini compared to the tidyllm_schema output for openai
-    if("schema" %in% names(.json_schema)) {
-      gemini_schema <- .json_schema$schema
-    }
-
     json=TRUE
     response_format <- list(
       response_mime_type = "application/json",
-      response_schema = gemini_schema
+      response_schema = .json_schema
     )
   } 
   

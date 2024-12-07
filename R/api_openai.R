@@ -247,15 +247,16 @@ openai_chat <- function(
     api_key <- get_api_key(api_obj,.dry_run)
   }
   
-  if (requireNamespace("elmer", quietly = TRUE)) {
-    #Handle elmer json schemata Objects
-    if(S7_inherits(.json_schema,elmer:::TypeObject)){
-      .json_schema <- list(
-        name = "Elmer_Schema",  # Schema name
-        schema = to_schema(.json_schema)
-      )
-    }
-  }
+  #Uncommented until elmer exports TypeObject and the like
+  #if (requireNamespace("elmer", quietly = TRUE)) {
+  #  #Handle elmer json schemata Objects
+  #  if(S7_inherits(.json_schema,elmer:::TypeObject)){
+  #    .json_schema <- list(
+  #      name = "Elmer_Schema",  # Schema name
+  #      schema = to_schema(.json_schema)
+  #    )
+  #  }
+  #}
   
   # Handle JSON schema and JSON mode
   response_format <- NULL
@@ -264,7 +265,8 @@ openai_chat <- function(
     json=TRUE
     response_format <- list(
       type = "json_schema",
-      json_schema = .json_schema
+      json_schema = list(name = attr(.json_schema,"name"),
+                         schema = .json_schema)
     )
   } 
   
@@ -479,10 +481,11 @@ send_openai_batch <- function(.llms,
   response_format <- NULL
   json <- FALSE
   if (!is.null(.json_schema)) {
-    json<-TRUE
+    json=TRUE
     response_format <- list(
       type = "json_schema",
-      json_schema = .json_schema
+      json_schema = list(name = attr(.json_schema,"name"),
+                         schema = .json_schema)
     )
   } 
   

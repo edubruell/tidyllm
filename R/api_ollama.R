@@ -187,13 +187,8 @@ ollama_chat <- function(.llm,
   ollama_messages <-  to_api_format(.llm,api_obj)
   
   # Handle JSON schema
- format <- NULL
   json=FALSE
   if (!is.null(.json_schema)) {
-    #Deal with the different schema format for gemini compared to the tidyllm_schema output for openai
-    if("schema" %in% names(.json_schema)) {
-      .json_schema <- .json_schema$schema
-    }
     json=TRUE
   } 
   
