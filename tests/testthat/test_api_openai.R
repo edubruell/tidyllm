@@ -129,6 +129,12 @@ test_that("openai_embedding returns expected response", {
 
 test_that("tidyllm_schema() handles single element correctly", {
   with_mock_dir("openai_schema_single", {
+    
+    # Set a dummy key if none exists
+    if (Sys.getenv("OPENAI_API_KEY") == "") {
+      Sys.setenv(OPENAI_API_KEY = "DUMMY_KEY_FOR_TESTING")
+    }
+    
     if (exists("openai", envir = .tidyllm_rate_limit_env)) {
       .tidyllm_rate_limit_env[["openai"]] <- NULL
     }
@@ -148,6 +154,12 @@ test_that("tidyllm_schema() handles single element correctly", {
 
 test_that("tidyllm_schema() handles multiple elements correctly", {
   with_mock_dir("openai_schema_multiple", {
+    
+    # Set a dummy key if none exists
+    if (Sys.getenv("OPENAI_API_KEY") == "") {
+      Sys.setenv(OPENAI_API_KEY = "DUMMY_KEY_FOR_TESTING")
+    }
+    
     if (exists("openai", envir = .tidyllm_rate_limit_env)) {
       .tidyllm_rate_limit_env[["openai"]] <- NULL
     }
@@ -163,5 +175,9 @@ test_that("tidyllm_schema() handles multiple elements correctly", {
     
     expect_true("completion_tokens" %in% colnames(message_multiple))
     expect_gt(message_multiple$total_tokens, 0)
+    
+    if (Sys.getenv("OPENAI_API_KEY") == "DUMMY_KEY_FOR_TESTING") {
+      Sys.setenv(OPENAI_API_KEY = "")
+    }
   }, simplify = FALSE)
 })

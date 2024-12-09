@@ -19,8 +19,7 @@ Suggests:
     testthat (>= 3.0.0),
     tidyverse,
     httptest2,
-    httpuv,
-    elmer
+    httpuv
 Imports: 
     S7 (>= 0.2.0),
     base64enc,

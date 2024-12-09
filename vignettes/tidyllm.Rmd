@@ -6,7 +6,6 @@ vignette: >
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
-> ⚠️ **Note:**  This vignette refers to the development version of **tidyllm** 0.3.0. which is not yet on CRAN
 
 # Introduction to tidyllm
 **tidyllm** is an R package providing a unified interface for interacting with various large language model APIs. This vignette will guide you through the basic setup and usage of **tidyllm**.
