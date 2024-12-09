@@ -1,6 +1,6 @@
 # Version 0.3.0 
 
-Version 0.3.0 is currently being prepared for CRAN. This release represents a major milestone for **tidyllm**
+**tidyllm 0.3.0** represents a major milestone for **tidyllm**
 
 The largest changes compared to **0.2.0** are:
 
