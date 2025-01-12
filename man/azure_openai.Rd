@@ -2,7 +2,7 @@
 % Please edit documentation in R/api_azure_openai.R
 \name{azure_openai}
 \alias{azure_openai}
-\title{Azure-OpenAI Endpoint Provider Function}
+\title{Azure OpenAI Endpoint Provider Function}
 \usage{
 azure_openai(..., .called_from = NULL)
 }
@@ -24,4 +24,7 @@ through main \code{tidyllm} verbs.
 }
 \details{
 \code{azure_openai()} currently routes messages only to \code{azure_openai_chat()} when used with \code{chat()}.
+
+\code{send_batch()}. It dynamically routes requests to OpenAI-specific functions
+like \code{azure_openai_chat()} and \code{azure_openai_embedding()} based on the context of the call.
 }
