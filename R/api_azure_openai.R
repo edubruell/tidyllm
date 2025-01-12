@@ -176,7 +176,8 @@ azure_openai_chat <- function(
     json=TRUE
     response_format <- list(
       type = "json_schema",
-      json_schema = .json_schema
+      json_schema = list(name = attr(.json_schema,"name"),
+                         schema = .json_schema)
     )
   } 
 
