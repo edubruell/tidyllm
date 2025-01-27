@@ -106,47 +106,46 @@ tidyllm_schema <- function(name = "tidyllm_schema",
   return(schema)
 }
 
-#Uncommented until elmer exports TypeObject and the like
 
-#to_schema <- new_generic("to_schema","x")
-#if (requireNamespace("elmer", quietly = TRUE)) {
-#  method(to_schema, elmer:::TypeBasic) <- function(x) {
-#    list(type = x@type, description = x@description %||% "")
-#  }
-#  
-#  method(to_schema, elmer:::TypeEnum) <- function(x) {
-#    list(
-#      type = "string",
-#      description = x@description %||% "",
-#      enum = as.list(x@values)
-#    )
-#  }
-#  
-#  method(to_schema, elmer:::TypeObject) <- function(x) {
-#    names <- rlang::names2(x@properties)
-#    required <- purrr::map_lgl(x@properties, function(prop) prop@required)
-#    
-#    properties <- to_schema(x@properties)
-#    names(properties) <- names
-#    
-#    list(
-#      type = "object",
-#      description = x@description %||% "",
-#      properties = properties,
-#      required = as.list(names[required]),
-#      additionalProperties = x@additional_properties
-#    )
-#  }
-#  
-#  method(to_schema, elmer:::TypeArray) <- function(x) {
-#    list(
-#      type = "array",
-#      description = x@description %||% "",
-#      items = to_schema(x@items)
-#    )
-#  }  
-#  
-#  method(to_schema, class_list) <- function(x) {
-#      lapply(x, to_schema)
-#  }
-#}
+to_schema <- new_generic("to_schema","x")
+if (requireNamespace("ellmer", quietly = TRUE)) {
+  method(to_schema, ellmer::TypeBasic) <- function(x) {
+    list(type = x@type, description = x@description %||% "")
+  }
+  
+  method(to_schema, ellmer::TypeEnum) <- function(x) {
+    list(
+      type = "string",
+      description = x@description %||% "",
+      enum = as.list(x@values)
+    )
+  }
+  
+  method(to_schema, ellmer::TypeObject) <- function(x) {
+    names <- rlang::names2(x@properties)
+    required <- purrr::map_lgl(x@properties, function(prop) prop@required)
+    
+    properties <- to_schema(x@properties)
+    names(properties) <- names
+    
+    list(
+      type = "object",
+      description = x@description %||% "",
+      properties = properties,
+      required = as.list(names[required]),
+      additionalProperties = x@additional_properties
+    )
+  }
+  
+  method(to_schema, ellmer::TypeArray) <- function(x) {
+    list(
+      type = "array",
+      description = x@description %||% "",
+      items = to_schema(x@items)
+    )
+  }  
+  
+  method(to_schema, class_list) <- function(x) {
+      lapply(x, to_schema)
+  }
+}

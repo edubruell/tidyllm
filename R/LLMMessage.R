@@ -96,7 +96,7 @@ method(print.LLMMessage,LLMMessage) <- function(x,...,.meta = getOption("tidyllm
     message <- x@message_history[[i]]
     
     # Print role and content
-    cat(sprintf("%s: %s\n", message$role, message$content))
+    cat(sprintf("%s: %s\n", message$role, stringr::str_wrap(message$content,60)))
     
     # Print media details if available
     if (!is.null(message$media)) {

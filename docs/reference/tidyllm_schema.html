@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,27 +82,28 @@
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span>
-<span><span class="co"># Define a schema with tidy data principles</span></span>
-<span><span class="va">json_schema</span> <span class="op">&lt;-</span> <span class="fu">tidyllm_schema</span><span class="op">(</span></span>
-<span>  name <span class="op">=</span> <span class="st">"DocumentAnalysisSchema"</span>,</span>
-<span>  Title <span class="op">=</span> <span class="st">"character"</span>,</span>
-<span>  Authors <span class="op">=</span> <span class="st">"character[]"</span>,</span>
-<span>  SuggestedFilename <span class="op">=</span> <span class="st">"character"</span>,</span>
-<span>  Type <span class="op">=</span> <span class="st">"factor(Policy, Research)"</span>,</span>
-<span>  Answer_Q1 <span class="op">=</span> <span class="st">"character"</span>,</span>
-<span>  Answer_Q2 <span class="op">=</span> <span class="st">"character"</span>,</span>
-<span>  Answer_Q3 <span class="op">=</span> <span class="st">"character"</span>,</span>
-<span>  Answer_Q4 <span class="op">=</span> <span class="st">"character"</span>,</span>
-<span>  KeyCitations <span class="op">=</span> <span class="st">"character[]"</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Pass the schema to openai()</span></span>
-<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="openai.html">openai</a></span><span class="op">(</span></span>
-<span>  .llm <span class="op">=</span> <span class="va">msg</span>,</span>
-<span>  .json_schema <span class="op">=</span> <span class="va">json_schema</span></span>
-<span><span class="op">)</span></span>
-<span><span class="op">}</span> <span class="co"># }</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
+<span class="r-in"><span><span class="co"># Define a schema with tidy data principles</span></span></span>
+<span class="r-in"><span><span class="va">json_schema</span> <span class="op">&lt;-</span> <span class="fu">tidyllm_schema</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  name <span class="op">=</span> <span class="st">"DocumentAnalysisSchema"</span>,</span></span>
+<span class="r-in"><span>  Title <span class="op">=</span> <span class="st">"character"</span>,</span></span>
+<span class="r-in"><span>  Authors <span class="op">=</span> <span class="st">"character[]"</span>,</span></span>
+<span class="r-in"><span>  SuggestedFilename <span class="op">=</span> <span class="st">"character"</span>,</span></span>
+<span class="r-in"><span>  Type <span class="op">=</span> <span class="st">"factor(Policy, Research)"</span>,</span></span>
+<span class="r-in"><span>  Answer_Q1 <span class="op">=</span> <span class="st">"character"</span>,</span></span>
+<span class="r-in"><span>  Answer_Q2 <span class="op">=</span> <span class="st">"character"</span>,</span></span>
+<span class="r-in"><span>  Answer_Q3 <span class="op">=</span> <span class="st">"character"</span>,</span></span>
+<span class="r-in"><span>  Answer_Q4 <span class="op">=</span> <span class="st">"character"</span>,</span></span>
+<span class="r-in"><span>  KeyCitations <span class="op">=</span> <span class="st">"character[]"</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Pass the schema to openai()</span></span></span>
+<span class="r-in"><span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="openai.html">openai</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  .llm <span class="op">=</span> <span class="va">msg</span>,</span></span>
+<span class="r-in"><span>  .json_schema <span class="op">=</span> <span class="va">json_schema</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
+</code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

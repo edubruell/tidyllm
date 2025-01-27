@@ -26,7 +26,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -135,9 +135,24 @@ argument in <code><a href="../reference/gemini.html">gemini()</a></code>:</p>
 <span><span class="co">## --------------------------------------------------------------</span></span>
 <span><span class="co">## user: Give me a 200 word summary of this video</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span>
-<span><span class="co">## assistant: Here is a summary of the video.</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## This 1961 black and white Paramount News clip explores the burgeoning field of artificial intelligence. The host interviews Professor Jerome B. Wiesner, director of MIT's Research Laboratory of Electronics. Wiesner discusses the capabilities of computers, noting that while their abilities were previously limited, he suspects they'll be able to "think" within a few years.  The segment shows a computer playing checkers against a human opponent.  Other experts, including Oliver Selfridge and Claude Shannon, offer their perspectives on whether machines can truly think and the potential implications for the future, particularly in language translation.  One expert predicts that within 10–15 years, machines will be performing tasks previously considered the realm of human intelligence.  The film ends by showing a computer that translates Russian to English.  Despite this success, one expert notes that computers will not replace translators of poetry and novels.</span></span>
+<span><span class="co">## assistant: Here is a summary of the video. This 1961 black and white</span></span>
+<span><span class="co">## Paramount News clip explores the burgeoning field of</span></span>
+<span><span class="co">## artificial intelligence. The host interviews Professor</span></span>
+<span><span class="co">## Jerome B. Wiesner, director of MIT's Research Laboratory</span></span>
+<span><span class="co">## of Electronics. Wiesner discusses the capabilities of</span></span>
+<span><span class="co">## computers, noting that while their abilities were previously</span></span>
+<span><span class="co">## limited, he suspects they'll be able to "think" within a few</span></span>
+<span><span class="co">## years. The segment shows a computer playing checkers against</span></span>
+<span><span class="co">## a human opponent. Other experts, including Oliver Selfridge</span></span>
+<span><span class="co">## and Claude Shannon, offer their perspectives on whether</span></span>
+<span><span class="co">## machines can truly think and the potential implications</span></span>
+<span><span class="co">## for the future, particularly in language translation. One</span></span>
+<span><span class="co">## expert predicts that within 10–15 years, machines will be</span></span>
+<span><span class="co">## performing tasks previously considered the realm of human</span></span>
+<span><span class="co">## intelligence. The film ends by showing a computer that</span></span>
+<span><span class="co">## translates Russian to English. Despite this success, one</span></span>
+<span><span class="co">## expert notes that computers will not replace translators of</span></span>
+<span><span class="co">## poetry and novels.</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span></code></pre>
 <p>Once a file is uploaded you can reuse it for different requests. Note
 that Gemini also supports <code><a href="../reference/tidyllm_schema.html">tidyllm_schema()</a></code>, allowing you to
@@ -194,7 +209,16 @@ I uploaded earlier is about:</p>
 <span><span class="co">## --------------------------------------------------------------</span></span>
 <span><span class="co">## user: What's in this audio file. Describe it in 100 words.</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span>
-<span><span class="co">## assistant: This is an audio recording of an interview with Robert Bosch.  He discusses his early life, his career path from apprentice to founder of his renowned company, and his philosophy on business.  Bosch recounts his decision to become a precision mechanic, his travels to America and England, and the development of his famous magneto ignition system.  He emphasizes his principles of high-quality work, fair treatment of employees, and the importance of trust and reliability in business dealings.  The interview concludes with well wishes.</span></span>
+<span><span class="co">## assistant: This is an audio recording of an interview with Robert</span></span>
+<span><span class="co">## Bosch. He discusses his early life, his career path from</span></span>
+<span><span class="co">## apprentice to founder of his renowned company, and his</span></span>
+<span><span class="co">## philosophy on business. Bosch recounts his decision to</span></span>
+<span><span class="co">## become a precision mechanic, his travels to America and</span></span>
+<span><span class="co">## England, and the development of his famous magneto ignition</span></span>
+<span><span class="co">## system. He emphasizes his principles of high-quality work,</span></span>
+<span><span class="co">## fair treatment of employees, and the importance of trust and</span></span>
+<span><span class="co">## reliability in business dealings. The interview concludes</span></span>
+<span><span class="co">## with well wishes.</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span></code></pre>
 <p>Once you have completed working with a file, you can delete it with
 <code><a href="../reference/gemini_delete_file.html">gemini_delete_file()</a></code></p>

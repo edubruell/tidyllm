@@ -1,3 +1,10 @@
+# Dev-Version 0.3.1 
+
+## Major Features
+
+- New `send_ollama_batch()` function to make use of the fast parallel request features of Ollama. 
+- New batch functions for Azure Openai (thanks [Jia Zhang](https://github.com/JiaZhang42))
+
 # Version 0.3.0 
 
 **tidyllm 0.3.0** represents a major milestone for **tidyllm**

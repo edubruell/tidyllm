@@ -19,6 +19,7 @@
 <url><loc>https://edubruell.github.io/tidyllm/reference/cancel_openai_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/chat.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/chatgpt.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/check_azure_openai_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/check_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/check_claude_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/check_mistral_batch.html</loc></url>
@@ -27,6 +28,7 @@
 <url><loc>https://edubruell.github.io/tidyllm/reference/claude_chat.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/df_llm_message.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/embed.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/fetch_azure_openai_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/fetch_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/fetch_claude_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/fetch_mistral_batch.html</loc></url>
@@ -46,6 +48,7 @@
 <url><loc>https://edubruell.github.io/tidyllm/reference/groq_chat.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/groq_transcribe.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/index.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/list_azure_openai_batches.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/list_batches.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/list_claude_batches.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/list_mistral_batches.html</loc></url>
@@ -66,9 +69,11 @@
 <url><loc>https://edubruell.github.io/tidyllm/reference/perplexity.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/perplexity_chat.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/rate_limit_info.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/send_azure_openai_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/send_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/send_claude_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/send_mistral_batch.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/send_ollama_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/send_openai_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/tidyllm-package.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/tidyllm_schema.html</loc></url>

@@ -87,6 +87,7 @@ reference:
     contents:
       - ollama_chat
       - ollama_embedding
+      - send_ollama_batch
       - ollama_download_model
       - ollama_list_models
       
@@ -121,7 +122,11 @@ reference:
     contents:
       - azure_openai_chat
       - azure_openai_embedding
-      
+      - send_azure_openai_batch
+      - check_azure_openai_batch
+      - list_azure_openai_batches
+      - fetch_azure_openai_batch
+  
   - title: "PDF Processing"
     desc: >
       Processing PDF documents, enabling page-by-page analysis.

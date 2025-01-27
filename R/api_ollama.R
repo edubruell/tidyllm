@@ -306,6 +306,173 @@ ollama_embedding <- function(.input,
 }
 
 
+#' Send a Batch of Messages to Ollama API
+#'
+#' This function creates and submits a batch of messages to the Ollama API
+#' Contrary to other batch functions, this functions waits for the batch to finish and receives requests.
+#' The advantage compared to sending single messages via `chat()` is that Ollama handles large parallel
+#' requests quicker than many individual chat requests.
+#'
+#' @param .llms A list of LLMMessage objects containing conversation histories.
+#' @param .model Character string specifying the Ollama model to use (default: "gemma2")
+#' @param .stream Logical; whether to stream the response (default: FALSE)
+#' @param .seed Integer; seed for reproducible generation (default: NULL)
+#' @param .json_schema A JSON schema object as R list to enforce the output structure (default: NULL)
+#' @param .temperature Float between 0-2; controls randomness in responses (default: NULL)
+#' @param .num_ctx Integer; sets the context window size (default: 2048)
+#' @param .num_predict Integer; maximum number of tokens to predict (default: NULL)
+#' @param .top_k Integer; controls diversity by limiting top tokens considered (default: NULL)
+#' @param .top_p Float between 0-1; nucleus sampling threshold (default: NULL)
+#' @param .min_p Float between 0-1; minimum probability threshold (default: NULL)
+#' @param .mirostat Integer (0,1,2); enables Mirostat sampling algorithm (default: NULL)
+#' @param .mirostat_eta Float; Mirostat learning rate (default: NULL)
+#' @param .mirostat_tau Float; Mirostat target entropy (default: NULL)
+#' @param .repeat_last_n Integer; tokens to look back for repetition (default: NULL)
+#' @param .repeat_penalty Float; penalty for repeated tokens (default: NULL)
+#' @param .tfs_z Float; tail free sampling parameter (default: NULL)
+#' @param .stop Character; custom stop sequence(s) (default: NULL)
+#' @param .keep_alive Character; How long should the ollama model be kept in memory after request (default: NULL - 5 Minutes)
+#' @param .ollama_server String; Ollama API endpoint (default: "http://localhost:11434")
+#' @param .timeout Integer; API request timeout in seconds (default: 120)
+#' @param .dry_run Logical; if TRUE, returns request object without execution (default: FALSE)
+#'
+#' @return A list of updated `LLMMessage` objects, each with the assistant's response added if successful.
+#'
+#' @details
+#' The function provides extensive control over the generation process through various parameters:
+#' - Temperature (0-2): Higher values increase creativity, lower values make responses more focused
+#' - Top-k/Top-p: Control diversity of generated text
+#' - Mirostat: Advanced sampling algorithm for maintaining consistent complexity
+#' - Repeat penalties: Prevent repetitive text
+#' - Context window: Control how much previous conversation is considered
+#'
+#' @export
+send_ollama_batch <- function(.llms,
+                        .model = "gemma2",
+                        .stream = FALSE,
+                        .seed = NULL,
+                        .json_schema = NULL,
+                        .temperature = NULL,
+                        .num_ctx = 2048,
+                        .num_predict = NULL,
+                        .top_k = NULL,
+                        .top_p = NULL,
+                        .min_p = NULL,
+                        .mirostat = NULL,
+                        .mirostat_eta = NULL,
+                        .mirostat_tau = NULL,
+                        .repeat_last_n = NULL,
+                        .repeat_penalty = NULL,
+                        .tfs_z = NULL,
+                        .stop = NULL,
+                        .ollama_server = "http://localhost:11434",
+                        .timeout = 120,
+                        .keep_alive = NULL,
+                        .dry_run = FALSE) {
+
+  # Validate the inputs
+  c(
+    ".llms must be a list of LLMMessage objects" = is.list(.llms) && all(sapply(.llms, S7_inherits, LLMMessage)),
+    "Input .model must be a string" = is.character(.model),
+    "Input .stream must be logical if provided" = is.logical(.stream),
+    "Input .json_schema must be NULL or a list" = is.null(.json_schema) | is.list(.json_schema),
+    "Input .temperature must be numeric between 0 and 2 if provided" = is.null(.temperature) || (is.numeric(.temperature) && .temperature >= 0 && .temperature <= 2),
+    "Input .seed must be an integer-valued numeric if provided" = is.null(.seed) || is_integer_valued(.seed),
+    "Input .num_ctx must be a positive integer if provided" = is.null(.num_ctx) || (is_integer_valued(.num_ctx) && .num_ctx > 0),
+    "Input .num_predict must be an integer if provided" = is.null(.num_predict) || is_integer_valued(.num_predict),
+    "Input .top_k must be a positive integer if provided" = is.null(.top_k) || (is_integer_valued(.top_k) && .top_k > 0),
+    "Input .top_p must be numeric between 0 and 1 if provided" = is.null(.top_p) || (is.numeric(.top_p) && .top_p >= 0 && .top_p <= 1),
+    "Input .min_p must be numeric between 0 and 1 if provided" = is.null(.min_p) || (is.numeric(.min_p) && .min_p >= 0 && .min_p <= 1),
+    "Input .mirostat must be 0, 1, or 2 if provided" = is.null(.mirostat) || (.mirostat %in% c(0, 1, 2)),
+    "Input .mirostat_eta must be positive numeric if provided" = is.null(.mirostat_eta) || (is.numeric(.mirostat_eta) && .mirostat_eta > 0),
+    "Input .mirostat_tau must be positive numeric if provided" = is.null(.mirostat_tau) || (is.numeric(.mirostat_tau) && .mirostat_tau > 0),
+    "Input .repeat_last_n must be integer if provided" = is.null(.repeat_last_n) || is_integer_valued(.repeat_last_n),
+    "Input .repeat_penalty must be positive numeric if provided" = is.null(.repeat_penalty) || (is.numeric(.repeat_penalty) && .repeat_penalty > 0),
+    "Input .tfs_z must be positive numeric if provided" = is.null(.tfs_z) || (is.numeric(.tfs_z) && .tfs_z > 0),
+    "Input .stop must be character if provided" = is.null(.stop) || is.character(.stop),
+    "Input .timeout must be a positive integer (seconds)" = is_integer_valued(.timeout) && .timeout > 0,
+    "Input .keep_alive must be character" =  is.null(.keep_alive) ||  is.character(.keep_alive),
+    "Input .dry_run must be logical" = is.logical(.dry_run)
+  ) |>
+    validate_inputs()
+  
+  api_obj <- api_ollama(short_name = "ollama",long_name = "Ollama")
+  
+  # Handle JSON schema
+  json=FALSE
+  if (!is.null(.json_schema)) {
+    json=TRUE
+  } 
+  
+  # Prepare the request lines
+  ollama_requests <- lapply(seq_along(.llms), function(i) { 
+
+    # Get messages from each LLMMessage object
+    ollama_messages <- to_api_format(llm=.llms[[i]],
+                              api=api_obj)
+    
+
+    ollama_options <- list(
+      temperature = .temperature,
+      seed = .seed,
+      num_ctx = .num_ctx,
+      num_predict = .num_predict,
+      top_k = .top_k,
+      top_p = .top_p,
+      min_p = .min_p,
+      mirostat = .mirostat,
+      mirostat_eta = .mirostat_eta,
+      mirostat_tau = .mirostat_tau,
+      repeat_last_n = .repeat_last_n,
+      repeat_penalty = .repeat_penalty,
+      tfs_z = .tfs_z,
+      stop = .stop
+    ) |> purrr::compact()
+    
+    ollama_request_body <- list(
+      model = .model,
+      messages = ollama_messages,
+      options = ollama_options,
+      stream = .stream,
+      format = .json_schema
+    )  |> purrr::compact()
+    
+    # Add keep_alive to request body only if it's provided
+    if (!is.null(.keep_alive)) {
+      ollama_request_body$keep_alive <- .keep_alive
+    }
+    
+    # Build the request
+    request <- httr2::request(.ollama_server) |>
+      httr2::req_url_path("/api/chat") |>
+      httr2::req_body_json(ollama_request_body)
+  })
+  
+
+  # Return only the request object in a dry run.
+  if (.dry_run) {
+    return(ollama_requests)  
+  }
+  
+  ollama_responses <- ollama_requests |>
+    httr2::req_perform_parallel()
+  
+  updated_llms <- lapply(seq_along(.llms), function(i) {
+    response_content <- httr2::resp_body_json(ollama_responses[[i]])
+    
+    meta <- extract_metadata(api = api_obj,response = response_content)
+    chat_content <- parse_chat_function(api_obj)(response_content)
+    add_message(llm     = .llms[[i]],
+                role    = "assistant", 
+                content = chat_content, 
+                json    = json,
+                meta    = meta)
+  })
+  
+  return(updated_llms)
+}
+
+
 #' Retrieve and return model information from the Ollama API
 #' 
 #' This function connects to the Ollama API and retrieves information 
@@ -427,10 +594,11 @@ ollama_download_model <- function(.model, .ollama_server = "http://localhost:114
 #' Supported Verbs:
 #' - **`chat()`**: Sends a message to an Ollama model and retrieves the model's response.
 #' - **`embed()`**: Generates embeddings for input texts using an Ollama model.
-#'
+#' - **`send_batch()`**: Behaves different than the other `send_batch()` verbs since it immediately processes the answers
 #' @export
 ollama <- create_provider_function(
   .name = "ollama",
   chat = ollama_chat,
-  embed = ollama_embedding
+  embed = ollama_embedding,
+  send_batch = send_ollama_batch
 )

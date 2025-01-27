@@ -26,7 +26,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -239,20 +239,27 @@ to the <code>.pdf</code> argument of the <code>chat</code> function:</p>
 <pre><code><span><span class="co">## Message History:</span></span>
 <span><span class="co">## system: You are a helpful assistant</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span>
-<span><span class="co">## user: Please summarize the key points from the provided PDF document.</span></span>
+<span><span class="co">## user: Please summarize the key points from the provided PDF</span></span>
+<span><span class="co">## document.</span></span>
 <span><span class="co">##  -&gt; Attached Media Files:  die_verwandlung.pdf </span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span>
-<span><span class="co">## assistant: Here are the key points from the provided PDF document 'Die Verwandlung' by Franz Kafka:</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## 1. The story centers around Gregor Samsa, who wakes up one morning to find that he has been transformed into a giant insect-like creature.</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## 2. Gregor's transformation causes distress and disruption for his family. They struggle to come to terms with the situation and how to deal with Gregor in his new state.</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## 3. Gregor's family, especially his sister Grete, initially tries to care for him, but eventually decides they need to get rid of him. They lock him in his room and discuss finding a way to remove him.</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## 4. Gregor becomes increasingly isolated and neglected by his family. He becomes weaker and less mobile due to his injuries and lack of proper care.</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## 5. Eventually, Gregor dies, and his family is relieved. They then begin to make plans to move to a smaller, more affordable apartment and start looking for new jobs and opportunities.</span></span>
+<span><span class="co">## assistant: Here are the key points from the provided PDF document 'Die</span></span>
+<span><span class="co">## Verwandlung' by Franz Kafka: 1. The story centers around</span></span>
+<span><span class="co">## Gregor Samsa, who wakes up one morning to find that he</span></span>
+<span><span class="co">## has been transformed into a giant insect-like creature.</span></span>
+<span><span class="co">## 2. Gregor's transformation causes distress and disruption</span></span>
+<span><span class="co">## for his family. They struggle to come to terms with the</span></span>
+<span><span class="co">## situation and how to deal with Gregor in his new state.</span></span>
+<span><span class="co">## 3. Gregor's family, especially his sister Grete, initially</span></span>
+<span><span class="co">## tries to care for him, but eventually decides they need</span></span>
+<span><span class="co">## to get rid of him. They lock him in his room and discuss</span></span>
+<span><span class="co">## finding a way to remove him. 4. Gregor becomes increasingly</span></span>
+<span><span class="co">## isolated and neglected by his family. He becomes weaker and</span></span>
+<span><span class="co">## less mobile due to his injuries and lack of proper care.</span></span>
+<span><span class="co">## 5. Eventually, Gregor dies, and his family is relieved.</span></span>
+<span><span class="co">## They then begin to make plans to move to a smaller, more</span></span>
+<span><span class="co">## affordable apartment and start looking for new jobs and</span></span>
+<span><span class="co">## opportunities.</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span></code></pre>
 <p>The package will automatically extract the text from the PDF and
 include it in the prompt sent to the an API. The text will be wrapped in
@@ -296,34 +303,38 @@ plot pane to a model.</p>
 <span><span class="co">## user: Analyze this plot and data summary:</span></span>
 <span><span class="co">##  -&gt; Attached Media Files:  file1568f6c1b4565.png, RConsole.txt </span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span>
-<span><span class="co">## assistant: Based on the plot and data summary provided, here's an analysis:</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## 1. Relationship between Weight and MPG:</span></span>
-<span><span class="co">##    The scatter plot shows a clear negative correlation between weight (wt) and miles per gallon (mpg). As the weight of the car increases, the fuel efficiency (mpg) decreases.</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## 2. Linear Trend:</span></span>
-<span><span class="co">##    The blue line in the plot represents a linear regression fit. The downward slope confirms the negative relationship between weight and mpg.</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## 3. Data Distribution:</span></span>
-<span><span class="co">##    - The weight of cars in the dataset ranges from 1.513 to 5.424 (likely in thousands of pounds).</span></span>
-<span><span class="co">##    - The mpg values range from 10.40 to 33.90.</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## 4. Variability:</span></span>
-<span><span class="co">##    There's some scatter around the regression line, indicating that while weight is a strong predictor of mpg, other factors also influence fuel efficiency.</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## 5. Other Variables:</span></span>
-<span><span class="co">##    While not shown in the plot, the summary statistics provide information on other variables:</span></span>
-<span><span class="co">##    - Cylinder count (cyl) ranges from 4 to 8, with a median of 6.</span></span>
-<span><span class="co">##    - Horsepower (hp) ranges from 52 to 335, with a mean of 146.7.</span></span>
-<span><span class="co">##    - Transmission type (am) is binary (0 or 1), likely indicating automatic vs. manual.</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## 6. Model Fit:</span></span>
-<span><span class="co">##    The grey shaded area around the regression line represents the confidence interval. It widens at the extremes of the weight range, indicating less certainty in predictions for very light or very heavy vehicles.</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## 7. Outliers:</span></span>
-<span><span class="co">##    There are a few potential outliers, particularly at the lower and higher ends of the weight spectrum, that deviate from the general trend.</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## In conclusion, this analysis strongly suggests that weight is a significant factor in determining a car's fuel efficiency, with heavier cars generally having lower mpg. However, the presence of scatter in the data indicates that other factors (possibly related to engine characteristics, transmission type, or aerodynamics) also play a role in determining fuel efficiency.</span></span>
+<span><span class="co">## assistant: Based on the plot and data summary provided, here's an</span></span>
+<span><span class="co">## analysis: 1. Relationship between Weight and MPG: The</span></span>
+<span><span class="co">## scatter plot shows a clear negative correlation between</span></span>
+<span><span class="co">## weight (wt) and miles per gallon (mpg). As the weight of</span></span>
+<span><span class="co">## the car increases, the fuel efficiency (mpg) decreases. 2.</span></span>
+<span><span class="co">## Linear Trend: The blue line in the plot represents a linear</span></span>
+<span><span class="co">## regression fit. The downward slope confirms the negative</span></span>
+<span><span class="co">## relationship between weight and mpg. 3. Data Distribution: -</span></span>
+<span><span class="co">## The weight of cars in the dataset ranges from 1.513 to 5.424</span></span>
+<span><span class="co">## (likely in thousands of pounds). - The mpg values range</span></span>
+<span><span class="co">## from 10.40 to 33.90. 4. Variability: There's some scatter</span></span>
+<span><span class="co">## around the regression line, indicating that while weight</span></span>
+<span><span class="co">## is a strong predictor of mpg, other factors also influence</span></span>
+<span><span class="co">## fuel efficiency. 5. Other Variables: While not shown in the</span></span>
+<span><span class="co">## plot, the summary statistics provide information on other</span></span>
+<span><span class="co">## variables: - Cylinder count (cyl) ranges from 4 to 8, with</span></span>
+<span><span class="co">## a median of 6. - Horsepower (hp) ranges from 52 to 335, with</span></span>
+<span><span class="co">## a mean of 146.7. - Transmission type (am) is binary (0 or</span></span>
+<span><span class="co">## 1), likely indicating automatic vs. manual. 6. Model Fit:</span></span>
+<span><span class="co">## The grey shaded area around the regression line represents</span></span>
+<span><span class="co">## the confidence interval. It widens at the extremes of the</span></span>
+<span><span class="co">## weight range, indicating less certainty in predictions for</span></span>
+<span><span class="co">## very light or very heavy vehicles. 7. Outliers: There are a</span></span>
+<span><span class="co">## few potential outliers, particularly at the lower and higher</span></span>
+<span><span class="co">## ends of the weight spectrum, that deviate from the general</span></span>
+<span><span class="co">## trend. In conclusion, this analysis strongly suggests that</span></span>
+<span><span class="co">## weight is a significant factor in determining a car's fuel</span></span>
+<span><span class="co">## efficiency, with heavier cars generally having lower mpg.</span></span>
+<span><span class="co">## However, the presence of scatter in the data indicates that</span></span>
+<span><span class="co">## other factors (possibly related to engine characteristics,</span></span>
+<span><span class="co">## transmission type, or aerodynamics) also play a role in</span></span>
+<span><span class="co">## determining fuel efficiency.</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span></code></pre>
 </div>
 <div class="section level4">
@@ -344,19 +355,13 @@ message to get:</p>
 <span><span class="co">## --------------------------------------------------------------</span></span>
 <span><span class="co">## user: Imagine a German adress.</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span>
-<span><span class="co">## assistant: Let's imagine a German address: </span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## Herr Müller</span></span>
-<span><span class="co">## Musterstraße 12</span></span>
+<span><span class="co">## assistant: Let's imagine a German address: Herr Müller Musterstraße 12</span></span>
 <span><span class="co">## 53111 Bonn</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span>
 <span><span class="co">## user: Imagine another address</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span>
-<span><span class="co">## assistant: Let's imagine another German address:</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## Frau Schmidt</span></span>
-<span><span class="co">## Fichtenweg 78</span></span>
-<span><span class="co">## 42103 Wuppertal</span></span>
+<span><span class="co">## assistant: Let's imagine another German address: Frau Schmidt</span></span>
+<span><span class="co">## Fichtenweg 78 42103 Wuppertal</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span></code></pre>
 <p>By default <code><a href="../reference/get_reply.html">get_reply()</a></code> gets the last assistant message.
 Alternatively you can also use <code><a href="../reference/get_reply.html">last_reply()</a></code> as a shortcut
@@ -515,11 +520,18 @@ such as <code>.model</code>,<code>.temperature</code>,
 <pre><code><span><span class="co">## Message History:</span></span>
 <span><span class="co">## system: You are a helpful assistant</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span>
-<span><span class="co">## user: Explain how temperature parameters work </span></span>
-<span><span class="co">## in large language models  and why temperature 0 gives you deterministic</span></span>
-<span><span class="co">## outputs in one sentence.</span></span>
+<span><span class="co">## user: Explain how temperature parameters work in large language</span></span>
+<span><span class="co">## models and why temperature 0 gives you deterministic outputs</span></span>
+<span><span class="co">## in one sentence.</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span>
-<span><span class="co">## assistant: In large language models, temperature parameters control the randomness of generated text by scaling the output probabilities, with higher temperatures introducing more uncertainty and lower temperatures favoring more likely outcomes; specifically, setting temperature to 0 effectively eliminates all randomness, resulting in deterministic outputs because it sets the probability of each token to its maximum likelihood value.</span></span>
+<span><span class="co">## assistant: In large language models, temperature parameters control</span></span>
+<span><span class="co">## the randomness of generated text by scaling the output</span></span>
+<span><span class="co">## probabilities, with higher temperatures introducing more</span></span>
+<span><span class="co">## uncertainty and lower temperatures favoring more likely</span></span>
+<span><span class="co">## outcomes; specifically, setting temperature to 0 effectively</span></span>
+<span><span class="co">## eliminates all randomness, resulting in deterministic</span></span>
+<span><span class="co">## outputs because it sets the probability of each token to its</span></span>
+<span><span class="co">## maximum likelihood value.</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span></code></pre>
 <div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span>  <span class="co">#Retrying with .temperature=0</span></span>
@@ -527,11 +539,18 @@ such as <code>.model</code>,<code>.temperature</code>,
 <pre><code><span><span class="co">## Message History:</span></span>
 <span><span class="co">## system: You are a helpful assistant</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span>
-<span><span class="co">## user: Explain how temperature parameters work </span></span>
-<span><span class="co">## in large language models  and why temperature 0 gives you deterministic</span></span>
-<span><span class="co">## outputs in one sentence.</span></span>
+<span><span class="co">## user: Explain how temperature parameters work in large language</span></span>
+<span><span class="co">## models and why temperature 0 gives you deterministic outputs</span></span>
+<span><span class="co">## in one sentence.</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span>
-<span><span class="co">## assistant: In large language models, temperature parameters control the randomness of generated text by scaling the output probabilities, with higher temperatures introducing more uncertainty and lower temperatures favoring more likely outcomes; specifically, setting temperature to 0 effectively eliminates all randomness, resulting in deterministic outputs because it sets the probability of each token to its maximum likelihood value.</span></span>
+<span><span class="co">## assistant: In large language models, temperature parameters control</span></span>
+<span><span class="co">## the randomness of generated text by scaling the output</span></span>
+<span><span class="co">## probabilities, with higher temperatures introducing more</span></span>
+<span><span class="co">## uncertainty and lower temperatures favoring more likely</span></span>
+<span><span class="co">## outcomes; specifically, setting temperature to 0 effectively</span></span>
+<span><span class="co">## eliminates all randomness, resulting in deterministic</span></span>
+<span><span class="co">## outputs because it sets the probability of each token to its</span></span>
+<span><span class="co">## maximum likelihood value.</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span></code></pre>
 <p>Provider-specific arguments—such as <code>.ollama_server</code> for
 <code><a href="../reference/ollama.html">ollama()</a></code> or <code>.fileid</code> for <code><a href="../reference/gemini.html">gemini()</a></code>
