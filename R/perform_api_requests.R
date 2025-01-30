@@ -43,7 +43,6 @@ perform_chat_request <- function(.request,
                                 .stream = FALSE, 
                                 .timeout = 60, 
                                 .max_tries = 3) {
-
   api_name <- .api@long_name
   
   if (.stream == TRUE) {
@@ -83,6 +82,7 @@ perform_chat_request <- function(.request,
   }
   
   if(.stream == TRUE)  metadata <- NULL
+  if(.stream == TRUE)  response_data <- NULL
   
   list(assistant_reply  = assistant_reply, 
        headers          = response_headers,
