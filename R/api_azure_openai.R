@@ -200,7 +200,7 @@ azure_openai_chat <- function(
 
   # Build the request
   request <- httr2::request(.endpoint_url) |>
-    httr2::req_url_path(paste0("openai/deployments/", .deployment,"/chat/completions")) |>
+    httr2::req_url_path_append(paste0("openai/deployments/", .deployment,"/chat/completions")) |>
     httr2::req_url_query(`api-version` = .api_version) |>
     httr2::req_headers(
       `Content-Type` = "application/json",
@@ -274,7 +274,7 @@ azure_openai_embedding <- function(.input,
   
   # Build the request
   request <- httr2::request(.endpoint_url) |>
-    httr2::req_url_path(paste0("openai/deployments/", .deployment,"/embeddings")) |>
+    httr2::req_url_path_append(paste0("openai/deployments/", .deployment,"/embeddings")) |>
     httr2::req_url_query(`api-version` = .api_version) |>
     httr2::req_headers(
       `Content-Type` = "application/json",
@@ -462,7 +462,7 @@ send_azure_openai_batch <- function(.llms,
   
   # Upload the .jsonl file via OpenAI's Files API
   upload_request <- httr2::request(.endpoint_url) |> 
-    httr2::req_url_path("openai/files") |> 
+    httr2::req_url_path_append("openai/files") |> 
     httr2::req_url_query(`api-version` = .api_version) |>
     httr2::req_headers(
       `Content-Type` = "multipart/form-data",
