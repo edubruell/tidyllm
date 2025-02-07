@@ -96,7 +96,12 @@ method(print.LLMMessage,LLMMessage) <- function(x,...,.meta = getOption("tidyllm
     message <- x@message_history[[i]]
     
     # Print role and content
-    cat(sprintf("%s: %s\n", message$role, stringr::str_wrap(message$content,60)))
+    content_lines <- unlist(strsplit(message$content, "\n"))
+    wrapped_lines <- purrr::map(content_lines, function(line) {
+      stringr::str_wrap(line, width = 60)
+    })
+    wrapped_content <- paste(unlist(wrapped_lines), collapse = "\n")
+    cat(sprintf("%s:\n%s\n", message$role, wrapped_content))
     
     # Print media details if available
     if (!is.null(message$media)) {
