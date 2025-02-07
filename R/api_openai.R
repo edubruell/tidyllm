@@ -167,6 +167,7 @@ method(generate_callback_function,api_openai) <- function(api) {
 #' @param .presence_penalty Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far.
 #' @param .seed If specified, the system will make a best effort to sample deterministically.
 #' @param .stop Up to 4 sequences where the API will stop generating further tokens.
+#' @param .reasoning_effort How long should reasoning models reason (can either be "low","medium" or "high")
 #' @param .stream If set to TRUE, the answer will be streamed to console as it comes (default: FALSE).
 #' @param .temperature What sampling temperature to use, between 0 and 2. Higher values make the output more random.
 #' @param .top_p An alternative to sampling with temperature, called nucleus sampling.
@@ -187,6 +188,7 @@ openai_chat <- function(
     .llm,
     .model = "gpt-4o",
     .max_completion_tokens = NULL,
+    .reasoning_effort = NULL,
     .frequency_penalty = NULL,
     .logit_bias = NULL,
     .presence_penalty = NULL,
@@ -208,7 +210,8 @@ openai_chat <- function(
   c(
     "Input .llm must be an LLMMessage object" = S7_inherits(.llm,LLMMessage),
     "Input .model must be a string" = is.character(.model),
-    "Input .max_completion_tokens must be NULL or a positive integer" = is.null(.max_completion_tokens) | (is_integer_valued(.max_completion_tokens) & .max_completion_tokens > 0),    
+    "Input .max_completion_tokens must be NULL or a positive integer" = is.null(.max_completion_tokens) | (is_integer_valued(.max_completion_tokens) & .max_completion_tokens > 0),   
+    "Input .reasoning_effort must be NULL or one of 'low', 'medium', 'high'" = is.null(.reasoning_effort) | (.reasoning_effort %in% c("low", "medium", "high")),
     "Input .frequency_penalty must be numeric or NULL" = is.null(.frequency_penalty) | is.numeric(.frequency_penalty),
     "Input .logit_bias must be a list or NULL" = is.null(.logit_bias) | is.list(.logit_bias),
     "Input .presence_penalty must be numeric or NULL" = is.null(.presence_penalty) | is.numeric(.presence_penalty),
@@ -277,6 +280,7 @@ openai_chat <- function(
     frequency_penalty = .frequency_penalty,
     logit_bias = .logit_bias,
     max_completion_tokens = .max_completion_tokens,
+    reasoning_effort = .reasoning_effort,
     presence_penalty = .presence_penalty,
     response_format = response_format,
     seed = .seed,
@@ -408,6 +412,7 @@ openai_embedding <- function(.input,
 #' @param .llms A list of LLMMessage objects containing conversation histories.
 #' @param .model Character string specifying the OpenAI model version (default: "gpt-4o").
 #' @param .max_completion_tokens Integer specifying the maximum tokens per response (default: NULL).
+#' @param .reasoning_effort How long should reasoning models reason (can either be "low","medium" or "high")
 #' @param .frequency_penalty Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far.
 #' @param .logit_bias A named list modifying the likelihood of specified tokens appearing in the completion.
 #' @param .presence_penalty Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far.
@@ -429,6 +434,7 @@ openai_embedding <- function(.input,
 send_openai_batch <- function(.llms,
                               .model = "gpt-4o",
                               .max_completion_tokens = NULL,
+                              .reasoning_effort = NULL,
                               .frequency_penalty = NULL,
                               .logit_bias = NULL,
                               .presence_penalty = NULL,
@@ -448,6 +454,7 @@ send_openai_batch <- function(.llms,
   c(
     ".llms must be a list of LLMMessage objects" = is.list(.llms) && all(sapply(.llms, S7_inherits, LLMMessage)),
     ".max_completion_tokens must be NULL or a positive integer" = is.null(.max_completion_tokens) | (is_integer_valued(.max_completion_tokens) & .max_completion_tokens > 0),
+    ".reasoning_effort must be NULL or one of 'low', 'medium', 'high'" = is.null(.reasoning_effort) | (.reasoning_effort %in% c("low", "medium", "high")),
     ".frequency_penalty must be numeric or NULL" = is.null(.frequency_penalty) | is.numeric(.frequency_penalty),
     ".logit_bias must be a list or NULL" = is.null(.logit_bias) | is.list(.logit_bias),
     ".presence_penalty must be numeric or NULL" = is.null(.presence_penalty) | is.numeric(.presence_penalty),
@@ -510,6 +517,7 @@ send_openai_batch <- function(.llms,
       frequency_penalty = .frequency_penalty,
       logit_bias = .logit_bias,
       max_completion_tokens = .max_completion_tokens,
+      reasoning_effort = .reasoning_effort,
       presence_penalty = .presence_penalty,
       response_format = response_format,
       seed = .seed,
