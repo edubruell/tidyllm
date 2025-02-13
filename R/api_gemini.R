@@ -192,7 +192,7 @@ gemini_inject_files <- function(.gemini_contents,
 #' @return Returns an updated LLMMessage object.
 #' @export
 gemini_chat <- function(.llm,
-                   .model = "gemini-1.5-flash",
+                   .model = "gemini-2.0-flash",
                    .fileid = NULL,
                    .temperature = NULL,
                    .max_output_tokens = NULL,

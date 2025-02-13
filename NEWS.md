@@ -1,9 +1,11 @@
 # Dev-Version 0.3.1 
 
-## Major Features
+## Changes compared to last release
 
 - New `send_ollama_batch()` function to make use of the fast parallel request features of Ollama. 
 - New batch functions for Azure Openai (thanks [Jia Zhang](https://github.com/JiaZhang42))
+- New parameters for `openai()` reasoning models supported
+- Fixed bug in the print method of `LLMMessage`
 
 # Version 0.3.0 
 

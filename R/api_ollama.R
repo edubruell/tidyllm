@@ -500,8 +500,7 @@ ollama_list_models <- function(.ollama_server = "http://localhost:11434") {
       format = sapply(models, function(model) model$details$format),
       family = sapply(models, function(model) model$details$family),
       parameter_size = sapply(models, function(model) model$details$parameter_size),
-      quantization_level = sapply(models, function(model) model$details$quantization_level),
-      stringsAsFactors = FALSE
+      quantization_level = sapply(models, function(model) model$details$quantization_level)
     )
     
     return(model_info)
