@@ -146,7 +146,7 @@ azure_openai_chat <- function(
     "Input .top_p must be numeric or NULL" = is.null(.top_p) | is.numeric(.top_p),
     "Input .timeout must be integer-valued numeric" = is_integer_valued(.timeout),
     "Input .verbose must be logical" = is.logical(.verbose),
-    "Input .json_schema must be NULL or a list" = is.null(.json_schema) | is.list(.json_schema),
+    #"Input .json_schema must be NULL or a list" = is.null(.json_schema) | is.list(.json_schema),
     "Input .dry_run must be logical" = is.logical(.dry_run)
   ) |> validate_inputs()
   
@@ -174,9 +174,18 @@ azure_openai_chat <- function(
   response_format <- NULL
   if (!is.null(.json_schema)) {
     json=TRUE
+    schema_name = "empty"
+    if (requireNamespace("ellmer", quietly = TRUE)) {
+      #Handle ellmer json schemata Objects
+      if(S7_inherits(.json_schema,ellmer::TypeObject)){
+        .json_schema = to_schema(.json_schema)
+        schema_name = "ellmer_schema"
+      } 
+    }
+    if(schema_name!="ellmer_schema"){schema_name <- attr(.json_schema,"name")}
     response_format <- list(
       type = "json_schema",
-      json_schema = list(name = attr(.json_schema,"name"),
+      json_schema = list(name = schema_name,
                          schema = .json_schema)
     )
   } 
@@ -398,12 +407,21 @@ send_azure_openai_batch <- function(.llms,
   json <- FALSE
   if (!is.null(.json_schema)) {
     json=TRUE
+    schema_name = "empty"
+    if (requireNamespace("ellmer", quietly = TRUE)) {
+      #Handle ellmer json schemata Objects
+      if(S7_inherits(.json_schema,ellmer::TypeObject)){
+        .json_schema = to_schema(.json_schema)
+        schema_name = "ellmer_schema"
+      } 
+    }
+    if(schema_name!="ellmer_schema"){schema_name <- attr(.json_schema,"name")}
     response_format <- list(
       type = "json_schema",
-      json_schema = list(name = attr(.json_schema,"name"),
+      json_schema = list(name = schema_name,
                          schema = .json_schema)
     )
-  }
+  } 
   
   prepared_llms  <- prepare_llms_for_batch(api_obj,
                                            .llms=.llms,

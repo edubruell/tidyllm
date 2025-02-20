@@ -534,6 +534,45 @@ fetch_batch <- function(.llms,
   return(rlang::eval_tidy(modified_call))
 }
 
+#' List Available Models for a Provider
+#'
+#' The `list_models()` function retrieves available models from the specified provider.
+#'
+#' @param .provider A function or function call specifying the provider and any additional parameters.
+#'   You can also set a default provider via the `tidyllm_lmodels_default` option.
+#' @param ... Additional arguments to be passed to the provider-specific list_models function.
+#'
+#' @return A tibble containing model information.
+#' @export
+list_models <- function(.provider = getOption("tidyllm_lmodels_default"), ...) {
+  if (is.null(.provider)) {
+    stop("You need to specify a .provider function in list_models().")
+  }
+  
+  # Accept an unevaluated function
+  if (rlang::is_function(.provider)) {
+    .provider <- .provider()
+  }
+  
+  # Capture the provider call expression
+  if (!rlang::is_call(.provider)) {
+    provider_expr <- rlang::quo_get_expr(rlang::enquo(.provider))
+  } else {
+    provider_expr <- .provider
+  }
+  
+  # Inject .called_from = "list_models" along with any additional arguments
+  modified_call <- rlang::call_modify(
+    provider_expr,
+    .called_from = "list_models",
+    ...
+  )
+  
+  # Evaluate the modified provider call
+  return(rlang::eval_tidy(modified_call))
+}
+
+
 
 
 

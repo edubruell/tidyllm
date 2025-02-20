@@ -6,7 +6,7 @@
 \usage{
 gemini_chat(
   .llm,
-  .model = "gemini-1.5-flash",
+  .model = "gemini-2.0-flash",
   .fileid = NULL,
   .temperature = NULL,
   .max_output_tokens = NULL,
@@ -52,7 +52,7 @@ before answering.  (default: NULL).}
 
 \item{.safety_settings}{A list of safety settings (default: NULL).}
 
-\item{.json_schema}{A JSON schema object as R list to enforce the output structure}
+\item{.json_schema}{A schema to enforce an output structure}
 
 \item{.timeout}{When should our connection time out (default: 120 seconds).}
 

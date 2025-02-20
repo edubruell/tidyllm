@@ -28,7 +28,7 @@ method(extract_metadata, list(api_perplexity,class_list))<- function(api,respons
 #' This function sends a message history to the Perplexity Chat API and returns the assistant's reply.
 #'
 #' @param .llm An `LLMMessage` object containing the conversation history.
-#' @param .model The identifier of the model to use (default: "llama-3.2-11b-vision-preview").
+#' @param .model The identifier of the model to use (default: "sonar").
 #' @param .max_tokens The maximum number of tokens that can be generated in the response (default: 1024).
 #' @param .temperature Controls the randomness in the model's response. Values between 0 (exclusive) and 2 (exclusive) are allowed, where higher values increase randomness (optional).
 #' @param .top_p Nucleus sampling parameter that controls the proportion of probability mass considered. Values between 0 (exclusive) and 1 (exclusive) are allowed (optional).
@@ -50,7 +50,7 @@ method(extract_metadata, list(api_perplexity,class_list))<- function(api,respons
 #'
 #' @export
 perplexity_chat <- function(.llm,
-                            .model = "llama-3.1-sonar-small-128k-online",
+                            .model = "sonar",
                             .max_tokens = 1024,
                             .temperature = NULL,
                             .top_p = NULL,

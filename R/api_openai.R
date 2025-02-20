@@ -90,7 +90,7 @@ method(extract_metadata, list(api_openai,class_list))<- function(api,response) {
     timestamp         = lubridate::as_datetime(response$created),
     prompt_tokens     = response$usage$prompt_tokens,
     completion_tokens = response$usage$completion_tokens,
-    total_tokens      = response$usage$completion_tokens,
+    total_tokens      = response$usage$total_tokens,
     specific_metadata = list(
       system_fingerprint        = response$system_fingerprint,
       completion_tokens_details = response$usage$completion_tokens_details,
@@ -174,7 +174,7 @@ method(generate_callback_function,api_openai) <- function(api) {
 #' @param .api_url Base URL for the API (default: "https://api.openai.com/").
 #' @param .timeout Request timeout in seconds (default: 60).
 #' @param .verbose Should additional information be shown after the API call (default: FALSE).
-#' @param .json_schema A JSON schema object as R list to enforce the output structure (If defined has precedence over JSON mode).
+#' @param .json_schema A JSON schema object provided by tidyllm schema or ellmer schemata.
 #' @param .max_tries Maximum retries to perform request
 #' @param .dry_run If TRUE, perform a dry run and return the request object (default: FALSE).
 #' @param .compatible If TRUE, skip API and rate-limit checks for OpenAI compatible APIs (default: FALSE).
@@ -250,27 +250,25 @@ openai_chat <- function(
     api_key <- get_api_key(api_obj,.dry_run)
   }
   
-  #Uncommented until elmer exports TypeObject and the like
-  #if (requireNamespace("elmer", quietly = TRUE)) {
-  #  #Handle elmer json schemata Objects
-  #  if(S7_inherits(.json_schema,elmer:::TypeObject)){
-  #    .json_schema <- list(
-  #      name = "Elmer_Schema",  # Schema name
-  #      schema = to_schema(.json_schema)
-  #    )
-  #  }
-  #}
-  
   # Handle JSON schema and JSON mode
   response_format <- NULL
   json = FALSE
   if (!is.null(.json_schema)) {
     json=TRUE
-    response_format <- list(
-      type = "json_schema",
-      json_schema = list(name = attr(.json_schema,"name"),
-                         schema = .json_schema)
-    )
+    schema_name = "empty"
+    if (requireNamespace("ellmer", quietly = TRUE)) {
+      #Handle ellmer json schemata Objects
+      if(S7_inherits(.json_schema,ellmer::TypeObject)){
+          .json_schema = to_schema(.json_schema)
+          schema_name = "ellmer_schema"
+      } 
+    }
+    if(schema_name!="ellmer_schema"){schema_name <- attr(.json_schema,"name")}
+      response_format <- list(
+        type = "json_schema",
+        json_schema = list(name = schema_name,
+                           schema = .json_schema)
+      )
   } 
   
   # Build the request body
@@ -426,7 +424,7 @@ openai_embedding <- function(.input,
 #' @param .timeout Integer specifying the request timeout in seconds (default: 60).
 #' @param .json_schema A JSON schema  as R list to enforce the output structure (default: NULL).
 #' @param .verbose Logical; if TRUE, additional info about the requests is printed (default: FALSE).
-#' @param .json_schema A JSON schema object as R list to enforce the output structure (default: NULL).
+#' @param .json_schema A JSON schema object provided by tidyllm_schema or ellmer schemata (default: NULL).
 #' @param .id_prefix Character string to specify a prefix for generating custom IDs when names in `.llms` are missing (default: "tidyllm_openai_req_").
 #' 
 #' @return An updated and named list of `.llms` with identifiers that align with batch responses, including a `batch_id` attribute.
@@ -486,12 +484,21 @@ send_openai_batch <- function(.llms,
   
   # Handle JSON schema and JSON mode
   response_format <- NULL
-  json <- FALSE
+  json = FALSE
   if (!is.null(.json_schema)) {
     json=TRUE
+    schema_name = "empty"
+    if (requireNamespace("ellmer", quietly = TRUE)) {
+      #Handle ellmer json schemata Objects
+      if(S7_inherits(.json_schema,ellmer::TypeObject)){
+        .json_schema = to_schema(.json_schema)
+        schema_name = "ellmer_schema"
+      } 
+    }
+    if(schema_name!="ellmer_schema"){schema_name <- attr(.json_schema,"name")}
     response_format <- list(
       type = "json_schema",
-      json_schema = list(name = attr(.json_schema,"name"),
+      json_schema = list(name = schema_name,
                          schema = .json_schema)
     )
   } 
@@ -966,6 +973,76 @@ cancel_openai_batch <- function(.batch_id,
 }
 
 
+#' List Available Models from the OpenAI API
+#'
+#' @param .api_url Base URL for the API (default: "https://api.openai.com").
+#' @param .timeout Request timeout in seconds (default: 60).
+#' @param .max_tries Maximum number of retries for the API request (default: 3).
+#' @param .dry_run Logical; if TRUE, returns the prepared request object without executing it.
+#' @param .verbose Logical; if TRUE, prints additional information about the request.
+#'
+#' @return A tibble containing model information (columns include `id`, `created`, and `owned_by`),
+#'   or NULL if no models are found.
+#'
+#' @export
+openai_list_models <- function(.api_url = "https://api.openai.com",
+                               .timeout = 60,
+                               .max_tries = 3,
+                               .dry_run = FALSE,
+                               .verbose = FALSE) {
+  # Create an API object for OpenAI using the tidyllm helper
+  api_obj <- api_openai(short_name = "openai",
+                        long_name  = "OpenAI",
+                        api_key_env_var = "OPENAI_API_KEY")
+  
+  # Retrieve the API key (will error if not set, unless in dry run mode)
+  api_key <- get_api_key(api_obj, .dry_run)
+  
+  # Build the request to the /v1/models endpoint
+  request <- httr2::request(.api_url) |>
+    httr2::req_url_path("/v1/models") |>
+    httr2::req_headers(
+      Authorization = sprintf("Bearer %s", api_key),
+      `Content-Type` = "application/json"
+    )
+  
+  # If dry run is requested, return the constructed request object
+  if (.dry_run) {
+    return(request)
+  }
+  
+  # Perform the request with specified timeout and retry logic
+  response <- request |>
+    httr2::req_timeout(.timeout) |>
+    httr2::req_retry(max_tries = .max_tries) |>
+    httr2::req_perform() |>
+    httr2::resp_body_json()
+  
+  if (.verbose) {
+    message("Retrieved response from OpenAI: ", response$object)
+  }
+  
+  # Check if the "data" field exists and contains models
+  if (!is.null(response$data)) {
+    models <- response$data
+    
+    # Create a tibble with selected model information
+    model_info <- tibble::tibble(
+      id = vapply(models, function(model) model$id, character(1)),
+      created = vapply(models, function(model) {
+        as.character(strptime(
+          format(as.POSIXct(model$created, origin = "1970-01-01", tz = "GMT"),
+                 format = "%a, %d %b %Y %H:%M:%S"),
+          format = "%a, %d %b %Y %H:%M:%S", tz = "GMT"))
+      }, character(1)),
+      owned_by = vapply(models, function(model) model$owned_by, character(1))
+    )
+    
+    return(model_info)
+  } else {
+    return(NULL)
+  }
+}
 
 
 #' OpenAI Provider Function
@@ -992,7 +1069,8 @@ openai <- create_provider_function(
   send_batch = send_openai_batch,
   check_batch = check_openai_batch,
   list_batches = list_openai_batches,
-  fetch_batch = fetch_openai_batch
+  fetch_batch = fetch_openai_batch,
+  list_models = openai_list_models
 )
 
 #' Alias for the OpenAI Provider Function

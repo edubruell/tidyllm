@@ -1,4 +1,4 @@
-pandoc: 3.1.11
+pandoc: '3.2'
 pkgdown: 2.1.1
 pkgdown_sha: ~
 articles:
@@ -7,7 +7,7 @@ articles:
   articles/tidyllm_video: tidyllm_video.html
   articles/tidyllm-pdfquestions: tidyllm-pdfquestions.html
   tidyllm: tidyllm.html
-last_built: 2025-02-07T12:03Z
+last_built: 2025-02-20T01:00Z
 urls:
   reference: https://edubruell.github.io/tidyllm/reference
   article: https://edubruell.github.io/tidyllm/articles

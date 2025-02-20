@@ -52,6 +52,7 @@
 <url><loc>https://edubruell.github.io/tidyllm/reference/list_batches.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/list_claude_batches.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/list_mistral_batches.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/list_models.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/list_openai_batches.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/llm_message.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/mistral.html</loc></url>
@@ -59,12 +60,14 @@
 <url><loc>https://edubruell.github.io/tidyllm/reference/mistral_embedding.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/ollama.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/ollama_chat.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/ollama_delete_model.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/ollama_download_model.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/ollama_embedding.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/ollama_list_models.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/openai.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/openai_chat.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/openai_embedding.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/openai_list_models.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/pdf_page_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/perplexity.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/perplexity_chat.html</loc></url>

@@ -180,7 +180,7 @@ gemini_inject_files <- function(.gemini_contents,
 #' @param .frequency_penalty Penalizes frequent tokens (default: NULL, range: -2.0 to 2.0).
 #' @param .stop_sequences Optional character sequences to stop generation (default: NULL, up to 5).
 #' @param .safety_settings A list of safety settings (default: NULL).
-#' @param .json_schema A JSON schema object as R list to enforce the output structure
+#' @param .json_schema A schema to enforce an output structure
 #' @param  .grounding_threshold A grounding threshold between 0 and 1. With lower 
 #' grounding thresholds  Gemini will use Google to search for relevant information 
 #' before answering.  (default: NULL).
@@ -223,7 +223,7 @@ gemini_chat <- function(.llm,
     "Input .frequency_penalty must be NULL or in [-2.0, 2.0]" = is.null(.frequency_penalty) | (.frequency_penalty >= -2.0 & .frequency_penalty <= 2.0),
     "Input .stop_sequences must be NULL or a list of up to 5 strings" = is.null(.stop_sequences) | (is.list(.stop_sequences) & length(.stop_sequences) <= 5),
     "Input .safety_settings must be NULL or a list" = is.null(.safety_settings) | is.list(.safety_settings),
-    "Input .json_schema must be NULL or a list" = is.null(.json_schema) | is.list(.json_schema),
+    #"Input .json_schema must be NULL or a list" = is.null(.json_schema) | is.list(.json_schema),
     "Input .timeout must be an integer-valued numeric and positive" = is_integer_valued(.timeout) & .timeout > 0,
     "Input .max_tries must be integer-valued numeric and positive" = is_integer_valued(.max_tries) & .max_tries > 0,
     "Input .dry_run must be logical" = is.logical(.dry_run),
@@ -245,6 +245,16 @@ gemini_chat <- function(.llm,
   # Handle JSON schema
   response_format <- NULL
   json=FALSE
+  if (requireNamespace("ellmer", quietly = TRUE)) {
+    #Handle ellmer json schemata Objects
+    if(S7_inherits(.json_schema,ellmer::TypeObject)){
+      .json_schema = to_schema(.json_schema)
+      # Remove additionalProperties if it exists
+      if (!is.null(.json_schema) && "additionalProperties" %in% names(.json_schema)) {
+        .json_schema <- .json_schema[setdiff(names(.json_schema), "additionalProperties")]
+      }
+    } 
+  }
   if (!is.null(.json_schema)) {
     json=TRUE
     response_format <- list(

@@ -43,7 +43,12 @@
 <h2 class="pkg-version" data-toc-text="0.3.1" id="dev-version-031">Dev-Version 0.3.1<a class="anchor" aria-label="anchor" href="#dev-version-031"></a></h2>
 <div class="section level3">
 <h3 id="changes-compared-to-last-release-0-3-1">Changes compared to last release<a class="anchor" aria-label="anchor" href="#changes-compared-to-last-release-0-3-1"></a></h3>
-<ul><li>New <code><a href="../reference/send_ollama_batch.html">send_ollama_batch()</a></code> function to make use of the fast parallel request features of Ollama.</li>
+<ul><li>Bugfix in OpenAI metadata extraction</li>
+<li>New <code><a href="../reference/ollama_delete_model.html">ollama_delete_model()</a></code> function</li>
+<li>
+<code><a href="../reference/list_models.html">list_models()</a></code> is now a verb supporting both <code><a href="../reference/openai.html">openai()</a></code> and <code><a href="../reference/ollama.html">ollama()</a></code>. Other providers will be added</li>
+<li>Ellmer schemata supported in <code>.json_schema</code> arguements</li>
+<li>New <code><a href="../reference/send_ollama_batch.html">send_ollama_batch()</a></code> function to make use of the fast parallel request features of Ollama.</li>
 <li>New batch functions for Azure Openai (thanks <a href="https://github.com/JiaZhang42" class="external-link">Jia Zhang</a>)</li>
 <li>New parameters for <code><a href="../reference/openai.html">openai()</a></code> reasoning models supported</li>
 <li>Fixed bug in the print method of <code>LLMMessage</code>

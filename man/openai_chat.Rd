@@ -8,6 +8,7 @@ openai_chat(
   .llm,
   .model = "gpt-4o",
   .max_completion_tokens = NULL,
+  .reasoning_effort = NULL,
   .frequency_penalty = NULL,
   .logit_bias = NULL,
   .presence_penalty = NULL,
@@ -33,6 +34,8 @@ openai_chat(
 
 \item{.max_completion_tokens}{An upper bound for the number of tokens that can be generated for a completion, including visible output tokens and reasoning tokens.}
 
+\item{.reasoning_effort}{How long should reasoning models reason (can either be "low","medium" or "high")}
+
 \item{.frequency_penalty}{Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far.}
 
 \item{.logit_bias}{A named list modifying the likelihood of specified tokens appearing in the completion.}
@@ -55,7 +58,7 @@ openai_chat(
 
 \item{.verbose}{Should additional information be shown after the API call (default: FALSE).}
 
-\item{.json_schema}{A JSON schema object as R list to enforce the output structure (If defined has precedence over JSON mode).}
+\item{.json_schema}{A JSON schema object provided by tidyllm schema or ellmer schemata.}
 
 \item{.max_tries}{Maximum retries to perform request}
 

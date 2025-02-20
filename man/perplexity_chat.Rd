@@ -6,7 +6,7 @@
 \usage{
 perplexity_chat(
   .llm,
-  .model = "llama-3.1-sonar-small-128k-online",
+  .model = "sonar",
   .max_tokens = 1024,
   .temperature = NULL,
   .top_p = NULL,
@@ -28,7 +28,7 @@ perplexity_chat(
 \arguments{
 \item{.llm}{An \code{LLMMessage} object containing the conversation history.}
 
-\item{.model}{The identifier of the model to use (default: "llama-3.2-11b-vision-preview").}
+\item{.model}{The identifier of the model to use (default: "sonar").}
 
 \item{.max_tokens}{The maximum number of tokens that can be generated in the response (default: 1024).}
 

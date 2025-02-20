@@ -161,7 +161,7 @@ ollama_chat <- function(.llm,
     "Input .llm must be an LLMMessage object" = S7_inherits(.llm, LLMMessage),
     "Input .model must be a string" = is.character(.model),
     "Input .stream must be logical if provided" = is.logical(.stream),
-    "Input .json_schema must be NULL or a list" = is.null(.json_schema) | is.list(.json_schema),
+    #"Input .json_schema must be NULL or a list" = is.null(.json_schema) | is.list(.json_schema),
     "Input .temperature must be numeric between 0 and 2 if provided" = is.null(.temperature) || (is.numeric(.temperature) && .temperature >= 0 && .temperature <= 2),
     "Input .seed must be an integer-valued numeric if provided" = is.null(.seed) || is_integer_valued(.seed),
     "Input .num_ctx must be a positive integer if provided" = is.null(.num_ctx) || (is_integer_valued(.num_ctx) && .num_ctx > 0),
@@ -191,6 +191,12 @@ ollama_chat <- function(.llm,
   if (!is.null(.json_schema)) {
     json=TRUE
   } 
+  if (requireNamespace("ellmer", quietly = TRUE)) {
+    #Handle ellmer json schemata Objects
+    if(S7_inherits(.json_schema,ellmer::TypeObject)){
+      .json_schema = to_schema(.json_schema)
+    } 
+  }
   
   ollama_options <- list(
     temperature = .temperature,
@@ -403,6 +409,12 @@ send_ollama_batch <- function(.llms,
   if (!is.null(.json_schema)) {
     json=TRUE
   } 
+  if (requireNamespace("ellmer", quietly = TRUE)) {
+    #Handle ellmer json schemata Objects
+    if(S7_inherits(.json_schema,ellmer::TypeObject)){
+      .json_schema = to_schema(.json_schema)
+    } 
+  }
   
   # Prepare the request lines
   ollama_requests <- lapply(seq_along(.llms), function(i) { 
@@ -570,6 +582,33 @@ ollama_download_model <- function(.model, .ollama_server = "http://localhost:114
   invisible(NULL)
 }
 
+#' Delete a model from the Ollama API
+#'
+#' This function sends a DELETE request to the Ollama API to remove a specified model.
+#'
+#' @param .model The name of the model to delete.
+#' @param .ollama_server The base URL of the Ollama API (default is "http://localhost:11434").
+#' @return NULL
+#' @export
+ollama_delete_model <- function(.model, .ollama_server = "http://localhost:11434") {
+  
+
+  # Perform DELETE request to remove the model
+  httr2::request(.ollama_server) |>
+    httr2::req_url_path_append("/api/delete") |>
+    httr2::req_method("DELETE") |>
+    httr2::req_body_json(list(name = .model)) |>
+    httr2::req_error(body = function(resp) httr2::resp_body_json(resp)$error) |>
+    httr2::req_perform()
+  
+  # Run ollama_list_models() to show available models after deletion
+  warning(paste0("Model ", .model," deleted"))
+  
+  ollama_list_models(.ollama_server)
+}
+
+
+
 #' Ollama API Provider Function
 #'
 #' The `ollama()` function acts as an interface for interacting with local AI models via the Ollama API.
@@ -599,5 +638,6 @@ ollama <- create_provider_function(
   .name = "ollama",
   chat = ollama_chat,
   embed = ollama_embedding,
-  send_batch = send_ollama_batch
+  send_batch = send_ollama_batch,
+  list_models = ollama_list_models   
 )
