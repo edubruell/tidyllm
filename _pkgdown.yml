@@ -69,6 +69,7 @@ reference:
       - check_claude_batch
       - fetch_claude_batch
       - list_claude_batches
+      - claude_list_models
 
   - title: "Gemini-Specific Functions"
     desc: >
