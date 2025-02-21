@@ -21,7 +21,7 @@ test_that("gemini_chat function constructs a correct request and dry runs it", {
   expect_equal(dry_run$method, "POST")
   
   # Check that the URL path is correct
-  expect_true(grepl("/v1beta/models/gemini-1.5-flash:generateContent", dry_run$path))
+  expect_true(grepl("/v1beta/models/gemini-2.0-flash:generateContent", dry_run$path))
   
   # Inspect headers
   headers <- dry_run$headers
@@ -35,7 +35,7 @@ test_that("gemini_chat function constructs a correct request and dry runs it", {
   # Now check the body content to ensure the JSON is constructed as expected
   body_json <- request$body |> jsonlite::toJSON() |> as.character()
   
-  expected_json <- "{\"data\":{\"model\":[\"gemini-1.5-flash\"],\"contents\":[[{\"role\":[\"user\"],\"parts\":{\"text\":[\"Write a poem about an evil online search monopolist \"]}}]]},\"type\":[\"json\"],\"content_type\":[\"application/json\"],\"params\":{\"auto_unbox\":[true],\"digits\":[22],\"null\":[\"null\"]}}"
+  expected_json <- "{\"data\":{\"model\":[\"gemini-2.0-flash\"],\"contents\":[[{\"role\":[\"user\"],\"parts\":{\"text\":[\"Write a poem about an evil online search monopolist \"]}}]]},\"type\":[\"json\"],\"content_type\":[\"application/json\"],\"params\":{\"auto_unbox\":[true],\"digits\":[22],\"null\":[\"null\"]}}"
   # Check if the JSON matches the expected JSON
   expect_equal(body_json, expected_json)
   

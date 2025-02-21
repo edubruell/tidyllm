@@ -26,6 +26,7 @@
 <url><loc>https://edubruell.github.io/tidyllm/reference/check_openai_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/claude.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/claude_chat.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/claude_list_models.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/df_llm_message.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/embed.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/fetch_azure_openai_batch.html</loc></url>
@@ -40,12 +41,14 @@
 <url><loc>https://edubruell.github.io/tidyllm/reference/gemini_file_metadata.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/gemini_list_files.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/gemini_upload_file.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/get_logprobs.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/get_metadata.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/get_reply.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/get_reply_data.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/get_user_message.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/groq.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/groq_chat.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/groq_list_models.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/groq_transcribe.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/index.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/list_azure_openai_batches.html</loc></url>
@@ -58,6 +61,7 @@
 <url><loc>https://edubruell.github.io/tidyllm/reference/mistral.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/mistral_chat.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/mistral_embedding.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/mistral_list_models.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/ollama.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/ollama_chat.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/ollama_delete_model.html</loc></url>

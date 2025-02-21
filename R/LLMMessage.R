@@ -49,7 +49,8 @@ method(add_message,LLMMessage) <- function(llm,
                                            content,
                                            media = NULL,
                                            json  = FALSE,
-                                           meta  = NULL){
+                                           meta  = NULL,
+                                           logprobs = NULL){
   
   message_details <- list(role = role, content = content,json=json)
   if (!is.null(media)) {
@@ -58,9 +59,13 @@ method(add_message,LLMMessage) <- function(llm,
   if (!is.null(meta)) {
     message_details$meta <- meta
   }
+  if (!is.null(logprobs)) {  
+    message_details$logprobs <- logprobs
+  }
   llm@message_history <- c(llm@message_history , list(message_details))
   llm
 }
+
 
 #' Check if Any Messages Contain Images
 #'

@@ -99,6 +99,35 @@ method(extract_metadata, list(api_openai,class_list))<- function(api,response) {
   )
 }  
 
+#' A function to get loprobs from Openai responses
+#'
+#' @noRd
+method(parse_logprobs, list(api_openai, class_list)) <- function(api, response) {
+  # Helper to parse each token's logprobs
+  parse_token <- function(token_data) {
+    list(
+      token = token_data$token,
+      logprob = token_data$logprob,
+      bytes = if (!is.null(token_data$bytes)) unlist(token_data$bytes, use.names = FALSE) else NULL,
+      top_logprobs = purrr::map(token_data$top_logprobs, function(tlp) {
+        list(
+          token = tlp$token,
+          logprob = tlp$logprob,
+          bytes = if (!is.null(tlp$bytes)) unlist(tlp$bytes, use.names = FALSE) else NULL
+        )
+      })
+    )
+  }
+  
+  # Extract logprobs if available
+  if (!is.null(response$choices[[1]]$logprobs)) {
+    return(purrr::map(response$choices[[1]]$logprobs$content, parse_token))
+  }
+  
+  NULL  # Return NULL if no logprobs are found
+}
+
+
 
 #' A callback function generator for an OpenAI request 
 #' request
@@ -179,6 +208,8 @@ method(generate_callback_function,api_openai) <- function(api) {
 #' @param .dry_run If TRUE, perform a dry run and return the request object (default: FALSE).
 #' @param .compatible If TRUE, skip API and rate-limit checks for OpenAI compatible APIs (default: FALSE).
 #' @param .api_path  The path relative to the base `.api_url` for the API (default: "/v1/chat/completions").
+#' @param .logprobs If TRUE, get the log probabilities of each output token (default: NULL).
+#' @param .top_logprobs If specified, get the top N log probabilities of each output token (0-5, default: NULL).
 #'
 #'
 #' @return A new `LLMMessage` object containing the original messages plus the assistant's response.
@@ -204,7 +235,9 @@ openai_chat <- function(
     .max_tries = 3,
     .dry_run = FALSE,
     .compatible = FALSE,
-    .api_path = "/v1/chat/completions"
+    .api_path = "/v1/chat/completions",
+    .logprobs = NULL,       
+    .top_logprobs = NULL
 ) {
   # Validate inputs
   c(
@@ -227,7 +260,9 @@ openai_chat <- function(
     "Input .max_tries must be integer-valued numeric" = is_integer_valued(.max_tries),
     "Input .dry_run must be logical" = is.logical(.dry_run),
     "Input .compatible must be logical" = is.logical(.compatible),
-    "Input .api_path must be a string" = is.character(.api_path)
+    "Input .api_path must be a string" = is.character(.api_path),
+    "Input .logprobs must be NULL or a logical" = is.null(.logprobs) | is.logical(.logprobs),
+    "Input .top_logprobs must be NULL or an integer between 0 and 5" = is.null(.top_logprobs) | (is_integer_valued(.top_logprobs) && .top_logprobs >= 0 && .top_logprobs <= 5)
   ) |> validate_inputs()
   
   
@@ -285,7 +320,9 @@ openai_chat <- function(
     stop = .stop,
     stream = .stream,
     temperature = .temperature,
-    top_p = .top_p
+    top_p = .top_p,
+    logprobs = .logprobs,        
+    top_logprobs = .top_logprobs
   ) |> purrr::compact()
   
   
@@ -312,13 +349,15 @@ openai_chat <- function(
   
   # Extract assistant reply and rate limiting info from response headers
   assistant_reply <- response$assistant_reply
+  logprobs        <- parse_logprobs(api_obj, response$raw$content)
   if (!.compatible) {track_rate_limit(api_obj,response$headers,.verbose)}
   
   add_message(llm     = .llm,
               role    = "assistant", 
               content = assistant_reply , 
               json    = json,
-              meta    = response$meta)
+              meta    = response$meta,
+              logprobs = logprobs)
 }
 
 

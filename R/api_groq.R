@@ -273,6 +273,78 @@ groq_transcribe <- function(
   return(content$text)
 }
 
+#' List Available Models from the Groq API
+#'
+#' @param .api_url Base URL for the API (default: "https://api.groq.com").
+#' @param .timeout Request timeout in seconds (default: 60).
+#' @param .max_tries Maximum number of retries for the API request (default: 3).
+#' @param .dry_run Logical; if TRUE, returns the prepared request object without executing it.
+#' @param .verbose Logical; if TRUE, prints additional information about the request.
+#'
+#' @return A tibble containing model information (columns include `id`, `created`, `owned_by`, and `context_window`),
+#'   or NULL if no models are found.
+#'
+#' @export
+groq_list_models <- function(.api_url = "https://api.groq.com",
+                             .timeout = 60,
+                             .max_tries = 3,
+                             .dry_run = FALSE,
+                             .verbose = FALSE) {
+  # Create an API object for Groq using the tidyllm helper
+  api_obj <- api_openai(short_name = "groq",
+                        long_name  = "Groq",
+                        api_key_env_var = "GROQ_API_KEY")
+  
+  # Retrieve the API key (will error if not set, unless in dry run mode)
+  api_key <- get_api_key(api_obj, .dry_run)
+  
+  # Build the request to the /openai/v1/models endpoint
+  request <- httr2::request(.api_url) |>
+    httr2::req_url_path("/openai/v1/models") |>
+    httr2::req_headers(
+      Authorization = sprintf("Bearer %s", api_key),
+      `Content-Type` = "application/json"
+    )
+  
+  # If dry run is requested, return the constructed request object
+  if (.dry_run) {
+    return(request)
+  }
+  
+  # Perform the request with specified timeout and retry logic
+  response <- request |>
+    httr2::req_timeout(.timeout) |>
+    httr2::req_retry(max_tries = .max_tries) |>
+    httr2::req_perform() |>
+    httr2::resp_body_json()
+  
+  if (.verbose) {
+    message("Retrieved response from Groq: ", response$object)
+  }
+  
+  # Check if the "data" field exists and contains models
+  if (!is.null(response$data)) {
+    models <- response$data
+    
+    # Create a tibble with selected model information
+    model_info <- tibble::tibble(
+      id = vapply(models, function(model) model$id, character(1)),
+      created = vapply(models, function(model) {
+        as.character(strptime(
+          format(as.POSIXct(model$created, origin = "1970-01-01", tz = "GMT"),
+                 format = "%a, %d %b %Y %H:%M:%S"),
+          format = "%a, %d %b %Y %H:%M:%S", tz = "GMT"))
+      }, character(1)),
+      owned_by = vapply(models, function(model) model$owned_by, character(1)),
+      context_window = vapply(models, function(model) model$context_window, numeric(1))
+    )
+    
+    return(model_info)
+  } else {
+    return(NULL)
+  }
+}
+
 #' Groq API Provider Function
 #'
 #' The `groq()` function acts as an interface for interacting with the Groq API 
@@ -294,5 +366,6 @@ groq_transcribe <- function(
 #' @export
 groq <- create_provider_function(
   .name = "groq",
-  chat = groq_chat
+  chat = groq_chat,
+  list_models = groq_list_models
 )

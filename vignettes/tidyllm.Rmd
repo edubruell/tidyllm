@@ -480,7 +480,7 @@ llm_message("Hi there") |>
 
 ### Setting a Default Provider
 
-You can also specify default provides with options:
+You can also specify default provider with options:
 ```{r, eval=FALSE}
 # Set default providers
 #chat provider

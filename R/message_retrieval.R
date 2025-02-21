@@ -180,6 +180,77 @@ last_metadata <- function(.llm) {
   get_metadata(.llm = .llm)
 }
 
+
+#' Retrieve Log Probabilities from Assistant Replies
+#'
+#' Extracts token log probabilities from assistant replies within an `LLMMessage` object. 
+#' Each row represents a token with its log probability and top alternative tokens.
+#'
+#' An empty tibble is output if no logprobs were requested. Currently only works with `openai_chat()`
+#'
+#' Columns include:
+#' - `reply_index`: The index of the assistant reply in the message history.
+#' - `token`: The generated token.
+#' - `logprob`: The log probability of the generated token.
+#' - `bytes`: The byte-level encoding of the token.
+#' - `top_logprobs`: A list column containing the top alternative tokens with their log probabilities.
+#'
+#' @param .llm An `LLMMessage` object containing the message history.
+#' @param .index A positive integer specifying which assistant reply's log probabilities to extract.
+#'   If `NULL` (default), log probabilities for all replies are returned.
+#' @return A tibble containing log probabilities for the specified assistant reply or all replies.
+#' @seealso [get_metadata()]
+#' @export
+#' @rdname get_logprobs
+get_logprobs <- function(.llm, .index = NULL) {
+  # Validate input
+  validate_inputs(c(
+    "Input .llm must be an LLMMessage object" = S7_inherits(.llm, LLMMessage),
+    "Index must be a positive integer within bounds" = is.null(.index) || 
+      (is.numeric(.index) && .index > 0 && .index <= length(filter_roles(.llm@message_history, "assistant")))
+  ))
+  
+  # Extract assistant replies
+  assistant_replies <- filter_roles(.llm@message_history, "assistant")
+  
+  # Check if any assistant replies are available
+  if (length(assistant_replies) == 0) {
+    warning("No assistant replies available in the message history.")
+    return(tibble::tibble())
+  }
+  
+  # Select the specified reply or all replies
+  selected_indices <- if (is.null(.index)) seq_along(assistant_replies) else .index
+  selected_replies <- assistant_replies[selected_indices]
+  
+  # Extract logprobs
+  purrr::imap_dfr(selected_replies, function(reply, idx) {
+    if (is.null(reply$logprobs)) {
+      return(tibble::tibble(
+        reply_index = idx,
+        token = character(),
+        logprob = numeric(),
+        bytes = list(),
+        top_logprobs = list()
+      ))
+    }
+    
+    # Extract each token's logprobs
+    purrr::map_dfr(reply$logprobs, function(token_data) {
+      tibble::tibble(
+        reply_index = idx,  # Include the reply index
+        token = token_data$token,
+        logprob = token_data$logprob,
+        bytes = list(token_data$bytes),
+        top_logprobs = list(token_data$top_logprobs)
+      )
+    })
+  })
+}
+
+
+
+
 #' Retrieve a User Message by Index
 #'
 #' Extracts the content of a user's message from an `LLMMessage` object at a specific index.

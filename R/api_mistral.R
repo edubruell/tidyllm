@@ -623,6 +623,78 @@ fetch_mistral_batch <- function(.llms,
   return(updated_llms)
 }
 
+
+#' List Available Models from the Mistral API
+#'
+#' @param .api_url Base URL for the API (default: "https://api.mistral.ai").
+#' @param .timeout Request timeout in seconds (default: 60).
+#' @param .max_tries Maximum number of retries for the API request (default: 3).
+#' @param .dry_run Logical; if TRUE, returns the prepared request object without executing it.
+#' @param .verbose Logical; if TRUE, prints additional information about the request.
+#'
+#' @return A tibble containing model information (columns include `id` and `created`),
+#'   or NULL if no models are found.
+#'
+#' @export
+mistral_list_models <- function(.api_url = "https://api.mistral.ai",
+                                .timeout = 60,
+                                .max_tries = 3,
+                                .dry_run = FALSE,
+                                .verbose = FALSE) {
+  # Create an API object for Mistral using the tidyllm helper
+  api_obj <- api_mistral(short_name = "mistral",
+                         long_name  = "Mistral",
+                         api_key_env_var = "MISTRAL_API_KEY")
+  
+  # Retrieve the API key (will error if not set, unless in dry run mode)
+  api_key <- get_api_key(api_obj, .dry_run)
+  
+  # Build the request to the /v1/models endpoint
+  request <- httr2::request(.api_url) |>
+    httr2::req_url_path("/v1/models") |>
+    httr2::req_headers(
+      Authorization = sprintf("Bearer %s", api_key),
+      `Content-Type` = "application/json"
+    )
+  
+  # If dry run is requested, return the constructed request object
+  if (.dry_run) {
+    return(request)
+  }
+  
+  # Perform the request with specified timeout and retry logic
+  response <- request |>
+    httr2::req_timeout(.timeout) |>
+    httr2::req_retry(max_tries = .max_tries) |>
+    httr2::req_perform() |>
+    httr2::resp_body_json()
+  
+  if (.verbose) {
+    message("Retrieved response from Mistral: ", response$object)
+  }
+  
+  # Check if the "data" field exists and contains models
+  if (!is.null(response$data)) {
+    models <- response$data
+    
+    # Create a tibble with selected model information
+    model_info <- tibble::tibble(
+      id = vapply(models, function(model) model$id, character(1)),
+      created = vapply(models, function(model) {
+        as.character(strptime(
+          format(as.POSIXct(model$created, origin = "1970-01-01", tz = "GMT"),
+                 format = "%a, %d %b %Y %H:%M:%S"),
+          format = "%a, %d %b %Y %H:%M:%S", tz = "GMT"))
+      }, character(1))
+    )
+    
+    return(model_info)
+  } else {
+    return(NULL)
+  }
+}
+
+
 #' Mistral Provider Function
 #'
 #' The `mistral()` function acts as an interface for interacting with the Mistral API 
@@ -647,5 +719,6 @@ mistral <- create_provider_function(
   send_batch = send_mistral_batch,
   check_batch = check_mistral_batch,
   list_batches = list_mistral_batches,
-  fetch_batch = fetch_mistral_batch
+  fetch_batch = fetch_mistral_batch,
+  list_models = mistral_list_models
 )

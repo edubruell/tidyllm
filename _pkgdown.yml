@@ -16,6 +16,7 @@ reference:
       - ends_with("reply_data")
       - ends_with("user_message")
       - get_metadata
+      - get_logprobs
       - tidyllm_schema
       - rate_limit_info
 
@@ -105,6 +106,7 @@ reference:
       - check_mistral_batch
       - fetch_mistral_batch
       - list_mistral_batches
+      - mistral_list_models
       
   - title: "Perplexity-Specific Functions"
     desc: >
@@ -119,7 +121,8 @@ reference:
     contents:
       - groq_chat
       - groq_transcribe
-      
+      - groq_list_models
+
   - title: "Azure-Specific Functions"
     desc: >
       Functions for interacting with the Azure OpenAI API .

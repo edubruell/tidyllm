@@ -24,7 +24,9 @@ openai_chat(
   .max_tries = 3,
   .dry_run = FALSE,
   .compatible = FALSE,
-  .api_path = "/v1/chat/completions"
+  .api_path = "/v1/chat/completions",
+  .logprobs = NULL,
+  .top_logprobs = NULL
 )
 }
 \arguments{
@@ -67,6 +69,10 @@ openai_chat(
 \item{.compatible}{If TRUE, skip API and rate-limit checks for OpenAI compatible APIs (default: FALSE).}
 
 \item{.api_path}{The path relative to the base \code{.api_url} for the API (default: "/v1/chat/completions").}
+
+\item{.logprobs}{If TRUE, get the log probabilities of each output token (default: NULL).}
+
+\item{.top_logprobs}{If specified, get the top N log probabilities of each output token (0-5, default: NULL).}
 }
 \value{
 A new \code{LLMMessage} object containing the original messages plus the assistant's response.
