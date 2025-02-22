@@ -13,7 +13,7 @@ parse_chat_function        <- new_generic("parse_chat_response","api")
 get_api_key                <- new_generic("get_api_key","api")
 prepare_llms_for_batch     <- new_generic("prepare_llms_for_batch","api")
 extract_metadata           <- new_generic("extract_metadata",c("api", "response"))
-parse_logprobs             <- new_generic("parse_logprobs", c("api", "response"))
+parse_logprobs             <- new_generic("parse_logprobs", c("api", "choices"))
 
 #Default method for the streaming callback function
 #'

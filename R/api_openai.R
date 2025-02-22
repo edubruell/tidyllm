@@ -102,7 +102,7 @@ method(extract_metadata, list(api_openai,class_list))<- function(api,response) {
 #' A function to get loprobs from Openai responses
 #'
 #' @noRd
-method(parse_logprobs, list(api_openai, class_list)) <- function(api, response) {
+method(parse_logprobs, list(api_openai, class_list)) <- function(api, choices) {
   # Helper to parse each token's logprobs
   parse_token <- function(token_data) {
     list(
@@ -120,8 +120,8 @@ method(parse_logprobs, list(api_openai, class_list)) <- function(api, response) 
   }
   
   # Extract logprobs if available
-  if (!is.null(response$choices[[1]]$logprobs)) {
-    return(purrr::map(response$choices[[1]]$logprobs$content, parse_token))
+  if (!is.null(choices$logprobs)) {
+    return(purrr::map(choices$logprobs$content, parse_token))
   }
   
   NULL  # Return NULL if no logprobs are found
@@ -349,7 +349,12 @@ openai_chat <- function(
   
   # Extract assistant reply and rate limiting info from response headers
   assistant_reply <- response$assistant_reply
-  logprobs        <- parse_logprobs(api_obj, response$raw$content)
+  
+  #Check whether the result has logprobs in it 
+  logprobs  <- parse_logprobs(api_obj, response$raw$content$choices[[1]])
+  
+  
+  #Track the rate limit if we are not using a non-openai api
   if (!.compatible) {track_rate_limit(api_obj,response$headers,.verbose)}
   
   add_message(llm     = .llm,
@@ -457,11 +462,12 @@ openai_embedding <- function(.input,
 #' @param .stop Up to 4 sequences where the API will stop generating further tokens.
 #' @param .temperature What sampling temperature to use, between 0 and 2. Higher values make the output more random.
 #' @param .top_p An alternative to sampling with temperature, called nucleus sampling.
+#' @param .logprobs If TRUE, get the log probabilities of each output token (default: NULL).
+#' @param .top_logprobs If specified, get the top N log probabilities of each output token (0-5, default: NULL).
 #' @param .dry_run Logical; if TRUE, returns the prepared request object without executing it (default: FALSE).
 #' @param .overwrite Logical; if TRUE, allows overwriting an existing batch ID associated with the request (default: FALSE).
 #' @param .max_tries Maximum number of retries to perform the request (default: 3).
 #' @param .timeout Integer specifying the request timeout in seconds (default: 60).
-#' @param .json_schema A JSON schema  as R list to enforce the output structure (default: NULL).
 #' @param .verbose Logical; if TRUE, additional info about the requests is printed (default: FALSE).
 #' @param .json_schema A JSON schema object provided by tidyllm_schema or ellmer schemata (default: NULL).
 #' @param .id_prefix Character string to specify a prefix for generating custom IDs when names in `.llms` are missing (default: "tidyllm_openai_req_").
@@ -479,6 +485,8 @@ send_openai_batch <- function(.llms,
                               .stop = NULL,
                               .temperature = NULL,
                               .top_p = NULL,
+                              .logprobs = NULL,       
+                              .top_logprobs = NULL,
                               .dry_run = FALSE,
                               .overwrite = FALSE,
                               .json_schema = NULL,
@@ -499,6 +507,8 @@ send_openai_batch <- function(.llms,
     ".stop must be NULL or a character vector or string" = is.null(.stop) | is.character(.stop),
     ".temperature must be numeric or NULL" = is.null(.temperature) | is.numeric(.temperature),
     ".top_p must be numeric or NULL" = is.null(.top_p) | is.numeric(.top_p),
+    ".logprobs must be NULL or a logical" = is.null(.logprobs) | is.logical(.logprobs),
+    ".top_logprobs must be NULL or an integer between 0 and 5" = is.null(.top_logprobs) | (is_integer_valued(.top_logprobs) && .top_logprobs >= 0 && .top_logprobs <= 5),
     ".dry_run must be logical" = is.logical(.dry_run),
     ".verbose must be logical" = is.logical(.verbose),
     ".overwrite must be logical" = is.logical(.overwrite),
@@ -569,7 +579,9 @@ send_openai_batch <- function(.llms,
       seed = .seed,
       stop = .stop,
       temperature = .temperature,
-      top_p = .top_p
+      top_p = .top_p,
+      logprobs = .logprobs,        
+      top_logprobs = .top_logprobs
     ) |> purrr::compact()
     
    
@@ -914,11 +926,14 @@ fetch_openai_batch <- function(.llms,
     if (!is.null(result) && is.null(result$error) && result$response$status_code == 200) {
       assistant_reply <- result$response$body$choices$message$content
       meta_data <- extract_metadata(api_obj,result$response$body)
+      logprobs        <- parse_logprobs(api_obj, as.list(result$response$body$choices))
+      
       llm <- add_message(llm = .llms[[custom_id]],
                               role = "assistant", 
                               content =  assistant_reply,
                               json = .json,
-                              meta = meta_data)
+                              meta = meta_data, 
+                              logprobs = logprobs)
       return(llm)
     } else {
       warning(sprintf("Result for custom_id %s was unsuccessful or not found", custom_id))
