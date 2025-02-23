@@ -16,6 +16,8 @@ send_openai_batch(
   .stop = NULL,
   .temperature = NULL,
   .top_p = NULL,
+  .logprobs = NULL,
+  .top_logprobs = NULL,
   .dry_run = FALSE,
   .overwrite = FALSE,
   .json_schema = NULL,
@@ -47,6 +49,10 @@ send_openai_batch(
 \item{.temperature}{What sampling temperature to use, between 0 and 2. Higher values make the output more random.}
 
 \item{.top_p}{An alternative to sampling with temperature, called nucleus sampling.}
+
+\item{.logprobs}{If TRUE, get the log probabilities of each output token (default: NULL).}
+
+\item{.top_logprobs}{If specified, get the top N log probabilities of each output token (0-5, default: NULL).}
 
 \item{.dry_run}{Logical; if TRUE, returns the prepared request object without executing it (default: FALSE).}
 

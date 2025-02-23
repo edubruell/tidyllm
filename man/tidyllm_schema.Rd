@@ -2,55 +2,49 @@
 % Please edit documentation in R/tidyllm_schema.R
 \name{tidyllm_schema}
 \alias{tidyllm_schema}
-\title{Create a JSON schema for structured outputs}
+\title{Create a JSON Schema for Structured Outputs}
 \usage{
 tidyllm_schema(name = "tidyllm_schema", ...)
 }
 \arguments{
-\item{name}{A character vector specifying the schema name. This serves as an identifier for the schema (Default: "tidyllm_schema").}
+\item{name}{A character string specifying the schema name (default: "tidyllm_schema").}
 
-\item{...}{Named arguments where each name represents a field in the schema and each value specifies the type. Supported types include R data types:
+\item{...}{Named arguments where each name represents a field, and each value is either a character string, a \code{tidyllm_field}, or an \code{ellmer} type.
+
+Supported character shorthand types:
 \itemize{
-\item "character": Represents a charcater type
-\item "string": Allowed shorthand for charachter type
-\item "factor(...)": A string with specific allowable values, represented as enum in JSON. Specify options as factor(option1, option2).
-\item "logical": Represents a boolean.
-\item "numeric": Represents a number.
-\item "type[]": Appending [] allows for vector of a given type, e.g., "character[]".
+\item "character" or "string" for character fields
+\item "logical" for boolean fields
+\item "numeric" for number fields
+\item "factor(...)" for enumerations
+\item Use \verb{[]} to indicate vectors, e.g., "character[]"
 }}
 }
 \value{
-A list representing the JSON schema with the specified fields and types, suitable for passing to openai()'s .json_schema parameter.
+A list representing the JSON schema, suitable for use with \code{.json_schema} in LLM API calls.
 }
 \description{
-This function creates a JSON schema suitable for use with the API functions in tidyllm.
-}
-\details{
-The tidyllm_schema() function is designed to make defining JSON schemas for tidyllm more concise and user-friendly. It maps R-like types to JSON schema types and validates inputs to enforce tidy data principles. Nested structures are not allowed to maintain compatibility with tidy data conventions.
-}
-\note{
-Factor types (factor(...)) are treated as enumerations in JSON and are limited to a set of allowable string values. Arrays of a given type can be specified by appending [] to the type.
+This function creates a JSON schema for structured outputs, supporting both character-based shorthand and S7 \code{tidyllm_field} objects.
+It also integrates with \code{ellmer} types like \code{ellmer::type_string()} if ellmer is in your namespace
 }
 \examples{
-\dontrun{
-# Define a schema with tidy data principles
-json_schema <- tidyllm_schema(
-  name = "DocumentAnalysisSchema",
-  Title = "character",
-  Authors = "character[]",
-  SuggestedFilename = "character",
-  Type = "factor(Policy, Research)",
-  Answer_Q1 = "character",
-  Answer_Q2 = "character",
-  Answer_Q3 = "character",
-  Answer_Q4 = "character",
-  KeyCitations = "character[]"
+#' \dontrun{
+# Example using different field types
+address_schema <- tidyllm_schema(
+  name = "AddressSchema",
+  Street = field_chr("A common street name"),
+  house_number = field_dbl(),
+  City = field_chr("Name of a city"),
+  State = field_fct("State abbreviation", .levels = c("CA", "TX", "Other")),
+  Country = "string",
+  PostalCode = "string"
 )
 
-# Pass the schema to openai()
-result <- openai(
-  .llm = msg,
-  .json_schema = json_schema
+llm_message("Imagine an address") |> chat(openai, .json_schema = address_schema)
+
+# Example with vector field
+tidyllm_schema(
+  plz = field_dbl(.vector = TRUE)
 )
 }
 }
