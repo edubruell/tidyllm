@@ -52,6 +52,15 @@ r_has_name <- function(.x, .name) {
   FALSE
 }
 
+#' Helper to determine if some object is an ellmer type
+#'
+#' @param .x An input
+#' @noRd
+is_ellmer_type <- function(.x) {
+  if (!requireNamespace("ellmer", quietly = TRUE)) return(FALSE)
+  inherits(.x, c("ellmer::TypeBasic", "ellmer::TypeEnum", 
+                "ellmer::TypeObject", "ellmer::TypeArray"))
+}
 
 # Helper function to filter mmessages by roles
 #'

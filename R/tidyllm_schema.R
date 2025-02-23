@@ -113,13 +113,12 @@ tidyllm_schema <- function(name = "tidyllm_schema", ...) {
     "Field names must be non-empty character strings" = all(nzchar(names(fields))),
     "Field types must be either a supported character string, an S7 tidyllm_field, or an ellmer type" =
       all(sapply(fields, function(field) {
-        (is.character(field) &&
-           grepl("^(string|character|logical|numeric|factor\\(.*\\))(\\[\\])?$", field)) ||
+        (is.character(field) && grepl("^(string|character|logical|numeric|factor\\(.*\\))(\\[\\])?$", field)) ||
           inherits(field, "tidyllm_field") ||
-          (requireNamespace("ellmer", quietly = TRUE) &&
-             any(class(field) %in% c("ellmer::TypeBasic", "ellmer::TypeEnum", "ellmer::TypeObject", "ellmer::TypeArray")))
+          is_ellmer_type(field)
       }))
   ))
+  
   
   # Mapping for simple character-based type specifications.
   type_map <- list(
