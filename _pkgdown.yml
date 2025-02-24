@@ -18,6 +18,7 @@ reference:
       - get_metadata
       - get_logprobs
       - tidyllm_schema
+      - starts_with("field")
       - rate_limit_info
 
   - title: "Tidyllm Main Verbs"

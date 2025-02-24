@@ -1,15 +1,67 @@
-# Dev-Version 0.3.1 
+
+# Version 0.3.1 (submited to CRAN)
 
 ## Changes compared to last release
 
-- Support for logprobs in `openai_chat()` and new `get_logprobs()` function (experimental!)
+- **New schema field functions inspired by ellmer and more schema compatibility with ellmer:** If you have ellmer installed you can now directly use ellmer type objects in the  `.json_schema` option of api-functions. Moreover, `tidyllm_schema()` now accepts ellmer types as field definitions. In addition four ellmer-inspired type-definition functions`field_chr()`, `field_dbl()`, `field_lgl()` and `field_fct()` were added that allow you to set description fields in schemata
+
+```r
+ ellmer_adress <-ellmer::type_object(
+    street = ellmer::type_string("A famous street"),
+    houseNumber = ellmer::type_number("a 3 digit number"),
+    postcode = ellmer::type_string(),
+    city = ellmer::type_string("A large city"),
+    region = ellmer::type_string(),
+    country = ellmer::type_enum(values = c("Germany", "France"))
+  ) 
+
+person_schema <-  tidyllm_schema(
+                person_name = "string",
+                age = field_dbl("An age between 25 and 40"),
+                is_employed = field_lgl("Employment Status in the last year")
+                occupation = field_fct(.levels=c("Lawyer","Butcher")),
+                address = ellmer_adress
+                )
+
+address_message <- llm_message("imagine an address") |>
+  chat(openai,.json_schema = ellmer_adress)
+  
+person_message  <- llm_message("imagine a person profile") |>
+  chat(openai,.json_schema = person_schema)
+```
+
+- Support for logprobs in `openai_chat()` and `send_openai_batch()` and new `get_logprobs()` function:
+```r
+badger_poem <- llm_message("Write a haiku about badgers") |>
+    chat(openai(.logprobs=TRUE,.top_logprobs=5))
+
+ badger_poem |> get_logprobs()
+#> # A tibble: 19 × 5
+#>   reply_index token          logprob bytes     top_logprobs
+#>          <int> <chr>            <dbl> <list>    <list>      
+#>  1           1 "In"       -0.491      <int [2]> <list [5]>  
+#>  2           1 " moon"    -1.12       <int [5]> <list [5]>  
+#>  3           1 "lit"      -0.00489    <int [3]> <list [5]>  
+#>  4           1 " forest"  -1.18       <int [7]> <list [5]>  
+#>  5           1 ","        -0.00532    <int [1]> <list [5]>  
+```
 - Bugfix in OpenAI metadata extraction
 - New `ollama_delete_model()` function
 - `list_models()` is now a verb supporting most providers.
-- Ellmer schemata supported in `.json_schema` arguements
-- New `send_ollama_batch()` function to make use of the fast parallel request features of Ollama. 
+```r
+list_models(openai)
+#> # A tibble: 52 × 3
+#>    id                                   created             owned_by
+#>    <chr>                                <chr>               <chr>   
+#>  1 gpt-4o-mini-audio-preview-2024-12-17 2024-12-13 18:52:00 system  
+#>  2 gpt-4-turbo-2024-04-09               2024-04-08 18:41:17 system  
+#>  3 dall-e-3                             2023-10-31 20:46:29 system  
+#>  4 dall-e-2                             2023-11-01 00:22:57 system  
+```
+- New synchronous `send_ollama_batch()` function to make use of the fast parallel request features of Ollama. 
 - New batch functions for Azure Openai (thanks [Jia Zhang](https://github.com/JiaZhang42))
 - New parameters for `openai()` reasoning models supported
+- Default models updated for `perplexity()` and `gemini()`
 - Fixed bug in the print method of `LLMMessage`
 
 # Version 0.3.0 
@@ -104,7 +156,6 @@ llm_message("What is tidyllm and who maintains this package?") |>
 - Unnecessary `.onattach()` removed
 - Bugfix in callback method of Gemini streaming responses (still not ideal, but works)
 - Embedding functions refactored to reduce repeated code
-- Small test code to look at potential interoperability with [elmer](https://github.com/tidyverse/elmer) for using elmer-type schemata. 
 - API-key check moved into API-object method
 - Slight refactoring for batch functions (there is still quite a bit of potential to reduce duplication)
 

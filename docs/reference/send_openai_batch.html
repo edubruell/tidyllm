@@ -58,6 +58,8 @@
 <span>  .stop <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .temperature <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .top_p <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  .logprobs <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  .top_logprobs <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .dry_run <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  .overwrite <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  .json_schema <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -114,6 +116,14 @@
 
 <dt id="arg--top-p">.top_p<a class="anchor" aria-label="anchor" href="#arg--top-p"></a></dt>
 <dd><p>An alternative to sampling with temperature, called nucleus sampling.</p></dd>
+
+
+<dt id="arg--logprobs">.logprobs<a class="anchor" aria-label="anchor" href="#arg--logprobs"></a></dt>
+<dd><p>If TRUE, get the log probabilities of each output token (default: NULL).</p></dd>
+
+
+<dt id="arg--top-logprobs">.top_logprobs<a class="anchor" aria-label="anchor" href="#arg--top-logprobs"></a></dt>
+<dd><p>If specified, get the top N log probabilities of each output token (0-5, default: NULL).</p></dd>
 
 
 <dt id="arg--dry-run">.dry_run<a class="anchor" aria-label="anchor" href="#arg--dry-run"></a></dt>

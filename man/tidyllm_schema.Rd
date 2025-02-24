@@ -28,7 +28,7 @@ This function creates a JSON schema for structured outputs, supporting both char
 It also integrates with \code{ellmer} types like \code{ellmer::type_string()} if ellmer is in your namespace
 }
 \examples{
-#' \dontrun{
+\dontrun{
 # Example using different field types
 address_schema <- tidyllm_schema(
   name = "AddressSchema",

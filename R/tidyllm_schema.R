@@ -33,10 +33,10 @@ field_chr <- function(.description = character(0), .vector = FALSE) {
 
 #' @rdname field_chr
 #' @export
-field_fct <- function(description = character(0), .levels, .vector = FALSE) {
+field_fct <- function(.description = character(0), .levels, .vector = FALSE) {
   tidyllm_field(
     type = "string",
-    description = description,
+    description = .description,
     enum = .levels,
     vector = .vector
   )
@@ -44,10 +44,10 @@ field_fct <- function(description = character(0), .levels, .vector = FALSE) {
 
 #' @rdname field_chr
 #' @export
-field_dbl <- function(description = character(0), .vector = FALSE) {
+field_dbl <- function(.description = character(0), .vector = FALSE) {
   tidyllm_field(
     type = "number",
-    description = description,
+    description = .description,
     enum = character(0),
     vector = .vector
   )
@@ -83,7 +83,7 @@ field_lgl <- function(.description = character(0), .vector = FALSE) {
 #' @return A list representing the JSON schema, suitable for use with `.json_schema` in LLM API calls.
 #'
 #' @examples
-#' #' \dontrun{
+#' \dontrun{
 #' # Example using different field types
 #' address_schema <- tidyllm_schema(
 #'   name = "AddressSchema",

@@ -9,9 +9,9 @@
 \usage{
 field_chr(.description = character(0), .vector = FALSE)
 
-field_fct(description = character(0), .levels, .vector = FALSE)
+field_fct(.description = character(0), .levels, .vector = FALSE)
 
-field_dbl(description = character(0), .vector = FALSE)
+field_dbl(.description = character(0), .vector = FALSE)
 
 field_lgl(.description = character(0), .vector = FALSE)
 }
