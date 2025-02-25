@@ -1,5 +1,8 @@
+# Latest Changes
 
-# Version 0.3.1 (submited to CRAN)
+ ⚠️ There is a bad bug in the latest CRAN release in the `fetch_openai_batch()` function that is now fixed in the latest Github version. For the CRAN version the `fetch_openai_batch()` function throws errors if the logprobs are turned off.
+
+# Version 0.3.1 
 
 ## Changes compared to last release
 
