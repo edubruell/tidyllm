@@ -927,7 +927,10 @@ fetch_openai_batch <- function(.llms,
     if (!is.null(result) && is.null(result$error) && result$response$status_code == 200) {
       assistant_reply <- result$response$body$choices$message$content
       meta_data <- extract_metadata(api_obj,result$response$body)
-      logprobs        <- parse_logprobs(api_obj, as.list(result$response$body$choices))
+      logprobs <- tryCatch(
+        parse_logprobs(api_obj, as.list(result$response$body$choices)),
+        error = function(e) NULL
+      )
       
       llm <- add_message(llm = .llms[[custom_id]],
                               role = "assistant", 
