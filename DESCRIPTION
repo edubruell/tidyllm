@@ -50,6 +50,7 @@ Collate:
     'perform_api_requests.R'
     'rate_limits.R'
     'tidyllm_schema.R'
+    'tools.R'
     'pdfbatch.R'
     'api_openai.R'
     'api_claude.R'
