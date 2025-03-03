@@ -21,6 +21,7 @@ ollama_chat(
   .mirostat_tau = NULL,
   .repeat_last_n = NULL,
   .repeat_penalty = NULL,
+  .tools = NULL,
   .tfs_z = NULL,
   .stop = NULL,
   .ollama_server = "http://localhost:11434",
@@ -61,6 +62,8 @@ ollama_chat(
 \item{.repeat_last_n}{Integer; tokens to look back for repetition (default: NULL)}
 
 \item{.repeat_penalty}{Float; penalty for repeated tokens (default: NULL)}
+
+\item{.tools}{Either a single TOOL object or a list of TOOL objects representing the available functions for tool calls.}
 
 \item{.tfs_z}{Float; tail free sampling parameter (default: NULL)}
 

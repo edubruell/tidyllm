@@ -80,6 +80,56 @@ method(parse_chat_function, api_ollama) <- function(api) {
   }
 }  
 
+#' A method to run tool calls on OpenAI and create the expected response
+#'
+#' @noRd
+method(run_tool_calls, list(api_ollama, class_list, class_list)) <- function(api, tool_calls, tools) {
+
+  # Iterate over tool calls
+  tool_results <- purrr::map(tool_calls, function(tool_call) {
+    tool_name <- tool_call$`function`$name
+    tool_args <- tool_call$`function`$arguments
+    tool_call_id <- tool_call$id
+    
+
+    if (is.null(tool_args)) {
+      warning(sprintf("Failed to parse arguments for tool: %s", tool_name))
+      return(NULL)
+    }
+    
+    # Find the corresponding tool
+    matching_tool <- purrr::keep(tools, ~ .x@name == tool_name)
+    
+    if (length(matching_tool) == 0) {
+      warning(sprintf("No matching tool found for: %s", tool_name))
+      return(NULL)
+    }
+    
+    tool_function <-  matching_tool[[1]]@func
+    
+    # Execute the function with extracted arguments
+    tool_result <- utils::capture.output(
+                      do.call(tool_function, as.list(tool_args))
+                                         ,file = NULL) |> 
+                  stringr::str_c(collapse = "\n")
+    
+    # Format the response for OpenAI
+    list(
+      role = "tool",
+      tool_call_id = tool_call_id,
+      name = tool_name,
+      content = tool_result
+    )
+  })
+  
+  # Remove NULL results (failed tool executions)
+  tool_results <- purrr::compact(tool_results)
+  list(list(role="assistant",
+            content=" ",
+            tool_calls=tool_calls)) |> 
+    c(tool_results)
+}
+
 
 #' Interact with local AI models via the Ollama API
 #'
@@ -100,6 +150,7 @@ method(parse_chat_function, api_ollama) <- function(api) {
 #' @param .mirostat_tau Float; Mirostat target entropy (default: NULL)
 #' @param .repeat_last_n Integer; tokens to look back for repetition (default: NULL)
 #' @param .repeat_penalty Float; penalty for repeated tokens (default: NULL)
+#' @param .tools Either a single TOOL object or a list of TOOL objects representing the available functions for tool calls.
 #' @param .tfs_z Float; tail free sampling parameter (default: NULL)
 #' @param .stop Character; custom stop sequence(s) (default: NULL)
 #' @param .keep_alive Character; How long should the ollama model be kept in memory after request (default: NULL - 5 Minutes)
@@ -149,6 +200,7 @@ ollama_chat <- function(.llm,
                    .mirostat_tau = NULL,
                    .repeat_last_n = NULL,
                    .repeat_penalty = NULL,
+                   .tools = NULL,
                    .tfs_z = NULL,
                    .stop = NULL,
                    .ollama_server = "http://localhost:11434",
@@ -178,6 +230,7 @@ ollama_chat <- function(.llm,
     "Input .stop must be character if provided" = is.null(.stop) || is.character(.stop),
     "Input .timeout must be a positive integer (seconds)" = is_integer_valued(.timeout) && .timeout > 0,
     "Input .keep_alive must be character" =  is.null(.keep_alive) ||  is.character(.keep_alive),
+    "Input .tools must be NULL, a TOOL object, or a list of TOOL objects" = is.null(.tools) || S7_inherits(.tools, TOOL) || (is.list(.tools) && all(purrr::map_lgl(.tools, ~ S7_inherits(.x, TOOL)))),
     "Input .dry_run must be logical" = is.logical(.dry_run)
   ) |>
     validate_inputs()
@@ -196,6 +249,13 @@ ollama_chat <- function(.llm,
     if(S7_inherits(.json_schema,ellmer::TypeObject)){
       .json_schema = to_schema(.json_schema)
     } 
+  }
+  
+  #Put a single tool into a list if only one is provided. 
+  tools_def <- if (!is.null(.tools)) {
+    if (S7_inherits(.tools, TOOL))  list(.tools) else .tools
+  } else {
+    NULL
   }
   
   ollama_options <- list(
@@ -220,7 +280,8 @@ ollama_chat <- function(.llm,
     messages = ollama_messages,
     options = ollama_options,
     stream = .stream,
-    format = .json_schema
+    format = .json_schema,
+    tools = if(!is.null(tools_def)) tools_to_api(api_obj,tools_def) else NULL
   )  |> purrr::compact()
   
   # Add keep_alive to request body only if it's provided
@@ -240,6 +301,20 @@ ollama_chat <- function(.llm,
   
   # Perform the API request
   response <- perform_chat_request(request,api_obj,.stream,.timeout,3)
+  if(r_has_name(response$raw,"tool_calls")){
+    #Tool call logic can go here!
+    tool_messages <- run_tool_calls(api_obj,
+                                    response$raw$content$message$tool_calls,
+                                    tools_def)
+    ##Append the tool call to API
+    ollama_request_body$messages <- ollama_request_body$messages |> 
+      append(tool_messages)
+    
+    request <- request |>
+      httr2::req_body_json(data = ollama_request_body)
+    
+    response <- perform_chat_request(request,api_obj,.stream,.timeout,3)
+  }
   
   add_message(llm     = .llm,
               role    = "assistant", 
