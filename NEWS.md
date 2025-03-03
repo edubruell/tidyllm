@@ -5,7 +5,7 @@
 ## Tool usage introduced to tidyllm
 
 A first  tool usage system inspired by a similar system in `ellmer` has been introduced to tidyllm. At the moment tool use is only available 
-for `openai_chat()` but will be extended to other API providers:
+for `openai()` and `mistral()` but will be graudally extended to other API providers that support it:
 ```r
 get_current_time <- function(tz, format = "%Y-%m-%d %H:%M:%S") {
   format(Sys.time(), tz = tz, format = format, usetz = TRUE)
@@ -20,7 +20,7 @@ time_tool <- tidyllm_tool(
 
 
 llm_message("What's the exact time in Stuttgart?") |>
-  openai_chat(.tools = time_tool)
+  chat(openai,.tools=time_tool)
   
 #> Message History:
 #> system:
@@ -35,7 +35,7 @@ llm_message("What's the exact time in Stuttgart?") |>
 #> --------------------------------------------------------------  
 ```  
 You can use the `tidyllm_tool()` function to run to make functions available to a large language model. 
-The model can then run functions these functions  in a chat request in your current session. 
+The model can then run these functions in your current session, if they are needed for a chat request. 
 
 # Version 0.3.1 
 

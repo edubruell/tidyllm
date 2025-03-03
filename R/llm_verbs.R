@@ -123,6 +123,7 @@ chat <- function(
     .model = NULL,
     .verbose = NULL,
     .json_schema = NULL,
+    .tools = NULL,
     .seed = NULL,
     .stop = NULL,
     .frequency_penalty = NULL,
@@ -169,8 +170,10 @@ chat <- function(
     .seed = .seed,
     .stop = .stop,
     .frequency_penalty = .frequency_penalty,
-    .presence_penalty = .presence_penalty
+    .presence_penalty = .presence_penalty,
+    .tools = .tools
   )
+  
   common_args <- common_args[!sapply(common_args, is.null)]
   
   # Warn about unsupported arguments

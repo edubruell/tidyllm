@@ -41,6 +41,8 @@ method(ratelimit_from_header, list(api_mistral,new_S3_class("httr2_headers"))) <
 #' @param .top_p Nucleus sampling parameter, between `0.0` and `1.0`. The model considers tokens with top_p probability mass (default: `1`).
 #' @param .max_tokens The maximum number of tokens to generate in the completion. Must be `>= 0` (default: `1024`).
 #' @param .min_tokens The minimum number of tokens to generate in the completion. Must be `>= 0` (optional).
+#' @param .tools Either a single TOOL object or a list of TOOL objects representing the available functions for tool calls.
+#' @param .tool_choice A character string specifying the tool-calling behavior; valid values are "none", "auto", or "required".
 #' @param .seed The seed to use for random sampling. If set, different calls will generate deterministic results (optional).
 #' @param .stop Stop generation if this token is detected, or if one of these tokens is detected when providing a list (optional).
 #' @param .json Whether the output should be in JSON mode(default: `FALSE`).
@@ -65,7 +67,10 @@ mistral_chat <- function(.llm,
                     .max_tokens = 1024,
                     .min_tokens = NULL,
                     .dry_run = FALSE,
-                    .verbose = FALSE) {
+                    .verbose = FALSE,
+                    .tools = NULL,
+                    .tool_choice = NULL) {
+  browser()
 
   # Validate the inputs
   c(
@@ -82,6 +87,8 @@ mistral_chat <- function(.llm,
     "Input .safe_prompt must be logical" = is.logical(.safe_prompt) && length(.safe_prompt) == 1,
     "Input .max_tries must be integer-valued numeric" = is_integer_valued(.max_tries),
     "Input .timeout must be integer-valued numeric (seconds till timeout)" = is_integer_valued(.timeout),
+    "Input .tools must be NULL, a TOOL object, or a list of TOOL objects" = is.null(.tools) || S7_inherits(.tools, TOOL) || (is.list(.tools) && all(purrr::map_lgl(.tools, ~ S7_inherits(.x, TOOL)))),
+    "Input .tool_choice must be NULL or a character (one of 'none', 'auto', 'required')" = is.null(.tool_choice) || (is.character(.tool_choice) && .tool_choice %in% c("none", "auto", "required")),
     "Input .dry_run must be logical" = is.logical(.dry_run) && length(.dry_run) == 1,
     "Input .verbose must be logical" = is.logical(.verbose) && length(.verbose) == 1
   ) |>
@@ -97,6 +104,13 @@ mistral_chat <- function(.llm,
                             api=api_obj,
                             no_system=TRUE)
   
+  #Put a single tool into a list if only one is provided. 
+  tools_def <- if (!is.null(.tools)) {
+    if (S7_inherits(.tools, TOOL))  list(.tools) else .tools
+  } else {
+    NULL
+  }
+  
   #set options
   mistral_request_body <- list(
     model    = .model,
@@ -108,7 +122,9 @@ mistral_chat <- function(.llm,
     stream      = .stream,
     top_p        = .top_p,          
     stop         = .stop,           
-    safe_prompt  = .safe_prompt     
+    safe_prompt  = .safe_prompt,
+    tools = if(!is.null(tools_def)) tools_to_api(api_obj,tools_def) else NULL,
+    tool_choice = .tool_choice
   ) |>
     purrr::compact()
   
@@ -116,8 +132,6 @@ mistral_chat <- function(.llm,
   if (.json == TRUE) {
     mistral_request_body$response_format <- list(type="json_object")
   }
-  
-
   
   # Build the request
   request <- httr2::request("https://api.mistral.ai") |>
@@ -135,6 +149,19 @@ mistral_chat <- function(.llm,
   }
   
   response <- perform_chat_request(request,api_obj,.stream,.timeout,.max_tries)
+  if(r_has_name(response$raw,"tool_calls")){
+    tool_messages <- run_tool_calls(api_obj,
+                                    response$raw$content$choices[[1]]$message$tool_calls,
+                                    tools_def)
+    ##Append the tool call to API
+    mistral_request_body$messages <- mistral_request_body$messages |> 
+      append(tool_messages)
+    
+    request <- request |>
+      httr2::req_body_json(data = mistral_request_body)
+    
+    response <- perform_chat_request(request,api_obj,.stream,.timeout,.max_tries)
+  }
   
   # Extract response headers for rate-limiting
   track_rate_limit(api_obj,response$headers,.verbose)

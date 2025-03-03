@@ -365,7 +365,7 @@ openai_chat <- function(
       )
   } 
   
-  #Process tools
+  #Put a single tool into a list if only one is provided. 
   tools_def <- if (!is.null(.tools)) {
     if (S7_inherits(.tools, TOOL))  list(.tools) else .tools
   } else {
@@ -389,7 +389,7 @@ openai_chat <- function(
     top_p = .top_p,
     logprobs = .logprobs,        
     top_logprobs = .top_logprobs,
-    tools = tools_to_api(api_obj,tools_def),
+    tools = if(!is.null(tools_def)) tools_to_api(api_obj,tools_def) else NULL,
     tool_choice = .tool_choice
   ) |> purrr::compact()
   
