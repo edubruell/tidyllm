@@ -70,7 +70,6 @@ mistral_chat <- function(.llm,
                     .verbose = FALSE,
                     .tools = NULL,
                     .tool_choice = NULL) {
-  browser()
 
   # Validate the inputs
   c(
@@ -149,7 +148,7 @@ mistral_chat <- function(.llm,
   }
   
   response <- perform_chat_request(request,api_obj,.stream,.timeout,.max_tries)
-  if(r_has_name(response$raw,"tool_calls")){
+  if(!is.null(response$raw$content$choices[[1]]$message$tool_calls)){
     tool_messages <- run_tool_calls(api_obj,
                                     response$raw$content$choices[[1]]$message$tool_calls,
                                     tools_def)
