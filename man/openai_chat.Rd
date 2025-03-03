@@ -26,7 +26,9 @@ openai_chat(
   .compatible = FALSE,
   .api_path = "/v1/chat/completions",
   .logprobs = NULL,
-  .top_logprobs = NULL
+  .top_logprobs = NULL,
+  .tools = NULL,
+  .tool_choice = NULL
 )
 }
 \arguments{
@@ -73,6 +75,10 @@ openai_chat(
 \item{.logprobs}{If TRUE, get the log probabilities of each output token (default: NULL).}
 
 \item{.top_logprobs}{If specified, get the top N log probabilities of each output token (0-5, default: NULL).}
+
+\item{.tools}{Either a single TOOL object or a list of TOOL objects representing the available functions for tool calls.}
+
+\item{.tool_choice}{A character string specifying the tool-calling behavior; valid values are "none", "auto", or "required".}
 }
 \value{
 A new \code{LLMMessage} object containing the original messages plus the assistant's response.

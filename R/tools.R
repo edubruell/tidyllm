@@ -7,9 +7,10 @@
 #'
 #' @noRd 
 TOOL <- new_class("TOOL", properties = list(
-  description = class_character,
+  description  = class_character,
   input_schema = class_list,
-  function_call = class_function
+  func         = class_function,
+  name         = class_character
 ))
 
 
@@ -63,22 +64,24 @@ tidyllm_tool <- function(.f, .description = character(0), ...) {
   obj <- TOOL(
     description = .description,
     input_schema = schema_args,
-    function_call = .f
+    func = .f,
+    name = .name
   )
-  
-  # Set name dynamically for printing purposes
-  attr(obj, "name") <- .name
+
   obj
 }
 
 #Generics for tools
 tools_to_api <- new_generic("tools_to_api", c("api", "tools"))
+run_tool_calls <- new_generic("run_tool_calls", c("api","tool_calls","tools"))
+send_tool_results <- new_generic("send_tool_results", c("api","request","request_body"))
+
 print.TOOL  <- new_external_generic("base", "print", "x")
 
 #' Print method for a Tool Definition for tidyllm
 #' @noRd
 method(print.TOOL,TOOL) <- function(x){
-  cat("<tidyllm_tool> ", attr(x, "name"), "\n", sep = "")
+  cat("<tidyllm_tool> ", x@name, "\n", sep = "")
   cat("  Description: ", x@description, "\n", sep = "")
   cat("  Arguments: \n")
   purrr::iwalk(x@input_schema, ~ cat("    -", .y, ": ", .x@type, "\n"))
@@ -91,7 +94,7 @@ method(tools_to_api, list(APIProvider, class_list)) <- function(api, tools) {
     list(
       type = "function",
       `function` = list(
-        name = attr(tool, "name"),
+        name = tool@name,
         description = tool@description,
         parameters = list(
           type = "object",
@@ -101,7 +104,7 @@ method(tools_to_api, list(APIProvider, class_list)) <- function(api, tools) {
               description = param@description
             )
           }),
-          required = names(tool@input_schema) # Assume all are required
+          required =  as.list(names(tool@input_schema)) # Assume all are required
         )
       )
     )

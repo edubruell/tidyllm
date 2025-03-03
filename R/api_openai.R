@@ -127,6 +127,59 @@ method(parse_logprobs, list(api_openai, class_list)) <- function(api, choices) {
   NULL  # Return NULL if no logprobs are found
 }
 
+#' A method to run tool calls on OpenAI and create the expected response
+#'
+#' @noRd
+method(run_tool_calls, list(api_openai, class_list, class_list)) <- function(api, tool_calls, tools) {
+  # Helper function to parse JSON arguments safely
+  parse_json_args <- function(json_str) {
+    tryCatch(jsonlite::fromJSON(json_str, simplifyVector = TRUE), error = function(e) NULL)
+  }
+  
+  # Iterate over tool calls
+  tool_results <- purrr::map(tool_calls, function(tool_call) {
+    tool_name <- tool_call$`function`$name
+    tool_args_json <- tool_call$`function`$arguments
+    tool_call_id <- tool_call$id
+    
+    # Parse arguments
+    tool_args <- parse_json_args(tool_args_json)
+    
+    if (is.null(tool_args)) {
+      warning(sprintf("Failed to parse arguments for tool: %s", tool_name))
+      return(NULL)
+    }
+    
+    # Find the corresponding tool
+    matching_tool <- purrr::keep(tools, ~ .x@name == tool_name)
+    
+    if (length(matching_tool) == 0) {
+      warning(sprintf("No matching tool found for: %s", tool_name))
+      return(NULL)
+    }
+    
+    tool_function <-  matching_tool[[1]]@func
+    
+    # Execute the function with extracted arguments
+    tool_result <- do.call(tool_function, as.list(tool_args))
+  
+
+    # Format the response for OpenAI
+    list(
+      role = "tool",
+      tool_call_id = tool_call_id,
+      name = tool_name,
+      content = jsonlite::toJSON(tool_result, auto_unbox = TRUE) #tool_result
+    )
+  })
+  
+  # Remove NULL results (failed tool executions)
+  tool_results <- purrr::compact(tool_results)
+  list(list(role="assistant",
+       content=" ",
+       tool_calls=tool_calls)) |> 
+    c(tool_results)
+}
 
 
 #' A callback function generator for an OpenAI request 
@@ -210,7 +263,8 @@ method(generate_callback_function,api_openai) <- function(api) {
 #' @param .api_path  The path relative to the base `.api_url` for the API (default: "/v1/chat/completions").
 #' @param .logprobs If TRUE, get the log probabilities of each output token (default: NULL).
 #' @param .top_logprobs If specified, get the top N log probabilities of each output token (0-5, default: NULL).
-#'
+#' @param .tools Either a single TOOL object or a list of TOOL objects representing the available functions for tool calls.
+#' @param .tool_choice A character string specifying the tool-calling behavior; valid values are "none", "auto", or "required".
 #'
 #' @return A new `LLMMessage` object containing the original messages plus the assistant's response.
 #'
@@ -237,7 +291,9 @@ openai_chat <- function(
     .compatible = FALSE,
     .api_path = "/v1/chat/completions",
     .logprobs = NULL,       
-    .top_logprobs = NULL
+    .top_logprobs = NULL,
+    .tools = NULL,
+    .tool_choice = NULL
 ) {
   # Validate inputs
   c(
@@ -262,8 +318,11 @@ openai_chat <- function(
     "Input .compatible must be logical" = is.logical(.compatible),
     "Input .api_path must be a string" = is.character(.api_path),
     "Input .logprobs must be NULL or a logical" = is.null(.logprobs) | is.logical(.logprobs),
-    "Input .top_logprobs must be NULL or an integer between 0 and 5" = is.null(.top_logprobs) | (is_integer_valued(.top_logprobs) && .top_logprobs >= 0 && .top_logprobs <= 5)
-  ) |> validate_inputs()
+    "Input .top_logprobs must be NULL or an integer between 0 and 5" = is.null(.top_logprobs) | (is_integer_valued(.top_logprobs) && .top_logprobs >= 0 && .top_logprobs <= 5),
+    "Input .tools must be NULL, a TOOL object, or a list of TOOL objects" = is.null(.tools) || S7_inherits(.tools, TOOL) || (is.list(.tools) && all(purrr::map_lgl(.tools, ~ S7_inherits(.x, TOOL)))),
+    "Input .tool_choice must be NULL or a character (one of 'none', 'auto', 'required')" = is.null(.tool_choice) || (is.character(.tool_choice) && .tool_choice %in% c("none", "auto", "required")),
+    "Streaming is not supported for requests with tool calls" = is.null(.tools) || !isTRUE(.stream)
+    ) |> validate_inputs()
   
   
   api_obj <- api_openai(short_name = "openai",
@@ -306,6 +365,13 @@ openai_chat <- function(
       )
   } 
   
+  #Process tools
+  tools_def <- if (!is.null(.tools)) {
+    if (S7_inherits(.tools, TOOL))  list(.tools) else .tools
+  } else {
+    NULL
+  }
+  
   # Build the request body
   request_body <- list(
     model = .model,
@@ -322,7 +388,9 @@ openai_chat <- function(
     temperature = .temperature,
     top_p = .top_p,
     logprobs = .logprobs,        
-    top_logprobs = .top_logprobs
+    top_logprobs = .top_logprobs,
+    tools = tools_to_api(api_obj,tools_def),
+    tool_choice = .tool_choice
   ) |> purrr::compact()
   
   
@@ -346,6 +414,20 @@ openai_chat <- function(
   }
   
   response <- perform_chat_request(request,api_obj,.stream,.timeout,.max_tries)
+  if(r_has_name(response$raw,"tool_calls")){
+    #Tool call logic can go here!
+    tool_messages <- run_tool_calls(api_obj,
+                   response$raw$content$choices[[1]]$message$tool_calls,
+                   tools_def)
+    ##Append the tool call to API
+    request_body$messages <- request_body$messages |> 
+      append(tool_messages)
+    
+    request <- request |>
+      httr2::req_body_json(data = request_body)
+    
+    response <- perform_chat_request(request,api_obj,.stream,.timeout,.max_tries)
+  }
   
   # Extract assistant reply and rate limiting info from response headers
   assistant_reply <- response$assistant_reply

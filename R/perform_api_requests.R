@@ -70,7 +70,6 @@ perform_chat_request <- function(.request,
     response_headers <- httr2::resp_headers(response)
     
   } else {
-    
     # Non-streaming mode
     response_data <- perform_generic_request(.request, .timeout, .max_tries)
     parse_chat_response <- parse_chat_function(.api)

@@ -1,8 +1,44 @@
 # Latest Changes
 
- ⚠️ There is a bad bug in the latest CRAN release in the `fetch_openai_batch()` function that is now fixed in the latest Github version. For the CRAN version the `fetch_openai_batch()` function throws errors if the logprobs are turned off.
+# Dev-Version 0.3.2
 
+## Tool usage introduced to tidyllm
+
+A first  tool usage system inspired by a similar system in `ellmer` has been introduced to tidyllm. At the moment tool use is only available 
+for `openai_chat()` but will be extended to other API providers:
+```r
+get_current_time <- function(tz, format = "%Y-%m-%d %H:%M:%S") {
+  format(Sys.time(), tz = tz, format = format, usetz = TRUE)
+}
+
+time_tool <- tidyllm_tool(
+  .f = get_current_time,
+  .description = "Returns the current time in a specified timezone. Use this to determine the current time in any location.",
+  tz = field_chr("The time zone identifier (e.g., 'Europe/Berlin', 'America/New_York', 'Asia/Tokyo', 'UTC'). Required."),
+  format = field_chr("Format string for the time output. Default is '%Y-%m-%d %H:%M:%S'.")
+)
+
+
+llm_message("What's the exact time in Stuttgart?") |>
+  openai_chat(.tools = time_tool)
+  
+#> Message History:
+#> system:
+#> You are a helpful assistant
+#> --------------------------------------------------------------
+#> user:
+#> What's the exact time in Stuttgart?
+#> --------------------------------------------------------------
+#> assistant:
+#> The current time in Stuttgart (Europe/Berlin timezone) is
+#> 2025-03-03 09:51:22 CET.
+#> --------------------------------------------------------------  
+```  
+You can use the `tidyllm_tool()` function to run to make functions available to a large language model. 
+The model can then run functions these functions  in a chat request in your current session. 
 # Version 0.3.1 
+
+ ⚠️ There is a bad bug in the latest CRAN release in the `fetch_openai_batch()` function that is now fixed in the latest Github version. For the CRAN version the `fetch_openai_batch()` function throws errors if the logprobs are turned off.
 
 ## Changes compared to last release
 
