@@ -36,6 +36,8 @@ method(extract_metadata, list(api_groq,class_list))<- function(api,response) {
 #' @param .frequency_penalty Number between -2.0 and 2.0. Positive values penalize repeated tokens, reducing likelihood of repetition (optional).
 #' @param .presence_penalty Number between -2.0 and 2.0. Positive values encourage new topics by penalizing tokens that have appeared so far (optional).
 #' @param .stop One or more sequences where the API will stop generating further tokens. Can be a string or a list of strings (optional).
+#' @param .tools Either a single TOOL object or a list of TOOL objects representing the available functions for tool calls (optional).
+#' @param .tool_choice A character string specifying the tool-calling behavior; valid values are "none", "auto", or "required" (optional).
 #' @param .seed An integer for deterministic sampling. If specified, attempts to return the same result for repeated requests with identical parameters (optional).
 #' @param .api_url Base URL for the Groq API (default: "https://api.groq.com/").
 #' @param .json Whether the response should be structured as JSON (default: FALSE).
@@ -62,7 +64,7 @@ method(extract_metadata, list(api_groq,class_list))<- function(api,response) {
 #'
 #' @export
 groq_chat <- function(.llm,
-                 .model = "llama-3.2-11b-vision-preview",
+                 .model = "deepseek-r1-distill-llama-70b",
                  .max_tokens = 1024,
                  .temperature = NULL,
                  .top_p = NULL,
@@ -70,6 +72,8 @@ groq_chat <- function(.llm,
                  .presence_penalty = NULL,
                  .stop = NULL,
                  .seed = NULL,
+                 .tools = NULL,
+                 .tool_choice = NULL,
                  .api_url = "https://api.groq.com/",
                  .json = FALSE,
                  .timeout = 60,
@@ -91,6 +95,8 @@ groq_chat <- function(.llm,
     "Input .presence_penalty must be numeric between -2 and 2 if provided" = is.null(.presence_penalty) | (.presence_penalty >= -2 & .presence_penalty <= 2),
     "Input .stop must be a charachter vector or a list of character vectors, or NULL" = is.null(.stop) | is.character(.stop) | is.list(.stop),
     "Input .seed must be an integer if provided" = is.null(.seed) | is_integer_valued(.seed),
+    "Input .tools must be NULL, a TOOL object, or a list of TOOL objects" = is.null(.tools) || S7_inherits(.tools, TOOL) || (is.list(.tools) && all(purrr::map_lgl(.tools, ~ S7_inherits(.x, TOOL)))),
+    "Input .tool_choice must be NULL or a character (one of 'none', 'auto', 'required')" = is.null(.tool_choice) || (is.character(.tool_choice) && .tool_choice %in% c("none", "auto", "required")),
     "Input .json must be logical" = is.logical(.json),
     "Input .verbose must be logical" = is.logical(.verbose),
     "Input .max_tries must be integer-valued numeric" = is_integer_valued(.max_tries),
@@ -109,6 +115,13 @@ groq_chat <- function(.llm,
   
   api_key <- get_api_key(api_obj,.dry_run)
   
+  #Put a single tool into a list if only one is provided. 
+  tools_def <- if (!is.null(.tools)) {
+    if (S7_inherits(.tools, TOOL))  list(.tools) else .tools
+  } else {
+    NULL
+  }
+  
   # Fill the request body
   request_body <- list(
     model = .model,
@@ -120,7 +133,9 @@ groq_chat <- function(.llm,
     presence_penalty = .presence_penalty,
     stop = .stop,
     seed = .seed,
-    stream = .stream
+    stream = .stream,
+    tools = if(!is.null(tools_def)) tools_to_api(api_obj,tools_def) else NULL,
+    tool_choice = .tool_choice
   ) |> purrr::compact()
   
   # Handle JSON mode
@@ -142,6 +157,19 @@ groq_chat <- function(.llm,
   }
   
   response <- perform_chat_request(request,api_obj,.stream,.timeout,.max_tries)
+  if(!is.null(response$raw$content$choices[[1]]$message$tool_calls)){
+    tool_messages <- run_tool_calls(api_obj,
+                                    response$raw$content$choices[[1]]$message$tool_calls,
+                                    tools_def)
+    ##Append the tool call to API
+    request_body$messages <- request_body$messages |> 
+      append(tool_messages)
+    
+    request <- request |>
+      httr2::req_body_json(data = request_body)
+    
+    response <- perform_chat_request(request,api_obj,.stream,.timeout,.max_tries)
+  }
   
   # Extract assistant reply and rate limiting info from response headers
   assistant_reply <- response$assistant_reply

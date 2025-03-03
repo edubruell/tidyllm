@@ -31,6 +31,7 @@ TOOL <- new_class("TOOL", properties = list(
 #' All required function parameters must have corresponding schema definitions.
 #'
 #' @examples
+#' get_weather <- function(location){}
 #' weather_tool <- tidyllm_tool(
 #'   get_weather,
 #'   "Get the current weather in a given location",

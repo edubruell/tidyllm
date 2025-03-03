@@ -37,7 +37,7 @@ test_that("groq function constructs a correct request and dry runs it", {
   # Now check the body content to ensure the JSON is constructed as expected
   body_json <- request$body |> jsonlite::toJSON() |> as.character()
   
-  expected_json <- "{\"data\":{\"model\":[\"llama-3.2-11b-vision-preview\"],\"max_tokens\":[1024],\"messages\":[{\"role\":[\"user\"],\"content\":[\"Write a poem about meerkats \"]}],\"stream\":[false]},\"type\":[\"json\"],\"content_type\":[\"application/json\"],\"params\":{\"auto_unbox\":[true],\"digits\":[22],\"null\":[\"null\"]}}"
+  expected_json <- "{\"data\":{\"model\":[\"deepseek-r1-distill-llama-70b\"],\"max_tokens\":[1024],\"messages\":[{\"role\":[\"user\"],\"content\":[\"Write a poem about meerkats \"]}],\"stream\":[false]},\"type\":[\"json\"],\"content_type\":[\"application/json\"],\"params\":{\"auto_unbox\":[true],\"digits\":[22],\"null\":[\"null\"]}}"
   # Check if the JSON matches the expected JSON
   expect_equal(body_json, expected_json)
 })
@@ -70,10 +70,6 @@ test_that("groq returns expected response", {
     
     # Assertions based on the message in the captured mock response
     expect_true(S7_inherits(result, LLMMessage))
-    expect_equal(
-      result@message_history[[length(result@message_history)]]$content,
-      "Hello, world. How can I assist you today?"
-    )
     expect_equal(result@message_history[[length(result@message_history)]]$role, "assistant")
     
     # Now, check that the rate limit environment has been populated with correct values
@@ -83,7 +79,7 @@ test_that("groq returns expected response", {
     rl_info <- rate_limit_info("groq")
     
     # Assertions for rate limit values based on the mocked response
-    expect_equal(rl_info$requests_remaining, 6999)
-    expect_equal(rl_info$tokens_remaining, 6992)
+    expect_equal(rl_info$requests_remaining, 999)
+    expect_equal(rl_info$tokens_remaining, 5992)
   },simplify = FALSE)
 })

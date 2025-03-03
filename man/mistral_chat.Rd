@@ -19,7 +19,9 @@ mistral_chat(
   .max_tokens = 1024,
   .min_tokens = NULL,
   .dry_run = FALSE,
-  .verbose = FALSE
+  .verbose = FALSE,
+  .tools = NULL,
+  .tool_choice = NULL
 )
 }
 \arguments{
@@ -52,6 +54,10 @@ mistral_chat(
 \item{.dry_run}{If \code{TRUE}, perform a dry run and return the request object (default: \code{FALSE}).}
 
 \item{.verbose}{Should additional information be shown after the API call? (default: \code{FALSE})}
+
+\item{.tools}{Either a single TOOL object or a list of TOOL objects representing the available functions for tool calls.}
+
+\item{.tool_choice}{A character string specifying the tool-calling behavior; valid values are "none", "auto", or "required".}
 }
 \value{
 Returns an updated \code{LLMMessage} object.

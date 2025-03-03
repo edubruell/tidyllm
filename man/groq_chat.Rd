@@ -6,7 +6,7 @@
 \usage{
 groq_chat(
   .llm,
-  .model = "llama-3.2-11b-vision-preview",
+  .model = "deepseek-r1-distill-llama-70b",
   .max_tokens = 1024,
   .temperature = NULL,
   .top_p = NULL,
@@ -14,6 +14,8 @@ groq_chat(
   .presence_penalty = NULL,
   .stop = NULL,
   .seed = NULL,
+  .tools = NULL,
+  .tool_choice = NULL,
   .api_url = "https://api.groq.com/",
   .json = FALSE,
   .timeout = 60,
@@ -41,6 +43,10 @@ groq_chat(
 \item{.stop}{One or more sequences where the API will stop generating further tokens. Can be a string or a list of strings (optional).}
 
 \item{.seed}{An integer for deterministic sampling. If specified, attempts to return the same result for repeated requests with identical parameters (optional).}
+
+\item{.tools}{Either a single TOOL object or a list of TOOL objects representing the available functions for tool calls (optional).}
+
+\item{.tool_choice}{A character string specifying the tool-calling behavior; valid values are "none", "auto", or "required" (optional).}
 
 \item{.api_url}{Base URL for the Groq API (default: "https://api.groq.com/").}
 

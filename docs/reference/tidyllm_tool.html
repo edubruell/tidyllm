@@ -80,12 +80,12 @@ All required function parameters must have corresponding schema definitions.</p>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">weather_tool</span> <span class="op">&lt;-</span> <span class="fu">tidyllm_tool</span><span class="op">(</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">get_weather</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">location</span><span class="op">)</span><span class="op">{</span><span class="op">}</span></span></span>
+<span class="r-in"><span><span class="va">weather_tool</span> <span class="op">&lt;-</span> <span class="fu">tidyllm_tool</span><span class="op">(</span></span></span>
 <span class="r-in"><span>  <span class="va">get_weather</span>,</span></span>
 <span class="r-in"><span>  <span class="st">"Get the current weather in a given location"</span>,</span></span>
 <span class="r-in"><span>  location <span class="op">=</span> <span class="fu"><a href="field_chr.html">field_chr</a></span><span class="op">(</span><span class="st">"The city and state, e.g., San Francisco, CA"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error:</span> object 'get_weather' not found</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

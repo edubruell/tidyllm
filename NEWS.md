@@ -5,7 +5,7 @@
 ## Tool usage introduced to tidyllm
 
 A first  tool usage system inspired by a similar system in `ellmer` has been introduced to tidyllm. At the moment tool use is only available 
-for `openai()` and `mistral()` but will be graudally extended to other API providers that support it:
+for `openai()`, `mistral()` and `groq()` but will be gradually extended to other API providers that support it:
 ```r
 get_current_time <- function(tz, format = "%Y-%m-%d %H:%M:%S") {
   format(Sys.time(), tz = tz, format = format, usetz = TRUE)

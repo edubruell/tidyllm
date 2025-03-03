@@ -16,6 +16,7 @@ chat(
   .model = NULL,
   .verbose = NULL,
   .json_schema = NULL,
+  .tools = NULL,
   .seed = NULL,
   .stop = NULL,
   .frequency_penalty = NULL,
