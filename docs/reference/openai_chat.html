@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -68,7 +68,9 @@
 <span>  .compatible <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  .api_path <span class="op">=</span> <span class="st">"/v1/chat/completions"</span>,</span>
 <span>  .logprobs <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  .top_logprobs <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  .top_logprobs <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  .tools <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  .tool_choice <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -162,6 +164,14 @@
 
 <dt id="arg--top-logprobs">.top_logprobs<a class="anchor" aria-label="anchor" href="#arg--top-logprobs"></a></dt>
 <dd><p>If specified, get the top N log probabilities of each output token (0-5, default: NULL).</p></dd>
+
+
+<dt id="arg--tools">.tools<a class="anchor" aria-label="anchor" href="#arg--tools"></a></dt>
+<dd><p>Either a single TOOL object or a list of TOOL objects representing the available functions for tool calls.</p></dd>
+
+
+<dt id="arg--tool-choice">.tool_choice<a class="anchor" aria-label="anchor" href="#arg--tool-choice"></a></dt>
+<dd><p>A character string specifying the tool-calling behavior; valid values are "none", "auto", or "required".</p></dd>
 
 </dl></div>
     <div class="section level2">

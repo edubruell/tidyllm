@@ -36,6 +36,7 @@ llm_message("What's the exact time in Stuttgart?") |>
 ```  
 You can use the `tidyllm_tool()` function to run to make functions available to a large language model. 
 The model can then run functions these functions  in a chat request in your current session. 
+
 # Version 0.3.1 
 
  ⚠️ There is a bad bug in the latest CRAN release in the `fetch_openai_batch()` function that is now fixed in the latest Github version. For the CRAN version the `fetch_openai_batch()` function throws errors if the logprobs are turned off.
