@@ -95,6 +95,73 @@ method(extract_metadata, list(api_claude,class_list))<- function(api,response) {
 }  
 
 
+#Claude-specific method to format tool calls for the API
+method(tools_to_api, list(api_claude, class_list)) <- function(api, tools) {
+  purrr::map(tools, function(tool) {
+    list(
+      name = tool@name,
+      description = tool@description,
+      input_schema = list(
+        type = "object",
+        properties = purrr::map(tool@input_schema, function(param) {
+          list(
+            type = param@type,
+            description = param@description
+          )
+        }),
+        required = as.list(names(tool@input_schema)) # Assume all are required
+      )
+    )
+  })
+}
+
+#' A method to run tool calls on Claude and create the expected response
+#'
+#' @noRd
+method(run_tool_calls, list(api_claude, class_list, class_list)) <- function(api, tool_calls, tools) {
+  # Iterate over tool calls
+  tool_results <- purrr::map(tool_calls, function(tool_call) {
+    # Extract name, input, and id from the tool call
+    tool_name    <- tool_call$name
+    tool_args    <- tool_call$input
+    tool_call_id <- tool_call$id
+    
+    # Find the corresponding tool in the tools list
+    matching_tool <- purrr::keep(tools, ~ .x@name == tool_name)
+    if (length(matching_tool) == 0) {
+      warning(sprintf("No matching tool found for: %s", tool_name))
+      return(NULL)
+    }
+    
+    # Get the function for the tool and execute it with the provided arguments
+    tool_function <- matching_tool[[1]]@func
+    
+    tool_result <-  utils::capture.output(
+                        do.call(tool_function, as.list(tool_args))
+                        , file = NULL) |> 
+      stringr::str_c(collapse = "\n")
+    
+    
+    # Return a content block as required by Claude:
+    # type "tool_result", the tool_use_id, and the output (as a JSON string)
+    list(
+      type = "tool_result",
+      tool_use_id = tool_call_id,
+      content = jsonlite::toJSON(tool_result, auto_unbox = TRUE)
+    )
+  })
+  
+  # Remove any NULLs for tool calls that did not have matching tools
+  tool_results <- purrr::compact(tool_results)
+  
+  # Wrap the tool results in a Claude message with role "user"
+  list(
+    role = "user",
+    content = tool_results
+  )
+}
+
+
 #Default method for the streaming callback function
 method(generate_callback_function,api_claude) <- function(api) {
   # Claude streaming callback function
@@ -211,6 +278,7 @@ claude_chat <- function(.llm,
       is.null(.temperature) | is.null(.top_p),
     ".stop_sequences must be a character vector" = 
       is.null(.stop_sequences) | is.character(.stop_sequences),
+    ".tools must be NULL, a TOOL object, or a list of TOOL objects" = is.null(.tools) || S7_inherits(.tools, TOOL) || (is.list(.tools) && all(purrr::map_lgl(.tools, ~ S7_inherits(.x, TOOL)))),
     ".verbose must be logical" = is.logical(.verbose),
     ".stream must be logical" = is.logical(.stream),
     ".max_tries must be integer-valued numeric" = is_integer_valued(.max_tries),
@@ -228,6 +296,27 @@ claude_chat <- function(.llm,
   # Format message list for Claude model
   messages <- to_api_format(.llm,api_obj)
   
+  #Put a single tool into a list if only one is provided. 
+  tools_def <- if (!is.null(.tools)) {
+    if (S7_inherits(.tools, TOOL))  list(.tools) else .tools
+  } else {
+    NULL
+  }
+  
+  request_body <- list(
+    model = .model,
+    max_tokens = .max_tokens,
+    messages = messages,
+    system = .llm@system_prompt,
+    temperature = .temperature,
+    top_k = .top_k,
+    top_p = .top_p,
+    metadata = .metadata,
+    stop_sequences = .stop_sequences,
+    stream = .stream,
+    tools = if(!is.null(tools_def)) tools_to_api(api_obj,tools_def) else NULL
+  ) |> purrr::compact()
+  
   # Build request with httr2
   request <- httr2::request(.api_url) |>
     httr2::req_url_path("/v1/messages") |>
@@ -237,19 +326,7 @@ claude_chat <- function(.llm,
       `content-type` = "application/json; charset=utf-8",
       .redact = "x-api-key"
     ) |>
-    httr2::req_body_json(data = list(
-      model = .model,
-      max_tokens = .max_tokens,
-      messages = messages,
-      system = .llm@system_prompt,
-      temperature = .temperature,
-      top_k = .top_k,
-      top_p = .top_p,
-      metadata = .metadata,
-      stop_sequences = .stop_sequences,
-      stream = .stream,
-      tools = .tools
-    ) |> purrr::compact())  
+    httr2::req_body_json(data = request_body)  
   
   # Return only the request object 
   if (.dry_run) {
@@ -257,6 +334,26 @@ claude_chat <- function(.llm,
   }
 
   response <- perform_chat_request(request,api_obj,.stream,.timeout)
+  
+  if(response$raw$content$stop_reason == "tool_use"){
+    
+    tool_calls <- response$raw$content$content |>
+      purrr::keep(~{.x$type=="tool_use"})
+    
+    #Tool call logic can go here!
+    tool_messages <- run_tool_calls(api_obj,
+                                    tool_calls,
+                                    tools_def)
+    ##Append the tool call to API
+    request_body$messages <- request_body$messages |> 
+      append(list(list(role="assistant", content = response$raw$content$content))) |>
+      append(list(tool_messages))
+    
+    request <- request |>
+      httr2::req_body_json(data = request_body)
+    
+    response <- perform_chat_request(request,api_obj,.stream,.timeout,.max_tries)
+  }
   
   # Extract the assistant reply and headers from response
   assistant_reply <- response$assistant_reply
