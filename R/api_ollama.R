@@ -213,7 +213,7 @@ ollama_chat <- function(.llm,
     "Input .llm must be an LLMMessage object" = S7_inherits(.llm, LLMMessage),
     "Input .model must be a string" = is.character(.model),
     "Input .stream must be logical if provided" = is.logical(.stream),
-    #"Input .json_schema must be NULL or a list" = is.null(.json_schema) | is.list(.json_schema),
+    "Input .json_schema must be NULL or a list or an ellmer type object" = is.null(.json_schema) | is.list(.json_schema) | is_ellmer_type(.json_schema),
     "Input .temperature must be numeric between 0 and 2 if provided" = is.null(.temperature) || (is.numeric(.temperature) && .temperature >= 0 && .temperature <= 2),
     "Input .seed must be an integer-valued numeric if provided" = is.null(.seed) || is_integer_valued(.seed),
     "Input .num_ctx must be a positive integer if provided" = is.null(.num_ctx) || (is_integer_valued(.num_ctx) && .num_ctx > 0),
@@ -231,7 +231,8 @@ ollama_chat <- function(.llm,
     "Input .timeout must be a positive integer (seconds)" = is_integer_valued(.timeout) && .timeout > 0,
     "Input .keep_alive must be character" =  is.null(.keep_alive) ||  is.character(.keep_alive),
     "Input .tools must be NULL, a TOOL object, or a list of TOOL objects" = is.null(.tools) || S7_inherits(.tools, TOOL) || (is.list(.tools) && all(purrr::map_lgl(.tools, ~ S7_inherits(.x, TOOL)))),
-    "Input .dry_run must be logical" = is.logical(.dry_run)
+    "Input .dry_run must be logical" = is.logical(.dry_run),
+    "Streaming is not supported for requests with tool calls" = is.null(.tools) || !isTRUE(.stream)
   ) |>
     validate_inputs()
   

@@ -304,13 +304,14 @@ gemini_chat <- function(.llm,
     "Input .frequency_penalty must be NULL or in [-2.0, 2.0]" = is.null(.frequency_penalty) | (.frequency_penalty >= -2.0 & .frequency_penalty <= 2.0),
     "Input .stop_sequences must be NULL or a list of up to 5 strings" = is.null(.stop_sequences) | (is.list(.stop_sequences) & length(.stop_sequences) <= 5),
     "Input .safety_settings must be NULL or a list" = is.null(.safety_settings) | is.list(.safety_settings),
-    #"Input .json_schema must be NULL or a list" = is.null(.json_schema) | is.list(.json_schema),
+    "Input .json_schema must be NULL or a list or an ellmer type object" = is.null(.json_schema) | is.list(.json_schema) | is_ellmer_type(.json_schema),
     "Input .timeout must be an integer-valued numeric and positive" = is_integer_valued(.timeout) & .timeout > 0,
     "Input .max_tries must be integer-valued numeric and positive" = is_integer_valued(.max_tries) & .max_tries > 0,
     "Input .dry_run must be logical" = is.logical(.dry_run),
     "Input .verbose must be logical" = is.logical(.verbose),
     "Input .stream must be logical" = is.logical(.verbose),
-    "Input .tools must be NULL, a TOOL object, or a list of TOOL objects" = is.null(.tools) || S7_inherits(.tools, TOOL) || (is.list(.tools) && all(purrr::map_lgl(.tools, ~ S7_inherits(.x, TOOL))))
+    "Input .tools must be NULL, a TOOL object, or a list of TOOL objects" = is.null(.tools) || S7_inherits(.tools, TOOL) || (is.list(.tools) && all(purrr::map_lgl(.tools, ~ S7_inherits(.x, TOOL)))),
+    "Streaming is not supported for requests with tool calls" = is.null(.tools) || !isTRUE(.stream)
   ) |>
     validate_inputs()
   

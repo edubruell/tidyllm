@@ -86,6 +86,8 @@ method(parse_chat_function, api_azure_openai) <- function(api) {
 #' @param .max_tries Maximum retries to perform request
 #' @param .json_schema A JSON schema object as R list to enforce the output structure (If defined has precedence over JSON mode).
 #' @param .dry_run If TRUE, perform a dry run and return the request object (default: FALSE).
+#' @param .tools Either a single TOOL object or a list of TOOL objects representing the available functions for tool calls.
+#' @param .tool_choice A character string specifying the tool-calling behavior; valid values are "none", "auto", or "required".
 #'
 #'
 #' @return A new `LLMMessage` object containing the original messages plus the assistant's response.
@@ -123,7 +125,9 @@ azure_openai_chat <- function(
     .verbose = FALSE,
     .json_schema = NULL,
     .dry_run = FALSE,
-    .max_tries = 3
+    .max_tries = 3,
+    .tools = NULL,
+    .tool_choice = NULL
 ) {
     #Check enpoint
   if (.endpoint_url == ""& .dry_run==FALSE){
@@ -146,8 +150,12 @@ azure_openai_chat <- function(
     "Input .top_p must be numeric or NULL" = is.null(.top_p) | is.numeric(.top_p),
     "Input .timeout must be integer-valued numeric" = is_integer_valued(.timeout),
     "Input .verbose must be logical" = is.logical(.verbose),
-    #"Input .json_schema must be NULL or a list" = is.null(.json_schema) | is.list(.json_schema),
-    "Input .dry_run must be logical" = is.logical(.dry_run)
+    "Input .json_schema must be NULL or a list or an ellmer type object" = is.null(.json_schema) | is.list(.json_schema) | is_ellmer_type(.json_schema),
+    "Input .dry_run must be logical" = is.logical(.dry_run),
+    "Input .top_logprobs must be NULL or an integer between 0 and 5" = is.null(.top_logprobs) | (is_integer_valued(.top_logprobs) && .top_logprobs >= 0 && .top_logprobs <= 5),
+    "Input .tools must be NULL, a TOOL object, or a list of TOOL objects" = is.null(.tools) || S7_inherits(.tools, TOOL) || (is.list(.tools) && all(purrr::map_lgl(.tools, ~ S7_inherits(.x, TOOL)))),
+    "Input .tool_choice must be NULL or a character (one of 'none', 'auto', 'required')" = is.null(.tool_choice) || (is.character(.tool_choice) && .tool_choice %in% c("none", "auto", "required")),
+    "Streaming is not supported for requests with tool calls" = is.null(.tools) || !isTRUE(.stream)
   ) |> validate_inputs()
   
   
@@ -168,6 +176,12 @@ azure_openai_chat <- function(
                             api=api_obj,
                             no_system=no_system_prompt)
   
+  #Put a single tool into a list if only one is provided. 
+  tools_def <- if (!is.null(.tools)) {
+    if (S7_inherits(.tools, TOOL))  list(.tools) else .tools
+  } else {
+    NULL
+  }
   
   # Handle JSON schema
   json <- FALSE
@@ -204,7 +218,11 @@ azure_openai_chat <- function(
     stop = .stop,
     stream = .stream,
     temperature = .temperature,
-    top_p = .top_p
+    top_p = .top_p,
+    logprobs = .logprobs,        
+    top_logprobs = .top_logprobs,
+    tools = if(!is.null(tools_def)) tools_to_api(api_obj,tools_def) else NULL,
+    tool_choice = .tool_choice
   ) |> purrr::compact()
 
   # Build the request
@@ -223,17 +241,36 @@ azure_openai_chat <- function(
   }
   
   response <- perform_chat_request(request,api_obj,.stream,.timeout,.max_tries)
+  if(r_has_name(response$raw,"tool_calls")){
+    #Tool call logic can go here!
+    tool_messages <- run_tool_calls(api_obj,
+                                    response$raw$content$choices[[1]]$message$tool_calls,
+                                    tools_def)
+    ##Append the tool call to API
+    request_body$messages <- request_body$messages |> 
+      append(tool_messages)
+    
+    request <- request |>
+      httr2::req_body_json(data = request_body)
+    
+    response <- perform_chat_request(request,api_obj,.stream,.timeout,.max_tries)
+  }
   
   
   # Extract assistant reply and rate limiting info from response headers
   assistant_reply <- response$assistant_reply
+  
+  #Check whether the result has logprobs in it 
+  logprobs  <- parse_logprobs(api_obj, response$raw$content$choices[[1]])
+  
   track_rate_limit(api_obj,response$headers,.verbose)
   
-    add_message(llm = .llm,
-                role = "assistant", 
-                content = assistant_reply , 
-                json    = json,
-                meta    = response$meta)
+  add_message(llm     = .llm,
+              role    = "assistant", 
+              content = assistant_reply , 
+              json    = json,
+              meta    = response$meta,
+              logprobs = logprobs)
 }
 
 

@@ -282,7 +282,8 @@ claude_chat <- function(.llm,
     ".verbose must be logical" = is.logical(.verbose),
     ".stream must be logical" = is.logical(.stream),
     ".max_tries must be integer-valued numeric" = is_integer_valued(.max_tries),
-    ".dry_run must be logical" = is.logical(.dry_run)
+    ".dry_run must be logical" = is.logical(.dry_run),
+    "Streaming is not supported for requests with tool calls" = is.null(.tools) || !isTRUE(.stream)
   ) |>
     validate_inputs()
   

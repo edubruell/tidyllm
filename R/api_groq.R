@@ -100,7 +100,8 @@ groq_chat <- function(.llm,
     "Input .json must be logical" = is.logical(.json),
     "Input .verbose must be logical" = is.logical(.verbose),
     "Input .max_tries must be integer-valued numeric" = is_integer_valued(.max_tries),
-    "Input .dry_run must be logical" = is.logical(.dry_run)
+    "Input .dry_run must be logical" = is.logical(.dry_run),
+    "Streaming is not supported for requests with tool calls" = is.null(.tools) || !isTRUE(.stream)
   ) |>
     validate_inputs()
   

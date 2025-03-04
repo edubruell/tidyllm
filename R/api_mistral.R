@@ -89,7 +89,8 @@ mistral_chat <- function(.llm,
     "Input .tools must be NULL, a TOOL object, or a list of TOOL objects" = is.null(.tools) || S7_inherits(.tools, TOOL) || (is.list(.tools) && all(purrr::map_lgl(.tools, ~ S7_inherits(.x, TOOL)))),
     "Input .tool_choice must be NULL or a character (one of 'none', 'auto', 'required')" = is.null(.tool_choice) || (is.character(.tool_choice) && .tool_choice %in% c("none", "auto", "required")),
     "Input .dry_run must be logical" = is.logical(.dry_run) && length(.dry_run) == 1,
-    "Input .verbose must be logical" = is.logical(.verbose) && length(.verbose) == 1
+    "Input .verbose must be logical" = is.logical(.verbose) && length(.verbose) == 1,
+    "Streaming is not supported for requests with tool calls" = is.null(.tools) || !isTRUE(.stream)
   ) |>
     validate_inputs()
   

@@ -105,7 +105,6 @@ field_lgl <- function(.description = character(0), .vector = FALSE) {
 #' @export
 tidyllm_schema <- function(name = "tidyllm_schema", ...) {
   fields <- list(...)
-  
   # Validate inputs: each field must be either a supported character string,
   # an S7 tidyllm_field, or (if ellmer is available) an ellmer type.
   validate_inputs(c(
@@ -114,7 +113,7 @@ tidyllm_schema <- function(name = "tidyllm_schema", ...) {
     "Field types must be either a supported character string, an S7 tidyllm_field, or an ellmer type" =
       all(sapply(fields, function(field) {
         (is.character(field) && grepl("^(string|character|logical|numeric|factor\\(.*\\))(\\[\\])?$", field)) ||
-          inherits(field, "tidyllm_field") ||
+          S7_inherits(field, tidyllm_field)  ||
           is_ellmer_type(field)
       }))
   ))
@@ -139,7 +138,7 @@ tidyllm_schema <- function(name = "tidyllm_schema", ...) {
     }
     
     # If field is an S7 tidyllm_field object, extract its properties.
-    if (inherits(field, "tidyllm_field")) {
+    if (S7_inherits(field, tidyllm_field)) {
       json_type <- list(type = field@type)
       if (length(field@description) > 0) {
         json_type$description <- field@description

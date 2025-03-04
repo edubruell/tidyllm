@@ -25,7 +25,7 @@ test_that("tidyllm_tool works with an anonymous function", {
     format = field_chr("Format string for the time output. Default is '%Y-%m-%d %H:%M:%S'.")
   )
   
-  expect_true(S7::S7_inherits(explicit_tool, TOOL))  # Check S7 class
+  expect_true(S7::S7_inherits(anon_tool, TOOL))  # Check S7 class
   expect_equal(anon_tool@description, "Returns the current time in a specified timezone. Use this to determine the current time in any location.")
   expect_named(anon_tool@input_schema, c("tz", "format"))
   expect_true(is.function(anon_tool@func))
@@ -39,7 +39,7 @@ test_that("tidyllm_tool works with formula-based anonymous functions", {
     .x = field_dbl("A number")
   )
   
-  expect_true(S7::S7_inherits(explicit_tool, TOOL))  # Check S7 class
+  expect_true(S7::S7_inherits(fml_tool, TOOL))  # Check S7 class
   expect_equal(fml_tool@description, "Multiplies a number by 12345.6789")
   expect_named(fml_tool@input_schema, c(".x"))
   expect_true(is.function(fml_tool@func))
