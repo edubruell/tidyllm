@@ -20,7 +20,7 @@ TOOL <- new_class("TOOL", properties = list(
 #' Creates a tool definition for use with Language Model API calls that support function calling.
 #' This function wraps an existing R function with schema information for LLM interaction.
 #'
-#' @param .f The function to wrap as a tool
+#' @param .f The function to wrap as a tool 
 #' @param .description Character string describing what the tool does
 #' @param ... Named arguments providing schema definitions for each function parameter using tidyllm_fields
 #'
@@ -40,13 +40,33 @@ TOOL <- new_class("TOOL", properties = list(
 #'
 #' @export
 tidyllm_tool <- function(.f, .description = character(0), ...) {
-  # Extract function name
-  .name <- rlang::as_name(rlang::ensym(.f))
+  # Convert formula to function if needed
+  formula_flag <- FALSE
+  if (rlang::is_formula(.f)) {
+    .f <- rlang::as_function(.f)
+    formula_flag <- TRUE
+  }
+  
+  # Check if function is anonymous
+  fn_name <- tryCatch(
+    rlang::as_name(rlang::ensym(.f)), 
+    error = function(e) NULL
+  )
+  
+  # Assign default name if function is anonymous
+  if (is.null(fn_name) || fn_name == "") {
+    fn_hash <- substr(rlang::hash(.f), 1, 8)  # Shorten hash
+    .name <- paste0("anonymous_", fn_hash)
+  } else {
+    .name <- fn_name
+  }
   
   # Extract function arguments and required ones
   fn_args <- rlang::fn_fmls(.f)
   required_args <- names(purrr::keep(fn_args, ~ identical(., rlang::missing_arg())))
-  
+  if (formula_flag==TRUE) {
+    required_args <- ".x"
+  }
   # Capture provided schema definitions
   schema_args <- list(...)
   
@@ -68,9 +88,10 @@ tidyllm_tool <- function(.f, .description = character(0), ...) {
     func = .f,
     name = .name
   )
-
+  
   obj
 }
+
 
 #Generics for tools
 tools_to_api <- new_generic("tools_to_api", c("api", "tools"))
