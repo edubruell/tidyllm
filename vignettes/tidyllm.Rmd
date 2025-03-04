@@ -303,7 +303,7 @@ address_schema <- tidyllm_schema(
   postcode = field_chr("A postal code for a city"),
   city = "character",
   region = "character",
-  country = field_fct("A European Country", .levels=("Germany","France"))
+  country = field_fct("A European Country", .levels=c("Germany","France"))
 )
 address <- llm_message("Imagine an address in JSON format that matches the schema.") |>
         chat(openai(),.json_schema = address_schema)

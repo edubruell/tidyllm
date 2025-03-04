@@ -527,18 +527,19 @@ as field definitions. Moreover, you can supply an entire
 <code><a href="https://ellmer.tidyverse.org/reference/type_boolean.html" class="external-link">ellmer::type_object()</a></code> schema directly as the
 <code>.json_schema</code> argument in API calls.</p>
 <p>Here’s an example schema defining an address format:</p>
-<div class="sourceCode" id="cb33"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" tabindex="-1"></a>address_schema <span class="ot">&lt;-</span> <span class="fu">tidyllm_schema</span>(</span>
-<span id="cb33-2"><a href="#cb33-2" tabindex="-1"></a>  <span class="at">name =</span> <span class="st">"AddressSchema"</span>,</span>
-<span id="cb33-3"><a href="#cb33-3" tabindex="-1"></a>  <span class="at">street =</span> <span class="st">"character"</span>,</span>
-<span id="cb33-4"><a href="#cb33-4" tabindex="-1"></a>  <span class="at">houseNumber =</span> <span class="st">"numeric"</span>,</span>
-<span id="cb33-5"><a href="#cb33-5" tabindex="-1"></a>  <span class="at">postcode =</span> <span class="fu">field_chr</span>(<span class="st">"A postal code for a city"</span>),</span>
-<span id="cb33-6"><a href="#cb33-6" tabindex="-1"></a>  <span class="at">city =</span> <span class="st">"character"</span>,</span>
-<span id="cb33-7"><a href="#cb33-7" tabindex="-1"></a>  <span class="at">region =</span> <span class="st">"character"</span>,</span>
-<span id="cb33-8"><a href="#cb33-8" tabindex="-1"></a>  <span class="at">country =</span> <span class="fu">field_fct</span>(<span class="st">"A European Country"</span>, <span class="at">.levels=</span>(<span class="st">"Germany"</span>,<span class="st">"France"</span>))</span>
-<span id="cb33-9"><a href="#cb33-9" tabindex="-1"></a>)</span>
-<span id="cb33-10"><a href="#cb33-10" tabindex="-1"></a>address <span class="ot">&lt;-</span> <span class="fu">llm_message</span>(<span class="st">"Imagine an address in JSON format that matches the schema."</span>) <span class="sc">|&gt;</span></span>
-<span id="cb33-11"><a href="#cb33-11" tabindex="-1"></a>        <span class="fu">chat</span>(<span class="fu">openai</span>(),<span class="at">.json_schema =</span> address_schema)</span>
-<span id="cb33-12"><a href="#cb33-12" tabindex="-1"></a>address</span></code></pre></div>
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">address_schema</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tidyllm_schema.html">tidyllm_schema</a></span><span class="op">(</span></span>
+<span>  name <span class="op">=</span> <span class="st">"AddressSchema"</span>,</span>
+<span>  street <span class="op">=</span> <span class="st">"character"</span>,</span>
+<span>  houseNumber <span class="op">=</span> <span class="st">"numeric"</span>,</span>
+<span>  postcode <span class="op">=</span> <span class="fu"><a href="../reference/field_chr.html">field_chr</a></span><span class="op">(</span><span class="st">"A postal code for a city"</span><span class="op">)</span>,</span>
+<span>  city <span class="op">=</span> <span class="st">"character"</span>,</span>
+<span>  region <span class="op">=</span> <span class="st">"character"</span>,</span>
+<span>  country <span class="op">=</span> <span class="fu"><a href="../reference/field_chr.html">field_fct</a></span><span class="op">(</span><span class="st">"A European Country"</span>, .levels<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Germany"</span>,<span class="st">"France"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">address</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Imagine an address in JSON format that matches the schema."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>        <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span><span class="op">)</span>,.json_schema <span class="op">=</span> <span class="va">address_schema</span><span class="op">)</span></span>
+<span><span class="va">address</span></span></code></pre></div>
 <pre><code><span><span class="co">## Message History:</span></span>
 <span><span class="co">## system:</span></span>
 <span><span class="co">## You are a helpful assistant</span></span>
@@ -702,7 +703,7 @@ requests to either API.</p>
 API:</p>
 <div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">#Create a message batch and save it to disk to fetch it later</span></span>
-<span><span class="fu"><a href="https://glue.tidyverse.org/reference/glue.html" class="external-link">glue</a></span><span class="op">(</span><span class="st">"Write a poem about {x}"</span>, x<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cats"</span>,<span class="st">"dogs"</span>,<span class="st">"hamsters"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span><span class="fu">glue</span><span class="op">(</span><span class="st">"Write a poem about {x}"</span>, x<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cats"</span>,<span class="st">"dogs"</span>,<span class="st">"hamsters"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">purrr</span><span class="fu">::</span><span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="va">llm_message</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/send_batch.html">send_batch</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="st">"claude_batch.rds"</span><span class="op">)</span></span></code></pre></div>
