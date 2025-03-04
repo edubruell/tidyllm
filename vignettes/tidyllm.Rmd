@@ -63,6 +63,11 @@ Sys.setenv(GROQ_API_KEY = "YOUR-GROQ-API-KEY")
 Sys.setenv(PERPLEXITY_API_KEY = "YOUR-PERPLEXITY-API-KEY")
 ```
 
+7. For DeepSeek  you can get an API key in the [DeepSeek Platform](https://platform.deepseek.com/api_keys):
+```{r, eval= FALSE, echo=TRUE}
+Sys.setenv(DEEPSEEK_API_KEY = "YOUR-DEEPSEEK-KEY")
+```
+
 Alternatively, for persistent storage, add these keys to your `.Renviron` file:
 
 For this, run `usethis::edit_r_environ()`, and add a line with with an API key in this file, for example:

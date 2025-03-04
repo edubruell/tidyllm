@@ -73,6 +73,16 @@
 <span><span class="co">#&gt; --------------------------------------------------------------  </span></span></code></pre></div>
 <p>You can use the <code><a href="../reference/tidyllm_tool.html">tidyllm_tool()</a></code> function to run to make functions available to a large language model. The model can then run these functions in your current session, if they are needed for a chat request.</p>
 </div>
+<div class="section level3">
+<h3 id="support-for-deepseek-added-0-3-2">Support for DeepSeek added<a class="anchor" aria-label="anchor" href="#support-for-deepseek-added-0-3-2"></a></h3>
+<p>tidyllm now supports the deepseek API as provider via <code><a href="../reference/deepseek_chat.html">deepseek_chat()</a></code> or the <code><a href="../reference/deepseek.html">deepseek()</a></code> provider function. Deepseek supports logprobs just like <code><a href="../reference/openai.html">openai()</a></code>, which you can get via <code><a href="../reference/get_logprobs.html">get_logprobs()</a></code>. At the moment tool usage for deepseek is very inconsistent.</p>
+</div>
+<div class="section level3">
+<h3 id="new-tests-and-bugfixes-0-3-2">New Tests and Bugfixes<a class="anchor" aria-label="anchor" href="#new-tests-and-bugfixes-0-3-2"></a></h3>
+<ul><li>Several Bugfixes in <code><a href="../reference/tidyllm_schema.html">tidyllm_schema()</a></code> and <code><a href="../reference/tidyllm_tool.html">tidyllm_tool()</a></code>
+</li>
+<li>New Tests for less covered APIs.</li>
+</ul></div>
 </div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.3.1" id="version-031">Version 0.3.1<a class="anchor" aria-label="anchor" href="#version-031"></a></h2><p class="text-muted">CRAN release: 2025-02-24</p>

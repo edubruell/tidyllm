@@ -45,9 +45,11 @@ reference:
       - groq
       - mistral
       - ollama
+      - perplexity
+      - deepseek
       - azure_openai
       - chatgpt
-
+      
   - title: "OpenAI-Specific Functions"
     desc: >
       Functions for OpenAI services, including chat interactions, batch processing and
@@ -115,8 +117,7 @@ reference:
       Functions for the Perplexity API
     contents:
       - perplexity_chat
-      - perplexity
-      
+
   - title: "Groq-Specific Functions"
     desc: >
       Functions for interacting with Groq services, such as chat and transcription.
@@ -135,7 +136,13 @@ reference:
       - check_azure_openai_batch
       - list_azure_openai_batches
       - fetch_azure_openai_batch
-  
+
+  - title: "DeepSeek-Specific Functions"
+    desc: >
+      Functions for DeepSeek.
+    contents: 
+      - deepseek_chat
+
   - title: "PDF Processing"
     desc: >
       Processing PDF documents, enabling page-by-page analysis.

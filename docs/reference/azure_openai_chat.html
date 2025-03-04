@@ -69,7 +69,9 @@ This function is work in progress and not fully tested</p>
 <span>  .verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  .json_schema <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .dry_run <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  .max_tries <span class="op">=</span> <span class="fl">3</span></span>
+<span>  .max_tries <span class="op">=</span> <span class="fl">3</span>,</span>
+<span>  .tools <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  .tool_choice <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -155,6 +157,14 @@ This function is work in progress and not fully tested</p>
 
 <dt id="arg--max-tries">.max_tries<a class="anchor" aria-label="anchor" href="#arg--max-tries"></a></dt>
 <dd><p>Maximum retries to perform request</p></dd>
+
+
+<dt id="arg--tools">.tools<a class="anchor" aria-label="anchor" href="#arg--tools"></a></dt>
+<dd><p>Either a single TOOL object or a list of TOOL objects representing the available functions for tool calls.</p></dd>
+
+
+<dt id="arg--tool-choice">.tool_choice<a class="anchor" aria-label="anchor" href="#arg--tool-choice"></a></dt>
+<dd><p>A character string specifying the tool-calling behavior; valid values are "none", "auto", or "required".</p></dd>
 
 </dl></div>
     <div class="section level2">

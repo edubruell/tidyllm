@@ -37,6 +37,17 @@ llm_message("What's the exact time in Stuttgart?") |>
 You can use the `tidyllm_tool()` function to run to make functions available to a large language model. 
 The model can then run these functions in your current session, if they are needed for a chat request. 
 
+## Support for DeepSeek added
+
+tidyllm now supports the deepseek API as provider via `deepseek_chat()` or the `deepseek()` provider function. 
+Deepseek supports logprobs just like `openai()`, which you can get via `get_logprobs()`. 
+At the moment tool usage for deepseek is very inconsistent.
+
+## New Tests and Bugfixes
+
+- Several Bugfixes in `tidyllm_schema()` and `tidyllm_tool()`
+- New Tests for less covered APIs. 
+
 # Version 0.3.1 
 
  ⚠️ There is a bad bug in the latest CRAN release in the `fetch_openai_batch()` function that is now fixed in the latest Github version. For the CRAN version the `fetch_openai_batch()` function throws errors if the logprobs are turned off.

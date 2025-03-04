@@ -60,6 +60,7 @@ Collate:
     'api_groq.R'
     'api_mistral.R'
     'api_perplexity.R'
+    'api_deepseek.R'
     'zzz.R'
 Depends: 
     R (>= 4.2.0)

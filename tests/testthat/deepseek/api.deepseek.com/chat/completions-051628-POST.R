@@ -1,0 +1,12 @@
+structure(list(method = "POST", url = "https://api.deepseek.com/chat/completions", 
+    status_code = 200L, headers = structure(list(date = "Tue, 04 Mar 2025 16:20:53 GMT", 
+        `content-type` = "application/json", `set-cookie` = "REDACTED", 
+        vary = "origin, access-control-request-method, access-control-request-headers", 
+        vary = "accept-encoding", `access-control-allow-credentials` = "true", 
+        `x-ds-trace-id` = "1c58c1ec39bee35dfe1ddf538de00e93", 
+        `strict-transport-security` = "max-age=31536000; includeSubDomains; preload", 
+        `x-content-type-options` = "nosniff", `content-encoding` = "gzip", 
+        `cf-cache-status` = "DYNAMIC", `set-cookie` = "REDACTED", 
+        `set-cookie` = "REDACTED", server = "cloudflare", `cf-ray` = "91b2b41a4b75bc04-FRA"), class = "httr2_headers"), 
+    body = charToRaw("{\"id\":\"335d0a5d-c01f-44b7-82f5-2f6b0adbee4f\",\"object\":\"chat.completion\",\"created\":1741105253,\"model\":\"deepseek-chat\",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",\"content\":\"Hello, world! How can I assist you today? 😊\"},\"logprobs\":null,\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":13,\"completion_tokens\":13,\"total_tokens\":26,\"prompt_tokens_details\":{\"cached_tokens\":0},\"prompt_cache_hit_tokens\":0,\"prompt_cache_miss_tokens\":13},\"system_fingerprint\":\"fp_3a5770e1b4_prod0225\"}"), 
+    cache = new.env(parent = emptyenv())), class = "httr2_response")

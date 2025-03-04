@@ -24,7 +24,9 @@ azure_openai_chat(
   .verbose = FALSE,
   .json_schema = NULL,
   .dry_run = FALSE,
-  .max_tries = 3
+  .max_tries = 3,
+  .tools = NULL,
+  .tool_choice = NULL
 )
 }
 \arguments{
@@ -67,6 +69,10 @@ azure_openai_chat(
 \item{.dry_run}{If TRUE, perform a dry run and return the request object (default: FALSE).}
 
 \item{.max_tries}{Maximum retries to perform request}
+
+\item{.tools}{Either a single TOOL object or a list of TOOL objects representing the available functions for tool calls.}
+
+\item{.tool_choice}{A character string specifying the tool-calling behavior; valid values are "none", "auto", or "required".}
 }
 \value{
 A new \code{LLMMessage} object containing the original messages plus the assistant's response.

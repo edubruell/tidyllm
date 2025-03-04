@@ -27,6 +27,8 @@
 <url><loc>https://edubruell.github.io/tidyllm/reference/claude.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/claude_chat.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/claude_list_models.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/deepseek.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/deepseek_chat.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/df_llm_message.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/embed.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/fetch_azure_openai_batch.html</loc></url>
