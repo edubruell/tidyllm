@@ -56,9 +56,9 @@ For more examples and advanced usage, check the [Get Started vignette](https://e
 
 Please note: To use **tidyllm**, you need either an installation of **ollama** or an active API key for one of the supported providers (e.g., Claude, ChatGPT). See the [Get Started vignette](https://edubruell.github.io/tidyllm/articles/tidyllm.html) for setup instructions.
 
-## Interface-change in last release
+## Interface-change in 0.3.0
 
-The last CRAN release of **tidyllm**,  introduces a major interface change to provide a more intuitive user experience. Previously, provider-specific functions like `claude()`, `openai()`, and others were directly used for chat-based workflows. They specified both an API-provider and performed a chat-interaction. Now, these functions primarily serve as provider configuration for more general verbs like `chat()`,`embed()` or `send_batch()`. A combination of a general verb and a provider will always route requests to a provider-specific function like `openai_chat()`. Read the [Changelog](https://edubruell.github.io/tidyllm/news/) or the [package vignette](https://edubruell.github.io/tidyllm/articles/tidyllm.html) for more information. 
+The CRAN release of **tidyllm** 0.3.0,  introduced a major interface change to provide a more intuitive user experience. Previously, provider-specific functions like `claude()`, `openai()`, and others were directly used for chat-based workflows. They specified both an API-provider and performed a chat-interaction. Now, these functions primarily serve as provider configuration for more general verbs like `chat()`,`embed()` or `send_batch()`. A combination of a general verb and a provider will always route requests to a provider-specific function like `openai_chat()`. Read the [Changelog](https://edubruell.github.io/tidyllm/news/) or the [package vignette](https://edubruell.github.io/tidyllm/articles/tidyllm.html) for more information. 
 
 For backward compatibility, the old use of functions like `openai()` or `claude()` directly for chat requests still works but now but issues deprecation warnings. It is recommended to either use the verb-based interface:
 ```r
