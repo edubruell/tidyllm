@@ -112,6 +112,82 @@ method(extract_metadata, list(api_gemini,class_list))<- function(api,response) {
   )
 }  
 
+#' Method to convert a tidyllm TOOL definition to the expected input for Gemini
+#'
+#' @noRd
+method(tools_to_api, list(api_gemini, class_list)) <- function(api, tools) {
+  list(
+    function_declarations = purrr::map(tools, function(tool) {
+      tool_def <- list(
+        name = tool@name,
+        description = tool@description
+      )
+      if (length(tool@input_schema) > 0) {
+        tool_def$parameters <- list(
+          type = "object",
+          properties = purrr::map(tool@input_schema, function(param) {
+            list(
+              type = param@type,
+              description = param@description
+            )
+          }),
+          required = names(tool@input_schema)
+        )
+      }
+      tool_def
+    })
+  )
+}
+
+#' A method to run tool calls on Gemini and create the expected response
+#'
+#' @noRd
+method(run_tool_calls, list(api_gemini, class_list, class_list)) <- function(api, tool_calls, tools) {
+  # Iterate over each tool call returned by Gemini and build a list of parts.
+  tool_parts <- purrr::map(tool_calls, function(tool_call) {
+    # Gemini returns the tool call information in a structure like:
+    # list(name = "<tool_name>", args = list(...))
+    tool_name <- tool_call$name
+    tool_args <- tool_call$args
+    
+    # Find the corresponding tool in the provided tools list.
+    matching_tool <- purrr::keep(tools, ~ .x@name == tool_name)
+    if (length(matching_tool) == 0) {
+      warning(sprintf("No matching tool found for: %s", tool_name))
+      return(NULL)
+    }
+    
+    tool_function <- matching_tool[[1]]@func
+    
+    # Execute the tool function with the provided arguments.
+    tool_result <- utils::capture.output(
+      do.call(tool_function, as.list(tool_args)),
+      file = NULL
+    ) |> 
+      stringr::str_c(collapse = "\n")
+    
+    # Format the tool response as a part for a single user message.
+    list(
+      functionResponse = list(
+        name = tool_name,
+        response = list(
+          name = tool_name,
+          content = tool_result
+        )
+      )
+    )
+  })
+  
+  tool_parts <- purrr::compact(tool_parts)
+  
+  # Combine all parts into one user message.
+  list(
+    role = "user",
+    parts = tool_parts
+  )
+}
+
+
 #' Inject files into Gemini message contents
 #'
 #' @param .gemini_contents The existing gemini contents list
@@ -167,6 +243,7 @@ gemini_inject_files <- function(.gemini_contents,
 
 
 
+
 #' Send LLMMessage to Gemini API
 #'
 #' @param .llm An existing LLMMessage object or an initial text prompt.
@@ -181,15 +258,18 @@ gemini_inject_files <- function(.gemini_contents,
 #' @param .stop_sequences Optional character sequences to stop generation (default: NULL, up to 5).
 #' @param .safety_settings A list of safety settings (default: NULL).
 #' @param .json_schema A schema to enforce an output structure
-#' @param  .grounding_threshold A grounding threshold between 0 and 1. With lower 
+#' @param .grounding_threshold A grounding threshold between 0 and 1. With lower 
 #' grounding thresholds  Gemini will use Google to search for relevant information 
 #' before answering.  (default: NULL).
+#' @param .tools Either a single TOOL object or a list of TOOL objects representing the available functions for tool calls.
 #' @param .timeout When should our connection time out (default: 120 seconds).
 #' @param .dry_run If TRUE, perform a dry run and return the request object.
 #' @param .max_tries Maximum retries to perform request (default: 3).
 #' @param .verbose Should additional information be shown after the API call.
 #' @param .stream Should the response be streamed (default: FALSE).
-#' @return Returns an updated LLMMessage object.
+#'
+#' @return A new `LLMMessage` object containing the original messages plus the assistant's response.
+#'
 #' @export
 gemini_chat <- function(.llm,
                    .model = "gemini-2.0-flash",
@@ -204,6 +284,7 @@ gemini_chat <- function(.llm,
                    .stop_sequences = NULL,
                    .safety_settings = NULL,
                    .json_schema = NULL,
+                   .tools = NULL,
                    .timeout = 120,
                    .dry_run = FALSE,
                    .max_tries = 3,
@@ -228,7 +309,8 @@ gemini_chat <- function(.llm,
     "Input .max_tries must be integer-valued numeric and positive" = is_integer_valued(.max_tries) & .max_tries > 0,
     "Input .dry_run must be logical" = is.logical(.dry_run),
     "Input .verbose must be logical" = is.logical(.verbose),
-    "Input .stream must be logical" = is.logical(.verbose)
+    "Input .stream must be logical" = is.logical(.verbose),
+    "Input .tools must be NULL, a TOOL object, or a list of TOOL objects" = is.null(.tools) || S7_inherits(.tools, TOOL) || (is.list(.tools) && all(purrr::map_lgl(.tools, ~ S7_inherits(.x, TOOL))))
   ) |>
     validate_inputs()
   
@@ -263,6 +345,34 @@ gemini_chat <- function(.llm,
     )
   } 
   
+  
+  #Put a single tool into a list if only one is provided. 
+  tools_def <- if (!is.null(.tools)) {
+    .tools <- if (S7_inherits(.tools, TOOL))  list(.tools) else .tools
+    tools_to_api(api_obj,.tools) 
+  } else {
+    NULL
+  }
+  
+  # Add grounding tool configuration if grounding_threshold is set
+  if (!is.null(.grounding_threshold)) {
+    grounding_tool <- list(
+      google_search_retrieval = list(
+        dynamic_retrieval_config = list(
+          mode = "MODE_DYNAMIC",
+          dynamic_threshold = .grounding_threshold
+        )
+      )
+    )
+    if(!is.null(tools_def)){
+      tools_def <- tools_def |>
+        append(list(grounding_tool))
+    } else {
+      tools_def <- list(grounding_tool)
+    }
+  }
+  
+  
   # Build generationConfig
   generation_config <- list(
     temperature = .temperature,
@@ -279,25 +389,14 @@ gemini_chat <- function(.llm,
   # Construct the request body
   request_body <- list(
     model = .model,
-    contents = list(gemini_contents),
+    contents = gemini_contents,
     generationConfig = generation_config,
-    safetySettings = .safety_settings
+    safetySettings = .safety_settings,
+    tools = tools_def
   ) |>
     purrr::compact()
 
-  # Add grounding tool configuration if grounding_threshold is set
-  if (!is.null(.grounding_threshold)) {
-    grounding_tool <- list(
-      google_search_retrieval = list(
-        dynamic_retrieval_config = list(
-          mode = "MODE_DYNAMIC",
-          dynamic_threshold = .grounding_threshold
-        )
-      )
-    )
-    request_body$tools <- list(grounding_tool)
-  }
-  
+
   
   if(.stream==FALSE) request_type <- ":generateContent"
   if(.stream==TRUE)  request_type <- ":streamGenerateContent"
@@ -313,6 +412,38 @@ gemini_chat <- function(.llm,
   
   # Perform the API request
   response <- perform_chat_request(request,api_obj,.stream,.timeout,.max_tries)
+  #Handle tool calls
+  if (!is.null(response$raw$content$candidates[[1]]$content$parts[[1]]$functionCall)) {
+    tool_call <- response$raw$content$candidates[[1]]$content$parts[[1]]$functionCall
+    
+    tool_messages <- run_tool_calls(api_obj, list(tool_call), .tools)
+    
+    # Create an assistant message that contains the functionCall.
+    assistant_function_call_message <- list(
+      role = "model",
+      parts = list(
+        list(
+          functionCall = tool_call
+        )
+      )
+    )
+    
+    # Append both the assistant's functionCall message and the tool response (user message)
+    # to the conversation history.
+    request_body$contents <- c(
+      request_body$contents,
+      list(assistant_function_call_message),
+      list(tool_messages)
+    )
+    
+    # Update the request with the new conversation history.
+    request <- request |>
+      httr2::req_body_json(data = request_body)
+    
+    # Resend the request to Gemini with the appended tool responses.
+    response <- perform_chat_request(request, api_obj, .stream, .timeout, .max_tries)
+  }
+  
   
   add_message(llm     = .llm,
               role    = "assistant", 
@@ -320,6 +451,7 @@ gemini_chat <- function(.llm,
               json    = json,
               meta    = response$meta)
 }
+
 
 
 #' Upload a File to Gemini API

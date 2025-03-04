@@ -35,7 +35,7 @@ test_that("gemini_chat function constructs a correct request and dry runs it", {
   # Now check the body content to ensure the JSON is constructed as expected
   body_json <- request$body |> jsonlite::toJSON() |> as.character()
   
-  expected_json <- "{\"data\":{\"model\":[\"gemini-2.0-flash\"],\"contents\":[[{\"role\":[\"user\"],\"parts\":{\"text\":[\"Write a poem about an evil online search monopolist \"]}}]]},\"type\":[\"json\"],\"content_type\":[\"application/json\"],\"params\":{\"auto_unbox\":[true],\"digits\":[22],\"null\":[\"null\"]}}"
+  expected_json <- "{\"data\":{\"model\":[\"gemini-2.0-flash\"],\"contents\":[{\"role\":[\"user\"],\"parts\":{\"text\":[\"Write a poem about an evil online search monopolist \"]}}]},\"type\":[\"json\"],\"content_type\":[\"application/json\"],\"params\":{\"auto_unbox\":[true],\"digits\":[22],\"null\":[\"null\"]}}"
   # Check if the JSON matches the expected JSON
   expect_equal(body_json, expected_json)
   

@@ -18,6 +18,7 @@ gemini_chat(
   .stop_sequences = NULL,
   .safety_settings = NULL,
   .json_schema = NULL,
+  .tools = NULL,
   .timeout = 120,
   .dry_run = FALSE,
   .max_tries = 3,
@@ -54,6 +55,8 @@ before answering.  (default: NULL).}
 
 \item{.json_schema}{A schema to enforce an output structure}
 
+\item{.tools}{Either a single TOOL object or a list of TOOL objects representing the available functions for tool calls.}
+
 \item{.timeout}{When should our connection time out (default: 120 seconds).}
 
 \item{.dry_run}{If TRUE, perform a dry run and return the request object.}
@@ -65,7 +68,7 @@ before answering.  (default: NULL).}
 \item{.stream}{Should the response be streamed (default: FALSE).}
 }
 \value{
-Returns an updated LLMMessage object.
+A new \code{LLMMessage} object containing the original messages plus the assistant's response.
 }
 \description{
 Send LLMMessage to Gemini API

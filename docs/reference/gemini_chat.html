@@ -60,6 +60,7 @@
 <span>  .stop_sequences <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .safety_settings <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .json_schema <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  .tools <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .timeout <span class="op">=</span> <span class="fl">120</span>,</span>
 <span>  .dry_run <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  .max_tries <span class="op">=</span> <span class="fl">3</span>,</span>
@@ -126,6 +127,10 @@ before answering.  (default: NULL).</p></dd>
 <dd><p>A schema to enforce an output structure</p></dd>
 
 
+<dt id="arg--tools">.tools<a class="anchor" aria-label="anchor" href="#arg--tools"></a></dt>
+<dd><p>Either a single TOOL object or a list of TOOL objects representing the available functions for tool calls.</p></dd>
+
+
 <dt id="arg--timeout">.timeout<a class="anchor" aria-label="anchor" href="#arg--timeout"></a></dt>
 <dd><p>When should our connection time out (default: 120 seconds).</p></dd>
 
@@ -148,7 +153,7 @@ before answering.  (default: NULL).</p></dd>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>Returns an updated LLMMessage object.</p>
+    <p>A new <code>LLMMessage</code> object containing the original messages plus the assistant's response.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

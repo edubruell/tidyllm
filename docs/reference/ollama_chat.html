@@ -63,6 +63,7 @@
 <span>  .mirostat_tau <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .repeat_last_n <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .repeat_penalty <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  .tools <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .tfs_z <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .stop <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .ollama_server <span class="op">=</span> <span class="st">"http://localhost:11434"</span>,</span>
@@ -138,6 +139,10 @@
 
 <dt id="arg--repeat-penalty">.repeat_penalty<a class="anchor" aria-label="anchor" href="#arg--repeat-penalty"></a></dt>
 <dd><p>Float; penalty for repeated tokens (default: NULL)</p></dd>
+
+
+<dt id="arg--tools">.tools<a class="anchor" aria-label="anchor" href="#arg--tools"></a></dt>
+<dd><p>Either a single TOOL object or a list of TOOL objects representing the available functions for tool calls.</p></dd>
 
 
 <dt id="arg--tfs-z">.tfs_z<a class="anchor" aria-label="anchor" href="#arg--tfs-z"></a></dt>
