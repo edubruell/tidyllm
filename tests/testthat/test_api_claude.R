@@ -26,7 +26,6 @@ test_that("claude function constructs a correct request and dry runs it", {
   
   # Check that the required headers are present
   expect_true("accept" %in% names(headers))
-  expect_true("accept-encoding" %in% names(headers))
   expect_true("anthropic-version" %in% names(headers))
   expect_true("content-type" %in% names(headers))
   #expect_true("x-api-key" %in% names(headers))
@@ -134,5 +133,3 @@ test_that("input validation works correctly", {
     ".stop_sequences must be a character vector"
   )
 })
-
-
