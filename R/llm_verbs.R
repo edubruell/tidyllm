@@ -198,7 +198,7 @@ chat <- function(
 #' The `embed()` function allows you to embed a text via a specified provider.
 #' It routes the input to the appropriate provider-specific embedding function.
 #'
-#' @param .input  A character vector of texts to embed or an `LLMMessage` object
+#' @param .input  A character vector of texts v, a list of texts and image objects,  or an `LLMMessage` object
 #' @param .provider A function or function call specifying the language model provider and any additional parameters.
 #'   This should be a call to a provider function like `openai()`, `ollama()`, etc. 
 #'   You can also set a default provider function via the `tidyllm_embed_default` option.
@@ -228,7 +228,7 @@ embed <- function(.input,
 
   # Validate the inputs
   c(
-    "Input .input must be a character vector or an LLMMessage object" = S7_inherits(.input, LLMMessage) | is.character(.input),
+    "Input .input must be a character vector, a list or an LLMMessage object" = S7_inherits(.input, LLMMessage) | is.character(.input) | is.list(.input),
     "You need to specify a .provider function in embed()" = !is.null(.provider)
   ) |> validate_inputs()
   

@@ -15,7 +15,7 @@ embed(
 )
 }
 \arguments{
-\item{.input}{A character vector of texts to embed or an \code{LLMMessage} object}
+\item{.input}{A character vector of texts v, a list of texts and image objects,  or an \code{LLMMessage} object}
 
 \item{.provider}{A function or function call specifying the language model provider and any additional parameters.
 This should be a call to a provider function like \code{openai()}, \code{ollama()}, etc.

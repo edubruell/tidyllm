@@ -616,6 +616,34 @@ connections across diverse contexts, illustrating its ability to capture
 complex thematic overlaps.</p>
 </div>
 <div class="section level3">
+<h3 id="sidenote-multimodal-embeddings">Sidenote: Multimodal Embeddings<a class="anchor" aria-label="anchor" href="#sidenote-multimodal-embeddings"></a>
+</h3>
+<p>While most embedding functions work only on text, the
+<strong>Voyage.ai</strong> functions in tidyllm allow embedding both
+text and images in the same space. This feature is particularly useful
+for <strong>cross-modal search</strong>, where text descriptions and
+images need to be compared on a semantic level.</p>
+<p>With <strong>tidyllm</strong>, you can use the <code><a href="../reference/img.html">img()</a></code>
+function to create image objects and mix them with text in a list. When
+passing such a list to <code><a href="../reference/voyage_embedding.html">voyage_embedding()</a></code>, the function
+automatically switches to Voyage’s multimodal API. Suppose we want to
+compare a textual description of an object with an image embedding to
+see if they align in meaning.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Define a text description and an image of the same object</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"a dish consisting of a sausage served in the slit of a partially sliced bun"</span>, <span class="fu"><a href="../reference/img.html">img</a></span><span class="op">(</span><span class="fu"><a href="https://here.r-lib.org//reference/here.html" class="external-link">here</a></span><span class="op">(</span><span class="st">"hotdog.jpg"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span> <span class="fu"><a href="../reference/embed.html">embed</a></span><span class="op">(</span><span class="va">voyage</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 2 × 2</span></span></span>
+<span><span class="co">##   input                                                               embeddings</span></span>
+<span><span class="co">##   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                                                               <span style="color: #949494; font-style: italic;">&lt;list&gt;</span>    </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">1</span> A dish consisting of a sausage served in the slit of a partially s… <span style="color: #949494;">&lt;dbl&gt;</span>     </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">2</span> [IMG] hotdog.jpg                                                    <span style="color: #949494;">&lt;dbl&gt;</span></span></span></code></pre>
+<p>Since the text description and the image refer to the same concept (a
+hotdog), their embeddings should be <strong>close together in the
+high-dimensional space</strong>, enabling similarity-based retrieval and
+comparison.</p>
+</div>
+<div class="section level3">
 <h3 id="outlook-clustering-and-beyond">Outlook: Clustering and Beyond<a class="anchor" aria-label="anchor" href="#outlook-clustering-and-beyond"></a>
 </h3>
 <p>While this article focused on semantic search, embeddings open the

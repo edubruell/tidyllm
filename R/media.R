@@ -1,3 +1,12 @@
+tidyllm_image <- S7::new_class(
+  name = "tidyllm_image",
+  properties = list(
+    imagepath   = class_character,  # Where the image file is located
+    imagename   = class_character,  # The basename of the file. Used for input labels in Embedding  tibbles
+    imagebase64 = class_character   # Base64-encoded image data
+  )
+)
+
 
 #' Extract  Media Content
 #'
@@ -37,5 +46,48 @@ extract_media <- function(.media_list,.type){
   }
   
   return(out)
+}
+
+#' Create an  Image Object
+#'
+#' This function reads an image file from disk, encodes it in base64,
+#' and returns a `tidyllm_image` object that can be used in multimodal 
+#' embedding requests.
+#'
+#' @param .path The path to the image file on disk.
+#'
+#' @return An `tidyllm_image`, containing:
+#'   - `imagepath`: The original file path
+#'   - `imagename`: The basename of the image
+#'   - `imagebase64`: a "data:image/...;base64,..." string
+#' @export
+img <- function(.path) {
+  if (!file.exists(.path)) {
+    stop("File does not exist: ", .path)
+  }
+  
+  # Read file contents as raw, then base64-encode
+  raw_file <- readBin(.path, what = "raw", n = file.size(.path))
+  b64      <- base64enc::base64encode(raw_file)
+  
+  # Optionally guess MIME type from extension (e.g., "png" or "jpeg")
+  # For simplicity, assume PNG here
+  mime_type <- if (grepl("\\.jpe?g$", .path, ignore.case = TRUE)) {
+    "image/jpeg"
+  } else if (grepl("\\.png$", .path, ignore.case = TRUE)) {
+    "image/png"
+  } else {
+    # fallback
+    "application/octet-stream"
+  }
+  
+  # Prepend the mime type
+  b64_with_header <- paste0("data:", mime_type, ";base64,", b64)
+  
+  tidyllm_image(
+    imagepath   = .path,
+    imagename   = basename(.path),
+    imagebase64 = b64_with_header
+  )
 }
 

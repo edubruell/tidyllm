@@ -53,6 +53,7 @@
 <url><loc>https://edubruell.github.io/tidyllm/reference/groq_chat.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/groq_list_models.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/groq_transcribe.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/img.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/index.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/list_azure_openai_batches.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/list_batches.html</loc></url>
@@ -88,5 +89,7 @@
 <url><loc>https://edubruell.github.io/tidyllm/reference/tidyllm-package.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/tidyllm_schema.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/tidyllm_tool.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/voyage.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/voyage_embedding.html</loc></url>
 </urlset>
 

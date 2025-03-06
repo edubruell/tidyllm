@@ -43,6 +43,26 @@ tidyllm now supports the deepseek API as provider via `deepseek_chat()` or the `
 Deepseek supports logprobs just like `openai()`, which you can get via `get_logprobs()`. 
 At the moment tool usage for deepseek is very inconsistent.
 
+## Support for Voyage.ai and Multimodal Embeddings Added
+
+Voyage.ai introduces a **unique multimodal embeddings feature**, allowing you to generate embeddings not only for text but also for images. 
+The new `voyage_embedding()` function in **tidyllm** enables this functionality by seamlessly handling different input types, 
+working with both the new feature as well as the same inputs as for other embedding functions. 
+
+The new `img()` function lets you create image objects for embedding. You can mix text and `img()` objects in a list and send them to Voyage AI for multimodal embeddings:
+
+```r
+list("tidyllm", img(here::here("docs", "logo.png"))) |>
+  embed(voyage)
+#> # A tibble: 2 × 2
+#>   input          embeddings   
+#>   <chr>          <list>       
+#> 1 tidyllm        <dbl [1,024]>
+#> 2 [IMG] logo.png <dbl [1,024]>
+```
+
+In this example, both text (`"tidyllm"`) and an image (`logo.png`) are embedded together. The function returns a tibble where the `input` column contains the text and labeled image names, and the `embeddings` column contains the corresponding embedding vectors.
+
 ## New Tests and Bugfixes
 
 - Several Bugfixes in `tidyllm_schema()` and `tidyllm_tool()`

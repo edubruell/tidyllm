@@ -78,6 +78,20 @@
 <p>tidyllm now supports the deepseek API as provider via <code><a href="../reference/deepseek_chat.html">deepseek_chat()</a></code> or the <code><a href="../reference/deepseek.html">deepseek()</a></code> provider function. Deepseek supports logprobs just like <code><a href="../reference/openai.html">openai()</a></code>, which you can get via <code><a href="../reference/get_logprobs.html">get_logprobs()</a></code>. At the moment tool usage for deepseek is very inconsistent.</p>
 </div>
 <div class="section level3">
+<h3 id="support-for-voyageai-and-multimodal-embeddings-added-0-3-2">Support for Voyage.ai and Multimodal Embeddings Added<a class="anchor" aria-label="anchor" href="#support-for-voyageai-and-multimodal-embeddings-added-0-3-2"></a></h3>
+<p>Voyage.ai introduces a <strong>unique multimodal embeddings feature</strong>, allowing you to generate embeddings not only for text but also for images. The new <code><a href="../reference/voyage_embedding.html">voyage_embedding()</a></code> function in <strong>tidyllm</strong> enables this functionality by seamlessly handling different input types, working with both the new feature as well as the same inputs as for other embedding functions.</p>
+<p>The new <code><a href="../reference/img.html">img()</a></code> function lets you create image objects for embedding. You can mix text and <code><a href="../reference/img.html">img()</a></code> objects in a list and send them to Voyage AI for multimodal embeddings:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"tidyllm"</span>, <span class="fu"><a href="../reference/img.html">img</a></span><span class="op">(</span><span class="fu">here</span><span class="fu">::</span><span class="fu"><a href="https://here.r-lib.org//reference/here.html" class="external-link">here</a></span><span class="op">(</span><span class="st">"docs"</span>, <span class="st">"logo.png"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/embed.html">embed</a></span><span class="op">(</span><span class="va">voyage</span><span class="op">)</span></span>
+<span><span class="co">#&gt; # A tibble: 2 × 2</span></span>
+<span><span class="co">#&gt;   input          embeddings   </span></span>
+<span><span class="co">#&gt;   &lt;chr&gt;          &lt;list&gt;       </span></span>
+<span><span class="co">#&gt; 1 tidyllm        &lt;dbl [1,024]&gt;</span></span>
+<span><span class="co">#&gt; 2 [IMG] logo.png &lt;dbl [1,024]&gt;</span></span></code></pre></div>
+<p>In this example, both text (<code>"tidyllm"</code>) and an image (<code>logo.png</code>) are embedded together. The function returns a tibble where the <code>input</code> column contains the text and labeled image names, and the <code>embeddings</code> column contains the corresponding embedding vectors.</p>
+</div>
+<div class="section level3">
 <h3 id="new-tests-and-bugfixes-0-3-2">New Tests and Bugfixes<a class="anchor" aria-label="anchor" href="#new-tests-and-bugfixes-0-3-2"></a></h3>
 <ul><li>Several Bugfixes in <code><a href="../reference/tidyllm_schema.html">tidyllm_schema()</a></code> and <code><a href="../reference/tidyllm_tool.html">tidyllm_tool()</a></code>
 </li>
@@ -91,30 +105,30 @@
 <h3 id="changes-compared-to-last-release-0-3-1">Changes compared to last release<a class="anchor" aria-label="anchor" href="#changes-compared-to-last-release-0-3-1"></a></h3>
 <ul><li>
 <strong>New schema field functions inspired by ellmer and more schema compatibility with ellmer:</strong> If you have ellmer installed you can now directly use ellmer type objects in the <code>.json_schema</code> option of api-functions. Moreover, <code><a href="../reference/tidyllm_schema.html">tidyllm_schema()</a></code> now accepts ellmer types as field definitions. In addition four ellmer-inspired type-definition functions<code><a href="../reference/field_chr.html">field_chr()</a></code>, <code><a href="../reference/field_chr.html">field_dbl()</a></code>, <code><a href="../reference/field_chr.html">field_lgl()</a></code> and <code><a href="../reference/field_chr.html">field_fct()</a></code> were added that allow you to set description fields in schemata</li>
-</ul><div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a> ellmer_adress <span class="ot">&lt;-</span>ellmer<span class="sc">::</span><span class="fu">type_object</span>(</span>
-<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>    <span class="at">street =</span> ellmer<span class="sc">::</span><span class="fu">type_string</span>(<span class="st">"A famous street"</span>),</span>
-<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>    <span class="at">houseNumber =</span> ellmer<span class="sc">::</span><span class="fu">type_number</span>(<span class="st">"a 3 digit number"</span>),</span>
-<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>    <span class="at">postcode =</span> ellmer<span class="sc">::</span><span class="fu">type_string</span>(),</span>
-<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>    <span class="at">city =</span> ellmer<span class="sc">::</span><span class="fu">type_string</span>(<span class="st">"A large city"</span>),</span>
-<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>    <span class="at">region =</span> ellmer<span class="sc">::</span><span class="fu">type_string</span>(),</span>
-<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a>    <span class="at">country =</span> ellmer<span class="sc">::</span><span class="fu">type_enum</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"Germany"</span>, <span class="st">"France"</span>))</span>
-<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>  ) </span>
-<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a></span>
-<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a>person_schema <span class="ot">&lt;-</span>  <span class="fu">tidyllm_schema</span>(</span>
-<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a>                <span class="at">person_name =</span> <span class="st">"string"</span>,</span>
-<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a>                <span class="at">age =</span> <span class="fu">field_dbl</span>(<span class="st">"An age between 25 and 40"</span>),</span>
-<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a>                <span class="at">is_employed =</span> <span class="fu">field_lgl</span>(<span class="st">"Employment Status in the last year"</span>)</span>
-<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a>                <span class="at">occupation =</span> <span class="fu">field_fct</span>(<span class="at">.levels=</span><span class="fu">c</span>(<span class="st">"Lawyer"</span>,<span class="st">"Butcher"</span>)),</span>
-<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a>                <span class="at">address =</span> ellmer_adress</span>
-<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a>                )</span>
-<span id="cb2-17"><a href="#cb2-17" tabindex="-1"></a></span>
-<span id="cb2-18"><a href="#cb2-18" tabindex="-1"></a>address_message <span class="ot">&lt;-</span> <span class="fu">llm_message</span>(<span class="st">"imagine an address"</span>) <span class="sc">|&gt;</span></span>
-<span id="cb2-19"><a href="#cb2-19" tabindex="-1"></a>  <span class="fu">chat</span>(openai,<span class="at">.json_schema =</span> ellmer_adress)</span>
-<span id="cb2-20"><a href="#cb2-20" tabindex="-1"></a>  </span>
-<span id="cb2-21"><a href="#cb2-21" tabindex="-1"></a>person_message  <span class="ot">&lt;-</span> <span class="fu">llm_message</span>(<span class="st">"imagine a person profile"</span>) <span class="sc">|&gt;</span></span>
-<span id="cb2-22"><a href="#cb2-22" tabindex="-1"></a>  <span class="fu">chat</span>(openai,<span class="at">.json_schema =</span> person_schema)</span></code></pre></div>
+</ul><div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a> ellmer_adress <span class="ot">&lt;-</span>ellmer<span class="sc">::</span><span class="fu">type_object</span>(</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>    <span class="at">street =</span> ellmer<span class="sc">::</span><span class="fu">type_string</span>(<span class="st">"A famous street"</span>),</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>    <span class="at">houseNumber =</span> ellmer<span class="sc">::</span><span class="fu">type_number</span>(<span class="st">"a 3 digit number"</span>),</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>    <span class="at">postcode =</span> ellmer<span class="sc">::</span><span class="fu">type_string</span>(),</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>    <span class="at">city =</span> ellmer<span class="sc">::</span><span class="fu">type_string</span>(<span class="st">"A large city"</span>),</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>    <span class="at">region =</span> ellmer<span class="sc">::</span><span class="fu">type_string</span>(),</span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>    <span class="at">country =</span> ellmer<span class="sc">::</span><span class="fu">type_enum</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"Germany"</span>, <span class="st">"France"</span>))</span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>  ) </span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a></span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a>person_schema <span class="ot">&lt;-</span>  <span class="fu">tidyllm_schema</span>(</span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a>                <span class="at">person_name =</span> <span class="st">"string"</span>,</span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a>                <span class="at">age =</span> <span class="fu">field_dbl</span>(<span class="st">"An age between 25 and 40"</span>),</span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a>                <span class="at">is_employed =</span> <span class="fu">field_lgl</span>(<span class="st">"Employment Status in the last year"</span>)</span>
+<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a>                <span class="at">occupation =</span> <span class="fu">field_fct</span>(<span class="at">.levels=</span><span class="fu">c</span>(<span class="st">"Lawyer"</span>,<span class="st">"Butcher"</span>)),</span>
+<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a>                <span class="at">address =</span> ellmer_adress</span>
+<span id="cb3-16"><a href="#cb3-16" tabindex="-1"></a>                )</span>
+<span id="cb3-17"><a href="#cb3-17" tabindex="-1"></a></span>
+<span id="cb3-18"><a href="#cb3-18" tabindex="-1"></a>address_message <span class="ot">&lt;-</span> <span class="fu">llm_message</span>(<span class="st">"imagine an address"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb3-19"><a href="#cb3-19" tabindex="-1"></a>  <span class="fu">chat</span>(openai,<span class="at">.json_schema =</span> ellmer_adress)</span>
+<span id="cb3-20"><a href="#cb3-20" tabindex="-1"></a>  </span>
+<span id="cb3-21"><a href="#cb3-21" tabindex="-1"></a>person_message  <span class="ot">&lt;-</span> <span class="fu">llm_message</span>(<span class="st">"imagine a person profile"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb3-22"><a href="#cb3-22" tabindex="-1"></a>  <span class="fu">chat</span>(openai,<span class="at">.json_schema =</span> person_schema)</span></code></pre></div>
 <ul><li>Support for logprobs in <code><a href="../reference/openai_chat.html">openai_chat()</a></code> and <code><a href="../reference/send_openai_batch.html">send_openai_batch()</a></code> and new <code><a href="../reference/get_logprobs.html">get_logprobs()</a></code> function:</li>
-</ul><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+</ul><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">badger_poem</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Write a haiku about badgers"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>    <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.logprobs<span class="op">=</span><span class="cn">TRUE</span>,.top_logprobs<span class="op">=</span><span class="fl">5</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
@@ -131,7 +145,7 @@
 <li>New <code><a href="../reference/ollama_delete_model.html">ollama_delete_model()</a></code> function</li>
 <li>
 <code><a href="../reference/list_models.html">list_models()</a></code> is now a verb supporting most providers.</li>
-</ul><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+</ul><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/list_models.html">list_models</a></span><span class="op">(</span><span class="va">openai</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # A tibble: 52 × 3</span></span>
 <span><span class="co">#&gt;    id                                   created             owned_by</span></span>
@@ -165,13 +179,13 @@
 </ul><p>Each verb and provider combination routes the interaction to provider-specific functions like <code><a href="../reference/openai_chat.html">openai_chat()</a></code> or <code><a href="../reference/claude_chat.html">claude_chat()</a></code> that do the work in the background. These functions can also be called directly as an alternative more verbose and provider-specific interface.</p>
 <div class="section level4">
 <h4 id="old-usage-0-3-0">Old Usage:<a class="anchor" aria-label="anchor" href="#old-usage-0-3-0"></a></h4>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Hello World"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-4o"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="new-usage-0-3-0">New Usage:<a class="anchor" aria-label="anchor" href="#new-usage-0-3-0"></a></h4>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Recommended Verb-Based Approach</span></span>
 <span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Hello World"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-4o"</span><span class="op">)</span><span class="op">)</span></span>
@@ -222,7 +236,7 @@
 <h3 id="major-features-0-2-7">Major Features<a class="anchor" aria-label="anchor" href="#major-features-0-2-7"></a></h3>
 <ul><li>Batch API functions for the Mistral API</li>
 <li>Search Grounding with the <code>.grounding_threshold</code> argument added of the <code><a href="../reference/gemini_chat.html">gemini_chat()</a></code> function allowing you to use Google searches to ground model responses to a search result Gemini models. For example, asking about the maintainer of an obscure R package works with grounding but does only lead to a hallucination without:</li>
-</ul><div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+</ul><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"What is tidyllm and who maintains this package?"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/gemini_chat.html">gemini_chat</a></span><span class="op">(</span>.grounding_threshold <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span></span></code></pre></div>
 <ul><li>Perplexity as additional API provider available through <code><a href="../reference/perplexity_chat.html">perplexity_chat()</a></code>. The neat feature of perplexity is the up-to-date web search it does with detailed citations. Cited sources are available in the <code>api_specific</code>-list column of <code><a href="../reference/get_metadata.html">get_metadata()</a></code>
@@ -262,7 +276,7 @@
 <div class="section level3">
 <h3 id="minor-features-0-2-6">Minor Features<a class="anchor" aria-label="anchor" href="#minor-features-0-2-6"></a></h3>
 <ul><li>Google Gemini now supports working with multiple files in one message for the file upload functionality</li>
-</ul><div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+</ul><div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">here</span><span class="fu">::</span><span class="fu"><a href="https://here.r-lib.org//reference/here.html" class="external-link">here</a></span><span class="op">(</span><span class="st">"local_wip"</span>,<span class="st">"example.mp3"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/gemini_upload_file.html">gemini_upload_file</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">here</span><span class="fu">::</span><span class="fu"><a href="https://here.r-lib.org//reference/here.html" class="external-link">here</a></span><span class="op">(</span><span class="st">"local_wip"</span>,<span class="st">"legrille.mp4"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/gemini_upload_file.html">gemini_upload_file</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
@@ -314,13 +328,13 @@
 </div>
 <div class="section level4">
 <h4 id="old-usage-0-2-3">Old Usage:<a class="anchor" aria-label="anchor" href="#old-usage-0-2-3"></a></h4>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Hello World"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-4o"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="new-usage-0-2-3">New Usage:<a class="anchor" aria-label="anchor" href="#new-usage-0-2-3"></a></h4>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Recommended Verb-Based Approach</span></span>
 <span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Hello World"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-4o"</span><span class="op">)</span><span class="op">)</span></span>
@@ -350,7 +364,7 @@
 <h3 id="major-features-0-2-2">Major Features<a class="anchor" aria-label="anchor" href="#major-features-0-2-2"></a></h3>
 <ul><li>Added functions to work with the Google Gemini API, with the new <code><a href="../reference/gemini.html">gemini()</a></code> main API-function</li>
 <li>Support for the file upload workflows for Gemini:</li>
-</ul><div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+</ul><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">#Upload a file for use with gemini</span></span>
 <span><span class="va">upload_info</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gemini_upload_file.html">gemini_upload_file</a></span><span class="op">(</span><span class="st">"example.mp3"</span><span class="op">)</span></span>
 <span></span>
@@ -473,7 +487,7 @@
 <h3 id="major-features-0-2-1">Major Features:<a class="anchor" aria-label="anchor" href="#major-features-0-2-1"></a></h3>
 <ul><li>Added <code><a href="../reference/get_metadata.html">get_metadata()</a></code> function to retrieve and format metadata from <code>LLMMessage</code> objects.</li>
 <li>Enhanced the <code>print</code> method for <code>LLMMessage</code> to support printing metadata, controlled via the new <code>tidyllm_print_metadata</code> option or a new <code>.meta</code>-arguement for the print method.</li>
-</ul><div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+</ul><div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">conversation</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Write a short poem about software development"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>  </span>

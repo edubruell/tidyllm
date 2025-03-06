@@ -17,11 +17,8 @@ reference:
       - ends_with("user_message")
       - get_metadata
       - get_logprobs
-      - tidyllm_schema
-      - starts_with("field")
-      - tidyllm_tool
       - rate_limit_info
-
+      
   - title: "Tidyllm Main Verbs"
     desc: >
       Core verbs facilitating interactions with LLMs, including sending messages,
@@ -33,7 +30,16 @@ reference:
       - check_batch
       - fetch_batch
       - list_batches
-      - list_models
+      - list_models      
+      
+  - title: "Schemata, Tools, and Media Handling"
+    desc: >
+        Functions for json_schema, tools and media handling
+    contents:
+      - tidyllm_schema
+      - starts_with("field")
+      - tidyllm_tool
+      - img
 
   - title: "API Provider Functions"
     desc: >
@@ -47,6 +53,7 @@ reference:
       - ollama
       - perplexity
       - deepseek
+      - voyage
       - azure_openai
       - chatgpt
       
@@ -143,6 +150,12 @@ reference:
     contents: 
       - deepseek_chat
 
+  - title: "VoyageAI-Specific Functions"
+    desc: >
+      Functions for VoyageAI Embeddings.
+    contents: 
+      - voyage_embedding
+      
   - title: "PDF Processing"
     desc: >
       Processing PDF documents, enabling page-by-page analysis.

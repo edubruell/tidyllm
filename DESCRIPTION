@@ -41,6 +41,7 @@ Imports:
 Collate: 
     'tidyllm-package.R'
     'utilites.R'
+    'embedding_helpers.R'
     'LLMMessage.R'
     'APIProvider.R'
     'llm_message.R'
@@ -61,6 +62,7 @@ Collate:
     'api_mistral.R'
     'api_perplexity.R'
     'api_deepseek.R'
+    'api_voyage.R'
     'zzz.R'
 Depends: 
     R (>= 4.2.0)
