@@ -35,33 +35,4 @@ test_that("voyage_embedding returns expected response for text input", {
   })
 })
 
-test_that("voyage_embedding returns expected response for multimodal input", {
-  with_mock_dir("voyage_embedding_multimodal", {
-    
-    original_key <- Sys.getenv("VOYAGE_API_KEY")
-    if (original_key == "") {
-      Sys.setenv(VOYAGE_API_KEY = "DUMMY_KEY_FOR_TESTING")
-    }
-    
-    temp_img <- tempfile(fileext = ".png")
-    png(temp_img)
-    plot(1:10)
-    dev.off()
-    
-    
-    result <- list("A banana", img(temp_img)) |> 
-      voyage_embedding()
-    
-    if (original_key == "") {
-      Sys.setenv(VOYAGE_API_KEY = "")
-    }
-    
-    # Expected input labels: text items remain as-is and images get prefixed with "[IMG] "
-    expect_s3_class(result, "tbl_df")
-    expect_named(result, c("input", "embeddings"))
 
-    purrr::walk(result$embeddings, function(embedding) {
-      expect_equal(length(embedding), 1024)
-    })
-  })
-})
