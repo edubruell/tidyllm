@@ -82,6 +82,7 @@ create_provider_function <- function(.name, ...) {
 #' @param .model Character; the model identifier to use (e.g., `"gpt-4"`).
 #' @param .verbose Logical; if `TRUE`, prints additional information about the request and response.
 #' @param .json_schema List; A JSON schema object as R list to enforce the output structure 
+#' @param .tools Either a single TOOL object or a list of TOOL objects representing the available functions for tool calls.
 #' @param .seed Integer; sets a random seed for reproducibility.
 #' @param .stop Character vector; specifies sequences where the model should stop generating further tokens.
 #' @param .frequency_penalty Numeric; adjusts the likelihood of repeating tokens (positive values decrease repetition).

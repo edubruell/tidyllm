@@ -102,7 +102,7 @@ print.TOOL  <- new_external_generic("base", "print", "x")
 
 #' Print method for a Tool Definition for tidyllm
 #' @noRd
-method(print.TOOL,TOOL) <- function(x){
+method(print.TOOL,TOOL) <- function(x, ...){
   cat("<tidyllm_tool> ", x@name, "\n", sep = "")
   cat("  Description: ", x@description, "\n", sep = "")
   cat("  Arguments: \n")

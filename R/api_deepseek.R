@@ -62,7 +62,6 @@ deepseek_chat <- function(.llm,
                           .top_logprobs = NULL,
                           .tools = NULL,
                           .tool_choice = NULL,
-                          .stream_options = NULL,
                           .api_url = "https://api.deepseek.com/",
                           .timeout = 60,
                           .verbose = FALSE,
@@ -124,8 +123,7 @@ deepseek_chat <- function(.llm,
     logprobs = .logprobs,
     top_logprobs = .top_logprobs,
     tools = if(!is.null(tools_def)) tools_to_api(api_obj,tools_def) else NULL,
-    tool_choice = .tool_choice,
-    stream_options = .stream_options
+    tool_choice = .tool_choice
   ) |> purrr::compact()
   
   request <- httr2::request(.api_url) |>

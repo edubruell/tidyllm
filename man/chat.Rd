@@ -48,6 +48,8 @@ You can also set a default provider function via the \code{tidyllm_chat_default}
 
 \item{.json_schema}{List; A JSON schema object as R list to enforce the output structure}
 
+\item{.tools}{Either a single TOOL object or a list of TOOL objects representing the available functions for tool calls.}
+
 \item{.seed}{Integer; sets a random seed for reproducibility.}
 
 \item{.stop}{Character vector; specifies sequences where the model should stop generating further tokens.}

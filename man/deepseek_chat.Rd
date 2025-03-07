@@ -18,7 +18,6 @@ deepseek_chat(
   .top_logprobs = NULL,
   .tools = NULL,
   .tool_choice = NULL,
-  .stream_options = NULL,
   .api_url = "https://api.deepseek.com/",
   .timeout = 60,
   .verbose = FALSE,

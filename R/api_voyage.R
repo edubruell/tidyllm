@@ -10,7 +10,7 @@
 #' 3. List of mixed content: Processes a combination of text strings and image objects created with `img()`
 #'
 #' For multimodal inputs, the function automatically switches to Voyage's multimodal API
-#' and formats the response with appropriate labels (e.g., "[IMG] image.png") for images.
+#' and formats the response with appropriate labels (e.g., \code{"[IMG] image.png"}) for images.
 #'
 #' @param .input Input to embed. Can be:
 #'   - A character vector of texts

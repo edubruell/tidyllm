@@ -51,7 +51,7 @@ using the Voyage AI API. It supports three types of input:
 }
 
 For multimodal inputs, the function automatically switches to Voyage's multimodal API
-and formats the response with appropriate labels (e.g., "\link{IMG} image.png") for images.
+and formats the response with appropriate labels (e.g., \code{"[IMG] image.png"}) for images.
 }
 \examples{
 \dontrun{
