@@ -85,7 +85,7 @@ For detailed instructions and advanced features, see:
 ## Similar packages
 The are some similar R packages for working with LLMs:
 
-  - [ellmer](https://ellmer.tidyverse.org/) is especially great for asynchronous workflows, chatbots in Shiny and advanced tool-calling capabilities. Its schema functions offer robust support for complex structured data extraction, making it a great choice for applications that require highly interactive or structured LLM interactions. While **ellmer**’s feature set overlaps with **tidyllm** in some areas, its interface and design philosophy are very different.
+  - [ellmer](https://ellmer.tidyverse.org/) is especially great for asynchronous chats, chatbots in Shiny and advanced tool-calling capabilities. Its schema functions offer robust support for complex structured data extraction, making it a great choice for applications that require highly interactive or structured LLM interactions. While **ellmer**’s feature set overlaps with **tidyllm** in some areas, its interface and design philosophy are very different.
   - [rollama](https://jbgruber.github.io/rollama/) is specifically designed to support the Ollama API, enabling seamless interaction with local LLM models. A key strength of **rollama** lies in its specialized Ollama API functionalities, such as `copy` and `create` which are not currently available in **tidyllm**. These features make **rollama** particularly suited for workflows requiring model management or deployment within the Ollama ecosystem.
   
 ## Contributing

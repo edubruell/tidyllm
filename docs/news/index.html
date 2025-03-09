@@ -40,7 +40,7 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.3.2" id="dev-version-032">Dev-Version 0.3.2<a class="anchor" aria-label="anchor" href="#dev-version-032"></a></h2>
+<h2 class="pkg-version" data-toc-text="0.3.2" id="version-032">Version 0.3.2<a class="anchor" aria-label="anchor" href="#version-032"></a></h2><p class="text-muted">CRAN release: 2025-03-07</p>
 <div class="section level3">
 <h3 id="tool-usage-introduced-to-tidyllm-0-3-2">Tool usage introduced to tidyllm<a class="anchor" aria-label="anchor" href="#tool-usage-introduced-to-tidyllm-0-3-2"></a></h3>
 <p>A first tool usage system inspired by a similar system in <code>ellmer</code> has been introduced to tidyllm. At the moment tool use is available for <code><a href="../reference/claude.html">claude()</a></code>, <code><a href="../reference/openai.html">openai()</a></code>, <code><a href="../reference/mistral.html">mistral()</a></code>, <code><a href="../reference/ollama.html">ollama()</a></code>, <code><a href="../reference/gemini.html">gemini()</a></code> and <code><a href="../reference/groq.html">groq()</a></code>:</p>
@@ -71,7 +71,7 @@
 <span><span class="co">#&gt; The current time in Stuttgart (Europe/Berlin timezone) is</span></span>
 <span><span class="co">#&gt; 2025-03-03 09:51:22 CET.</span></span>
 <span><span class="co">#&gt; --------------------------------------------------------------  </span></span></code></pre></div>
-<p>You can use the <code><a href="../reference/tidyllm_tool.html">tidyllm_tool()</a></code> function to run to make functions available to a large language model. The model can then run these functions in your current session, if they are needed for a chat request.</p>
+<p>You can use the <code><a href="../reference/tidyllm_tool.html">tidyllm_tool()</a></code> function to define tools available to a large language model. Once a tool or a list of tools is passed to a model, it can request to run these these functions in your current session and use their output for further generation context.</p>
 </div>
 <div class="section level3">
 <h3 id="support-for-deepseek-added-0-3-2">Support for DeepSeek added<a class="anchor" aria-label="anchor" href="#support-for-deepseek-added-0-3-2"></a></h3>
@@ -100,7 +100,7 @@
 </div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.3.1" id="version-031">Version 0.3.1<a class="anchor" aria-label="anchor" href="#version-031"></a></h2><p class="text-muted">CRAN release: 2025-02-24</p>
-<p>⚠️ There is a bad bug in the latest CRAN release in the <code><a href="../reference/fetch_openai_batch.html">fetch_openai_batch()</a></code> function that is now fixed in the latest Github version. For the CRAN version the <code><a href="../reference/fetch_openai_batch.html">fetch_openai_batch()</a></code> function throws errors if the logprobs are turned off.</p>
+<p>⚠️ There is a bad bug in the latest CRAN release in the <code><a href="../reference/fetch_openai_batch.html">fetch_openai_batch()</a></code> function that is only fixed in version 0.3.2. For the release 0.3.1. the <code><a href="../reference/fetch_openai_batch.html">fetch_openai_batch()</a></code> function throws errors if the logprobs are turned off.</p>
 <div class="section level3">
 <h3 id="changes-compared-to-last-release-0-3-1">Changes compared to last release<a class="anchor" aria-label="anchor" href="#changes-compared-to-last-release-0-3-1"></a></h3>
 <ul><li>

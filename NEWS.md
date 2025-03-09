@@ -34,8 +34,9 @@ llm_message("What's the exact time in Stuttgart?") |>
 #> 2025-03-03 09:51:22 CET.
 #> --------------------------------------------------------------  
 ```  
-You can use the `tidyllm_tool()` function to run to make functions available to a large language model. 
-The model can then run these functions in your current session, if they are needed for a chat request. 
+You can use the `tidyllm_tool()` function to define tools available to a large language model. 
+Once a tool or a list of tools is passed to a model, it can request to run these
+these functions in your current session and use their output for further generation context. 
 
 ## Support for DeepSeek added
 
@@ -70,7 +71,7 @@ In this example, both text (`"tidyllm"`) and an image (`logo.png`) are embedded 
 
 # Version 0.3.1 
 
- ⚠️ There is a bad bug in the latest CRAN release in the `fetch_openai_batch()` function that is now fixed in the latest Github version. For the CRAN version the `fetch_openai_batch()` function throws errors if the logprobs are turned off.
+ ⚠️ There is a bad bug in the latest CRAN release in the `fetch_openai_batch()` function that is only fixed in version 0.3.2. For the release 0.3.1. the `fetch_openai_batch()` function throws errors if the logprobs are turned off.
 
 ## Changes compared to last release
 
