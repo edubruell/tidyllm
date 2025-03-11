@@ -29,53 +29,42 @@ if (!requireNamespace("devtools", quietly = TRUE)) {
 devtools::install_github("edubruell/tidyllm")
 ```
 
-### Setting up API Keys or ollama 
+### Setting up API Keys or Ollama
 
-Before using **tidyllm**, set up API keys for the services you plan to use. Here’s how to set them up for different providers:
+Before using **tidyllm**, set up API keys for the services you plan to use. You can set these API keys as environment variables in your R session using `Sys.setenv()`, for example:
 
-1. For Claude models you can get an API key in the [Anthropic Console](https://console.anthropic.com/settings/keys):
-```{r, eval= FALSE, echo=TRUE}
-Sys.setenv(ANTHROPIC_API_KEY = "YOUR-ANTHROPIC-API-KEY")
-```
-
-2. For OpenAI you can obtain an API key by signing up at [OpenAI](https://platform.openai.com/account/api-keys) and set it with:
-```{r, eval= FALSE, echo=TRUE}
+```{r, eval=FALSE}
 Sys.setenv(OPENAI_API_KEY = "YOUR-OPENAI-API-KEY")
 ```
 
-3. For Google Gemini you can setup an API key in the [Google AI Studio](https://aistudio.google.com/app/apikey)
-``` r
-Sys.setenv(GOOGLE_API_KEY = 'YOUR-GOOGLE-API-KEY')
-```
+Alternatively, for persistent storage, add your API keys to your `.Renviron` file. For this, run `usethis::edit_r_environ()`, and add a line such as:
 
-4. For Mistral you can set an API key on the [Mistral console page](https://console.mistral.ai/api-keys/) and set it by
-``` r
-Sys.setenv(MISTRAL_API_KEY = "YOUR-MISTRAL-API-KEY")
-```
-5. For groq (not be confused with [grok](https://x.ai/)) you can setup you API keys in the [Groq Console](https://console.groq.com/playground):
-```{r, eval= FALSE, echo=TRUE}
-Sys.setenv(GROQ_API_KEY = "YOUR-GROQ-API-KEY")
-```
-
-6. For Perplexity  you can get an API key in the [API settings](https://www.perplexity.ai/settings/api):
-```{r, eval= FALSE, echo=TRUE}
-Sys.setenv(PERPLEXITY_API_KEY = "YOUR-PERPLEXITY-API-KEY")
-```
-
-7. For DeepSeek  you can get an API key in the [DeepSeek Platform](https://platform.deepseek.com/api_keys):
-```{r, eval= FALSE, echo=TRUE}
-Sys.setenv(DEEPSEEK_API_KEY = "YOUR-DEEPSEEK-KEY")
-```
-
-Alternatively, for persistent storage, add these keys to your `.Renviron` file:
-
-For this, run `usethis::edit_r_environ()`, and add a line with with an API key in this file, for example:
-
-```{r, eval= FALSE, echo=TRUE}
+```{r, eval=FALSE}
 ANTHROPIC_API_KEY="YOUR-ANTHROPIC-API-KEY"
 ```
+**Restart your R session** for these changes to take effect.  
 
-If you want to work with local large lange models via `ollama` you need to install it from [the official project website](https://ollama.com/). Ollama sets up a local large language model server that you can use to run open-source models on your own devices. 
+The table below lists the environment variables for different providers and where to obtain the API keys.
+
+| Provider     | Environment Variable        | API Key Setup Link |
+|-------------|---------------------------|--------------------|
+| **Claude** (Anthropic) | `ANTHROPIC_API_KEY` | [Anthropic Console](https://console.anthropic.com/settings/keys) |
+| **OpenAI** | `OPENAI_API_KEY` | [OpenAI API Keys](https://platform.openai.com/account/api-keys) |
+| **Google Gemini** | `GOOGLE_API_KEY` | [Google AI Studio](https://aistudio.google.com/app/apikey) |
+| **Mistral** | `MISTRAL_API_KEY` | [Mistral Console](https://console.mistral.ai/api-keys/) |
+| **Groq** (not Grok) | `GROQ_API_KEY` | [Groq Console](https://console.groq.com/playground) |
+| **Perplexity** | `PERPLEXITY_API_KEY` | [Perplexity API Settings](https://www.perplexity.ai/settings/api) |
+| **DeepSeek** | `DEEPSEEK_API_KEY` | [DeepSeek Platform](https://platform.deepseek.com/api_keys) |
+| **Voyage AI** | `VOYAGE_API_KEY` | [Voyage AI Dashboard](https://dashboard.voyageai.com/api-keys) |
+
+
+### Running Local Models with Ollama
+
+If you prefer to work with local large language models, install **Ollama** from [the official website](https://ollama.com/). Ollama sets up a local server to run open-source models on your device. You can then download models from [Ollama's own model repository](https://ollama.com/search) with the `ollama_download_model()` function:
+
+```{r, eval=FALSE}
+ollama_download_model("deepscaler")
+```
 
 ### Basic Usage
 
