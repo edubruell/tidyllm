@@ -36,7 +36,7 @@ test_that("claude function constructs a correct request and dry runs it", {
   # Now check the body content to ensure the JSON is constructed as expected
   body_json <- request$body |> jsonlite::toJSON()  |> as.character()
   
-  expected_json <- "{\"data\":{\"model\":[\"claude-3-5-sonnet-20240620\"],\"max_tokens\":[1024],\"messages\":[{\"role\":[\"user\"],\"content\":[{\"type\":[\"text\"],\"text\":[\"Make a poem about anteaters! \"]}]}],\"system\":[\"You are a helpful assistant\"],\"stream\":[false]},\"type\":[\"json\"],\"content_type\":[\"application/json\"],\"params\":{\"auto_unbox\":[true],\"digits\":[22],\"null\":[\"null\"]}}"
+  expected_json <- "{\"data\":{\"model\":[\"claude-3-5-sonnet-20240620\"],\"max_tokens\":[2048],\"messages\":[{\"role\":[\"user\"],\"content\":[{\"type\":[\"text\"],\"text\":[\"Make a poem about anteaters! \"]}]}],\"system\":[\"You are a helpful assistant\"],\"stream\":[false]},\"type\":[\"json\"],\"content_type\":[\"application/json\"],\"params\":{\"auto_unbox\":[true],\"digits\":[22],\"null\":[\"null\"]}}"
 
   # Check if the JSON  matches the expected JSON
   expect_equal(body_json, expected_json)

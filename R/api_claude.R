@@ -89,7 +89,9 @@ method(extract_metadata, list(api_claude,class_list))<- function(api,response) {
     specific_metadata = list(
       stop_reason    = response$stop_reason,
       id             = response$id,
-      stop_sequence  = response$stop_sequence
+      stop_sequence  = response$stop_sequence,
+      thinking       = if(r_has_name(response,"thinking")) response$content[[1]]$thinking else NULL,
+      signature      = if(r_has_name(response,"thinking")) response$content[[1]]$signature else NULL
     ) 
   )
 }  
@@ -232,6 +234,8 @@ method(generate_callback_function,api_claude) <- function(api) {
 #' @param .timeout Integer specifying the request timeout in seconds (default: 60).
 #' @param .stream Logical; if TRUE, streams the response piece by piece (default: FALSE).
 #' @param .dry_run Logical; if TRUE, returns the prepared request object without executing it (default: FALSE).
+#' @param .thinking Logical; if TRUE, enables Claude's thinking mode for complex reasoning tasks (default: FALSE).
+#' @param .thinking_budget Integer specifying the maximum tokens Claude can spend on thinking (default: 1024). Must be at least 1024.
 #'
 #' @return A new LLMMessage object containing the original messages plus Claude's response.
 #' @examples
@@ -248,20 +252,22 @@ method(generate_callback_function,api_claude) <- function(api) {
 #'
 #' @export
 claude_chat <- function(.llm,
-                   .model = "claude-3-5-sonnet-20241022",
-                   .max_tokens = 1024,
-                   .temperature = NULL,
-                   .top_k = NULL,
-                   .top_p = NULL,
-                   .metadata = NULL,
-                   .stop_sequences = NULL,
-                   .tools = NULL,
-                   .api_url = "https://api.anthropic.com/",
-                   .verbose = FALSE,
-                   .max_tries = 3,
-                   .timeout = 60,
-                   .stream = FALSE,
-                   .dry_run = FALSE) {  
+                        .model = "claude-3-7-sonnet-20250219",
+                        .max_tokens = 2048,
+                        .temperature = NULL,
+                        .top_k = NULL,
+                        .top_p = NULL,
+                        .metadata = NULL,
+                        .stop_sequences = NULL,
+                        .tools = NULL,
+                        .api_url = "https://api.anthropic.com/",
+                        .verbose = FALSE,
+                        .max_tries = 3,
+                        .timeout = 60,
+                        .stream = FALSE,
+                        .dry_run = FALSE,
+                        .thinking = FALSE,
+                        .thinking_budget = 1024) {  
 
   # Validate inputs to the Claude function
   c(
@@ -283,15 +289,17 @@ claude_chat <- function(.llm,
     ".stream must be logical" = is.logical(.stream),
     ".max_tries must be integer-valued numeric" = is_integer_valued(.max_tries),
     ".dry_run must be logical" = is.logical(.dry_run),
-    "Streaming is not supported for requests with tool calls" = is.null(.tools) || !isTRUE(.stream)
+    "Streaming is not supported for requests with tool calls" = is.null(.tools) || !isTRUE(.stream),
+    ".thinking must be logical" = is.logical(.thinking),
+    ".thinking_budget must be a positive integer larger than 1024" = is_integer_valued(.thinking_budget) && .thinking_budget >= 1024
   ) |>
     validate_inputs()
   
-
+  
   api_obj <- api_claude(short_name = "claude",
                         long_name  = "Anthropic Claude",
                         api_key_env_var = "ANTHROPIC_API_KEY")
-
+  
   api_key <- get_api_key(api_obj,.dry_run)
   
   # Format message list for Claude model
@@ -315,7 +323,8 @@ claude_chat <- function(.llm,
     metadata = .metadata,
     stop_sequences = .stop_sequences,
     stream = .stream,
-    tools = if(!is.null(tools_def)) tools_to_api(api_obj,tools_def) else NULL
+    tools = if(!is.null(tools_def)) tools_to_api(api_obj,tools_def) else NULL,
+    thinking = if(.thinking) list(type = "enabled", budget_tokens = .thinking_budget) else NULL
   ) |> purrr::compact()
   
   # Build request with httr2
@@ -333,7 +342,7 @@ claude_chat <- function(.llm,
   if (.dry_run) {
     return(request)  
   }
-
+  
   response <- perform_chat_request(request,api_obj,.stream,.timeout)
   
   if(response$raw$content$stop_reason == "tool_use"){
@@ -357,15 +366,21 @@ claude_chat <- function(.llm,
   }
   
   # Extract the assistant reply and headers from response
-  assistant_reply <- response$assistant_reply
+  if(.thinking==FALSE){
+    assistant_reply <- response$assistant_reply
+  }
+  if(.thinking==TRUE){
+    assistant_reply <- response$raw$content$content[[2]]$text
+  }
+  
   track_rate_limit(api_obj,response$headers,.verbose)
-
+  
   # Return the updated LLMMessage object
-   add_message(llm     = .llm, 
-               role    = "assistant", 
-               content = assistant_reply, 
-               json    = FALSE,
-               meta    = response$meta)
+  add_message(llm     = .llm, 
+              role    = "assistant", 
+              content = assistant_reply, 
+              json    = FALSE,
+              meta    = response$meta)
 }
 
 #' Send a Batch of Messages to Claude API

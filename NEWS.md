@@ -1,4 +1,92 @@
 # Latest Changes
+# Dev-Version 0.3.3
+
+## Thinking support in Claude
+Claude now supports reasoning:
+
+```r
+conversation <- llm_message("Are there an infinite number of prime numbers such that n mod 4 == 3?") |>
+   chat(claude(.thinking=TRUE)) |>
+  print()
+   
+#> Message History:
+#> system:
+#> You are a helpful assistant
+#> --------------------------------------------------------------
+#> user:
+#> Are there an infinite number of prime numbers such that n
+#> mod 4 == 3?
+#> --------------------------------------------------------------
+#> assistant:
+#> # Infinitude of Primes Congruent to 3 mod 4
+#> 
+#> Yes, there are infinitely many prime numbers $p$ such
+#> that $p \equiv 3 \pmod{4}$ (when $p$ divided by 4 leaves
+#> remainder 3).
+#> 
+#> ## Proof by Contradiction
+#> 
+#> I'll use a proof technique similar to Euclid's classic proof
+#> of the infinitude of primes:
+#> 
+#> 1) Assume there are only finitely many primes $p$ such that
+#> $p \equiv 3 \pmod{4}$. Let's call them $p_1, p_2, ..., p_k$.
+#> 
+#> 2) Consider the number $N = 4p_1p_2...p_k - 1$
+#> 
+#> 3) Note that $N \equiv 3 \pmod{4}$ since $4p_1p_2...p_k
+#> \equiv 0 \pmod{4}$ and $4p_1p_2...p_k - 1 \equiv -1 \equiv 3
+#> \pmod{4}$
+#> 
+#> 4) $N$ must have at least one prime factor $q$
+#> 
+#> 5) For any $i$ between 1 and $k$, we have $N \equiv -1
+#> \pmod{p_i}$, so $N$ is not divisible by any of the primes
+#> $p_1, p_2, ..., p_k$
+#> 
+#> 6) Therefore, $q$ is a prime not in our original list
+#> 
+#> 7) Furthermore, $q$ must be congruent to 3 modulo 4:
+#> - $q$ cannot be 2 because $N$ is odd
+#> - If $q \equiv 1 \pmod{4}$, then $\frac{N}{q} \equiv 3
+#> \pmod{4}$ would need another prime factor congruent to 3
+#> modulo 4
+#> - So $q \equiv 3 \pmod{4}$
+#> 
+#> 8) This contradicts our assumption that we listed all primes
+#> of the form $p \equiv 3 \pmod{4}$
+#> 
+#> Therefore, there must be infinitely many primes of the form
+#> $p \equiv 3 \pmod{4}$.
+#> --------------------------------------------------------------
+
+#Thinking process is stored in API-specific metadata
+conversation |> 
+   get_metadata() |>
+   dplyr::pull(api_specific) |>
+   purrr::map_chr("thinking") |>
+   cat()
+   
+#> The question is asking if there are infinitely many prime numbers $p$ such that $p \equiv 3 \pmod{4}$, i.e., when divided by 4, the remainder is 3.
+#> 
+#> I know that there are infinitely many prime numbers overall. The classic proof is Euclid's proof by contradiction: if there were only finitely many primes, we could multiply them all together, add 1, and get a new number not divisible by any of the existing primes, which gives us a contradiction.
+#> 
+#> For primes of the form $p \equiv 3 \pmod{4}$, we can use a similar proof strategy. 
+#> 
+#> Let's assume there are only finitely many primes $p_1, p_2, \ldots, p_k$ such that $p_i \equiv 3 \pmod{4}$ for all $i$. 
+#> 
+#> Now, consider the number $N = 4 \cdot p_1 \cdot p_2 \cdot \ldots \cdot p_k - 1$. 
+#> 
+#> Note that $N \equiv -1 \equiv 3 \pmod{4}$. 
+#> 
+#> Now, let's consider the prime factorization of $N$. If $N$ is itself prime, then we have found a new prime $N$ such that $N \equiv 3 \pmod{4}$, which contradicts our assumption that we enumerated all such primes.
+#> 
+> ...
+```
+
+## Bugfixes
+
+- Bugfix for `gemini()`: Sytem prompts were not sent to the API in older versions
 
 # Version 0.3.2
 
