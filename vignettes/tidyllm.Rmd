@@ -315,7 +315,7 @@ The model responded in JSON format, organizing data into key-value pairs like sp
 address |> get_reply_data() |> str()
 ```
 
-Ollama, OpenAI and the Google Gemini API work with a schema provided by `tidyllm_schema()`. Other API providers like  `groq()`, and `mistral()` only support structured outputs through a simpler JSON mode, accessible with the `.json` argument in these provider functions. Since these APIs do not currently support native schema enforcement, you’ll need to prompt the model to follow a specified format directly in your messages. Although `get_reply_data()` can help extract structured data from these responses when you set `.json=TRUE` in each of the API provider functions, the model may not always adhere strictly to the specified structure. Once these APIs support native schema enforcement, **tidyllm** will integrate full schema functionality for them. Alternatively, also supports the more flexible schema objects from the `ellmer` package in its latest development version.
+Ollama, OpenAI and the Google Gemini API work with a schema provided by `tidyllm_schema()`. Other API providers like  `groq()`, and `mistral()` only support structured outputs through a simpler JSON mode, accessible with the `.json` argument in these provider functions. Since these APIs do not currently support native schema enforcement, you’ll need to prompt the model to follow a specified format directly in your messages. Although `get_reply_data()` can help extract structured data from these responses when you set `.json=TRUE` in each of the API provider functions, the model may not always adhere strictly to the specified structure. Once these APIs support native schema enforcement, **tidyllm** will integrate full schema functionality for them.
 
 ### API parameters
 
@@ -434,7 +434,7 @@ The output is a list of message histories, each now updated with new assistant r
 llm_message("Write a lengthy magazine advertisement for an R package called tidyllm") |>
   chat(claude,.stream=TRUE)
 ```
-While this feature offers slightly better feedback on model behavior in real-time, it’s not particularly useful for data-analysis workflows. Metadata is not collected for streaming mode. We consider this feature experimental and recommend using non-streaming responses for production tasks. Note that error handling in streaming callbacks varies by API and differs in quality at this time. Metadata is currently not supported for streaming responses.
+While this feature offers slightly better feedback on model behavior in real-time, it’s not particularly useful for data-analysis workflows. Metadata is not collected for streaming mode. We consider this feature experimental and recommend using non-streaming responses for production tasks. Note that error handling in streaming callbacks varies by API and differs in quality at this time. 
 
 ### Choosing the Right Model and API
 
@@ -469,9 +469,23 @@ gemini_delete_file(upload_info$name)
 
 6. **Perplexity API (Search and Citations):** [Perplexity](https://docs.perplexity.ai/api-reference/chat-completions) combines current finetuned Llama models with real-time web search capabilities. This allows for up-to-date information retrieval and integration into responses. All answers contain links to citations which can be accesed via the `api_specific` column of `get_metadata()` 
 
-7. **Ollama (Local Models):** If data privacy is a priority, running open-source models like **gemma2::9B** locally via [ollama](https://ollama.com/) gives you full control over model execution and data. However, the trade-off is that local models require significant computational resources, and are often not quite as powerful as the large API-providers. The [ollama blog](https://ollama.com/blog) regularly has posts about new models and their advantages that you can download via `ollama_download_model()`.
+7. **Voyage AI (High-Performance Embeddings):** [Voyage AI](https://www.voyageai.com/) is known for its high-quality embedding models.  It has a unique **multimodal embeddings feature**, allowing you to generate embeddings in the same vector space for both text and images:
 
-8. **Other OpenAI-compatible Local Models:** Besides ollama, there are many solutions to run local models that are mostly compatible to the OpenAI API like [llama.cpp](https://github.com/ggml-org/llama.cpp/blob/master/examples/server/README.md), [vllm](https://github.com/vllm-project/vllm) and [many more](https://www.reddit.com/r/LocalLLaMA/comments/16csz5n/best_openai_api_compatible_application_server/). To use such an API you can set the base url of the api with `.api_url` as well as the path to the model-endpoint with `.api_path` argument in the `openai()` provider function. Set `.compatible=TRUE` to skip api-key checks and rate-limit tracking.  Compatibility with local models solutions may vary depending on the specific API’s implementation, and full functionality cannot be guaranteed. Ideally you can save complicated configurations like these in an object:
+```{r,eval=FALSE}
+list("tidyllm", img(here::here("docs", "logo.png"))) |>
+  embed(voyage)
+#> # A tibble: 2 × 2
+#>   input          embeddings   
+#>   <chr>          <list>       
+#> 1 tidyllm        <dbl [1,024]>
+#> 2 [IMG] logo.png <dbl [1,024]>
+```
+
+8. **DeepSeek API:** Deepseek provides strong open-source reasoning models that expose their thinking process. 
+
+9. **Ollama (Local Models):** If data privacy is a priority, running open-source models like **gemma2::9B** locally via [ollama](https://ollama.com/) gives you full control over model execution and data. However, the trade-off is that local models require significant computational resources, and are often not quite as powerful as the large API-providers. The [ollama blog](https://ollama.com/blog) regularly has posts about new models and their advantages that you can download via `ollama_download_model()`.
+
+10. **Other OpenAI-compatible Local Models:** Besides ollama, there are many solutions to run local models that are mostly compatible to the OpenAI API like [llama.cpp](https://github.com/ggml-org/llama.cpp/blob/master/examples/server/README.md), [vllm](https://github.com/vllm-project/vllm) and [many more](https://www.reddit.com/r/LocalLLaMA/comments/16csz5n/best_openai_api_compatible_application_server/). To use such an API you can set the base url of the api with `.api_url` as well as the path to the model-endpoint with `.api_path` argument in the `openai()` provider function. Set `.compatible=TRUE` to skip api-key checks and rate-limit tracking.  Compatibility with local models solutions may vary depending on the specific API’s implementation, and full functionality cannot be guaranteed. Ideally you can save complicated configurations like these in an object:
 ```{r, eval=FALSE}
 my_provider <- openai(.model="llama3.2:90b",
           .api_url="http://localhost:11434",

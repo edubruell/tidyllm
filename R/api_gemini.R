@@ -290,6 +290,7 @@ gemini_chat <- function(.llm,
                    .max_tries = 3,
                    .verbose = FALSE,
                    .stream = FALSE) {
+
   # Validate inputs
   c(
     "Input .llm must be an LLMMessage object" = S7_inherits(.llm, LLMMessage),
@@ -373,6 +374,10 @@ gemini_chat <- function(.llm,
     }
   }
   
+  #Handle system prompt
+  system_prompt <- list(parts = list(
+    text = filter_roles(.llm@message_history, c("system"))[[1]]$content
+    ))
   
   # Build generationConfig
   generation_config <- list(
@@ -390,6 +395,7 @@ gemini_chat <- function(.llm,
   # Construct the request body
   request_body <- list(
     model = .model,
+    system_instruction = system_prompt,
     contents = gemini_contents,
     generationConfig = generation_config,
     safetySettings = .safety_settings,
