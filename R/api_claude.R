@@ -72,6 +72,7 @@ method(parse_chat_function, api_claude) <- function(api) {
       paste0("Received empty response from ",api_label) |>
       stop()
     }
+    if(r_has_name(body_json,"thinking")) return(body_json$content[[2]]$text)
     body_json$content[[1]]$text
   }
 }
@@ -366,13 +367,8 @@ claude_chat <- function(.llm,
   }
   
   # Extract the assistant reply and headers from response
-  if(.thinking==FALSE){
-    assistant_reply <- response$assistant_reply
-  }
-  if(.thinking==TRUE){
-    assistant_reply <- response$raw$content$content[[2]]$text
-  }
-  
+  assistant_reply <- response$assistant_reply
+
   track_rate_limit(api_obj,response$headers,.verbose)
   
   # Return the updated LLMMessage object
