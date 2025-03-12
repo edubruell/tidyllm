@@ -113,7 +113,7 @@ azure_openai_chat <- function(
     .max_completion_tokens = NULL,
     .frequency_penalty = NULL,
     .logit_bias = NULL,
-    .logprobs = FALSE,
+    .logprobs = NULL,
     .top_logprobs = NULL,
     .presence_penalty = NULL,
     .seed = NULL,

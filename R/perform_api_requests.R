@@ -43,6 +43,7 @@ perform_chat_request <- function(.request,
                                 .stream = FALSE, 
                                 .timeout = 60, 
                                 .max_tries = 3) {
+
   api_name <- .api@long_name
   
   if (.stream == TRUE) {
