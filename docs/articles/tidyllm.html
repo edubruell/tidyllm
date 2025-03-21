@@ -26,7 +26,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -699,6 +699,44 @@ raise an error:</p>
 <span>        <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/groq.html">groq</a></span><span class="op">(</span><span class="op">)</span>,.json_schema <span class="op">=</span> <span class="va">address_schema</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level4">
+<h4 id="tool-use">Tool use<a class="anchor" aria-label="anchor" href="#tool-use"></a>
+</h4>
+<p>In <strong>tidyllm</strong>, you can specify R functions that are
+dynamically called by an assistant to enrich model context as model
+tools. These tools can be dynmically reuqested by the assistant, run in
+your R-Session and their output resent to the model. Tools can be
+defined using <code><a href="../reference/tidyllm_tool.html">tidyllm_tool()</a></code>, where you specify an R
+function, its description, and expected arguments. For example, wrapping
+the <code>get_current_time()</code> function in a tool allows models to
+retrieve the current time for their answers:</p>
+<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">get_current_time</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">tz</span>, <span class="va">format</span> <span class="op">=</span> <span class="st">"%Y-%m-%d %H:%M:%S"</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/format.html" class="external-link">format</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.time</a></span><span class="op">(</span><span class="op">)</span>, tz <span class="op">=</span> <span class="va">tz</span>, format <span class="op">=</span> <span class="va">format</span>, usetz <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="va">time_tool</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tidyllm_tool.html">tidyllm_tool</a></span><span class="op">(</span></span>
+<span>  .f <span class="op">=</span> <span class="va">get_current_time</span>,</span>
+<span>  .description <span class="op">=</span> <span class="st">"Returns the current time in a specified timezone. Use this to determine the current time in any location."</span>,</span>
+<span>  tz <span class="op">=</span> <span class="fu"><a href="../reference/field_chr.html">field_chr</a></span><span class="op">(</span><span class="st">"The time zone identifier (e.g., 'Europe/Berlin', 'America/New_York', 'Asia/Tokyo', 'UTC'). Required."</span><span class="op">)</span>,</span>
+<span>  format <span class="op">=</span> <span class="fu"><a href="../reference/field_chr.html">field_chr</a></span><span class="op">(</span><span class="st">"Format string for the time output. Default is '%Y-%m-%d %H:%M:%S'."</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"What's the exact time in Stuttgart?"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="va">openai</span>,.tools<span class="op">=</span><span class="va">time_tool</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## Message History:</span></span>
+<span><span class="co">## system:</span></span>
+<span><span class="co">## You are a helpful assistant</span></span>
+<span><span class="co">## --------------------------------------------------------------</span></span>
+<span><span class="co">## user:</span></span>
+<span><span class="co">## What's the exact time in Stuttgart?</span></span>
+<span><span class="co">## --------------------------------------------------------------</span></span>
+<span><span class="co">## assistant:</span></span>
+<span><span class="co">## The current time in Stuttgart (Europe/Berlin timezone) is</span></span>
+<span><span class="co">## 2025-03-03 09:51:22 CET.</span></span>
+<span><span class="co">## --------------------------------------------------------------</span></span></code></pre>
+</div>
+<div class="section level4">
 <h4 id="embeddings">Embeddings<a class="anchor" aria-label="anchor" href="#embeddings"></a>
 </h4>
 <p><a href="https://cohere.com/llmu/text-embeddings" class="external-link">Embedding
@@ -709,7 +747,7 @@ generate embeddings with the <code><a href="../reference/embed.html">embed()</a>
 functions return a semantic vector representation either for each
 message in a message history or, more typically for this application,
 for each entry in a character vector:</p>
-<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"What is the meaning of life?"</span>,</span>
 <span>  <span class="st">"How much wood would a woodchuck chuck?"</span>,</span>
 <span>  <span class="st">"How does the brain work?"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -736,7 +774,7 @@ use the <code><a href="../reference/send_batch.html">send_batch()</a></code> fun
 requests to either API.</p>
 <p>Here’s an example of how to send a batch request to Claude’s batch
 API:</p>
-<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">#Create a message batch and save it to disk to fetch it later</span></span>
 <span><span class="fu"><a href="https://glue.tidyverse.org/reference/glue.html" class="external-link">glue</a></span><span class="op">(</span><span class="st">"Write a poem about {x}"</span>, x<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cats"</span>,<span class="st">"dogs"</span>,<span class="st">"hamsters"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">purrr</span><span class="fu">::</span><span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="va">llm_message</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -754,7 +792,7 @@ persist them across R sessions, making it easier to manage large jobs
 and access results later.</p>
 <p>After sending a batch request, you can check its status with
 <code><a href="../reference/check_batch.html">check_batch()</a></code>. For example:</p>
-<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">#Check the status of the batch</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"claude_batch.rds"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>   <span class="fu"><a href="../reference/check_batch.html">check_batch</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
@@ -769,7 +807,7 @@ current status. You can also see all your batch requests with
 <code><a href="../reference/list_batches.html">list_batches()</a></code> (or in the batches dashboard of the your API
 provider). Once the processing of a batch is completed you can fetch its
 results with <code><a href="../reference/fetch_batch.html">fetch_batch()</a></code>:</p>
-<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">conversations</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"claude_batch.rds"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/fetch_batch.html">fetch_batch</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
@@ -784,20 +822,20 @@ produce the desired responses, minimizing potential errors or resource
 waste.</p>
 </div>
 <div class="section level4">
-<h4 id="streaming-back-responses-experimental">Streaming back responses (Experimental)<a class="anchor" aria-label="anchor" href="#streaming-back-responses-experimental"></a>
+<h4 id="streaming-back-responses">Streaming back responses<a class="anchor" aria-label="anchor" href="#streaming-back-responses"></a>
 </h4>
 <p><code><a href="../reference/chat.html">chat()</a></code> supports real-time streaming of reply tokens to
 the console while the model works with the <code>.stream=TRUE</code>
 argument in <code><a href="../reference/chat.html">chat()</a></code>, for most api providers.</p>
-<div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb48"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Write a lengthy magazine advertisement for an R package called tidyllm"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="va">claude</span>,.stream<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p>While this feature offers slightly better feedback on model behavior
-in real-time, it’s not particularly useful for data-analysis workflows.
-Metadata is not collected for streaming mode. We consider this feature
-experimental and recommend using non-streaming responses for production
-tasks. Note that error handling in streaming callbacks varies by API and
-differs in quality at this time.</p>
+in real-time, it is not particularly useful for data-analysis workflows.
+Since streaming responses do not always offer the full feature set as
+non-streaming responses in <strong>tidyllm</strong>, we recommend to not
+use it for typical production tasks, but just for checks during
+programming.</p>
 </div>
 <div class="section level4">
 <h4 id="choosing-the-right-model-and-api">Choosing the Right Model and API<a class="anchor" aria-label="anchor" href="#choosing-the-right-model-and-api"></a>
@@ -828,7 +866,7 @@ you can use the <code>.grounding_threshold</code>-parameter in the
 searches. The lower the threshold is the more Gemini relies on the
 search instead of its internal knowledge:</p></li>
 </ol>
-<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"What is tidyllm and who maintains this package?"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/gemini_chat.html">gemini_chat</a></span><span class="op">(</span>.grounding_threshold <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span></span></code></pre></div>
 <p>Moreover, with the Gemini API you are able to upload a wide range of
@@ -836,7 +874,7 @@ media files and use them in the prompts of your models with functions
 like <code><a href="../reference/gemini_upload_file.html">gemini_upload_file()</a></code>. Using this, Gemini models can be
 used to process video and audio together with your messages. Here is an
 example of summarizing a speech:</p>
-<div class="sourceCode" id="cb48"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb50"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">#Upload a file for use with gemini</span></span>
 <span><span class="va">upload_info</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gemini_upload_file.html">gemini_upload_file</a></span><span class="op">(</span><span class="st">"example.mp3"</span><span class="op">)</span></span>
 <span></span>
@@ -872,7 +910,7 @@ high-quality embedding models. It has a unique <strong>multimodal
 embeddings feature</strong>, allowing you to generate embeddings in the
 same vector space for both text and images:</p></li>
 </ol>
-<div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb51"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"tidyllm"</span>, <span class="fu"><a href="../reference/img.html">img</a></span><span class="op">(</span><span class="fu">here</span><span class="fu">::</span><span class="fu"><a href="https://here.r-lib.org//reference/here.html" class="external-link">here</a></span><span class="op">(</span><span class="st">"docs"</span>, <span class="st">"logo.png"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/embed.html">embed</a></span><span class="op">(</span><span class="va">voyage</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # A tibble: 2 × 2</span></span>
@@ -905,7 +943,7 @@ depending on the specific API’s implementation, and full functionality
 cannot be guaranteed. Ideally you can save complicated configurations
 like these in an object:</p></li>
 </ol>
-<div class="sourceCode" id="cb50"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb52"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">my_provider</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model<span class="op">=</span><span class="st">"llama3.2:90b"</span>,</span>
 <span>          .api_url<span class="op">=</span><span class="st">"http://localhost:11434"</span>,</span>
 <span>          .compatible <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -919,7 +957,7 @@ like these in an object:</p></li>
 <h4 id="setting-a-default-provider">Setting a Default Provider<a class="anchor" aria-label="anchor" href="#setting-a-default-provider"></a>
 </h4>
 <p>You can also specify default provider with options:</p>
-<div class="sourceCode" id="cb51"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb53"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Set default providers</span></span>
 <span><span class="co">#chat provider</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>tidyllm_chat_default <span class="op">=</span> <span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-4o"</span><span class="op">)</span><span class="op">)</span></span>

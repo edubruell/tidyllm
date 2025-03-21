@@ -94,9 +94,9 @@ tidyllm_tool <- function(.f, .description = character(0), ...) {
 
 
 #Generics for tools
-tools_to_api <- new_generic("tools_to_api", c("api", "tools"))
-run_tool_calls <- new_generic("run_tool_calls", c("api","tool_calls","tools"))
-send_tool_results <- new_generic("send_tool_results", c("api","request","request_body"))
+tools_to_api <- new_generic("tools_to_api", c(".api", ".tools"))
+run_tool_calls <- new_generic("run_tool_calls", c(".api",".tool_calls",".tools"))
+send_tool_results <- new_generic("send_tool_results", c(".api",".request",".request_body"))
 
 print.TOOL  <- new_external_generic("base", "print", "x")
 
@@ -111,8 +111,8 @@ method(print.TOOL,TOOL) <- function(x, ...){
 
 #' Generic method to convert a tidyllm TOOL definition for a generic API
 #' @noRd
-method(tools_to_api, list(APIProvider, class_list)) <- function(api, tools) {
-  purrr::map(tools, function(tool) {
+method(tools_to_api, list(APIProvider, class_list)) <- function(.api, .tools) {
+  purrr::map(.tools, function(tool) {
     list(
       type = "function",
       `function` = list(
@@ -126,7 +126,7 @@ method(tools_to_api, list(APIProvider, class_list)) <- function(api, tools) {
               description = param@description
             )
           }),
-          required =  as.list(names(tool@input_schema)) # Assume all are required
+          required = as.list(names(tool@input_schema)) # Assume all are required
         )
       )
     )

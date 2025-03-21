@@ -13,8 +13,13 @@ send_mistral_batch(
   .top_p = 1,
   .max_tokens = 1024,
   .min_tokens = NULL,
+  .frequency_penalty = NULL,
+  .logit_bias = NULL,
+  .presence_penalty = NULL,
   .seed = NULL,
   .stop = NULL,
+  .safe_prompt = FALSE,
+  .json_schema = NULL,
   .dry_run = FALSE,
   .overwrite = FALSE,
   .max_tries = 3,
@@ -31,7 +36,7 @@ send_mistral_batch(
 
 \item{.metadata}{Optional metadata for the batch.}
 
-\item{.temperature}{Sampling temperature to use, between \code{0.0} and \code{1.5}. Higher values make the output more random (default: \code{0.7}).}
+\item{.temperature}{Sampling temperature to use, between \code{0.0} and \code{1.5} (default: \code{0.7}).}
 
 \item{.top_p}{Nucleus sampling parameter, between \code{0.0} and \code{1.0} (default: \code{1}).}
 
@@ -39,23 +44,33 @@ send_mistral_batch(
 
 \item{.min_tokens}{The minimum number of tokens to generate (optional).}
 
+\item{.frequency_penalty}{Numeric value (or NULL) for frequency penalty.}
+
+\item{.logit_bias}{A named list modifying the likelihood of specific tokens (or NULL).}
+
+\item{.presence_penalty}{Numeric value (or NULL) for presence penalty.}
+
 \item{.seed}{Random seed for deterministic outputs (optional).}
 
-\item{.stop}{Stop generation at specific tokens or strings (optional).}
+\item{.stop}{Sequence(s) at which to stop generation (optional).}
 
-\item{.dry_run}{Logical; if \code{TRUE}, returns the prepared request without executing it (default: \code{FALSE}).}
+\item{.safe_prompt}{Logical; if TRUE, injects a safety prompt (default: FALSE).}
 
-\item{.overwrite}{Logical; if \code{TRUE}, allows overwriting existing custom IDs (default: \code{FALSE}).}
+\item{.json_schema}{A JSON schema object for structured output (optional).}
 
-\item{.max_tries}{Maximum retry attempts for requests (default: \code{3}).}
+\item{.dry_run}{Logical; if TRUE, returns the prepared request without executing it (default: FALSE).}
 
-\item{.timeout}{Request timeout in seconds (default: \code{60}).}
+\item{.overwrite}{Logical; if TRUE, allows overwriting existing custom IDs (default: FALSE).}
 
-\item{.id_prefix}{Prefix for generating custom IDs (default: \code{"tidyllm_mistral_req_"}).}
+\item{.max_tries}{Maximum retry attempts for requests (default: 3).}
+
+\item{.timeout}{Request timeout in seconds (default: 60).}
+
+\item{.id_prefix}{Prefix for generating custom IDs (default: "tidyllm_mistral_req_").}
 }
 \value{
-The \code{prepared_llms} list with the \code{batch_id} attribute attached.
+The prepared LLMMessage list with a batch_id attribute.
 }
 \description{
-Send a Batch of Requests to the Mistral API
+This function creates and submits a batch of messages to the Mistral API for asynchronous processing.
 }

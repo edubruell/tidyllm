@@ -169,6 +169,7 @@ get_metadata <- function(.llm, .index = NULL) {
       prompt_tokens = if (!is.null(meta$prompt_tokens)) meta$prompt_tokens else NA_integer_,
       completion_tokens = if (!is.null(meta$completion_tokens)) meta$completion_tokens else NA_integer_,
       total_tokens = if (!is.null(meta$total_tokens)) meta$total_tokens else NA_integer_,
+      stream  = if (!is.null(meta$stream)) meta$stream else NA,
       api_specific = list(meta$specific_metadata)
     )
   })

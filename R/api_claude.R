@@ -10,10 +10,10 @@ api_claude <- new_class("Claude", APIProvider)
 #' one needed for the Anthropic Claude API.
 #'
 #' @noRd
-method(to_api_format, list(LLMMessage, api_claude)) <- function(llm, 
-                                                                api) {
+method(to_api_format, list(LLMMessage, api_claude)) <- function(.llm, 
+                                                                .api) {
   
-  claude_history <- filter_roles(llm@message_history, c("user", "assistant"))
+  claude_history <- filter_roles(.llm@message_history, c("user", "assistant"))
   lapply(claude_history, function(m) {
     formatted_message <- format_message(m)
     if (!is.null(formatted_message$image)) {
@@ -32,75 +32,97 @@ method(to_api_format, list(LLMMessage, api_claude)) <- function(llm,
 #' Extract rate limit info from  Claude API-Headers
 #'
 #' @noRd
-method(ratelimit_from_header, list(api_claude,new_S3_class("httr2_headers"))) <- function(api,headers){
+method(ratelimit_from_header, list(api_claude,new_S3_class("httr2_headers"))) <- function(.api,.headers){
   list(
-    this_request_time = strptime(headers["date"], 
+    this_request_time = strptime(.headers["date"], 
                                  format="%a, %d %b %Y %H:%M:%S", tz="GMT"),
     ratelimit_requests = as.integer(
-      headers["anthropic-ratelimit-requests-limit"]),
+      .headers["anthropic-ratelimit-requests-limit"]),
     ratelimit_requests_remaining = as.integer(
-      headers["anthropic-ratelimit-requests-remaining"]),
+      .headers["anthropic-ratelimit-requests-remaining"]),
     ratelimit_requests_reset_time = as.POSIXct(
-      headers["anthropic-ratelimit-requests-reset"]$`anthropic-ratelimit-requests-reset`,
+      .headers["anthropic-ratelimit-requests-reset"]$`anthropic-ratelimit-requests-reset`,
       format="%Y-%m-%dT%H:%M:%SZ", tz="UTC"),
     ratelimit_tokens = as.integer(
-      headers["anthropic-ratelimit-tokens-limit"]),
+      .headers["anthropic-ratelimit-tokens-limit"]),
     ratelimit_tokens_remaining = as.integer(
-      headers["anthropic-ratelimit-tokens-remaining"]),
+      .headers["anthropic-ratelimit-tokens-remaining"]),
     ratelimit_tokens_reset_time = as.POSIXct(
-      headers["anthropic-ratelimit-tokens-reset"]$`anthropic-ratelimit-tokens-reset`,
+      .headers["anthropic-ratelimit-tokens-reset"]$`anthropic-ratelimit-tokens-reset`,
       format="%Y-%m-%dT%H:%M:%SZ", tz="UTC")
   )
 }
 
-#' A chat pasring method for claude to extract the assitant response from a claude
-#' request
+#' A chat parsing method for Openai to extract the assitant response 
 #'
 #' @noRd
-method(parse_chat_function, api_claude) <- function(api) {
-  api_label <- api@long_name 
-  function(body_json){
-    if("error" %in% names(body_json)){
-      sprintf("%s returned an Error:\nType: %s\nMessage: %s",
-              api_label,
-              body_json$error$type,
-              body_json$error$message) |>
-        stop()
-    }
-    
-    if (!"content" %in% names(body_json) || length(body_json$content) == 0) {
-      paste0("Received empty response from ",api_label) |>
+method(parse_chat_response, list(api_claude,class_list)) <- function(.api,.content) {
+  api_label <- .api@long_name 
+  if("error" %in% names(.content)){
+    sprintf("%s returned an Error:\nType: %s\nMessage: %s",
+            api_label,
+            .content$error$type,
+            .content$error$message) |>
       stop()
-    }
-    if(r_has_name(body_json,"thinking")) return(body_json$content[[2]]$text)
-    body_json$content[[1]]$text
   }
+  
+  if (!"content" %in% names(.content) || length(.content$content) == 0) {
+    paste0("Received empty response from ",api_label) |>
+      stop()
+  }
+  
+  if(r_has_name(.content,"thinking")) return(.content$content[[2]]$text)
+  .content$content[[1]]$text
 }
+
 
 #' A function to get metadata from Claude responses
 #'
 #' @noRd
-method(extract_metadata, list(api_claude,class_list))<- function(api,response) {
+method(extract_metadata, list(api_claude,class_list))<- function(.api,.response) {
   list(
-    model             = response$model,
+    model             = .response$model,
     timestamp         = lubridate::as_datetime(lubridate::now()),
-    prompt_tokens     = response$usage$input_tokens,
-    completion_tokens = response$usage$output_tokens,
-    total_tokens      = response$usage$input_tokens + response$usage$output_tokens,
+    prompt_tokens     = .response$usage$input_tokens,
+    completion_tokens = .response$usage$output_tokens,
+    total_tokens      = .response$usage$input_tokens + .response$usage$output_tokens,
+    stream            = FALSE,
     specific_metadata = list(
-      stop_reason    = response$stop_reason,
-      id             = response$id,
-      stop_sequence  = response$stop_sequence,
-      thinking       = if(r_has_name(response,"thinking")) response$content[[1]]$thinking else NULL,
-      signature      = if(r_has_name(response,"thinking")) response$content[[1]]$signature else NULL
+      stop_reason    = .response$stop_reason,
+      id             = .response$id,
+      stop_sequence  = .response$stop_sequence,
+      thinking       = if(r_has_name(.response,"thinking")) .response$content[[1]]$thinking else NULL,
+      signature      = if(r_has_name(.response,"thinking")) .response$content[[1]]$signature else NULL
     ) 
+  )
+}  
+
+#' A function to get metadata from Openai streaming responses
+#'
+#' @noRd
+method(extract_metadata_stream, list(api_claude,class_list))<- function(.api,.stream_raw_data) {
+  start_message <- .stream_raw_data |> 
+    purrr::keep(~.x$type=="message_start") |>
+    unlist(recursive = FALSE)
+  
+  last_message <- .stream_raw_data[[length(.stream_raw_data) - 1]] |> 
+    unlist(recursive = FALSE)
+
+  list(
+    model             = start_message$message$model,
+    timestamp         = lubridate::as_datetime(lubridate::now()),
+    prompt_tokens     = start_message$message$usage$input_tokens,
+    completion_tokens = last_message$usage.output_tokens,
+    total_tokens      = start_message$message$usage$input_tokens + last_message$usage.output_tokens,
+    stream            = TRUE,
+    specific_metadata = list(warning="Specific Metadata is not yet implemented for Claude streaming requests") 
   )
 }  
 
 
 #Claude-specific method to format tool calls for the API
-method(tools_to_api, list(api_claude, class_list)) <- function(api, tools) {
-  purrr::map(tools, function(tool) {
+method(tools_to_api, list(api_claude, class_list)) <- function(.api, .tools) {
+  purrr::map(.tools, function(tool) {
     list(
       name = tool@name,
       description = tool@description,
@@ -121,16 +143,16 @@ method(tools_to_api, list(api_claude, class_list)) <- function(api, tools) {
 #' A method to run tool calls on Claude and create the expected response
 #'
 #' @noRd
-method(run_tool_calls, list(api_claude, class_list, class_list)) <- function(api, tool_calls, tools) {
+method(run_tool_calls, list(api_claude, class_list, class_list)) <- function(.api, .tool_calls, .tools) {
   # Iterate over tool calls
-  tool_results <- purrr::map(tool_calls, function(tool_call) {
+  tool_results <- purrr::map(.tool_calls, function(tool_call) {
     # Extract name, input, and id from the tool call
     tool_name    <- tool_call$name
     tool_args    <- tool_call$input
     tool_call_id <- tool_call$id
     
     # Find the corresponding tool in the tools list
-    matching_tool <- purrr::keep(tools, ~ .x@name == tool_name)
+    matching_tool <- purrr::keep(.tools, ~ .x@name == tool_name)
     if (length(matching_tool) == 0) {
       warning(sprintf("No matching tool found for: %s", tool_name))
       return(NULL)
@@ -164,59 +186,54 @@ method(run_tool_calls, list(api_claude, class_list, class_list)) <- function(api
   )
 }
 
+#' A method to handle streaming requests for Anthropic
+#' request
+#'
+#' @noRd
+method(handle_stream,list(api_claude,new_S3_class("httr2_response"))) <- function(.api,.stream_response) {
+  stream_text <- ""
+  stream_data <- list()
+  repeat {
+    stream_chunk <- httr2::resp_stream_sse(.stream_response)
+    
+    # Skip empty chunks
+    if (is.null(stream_chunk$data) || !nzchar(stream_chunk$data)) {
+      next  
+    }
+    
 
-#Default method for the streaming callback function
-method(generate_callback_function,api_claude) <- function(api) {
-  # Claude streaming callback function
-  function(.data) {
+    # Try to parse the JSON content
+    parsed_event <- tryCatch(
+      jsonlite::fromJSON(stream_chunk$data, simplifyVector = FALSE, simplifyDataFrame = FALSE),
+      error = function(e) {
+        message("Failed to parse JSON: ", e$message)
+        return(NULL)
+      }
+    )
     
-    # Read the stream content and split into lines
-    lines <- .data |>
-      rawToChar(multiple = FALSE) |>
-      stringr::str_split("\n") |>
-      unlist()
-    
-    # Initialize a flag to control early exit
-    continue_processing <- TRUE
-    
-    # Separate event and data lines
-    event_lines <- lines |>
-      purrr::keep(~ grepl("^event:", .x) && .x != "")
-    data_lines <- lines |>
-      purrr::keep(~ grepl("^data:", .x) && .x != "")
-    
-    # Process event lines
-    purrr::walk(event_lines, ~ {
-      if (grepl("message_start", .x)) {
-        .tidyllm_stream_env$stream <- ""
-      } else if (grepl("message_stop", .x)) {
+    if (!is.null(parsed_event)) {
+      stream_data <- append(stream_data,list(parsed_event))
+      if (parsed_event$type == "message_stop") {
+        close(.stream_response)
         message("\n---------\nStream finished\n---------\n")
-        continue_processing <<- FALSE
+        break
       }
-    })
-    
-    # Process data lines
-    purrr::walk(data_lines, ~ {
-      json_part <- sub("^data: ", "", .x)
-      # Try to parse the JSON content
-      parsed_event <- tryCatch(
-        jsonlite::fromJSON(json_part),
-        error = function(e) {
-          message("Failed to parse JSON: ", e$message)
-          return(NULL)
+      
+      delta_content <- parsed_event$delta$text
+      if (!is.null(delta_content)) {
+          stream_text <- paste0(stream_text, delta_content)
+          cat(delta_content)
+          utils::flush.console()
         }
-      )
-      if (!is.null(parsed_event) && parsed_event$type == "content_block_delta") {
-        delta_content <- parsed_event$delta$text
-        .tidyllm_stream_env$stream <- paste0(.tidyllm_stream_env$stream, delta_content)
-        cat(delta_content)
-        utils::flush.console()
       }
-    })
-    
-    return(continue_processing)
   }
+  
+  list(
+    reply = stream_text,
+    raw_data = stream_data
+  )
 }
+
 
 #' Interact with Claude AI models via the Anthropic API
 #'
@@ -346,7 +363,8 @@ claude_chat <- function(.llm,
   
   response <- perform_chat_request(request,api_obj,.stream,.timeout)
   
-  if(response$raw$content$stop_reason == "tool_use"){
+  if(.stream == FALSE){
+    if(response$raw$content$stop_reason == "tool_use"){
     
     tool_calls <- response$raw$content$content |>
       purrr::keep(~{.x$type=="tool_use"})
@@ -364,7 +382,7 @@ claude_chat <- function(.llm,
       httr2::req_body_json(data = request_body)
     
     response <- perform_chat_request(request,api_obj,.stream,.timeout,.max_tries)
-  }
+  }}
   
   # Extract the assistant reply and headers from response
   assistant_reply <- response$assistant_reply
@@ -372,11 +390,11 @@ claude_chat <- function(.llm,
   track_rate_limit(api_obj,response$headers,.verbose)
   
   # Return the updated LLMMessage object
-  add_message(llm     = .llm, 
-              role    = "assistant", 
-              content = assistant_reply, 
-              json    = FALSE,
-              meta    = response$meta)
+  add_message(.llm     = .llm, 
+              .role    = "assistant", 
+              .content = assistant_reply, 
+              .json    = FALSE,
+              .meta    = response$meta)
 }
 
 #' Send a Batch of Messages to Claude API
@@ -397,6 +415,9 @@ claude_chat <- function(.llm,
 #' @param .timeout Integer specifying the request timeout in seconds (default: 60).
 #' @param .dry_run Logical; if TRUE, returns the prepared request object without executing it (default: FALSE).
 #' @param .id_prefix Character string to specify a prefix for generating custom IDs when names in `.llms` are missing.
+#' @param .thinking Logical; if TRUE, enables Claude's thinking mode for complex reasoning tasks (default: FALSE).
+#' @param .thinking_budget Integer specifying the maximum tokens Claude can spend on thinking (default: 1024). Must be at least 1024.
+#'
 #'   Defaults to "tidyllm_claude_req_".
 #' 
 #' @return An updated and named list of `.llms` with identifiers that align with batch responses, including a `batch_id` attribute.
@@ -408,6 +429,8 @@ send_claude_batch <- function(.llms,
                               .top_k = NULL, 
                               .top_p = NULL, 
                               .stop_sequences = NULL, 
+                              .thinking = FALSE,
+                              .thinking_budget = 1024,
                               .api_url = "https://api.anthropic.com/", 
                               .verbose = FALSE,
                               .dry_run = FALSE,
@@ -448,8 +471,7 @@ send_claude_batch <- function(.llms,
   requests_list <- lapply(seq_along(prepared_llms), function(i) { 
     
     # Get messages from each LLMMessage object
-    messages <- to_api_format(llm=.llms[[i]],
-                              api=api_obj)
+    messages <- to_api_format(.llms[[i]],api_obj)
     
     custom_id <- names(prepared_llms)[i]
     list(
@@ -461,7 +483,9 @@ send_claude_batch <- function(.llms,
         temperature = .temperature,
         top_k = .top_k,
         top_p = .top_p,
-        stop_sequences = .stop_sequences
+        system = .llms[[i]]@system_prompt,
+        stop_sequences = .stop_sequences,
+        thinking = if(.thinking) list(type = "enabled", budget_tokens = .thinking_budget) else NULL
       ) |> purrr::compact()  # Remove NULL values
     )
   })
@@ -697,10 +721,10 @@ fetch_claude_batch <- function(.llms,
     
     if (!is.null(result) && result$result$type == "succeeded") {
       assistant_reply <- result$result$message$content$text
-      llm <- add_message(llm = .llms[[custom_id]],
-                         role = "assistant", 
-                         content = assistant_reply,
-                         meta = extract_metadata(api_obj,result$result$message))
+      llm <- add_message(.llm = .llms[[custom_id]],
+                         .role = "assistant", 
+                         .content = assistant_reply,
+                         .meta = extract_metadata(api_obj,result$result$message))
       return(llm)
     } else {
       warning(sprintf("Result for custom_id %s was unsuccessful or not found", custom_id))

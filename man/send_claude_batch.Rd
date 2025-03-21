@@ -12,6 +12,8 @@ send_claude_batch(
   .top_k = NULL,
   .top_p = NULL,
   .stop_sequences = NULL,
+  .thinking = FALSE,
+  .thinking_budget = 1024,
   .api_url = "https://api.anthropic.com/",
   .verbose = FALSE,
   .dry_run = FALSE,
@@ -36,6 +38,12 @@ send_claude_batch(
 
 \item{.stop_sequences}{Character vector of sequences that halt response generation.}
 
+\item{.thinking}{Logical; if TRUE, enables Claude's thinking mode for complex reasoning tasks (default: FALSE).}
+
+\item{.thinking_budget}{Integer specifying the maximum tokens Claude can spend on thinking (default: 1024). Must be at least 1024.
+
+Defaults to "tidyllm_claude_req_".}
+
 \item{.api_url}{Base URL for the Claude API (default: "https://api.anthropic.com/").}
 
 \item{.verbose}{Logical; if TRUE, prints a message with the batch ID (default: FALSE).}
@@ -48,8 +56,7 @@ send_claude_batch(
 
 \item{.timeout}{Integer specifying the request timeout in seconds (default: 60).}
 
-\item{.id_prefix}{Character string to specify a prefix for generating custom IDs when names in \code{.llms} are missing.
-Defaults to "tidyllm_claude_req_".}
+\item{.id_prefix}{Character string to specify a prefix for generating custom IDs when names in \code{.llms} are missing.}
 }
 \value{
 An updated and named list of \code{.llms} with identifiers that align with batch responses, including a \code{batch_id} attribute.

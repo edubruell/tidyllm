@@ -2,7 +2,7 @@
 % Please edit documentation in R/api_azure_openai.R
 \name{azure_openai_chat}
 \alias{azure_openai_chat}
-\title{Send LLM Messages to an OpenAI Chat Completions endpoint on Azure}
+\title{Send LLM Messages to an Azure OpenAI Chat Completions endpoint}
 \usage{
 azure_openai_chat(
   .llm,
@@ -10,10 +10,9 @@ azure_openai_chat(
   .deployment = "gpt-4o-mini",
   .api_version = "2024-08-01-preview",
   .max_completion_tokens = NULL,
+  .reasoning_effort = NULL,
   .frequency_penalty = NULL,
   .logit_bias = NULL,
-  .logprobs = FALSE,
-  .top_logprobs = NULL,
   .presence_penalty = NULL,
   .seed = NULL,
   .stop = NULL,
@@ -23,8 +22,10 @@ azure_openai_chat(
   .timeout = 60,
   .verbose = FALSE,
   .json_schema = NULL,
-  .dry_run = FALSE,
   .max_tries = 3,
+  .dry_run = FALSE,
+  .logprobs = NULL,
+  .top_logprobs = NULL,
   .tools = NULL,
   .tool_choice = NULL
 )
@@ -32,21 +33,19 @@ azure_openai_chat(
 \arguments{
 \item{.llm}{An \code{LLMMessage} object containing the conversation history.}
 
-\item{.endpoint_url}{Base URL for the API (default:  Sys.getenv("AZURE_ENDPOINT_URL")).}
+\item{.endpoint_url}{Base URL for the API (default: Sys.getenv("AZURE_ENDPOINT_URL")).}
 
 \item{.deployment}{The identifier of the model that is deployed (default: "gpt-4o-mini").}
 
-\item{.api_version}{Which version of the API is deployed (default: "2024-10-01-preview")}
+\item{.api_version}{Which version of the API is deployed (default: "2024-08-01-preview").}
 
-\item{.max_completion_tokens}{An upper bound for the number of tokens that can be generated for a completion, including visible output tokens and reasoning tokens.}
+\item{.max_completion_tokens}{An upper bound for the number of tokens that can be generated for a completion.}
 
-\item{.frequency_penalty}{Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far.}
+\item{.reasoning_effort}{How long should reasoning models reason (can either be "low","medium" or "high").}
+
+\item{.frequency_penalty}{Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency.}
 
 \item{.logit_bias}{A named list modifying the likelihood of specified tokens appearing in the completion.}
-
-\item{.logprobs}{Whether to return log probabilities of the output tokens (default: FALSE).}
-
-\item{.top_logprobs}{An integer between 0 and 20 specifying the number of most likely tokens to return at each token position.}
 
 \item{.presence_penalty}{Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far.}
 
@@ -64,11 +63,15 @@ azure_openai_chat(
 
 \item{.verbose}{Should additional information be shown after the API call (default: FALSE).}
 
-\item{.json_schema}{A JSON schema object as R list to enforce the output structure (If defined has precedence over JSON mode).}
+\item{.json_schema}{A JSON schema object provided by tidyllm schema or ellmer schemata.}
+
+\item{.max_tries}{Maximum retries to perform request.}
 
 \item{.dry_run}{If TRUE, perform a dry run and return the request object (default: FALSE).}
 
-\item{.max_tries}{Maximum retries to perform request}
+\item{.logprobs}{If TRUE, get the log probabilities of each output token (default: NULL).}
+
+\item{.top_logprobs}{If specified, get the top N log probabilities of each output token (0-5, default: NULL).}
 
 \item{.tools}{Either a single TOOL object or a list of TOOL objects representing the available functions for tool calls.}
 
@@ -79,19 +82,4 @@ A new \code{LLMMessage} object containing the original messages plus the assista
 }
 \description{
 This function sends a message history to the Azure OpenAI Chat Completions API and returns the assistant's reply.
-This function is work in progress and not fully tested
-}
-\examples{
-\dontrun{
-# Basic usage
-msg <- llm_message("What is R programming?")
-result <- azure_openai_chat(msg)
-
-# With custom parameters
-result2 <- azure_openai_chat(msg, 
-                 .deployment = "gpt-4o-mini",
-                 .temperature = 0.7, 
-                 .max_tokens = 1000)
-}
-
 }

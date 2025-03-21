@@ -33,7 +33,7 @@ test_that("mistral function constructs a correct request and dry runs it", {
   # Now check the body content to ensure the JSON is constructed as expected
   body_json <- request$body |> jsonlite::toJSON() |> as.character()
   
-  expected_json <- "{\"data\":{\"model\":[\"mistral-large-latest\"],\"messages\":[{\"role\":[\"user\"],\"content\":[\"Write a poem about the Gallic Rooster \"]}],\"temperature\":[0.7],\"max_tokens\":[1024],\"stream\":[false],\"top_p\":[1],\"safe_prompt\":[false]},\"type\":[\"json\"],\"content_type\":[\"application/json\"],\"params\":{\"auto_unbox\":[true],\"digits\":[22],\"null\":[\"null\"]}}"
+  expected_json <- "{\"data\":{\"model\":[\"mistral-large-latest\"],\"messages\":[{\"role\":[\"user\"],\"content\":[\"Write a poem about the Gallic Rooster \"]}],\"safe_prompt\":[false],\"temperature\":[0.7],\"top_p\":[1]},\"type\":[\"json\"],\"content_type\":[\"application/json\"],\"params\":{\"auto_unbox\":[true],\"digits\":[22],\"null\":[\"null\"]}}"
   # Check if the JSON matches the expected JSON
   expect_equal(body_json, expected_json)
 })
@@ -70,7 +70,7 @@ test_that("mistral returns expected response",{
     
     expect_equal(
       result_tbl$content[3],
-      "Hello! How can I assist you today? Let's chat about anything you'd like. 😊"
+      "Hello! How can I assist you today? Let's have a friendly conversation.  How are you doing?"
     )
     expect_equal(result_tbl$role[3], "assistant")
     
@@ -120,4 +120,37 @@ test_that("mistral_embedding returns expected response", {
     })
     
   },simplify = FALSE)
+})
+
+test_that("send_batch creates correct JSONL for batch requests", {
+  # Generate batch of messages
+  messages <- glue::glue("Write a haiku about {x}",
+                         x = c("Mannheim", "Stuttgart", "Heidelberg")) |>
+    purrr::map(llm_message)
+  
+  jsonl_lines <- send_batch(messages, mistral, .model = "mistral_large", .dry_run = TRUE)
+  
+  
+  # Check that we have 3 lines (one for each request)
+  expect_equal(length(jsonl_lines), 3)
+  
+  # Parse each line as JSON
+  parsed_lines <- lapply(jsonl_lines, jsonlite::fromJSON)
+  
+  # Verify structure and content of each line
+  purrr::iwalk(parsed_lines, function(x,y){
+    expect_equal(x$custom_id, paste0("tidyllm_mistral_req_", y))
+    expect_equal(x$method, "POST")
+    expect_equal(x$url, "/v1/chat/completions")
+    expect_equal(x$body$model, "mistral_large")
+    expect_equal(x$body$messages$role, c("user"))
+    expect_equal(x$body$messages$role[1], "user")
+  })
+  
+  content_lines <- parsed_lines  |>
+    purrr::map_chr(~.x$body$messages$content[1])
+  
+  expect_true(stringr::str_detect(content_lines[1],"Mannheim"))
+  expect_true(stringr::str_detect(content_lines[2],"Stuttgart"))
+  expect_true(stringr::str_detect(content_lines[3],"Heidelberg"))
 })

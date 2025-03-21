@@ -8,19 +8,94 @@ api_perplexity <- new_class("Perplexity", api_openai)
 #' A function to get metadata from Perplexity responses
 #'
 #' @noRd
-method(extract_metadata, list(api_perplexity,class_list))<- function(api,response) {
+method(extract_metadata, list(api_perplexity,class_list))<- function(.api,.response) {
   list(
-    model             = response$model,
-    timestamp         = lubridate::as_datetime(response$created),
-    prompt_tokens     = response$usage$prompt_tokens,
-    completion_tokens = response$usage$completion_tokens,
-    total_tokens      = response$usage$total_tokens,
+    model             = .response$model,
+    timestamp         = lubridate::as_datetime(.response$created),
+    prompt_tokens     = .response$usage$prompt_tokens,
+    completion_tokens = .response$usage$completion_tokens,
+    total_tokens      = .response$usage$total_tokens,
+    stream            = FALSE,
     specific_metadata = list(
-      id        = response$id,
-      citations = response$citations
+      id        = .response$id,
+      citations = .response$citations
     ) 
   )
 }  
+
+#' A function to get metadata from Openai streaming responses
+#'
+#' @noRd
+method(extract_metadata_stream, list(api_perplexity,class_list))<- function(.api,.stream_raw_data) {
+  final_stream_chunk <- .stream_raw_data[[length(.stream_raw_data)]]
+  list(
+    model             = final_stream_chunk$model,
+    timestamp         = lubridate::as_datetime(final_stream_chunk$created),
+    prompt_tokens     = final_stream_chunk$usage$prompt_tokens,
+    completion_tokens = final_stream_chunk$usage$completion_tokens,
+    total_tokens      = final_stream_chunk$usage$total_tokens,
+    stream            = TRUE,
+    specific_metadata = list(
+      id        = final_stream_chunk$id,
+      citations = final_stream_chunk$citations
+    ) 
+  )
+}  
+
+
+#' A method to handle streaming requests 
+#' Perplixity is different than vanilla openai here. 
+#'
+#' @noRd
+method(handle_stream,list(api_perplexity,new_S3_class("httr2_response"))) <- function(.api,.stream_response) {
+  stream_text <- ""
+  stream_data <- list()
+  repeat {
+    stream_chunk <- httr2::resp_stream_sse(.stream_response)
+    # Skip empty chunks
+    if (is.null(stream_chunk$data) || !nzchar(stream_chunk$data)) {
+      next  
+    }
+    
+
+    # Try to parse the JSON content
+    parsed_event <- tryCatch(
+      jsonlite::fromJSON(stream_chunk$data, simplifyVector = FALSE, simplifyDataFrame = FALSE),
+      error = function(e) {
+        message("Failed to parse JSON: ", e$message)
+        return(NULL)
+      }
+    )
+    
+    if (!is.null(parsed_event)) {
+      if(length(parsed_event$choices) >= 1) {
+        stream_data <- append(stream_data,list(parsed_event))
+        if(!is.null(parsed_event$choices[[1]]$finish_reason)){
+          finished <- parsed_event$choices[[1]]$finish_reason
+          if (finished == "stop") {
+            close(.stream_response)
+            message("\n---------\nStream finished\n---------\n")
+            break
+          }
+          
+        }
+        
+        delta_content <- parsed_event$choices[[1]]$delta$content
+        if (!is.null(delta_content)) {
+          stream_text <- paste0(stream_text, delta_content)
+          cat(delta_content)
+          utils::flush.console()
+        }
+      }
+    }
+  }
+  
+  list(
+    reply = stream_text,
+    raw_data = stream_data
+  )
+}
+
 
 #' Send LLM Messages to the Perplexity Chat API
 #'
@@ -95,9 +170,7 @@ perplexity_chat <- function(.llm,
                       api_key_env_var = "PERPLEXITY_API_KEY")
   
   # Get formatted message list for Perplexity models
-  messages <- to_api_format(llm = .llm,
-                            api = api_obj,
-                            no_system = TRUE)
+  messages <- to_api_format(.llm,api_obj, TRUE)
   
   api_key <- get_api_key(api_obj, .dry_run)
   
@@ -143,11 +216,11 @@ perplexity_chat <- function(.llm,
   assistant_reply <- response$assistant_reply
 
   # Add model's message to the history of the LLMMessage object
-  add_message(llm     = .llm,
-              role    = "assistant", 
-              content = assistant_reply, 
-              json    = .json,
-              meta    = response$meta)
+  add_message(.llm     = .llm,
+              .role    = "assistant", 
+              .content = assistant_reply, 
+              .json    = .json,
+              .meta    = response$meta)
 }
 
 #' Perplexity Provider Function

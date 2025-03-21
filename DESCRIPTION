@@ -1,11 +1,11 @@
 Package: tidyllm
 Title: Tidy Integration of Large Language Models
-Version: 0.3.3
+Version: 0.3.4
 Authors@R: c(
     person("Eduard", "Brüll", NULL, "eduard.bruell@zew.de", role = c("aut", "cre")),
     person("Jia", "Zhang", NULL, NULL, role = "ctb")
   )
-Description: A tidy interface for integrating large language model (LLM) APIs such as 'Claude', 'Openai', 'Groq','Mistral' and local models via 'Ollama' into R workflows. The package supports text and media-based interactions, interactive message history, batch request APIs, and a tidy, pipeline-oriented interface for streamlined integration into data workflows. Web services are available at <https://www.anthropic.com>, <https://openai.com>, <https://groq.com>, <https://mistral.ai/> and <https://ollama.com>.
+Description: A tidy interface for integrating large language model (LLM) APIs such as 'Claude', 'Openai', 'Gemini','Mistral' and local models via 'Ollama' into R workflows. The package supports text and media-based interactions, interactive message history, batch request APIs, and a tidy, pipeline-oriented interface for streamlined integration into data workflows. Web services are available at <https://www.anthropic.com>, <https://openai.com>, <https://aistudio.google.com/>, <https://mistral.ai/> and <https://ollama.com>.
 License: MIT + file LICENSE
 URL: https://edubruell.github.io/tidyllm/
 BugReports: https://github.com/edubruell/tidyllm/issues
@@ -27,7 +27,7 @@ Imports:
     glue,
     jsonlite,
     curl,
-    httr2,
+    httr2 (>= 1.1.1),
     lubridate,
     purrr,
     rlang,
@@ -52,17 +52,17 @@ Collate:
     'rate_limits.R'
     'tidyllm_schema.R'
     'tools.R'
-    'pdfbatch.R'
     'api_openai.R'
-    'api_claude.R'
-    'api_gemini.R'
-    'api_ollama.R'
     'api_azure_openai.R'
     'api_groq.R'
     'api_mistral.R'
     'api_perplexity.R'
     'api_deepseek.R'
     'api_voyage.R'
+    'api_ollama.R'
+    'api_claude.R'
+    'api_gemini.R'
+    'pdfbatch.R'
     'zzz.R'
 Depends: 
     R (>= 4.2.0)

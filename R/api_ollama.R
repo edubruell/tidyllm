@@ -13,10 +13,10 @@ api_ollama <- new_class("Ollama", APIProvider)
 #' one needed for the Ollama API.
 #'
 #' @noRd
-method(to_api_format, list(LLMMessage, api_ollama)) <- function(llm, 
-                                                                api) {
+method(to_api_format, list(LLMMessage, api_ollama)) <- function(.llm, 
+                                                                .api) {
   
-  ollama_history <- filter_roles(llm@message_history, c("user", "assistant"))
+  ollama_history <- filter_roles(.llm@message_history, c("user", "assistant"))
   lapply(ollama_history, function(m) {
     formatted_message <- format_message(m)
     if (!is.null(formatted_message$image)) {
@@ -34,59 +34,105 @@ method(to_api_format, list(LLMMessage, api_ollama)) <- function(llm,
 #' A function to get metadata from Ollama responses
 #'
 #' @noRd
-method(extract_metadata, list(api_ollama,class_list))<- function(api,response) {
+method(extract_metadata, list(api_ollama,class_list))<- function(.api,.response) {
   list(
-    model             = response$model,
-    timestamp         = lubridate::as_datetime(response$created_at),
-    prompt_tokens     = response$prompt_eval_count,
-    completion_tokens = response$eval_count,
-    total_tokens      = response$prompt_eval_count + response$eval_count,
+    model             = .response$model,
+    timestamp         = lubridate::as_datetime(.response$created_at),
+    prompt_tokens     = .response$prompt_eval_count,
+    completion_tokens = .response$eval_count,
+    total_tokens      = .response$prompt_eval_count + .response$eval_count,
+    stream            = FALSE,
     specific_metadata = list(
-      done_reason     = response$done_reason,
-      total_duration_ns  = response$total_duration,
-      load_duration_ns   = response$load_duration,
-      eval_duration_ns   = response$eval_duration
+      done_reason     = .response$done_reason,
+      total_duration_ns  = .response$total_duration,
+      load_duration_ns   = .response$load_duration,
+      eval_duration_ns   = .response$eval_duration
     ) 
   )
 }  
 
-
-#' A callback function generator for an OpenAI request 
-#' request
+#' A function to get metadata from Openai streaming responses
 #'
 #' @noRd
-method(generate_callback_function,api_ollama) <- function(api) {
-  callback_fn <- function(.data) {
-    stream_content <- rawToChar(.data, multiple = FALSE) |> 
-      jsonlite::fromJSON()
-    
-    stream_response <- stream_content$message$content 
-    .tidyllm_stream_env$stream <- paste0(.tidyllm_stream_env$stream,stream_response)
-    cat(stream_response)
-    utils::flush.console()
-    TRUE
-  }
-}
-
-#' A chat parsing method for Openai to extract the assitant response f
-#'
-#' @noRd
-method(parse_chat_function, api_ollama) <- function(api) {
-  function(body_json) {
-    if ("error" %in% names(body_json)) {
-      stop(sprintf("Error response from Ollama API: %s", body_json$error))
-    }  
-    body_json$message$content
-  }
+method(extract_metadata_stream, list(api_ollama,class_list))<- function(.api,.stream_raw_data) {
+  final_stream_chunk <- .stream_raw_data[[length(.stream_raw_data)]]
+  
+  list(
+    model             = final_stream_chunk$model,
+    timestamp         = lubridate::as_datetime(final_stream_chunk$created),
+    prompt_tokens     = final_stream_chunk$prompt_eval_count,
+    completion_tokens = final_stream_chunk$eval_count,
+    total_tokens      = final_stream_chunk$prompt_eval_count + final_stream_chunk$eval_count,
+    stream            = TRUE,
+    specific_metadata = list(
+      done_reason     = final_stream_chunk$done_reason,
+      total_duration_ns  = final_stream_chunk$total_duration,
+      load_duration_ns   = final_stream_chunk$load_duration,
+      eval_duration_ns   = final_stream_chunk$eval_duration
+    ) 
+  )
 }  
 
-#' A method to run tool calls on OpenAI and create the expected response
+#' A method to handle streaming requests for ollama
 #'
 #' @noRd
-method(run_tool_calls, list(api_ollama, class_list, class_list)) <- function(api, tool_calls, tools) {
+method(handle_stream,list(api_ollama,new_S3_class("httr2_response"))) <- function(.api,.stream_response) {
+  stream_text <- ""
+  stream_data <- list()
+  repeat {
+    #Sleep for a tiny bit because Ollama often hangs on sending complete lines
+    Sys.sleep(0.25)
+    stream_chunk   <- httr2::resp_stream_lines(.stream_response)
+  
+    stream_content <- stream_chunk |> 
+      jsonlite::fromJSON()
+    
+    stream_data <- append(stream_data,list(stream_content))
+    if (stream_content$done==TRUE) {
+      close(.stream_response)
+      message("\n---------\nStream finished\n---------\n")
+      break
+    }
+
+    chunk_text  <- stream_content$message$content
+    stream_text <- paste0(stream_text, chunk_text)
+    cat(chunk_text)
+    utils::flush.console()
+    next
+  }
+  
+  list(
+    reply = stream_text,
+    raw_data = stream_data
+  )
+}
+
+
+
+#' A chat parsing method for Ollama to extract the assitant response 
+#'
+#' @noRd
+method(parse_chat_response, list(api_ollama,class_list)) <- function(.api,.content) {
+  api_label <- .api@long_name 
+  if("error" %in% names(.content)){
+    sprintf("%s returned an Error:\nMessage: %s",
+            api_label,
+            .content$error$type) |>
+      stop()
+  }
+  
+  .content$message$content
+}
+
+
+
+#' A method to run tool calls on Ollama and create the expected response
+#'
+#' @noRd
+method(run_tool_calls, list(api_ollama, class_list, class_list)) <- function(.api, .tool_calls, .tools) {
 
   # Iterate over tool calls
-  tool_results <- purrr::map(tool_calls, function(tool_call) {
+  tool_results <- purrr::map(.tool_calls, function(tool_call) {
     tool_name <- tool_call$`function`$name
     tool_args <- tool_call$`function`$arguments
     tool_call_id <- tool_call$id
@@ -98,7 +144,7 @@ method(run_tool_calls, list(api_ollama, class_list, class_list)) <- function(api
     }
     
     # Find the corresponding tool
-    matching_tool <- purrr::keep(tools, ~ .x@name == tool_name)
+    matching_tool <- purrr::keep(.tools, ~ .x@name == tool_name)
     
     if (length(matching_tool) == 0) {
       warning(sprintf("No matching tool found for: %s", tool_name))
@@ -317,11 +363,11 @@ ollama_chat <- function(.llm,
     response <- perform_chat_request(request,api_obj,.stream,.timeout,3)
   }
   
-  add_message(llm     = .llm,
-              role    = "assistant", 
-              content = response$assistant_reply, 
-              json    = json,
-              meta    = response$meta)
+  add_message(.llm     = .llm,
+              .role    = "assistant", 
+              .content = response$assistant_reply, 
+              .json    = json,
+              .meta    = response$meta)
 }
 
 
@@ -496,8 +542,8 @@ send_ollama_batch <- function(.llms,
   ollama_requests <- lapply(seq_along(.llms), function(i) { 
 
     # Get messages from each LLMMessage object
-    ollama_messages <- to_api_format(llm=.llms[[i]],
-                              api=api_obj)
+    ollama_messages <- to_api_format(.llm = .llms[[i]],
+                              .api=api_obj)
     
 
     ollama_options <- list(
@@ -548,13 +594,13 @@ send_ollama_batch <- function(.llms,
   updated_llms <- lapply(seq_along(.llms), function(i) {
     response_content <- httr2::resp_body_json(ollama_responses[[i]])
     
-    meta <- extract_metadata(api = api_obj,response = response_content)
-    chat_content <- parse_chat_function(api_obj)(response_content)
-    add_message(llm     = .llms[[i]],
-                role    = "assistant", 
-                content = chat_content, 
-                json    = json,
-                meta    = meta)
+    meta <- extract_metadata(api_obj,response_content)
+    chat_content <- parse_chat_response(api_obj,response_content)
+    add_message(.llm     = .llms[[i]],
+                .role    = "assistant", 
+                .content = chat_content, 
+                .json    = json,
+                .meta    = meta)
   })
   
   return(updated_llms)

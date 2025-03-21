@@ -45,45 +45,29 @@ perform_chat_request <- function(.request,
                                 .max_tries = 3) {
 
   api_name <- .api@long_name
-  
   if (.stream == TRUE) {
-    # Initialize the streaming environment variable
-    .tidyllm_stream_env$stream <- ""
     message("\n---------\nStart ", api_name, " streaming: \n---------\n")
-    
-    # Generate the appropriate callback function
-    callback_fn <- generate_callback_function(.api)
-    
-    # Perform the streaming request and process it with the callback function
-    response <- httr2::req_perform_stream(
-      .request,
-      callback = callback_fn,
-      buffer_kb = 0.05, 
-      round = "line"
-    )
-    
-    # Assign the final streamed response
-    assistant_reply <- .tidyllm_stream_env$stream
-    # And delete the content of the environment variable just in case
-    .tidyllm_stream_env$stream <- ""
-    
+    # Perform the streaming request
+    response <- httr2::req_perform_connection(.request, blocking = FALSE)
+    stream_response <- handle_stream(.api,response)
+    assistant_reply <- stream_response$reply
+    response_data   <- stream_response$raw_data 
+    metadata <- extract_metadata_stream(.api,stream_response$raw_data)
     # Capture response headers for rate limiting information
     response_headers <- httr2::resp_headers(response)
     
   } else {
     # Non-streaming mode
     response_data <- perform_generic_request(.request, .timeout, .max_tries)
-    parse_chat_response <- parse_chat_function(.api)
-    assistant_reply <- parse_chat_response(response_data$content)
+    #parse_chat_response <- parse_chat_function(.api)
+    assistant_reply <- parse_chat_response(.api,response_data$content)
     # Capture response headers for rate limiting information
     response_headers <- response_data$headers
     metadata <- extract_metadata(.api,response_data$content)
     #metadata <- extract_response_metadata(response_data$content)
   }
   
-  if(.stream == TRUE)  metadata <- NULL
-  if(.stream == TRUE)  response_data <- NULL
-  
+
   list(assistant_reply  = assistant_reply, 
        headers          = response_headers,
        meta             = metadata,
@@ -122,39 +106,5 @@ perform_embedding_request <- function(.request, .timeout, .max_tries, .input_tex
 }
 
 
-#perform_embedding_request <- function(.request, 
-#                                      .timeout, 
-#                                      .max_tries,
-#                                      .input_texts,
-#                                      .fn_extract_embeddings
-#                                      ) {
-#  response <- .request |>
-#    httr2::req_timeout(.timeout) |>
-#    httr2::req_error(is_error = function(resp) FALSE) |>
-#    httr2::req_retry(
-#      max_tries = .max_tries,
-#      retry_on_failure = TRUE,
-#      is_transient = function(resp) httr2::resp_status(resp) %in% c(429, 503)
-#    ) |>
-#    httr2::req_perform()
-#  
-#  response_content <- httr2::resp_body_json(response)
-#  response_headers <- httr2::resp_headers(response)
-#  
-#  # Parse the response and extract embeddings
-#  embeddings <- .fn_extract_embeddings(response_content,
-#                                       httr2::resp_is_error(response),
-#                                       response_headers)
-#    
-#  # Check if embeddings are present
-#  if (is.null(embeddings) | length(embeddings)==0) {
-#    stop("No embeddings returned in the response.")
-#  }
-#  
-#  tibble::tibble(
-#    input = .input_texts,
-#    embeddings = embeddings
-#  )
-#}
-#
+
 

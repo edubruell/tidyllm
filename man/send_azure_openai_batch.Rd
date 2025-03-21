@@ -6,19 +6,20 @@
 \usage{
 send_azure_openai_batch(
   .llms,
-  .deployment = "gpt-4o-mini",
   .endpoint_url = Sys.getenv("AZURE_ENDPOINT_URL"),
+  .deployment = "gpt-4o-mini",
   .api_version = "2024-10-01-preview",
   .max_completion_tokens = NULL,
+  .reasoning_effort = NULL,
   .frequency_penalty = NULL,
   .logit_bias = NULL,
-  .logprobs = FALSE,
-  .top_logprobs = NULL,
   .presence_penalty = NULL,
   .seed = NULL,
   .stop = NULL,
   .temperature = NULL,
   .top_p = NULL,
+  .logprobs = NULL,
+  .top_logprobs = NULL,
   .dry_run = FALSE,
   .overwrite = FALSE,
   .max_tries = 3,
@@ -29,23 +30,21 @@ send_azure_openai_batch(
 )
 }
 \arguments{
-\item{.llms}{An \code{LLMMessage} object containing the conversation history.}
+\item{.llms}{A list of LLMMessage objects containing conversation histories.}
+
+\item{.endpoint_url}{Base URL for the API (default: Sys.getenv("AZURE_ENDPOINT_URL")).}
 
 \item{.deployment}{The identifier of the model that is deployed (default: "gpt-4o-mini").}
 
-\item{.endpoint_url}{Base URL for the API (default:  Sys.getenv("AZURE_ENDPOINT_URL")).}
-
 \item{.api_version}{Which version of the API is deployed (default: "2024-10-01-preview")}
 
-\item{.max_completion_tokens}{An upper bound for the number of tokens that can be generated for a completion, including visible output tokens and reasoning tokens.}
+\item{.max_completion_tokens}{Integer specifying the maximum tokens per response (default: NULL).}
 
-\item{.frequency_penalty}{Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far.}
+\item{.reasoning_effort}{How long should reasoning models reason (can either be "low","medium" or "high")}
+
+\item{.frequency_penalty}{Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency.}
 
 \item{.logit_bias}{A named list modifying the likelihood of specified tokens appearing in the completion.}
-
-\item{.logprobs}{Whether to return log probabilities of the output tokens (default: FALSE).}
-
-\item{.top_logprobs}{An integer between 0 and 20 specifying the number of most likely tokens to return at each token position.}
 
 \item{.presence_penalty}{Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far.}
 
@@ -57,19 +56,23 @@ send_azure_openai_batch(
 
 \item{.top_p}{An alternative to sampling with temperature, called nucleus sampling.}
 
-\item{.dry_run}{If TRUE, perform a dry run and return the request object (default: FALSE).}
+\item{.logprobs}{If TRUE, get the log probabilities of each output token (default: NULL).}
+
+\item{.top_logprobs}{If specified, get the top N log probabilities of each output token (0-5, default: NULL).}
+
+\item{.dry_run}{Logical; if TRUE, returns the prepared request object without executing it (default: FALSE).}
 
 \item{.overwrite}{Logical; if TRUE, allows overwriting an existing batch ID (default: FALSE).}
 
 \item{.max_tries}{Maximum number of retries to perform the request (default: 3).}
 
-\item{.timeout}{Request timeout in seconds (default: 60).}
+\item{.timeout}{Integer specifying the request timeout in seconds (default: 60).}
 
 \item{.verbose}{Logical; if TRUE, additional info about the requests is printed (default: FALSE).}
 
-\item{.json_schema}{A JSON schema object as R list to enforce the output structure (default: NULL).}
+\item{.json_schema}{A JSON schema object provided by tidyllm schema or ellmer schemata (default: NULL).}
 
-\item{.id_prefix}{Character string to specify a prefix for generating custom IDs when names in \code{.llms} are missing (default: "tidyllm_openai_req_").}
+\item{.id_prefix}{Character string to specify a prefix for generating custom IDs when names in \code{.llms} are missing (default: "tidyllm_azure_openai_req_").}
 }
 \value{
 An updated and named list of \code{.llms} with identifiers that align with batch responses, including a \code{batch_id} attribute.

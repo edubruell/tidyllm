@@ -7,21 +7,22 @@ api_groq <- new_class("Groq", api_openai)
 #' A function to get metadata from Openai responses
 #'
 #' @noRd
-method(extract_metadata, list(api_groq,class_list))<- function(api,response) {
+method(extract_metadata, list(api_groq,class_list))<- function(.api, .response) {
   list(
-    model             = response$model,
-    timestamp         = lubridate::as_datetime(response$created),
-    prompt_tokens     = response$usage$prompt_tokens,
-    completion_tokens = response$usage$completion_tokens,
-    total_tokens      = response$usage$total_tokens,
+    model             = .response$model,
+    timestamp         = lubridate::as_datetime(.response$created),
+    prompt_tokens     = .response$usage$prompt_tokens,
+    completion_tokens = .response$usage$completion_tokens,
+    total_tokens      = .response$usage$total_tokens,
     specific_metadata = list(
-      system_fingerprint        = response$system_fingerprint,
-      completion_time           = response$usage$completion_time,
-      total_time                = response$usage$total_time,
-      groq_id                   = response$x_groq$id
+      system_fingerprint        = .response$system_fingerprint,
+      completion_time           = .response$usage$completion_time,
+      total_time                = .response$usage$total_time,
+      groq_id                   = .response$x_groq$id
     ) 
   )
 }  
+
 
 #' Send LLM Messages to the Groq Chat API
 #'
@@ -110,9 +111,7 @@ groq_chat <- function(.llm,
                     api_key_env_var = "GROQ_API_KEY")
   
   # Get formatted message list for Groq models
-  messages <- to_api_format(llm=.llm,
-                            api=api_obj,
-                            no_system=TRUE)
+  messages <- to_api_format(.llm,api_obj,TRUE)
   
   api_key <- get_api_key(api_obj,.dry_run)
   
@@ -177,11 +176,11 @@ groq_chat <- function(.llm,
   track_rate_limit(api_obj,response$headers,.verbose)
   
   # Add model's message to the history of the LLMMessage object
-  add_message(llm     = .llm,
-              role    = "assistant", 
-              content = assistant_reply , 
-              json    = .json,
-              meta    = response$meta)
+  add_message(.llm     = .llm,
+              .role    = "assistant", 
+              .content = assistant_reply , 
+              .json    = .json,
+              .meta    = response$meta)
 }
 
 

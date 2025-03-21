@@ -30,10 +30,10 @@ LLMMessage <- new_class("LLMMessage",
 api_provider <- new_class("api_provider")
 
 #LLMMessage generics
-add_message <- new_generic("add_message", "llm")
-has_image   <- new_generic("has_image", "llm")
-remove_message <- new_generic("remove_message", "llm")
-to_api_format <- new_generic("to_api_format", c("llm", "api"))
+add_message <- new_generic("add_message", ".llm")
+has_image   <- new_generic("has_image", ".llm")
+remove_message <- new_generic("remove_message", ".llm")
+to_api_format <- new_generic("to_api_format", c(".llm", ".api"))
 print.LLMMessage     <- new_external_generic("base", "print", "x")
 as_tibble.LLMMessage <- new_external_generic("tibble", "as_tibble", "x")
 
@@ -44,26 +44,26 @@ as_tibble.LLMMessage <- new_external_generic("tibble", "as_tibble", "x")
 #' media, metadata, and JSON flags.
 #'
 #' @noRd
-method(add_message,LLMMessage) <- function(llm,
-                                           role,
-                                           content,
-                                           media = NULL,
-                                           json  = FALSE,
-                                           meta  = NULL,
-                                           logprobs = NULL){
+method(add_message, LLMMessage) <- function(.llm,
+                                            .role,
+                                            .content,
+                                            .media = NULL,
+                                            .json = FALSE,
+                                            .meta = NULL,
+                                            .logprobs = NULL) {
   
-  message_details <- list(role = role, content = content,json=json)
-  if (!is.null(media)) {
-    message_details$media <- media
+  message_details <- list(role = .role, content = .content, json = .json)
+  if (!is.null(.media)) {
+    message_details$media <- .media
   }
-  if (!is.null(meta)) {
-    message_details$meta <- meta
+  if (!is.null(.meta)) {
+    message_details$meta <- .meta
   }
-  if (!is.null(logprobs)) {  
-    message_details$logprobs <- logprobs
+  if (!is.null(.logprobs)) {  
+    message_details$logprobs <- .logprobs
   }
-  llm@message_history <- c(llm@message_history , list(message_details))
-  llm
+  .llm@message_history <- c(.llm@message_history, list(message_details))
+  .llm
 }
 
 
@@ -73,15 +73,12 @@ method(add_message,LLMMessage) <- function(llm,
 #' include attached images.
 #'
 #' @noRd
-method(has_image,LLMMessage) <- function(llm) {
-  sapply(llm@message_history, function(m){
-    image_list <- extract_media(m$media,"image")
-    if(length(image_list)>0){
-      return(TRUE)
-    } else {
-      return(FALSE)
-    } 
-  }) |> max() |> as.logical()
+method(has_image, LLMMessage) <- function(.llm) {
+  .llm@message_history |>
+    purrr::map_lgl(function(m) {
+      length(extract_media(m$media, "image")) > 0
+    }) |>
+    any()
 }
 
 #' Prints the current message history in a structured format.
@@ -139,16 +136,16 @@ method(print.LLMMessage,LLMMessage) <- function(x,...,.meta = getOption("tidyllm
   invisible(x)
 }
 
-method(remove_message,LLMMessage) <- function(llm,index) {
+method(remove_message, LLMMessage) <- function(.llm, .index) {
   # Validate index
   c(
-    "Index must be a positive integer" = is_integer_valued(index) && index > 0,
-    "Index is out of bounds" = index <= length(llm@message_history)) |> 
+    "Index must be a positive integer" = is_integer_valued(.index) && .index > 0,
+    "Index is out of bounds" = .index <= length(.llm@message_history)) |> 
     validate_inputs()
   
   # Remove the message
-  llm@message_history <- llm@message_history[-index]
-  llm
+  .llm@message_history <- .llm@message_history[-.index]
+  .llm
 }
 
 

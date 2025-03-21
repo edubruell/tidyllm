@@ -8,15 +8,16 @@ api_deepseek <- new_class("Deepseek", api_openai)
 #' A function to get metadata from Perplexity responses
 #'
 #' @noRd
-method(extract_metadata, list(api_deepseek,class_list))<- function(api,response) {
+method(extract_metadata, list(api_deepseek,class_list))<- function(.api,.response) {
   list(
-    model             = response$model,
-    timestamp         = lubridate::as_datetime(response$created),
-    prompt_tokens     = response$usage$prompt_tokens,
-    completion_tokens = response$usage$completion_tokens,
-    total_tokens      = response$usage$total_tokens,
+    model             = .response$model,
+    timestamp         = lubridate::as_datetime(.response$created),
+    prompt_tokens     = .response$usage$prompt_tokens,
+    completion_tokens = .response$usage$completion_tokens,
+    total_tokens      = .response$usage$total_tokens,
+    stream            = FALSE,
     specific_metadata = list(
-      id        = response$id    
+      id        = .response$id    
     ) 
   )
 }  
@@ -84,6 +85,7 @@ deepseek_chat <- function(.llm,
     "Input .tools must be NULL, a TOOL object, or a list of TOOL objects" = is.null(.tools) || S7_inherits(.tools, TOOL) || (is.list(.tools) && all(purrr::map_lgl(.tools, ~ S7_inherits(.x, TOOL)))),
     "Input .tool_choice must be NULL or a character (one of 'none', 'auto', 'required')" = is.null(.tool_choice) || (is.character(.tool_choice) && .tool_choice %in% c("none", "auto", "required")),
     "Streaming is not supported for requests with tool calls" = is.null(.tools) || !isTRUE(.stream),
+    "Streaming is not supported for requests with logprobs" = is.null(.logprobs) || !isTRUE(.stream),
     "Input .tool_choice must be NULL or one of 'none', 'auto', 'required'" = is.null(.tool_choice) | (.tool_choice %in% c("none", "auto", "required")),
     "Input .api_url must be a valid URL" = is.character(.api_url) & nzchar(.api_url),
     "Input .timeout must be a positive integer" = is_integer_valued(.timeout) & .timeout > 0,
@@ -96,9 +98,7 @@ deepseek_chat <- function(.llm,
                           long_name  = "DeepSeek",
                           api_key_env_var = "DEEPSEEK_API_KEY")
   
-  messages <- to_api_format(llm = .llm,
-                            api = api_obj,
-                            no_system = FALSE)
+  messages <- to_api_format(.llm,api_obj,FALSE)
   
   api_key <- get_api_key(api_obj, .dry_run)
   
@@ -156,15 +156,15 @@ deepseek_chat <- function(.llm,
   
   assistant_reply <- response$assistant_reply
 
-  logprobs  <- parse_logprobs(api_obj, response$raw$content$choices[[1]])
+  logprobs  <- parse_logprobs(api_obj, response$raw)
   
   
-  add_message(llm     = .llm,
-              role    = "assistant", 
-              content = assistant_reply , 
-              json    = FALSE,
-              meta    = response$meta,
-              logprobs = logprobs)
+  add_message(.llm     = .llm,
+              .role    = "assistant", 
+              .content = assistant_reply , 
+              .json    = FALSE,
+              .meta    = response$meta,
+              .logprobs = logprobs)
 }
 
 #' Deepseek Provider Function

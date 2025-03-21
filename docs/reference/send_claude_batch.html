@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -54,6 +54,8 @@
 <span>  .top_k <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .top_p <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .stop_sequences <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  .thinking <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  .thinking_budget <span class="op">=</span> <span class="fl">1024</span>,</span>
 <span>  .api_url <span class="op">=</span> <span class="st">"https://api.anthropic.com/"</span>,</span>
 <span>  .verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  .dry_run <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -96,6 +98,15 @@
 <dd><p>Character vector of sequences that halt response generation.</p></dd>
 
 
+<dt id="arg--thinking">.thinking<a class="anchor" aria-label="anchor" href="#arg--thinking"></a></dt>
+<dd><p>Logical; if TRUE, enables Claude's thinking mode for complex reasoning tasks (default: FALSE).</p></dd>
+
+
+<dt id="arg--thinking-budget">.thinking_budget<a class="anchor" aria-label="anchor" href="#arg--thinking-budget"></a></dt>
+<dd><p>Integer specifying the maximum tokens Claude can spend on thinking (default: 1024). Must be at least 1024.</p>
+<p>Defaults to "tidyllm_claude_req_".</p></dd>
+
+
 <dt id="arg--api-url">.api_url<a class="anchor" aria-label="anchor" href="#arg--api-url"></a></dt>
 <dd><p>Base URL for the Claude API (default: "https://api.anthropic.com/").</p></dd>
 
@@ -121,8 +132,7 @@
 
 
 <dt id="arg--id-prefix">.id_prefix<a class="anchor" aria-label="anchor" href="#arg--id-prefix"></a></dt>
-<dd><p>Character string to specify a prefix for generating custom IDs when names in <code>.llms</code> are missing.
-Defaults to "tidyllm_claude_req_".</p></dd>
+<dd><p>Character string to specify a prefix for generating custom IDs when names in <code>.llms</code> are missing.</p></dd>
 
 </dl></div>
     <div class="section level2">

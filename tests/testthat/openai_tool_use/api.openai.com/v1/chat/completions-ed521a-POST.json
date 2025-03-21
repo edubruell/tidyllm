@@ -1,0 +1,38 @@
+{
+    "id": "chatcmpl-BCnv0WJX9BI3u285oB2DDqWlZ2pc9",
+    "object": "chat.completion",
+    "created": 1742391522,
+    "model": "gpt-4o-2024-08-06",
+    "choices": [
+        {
+            "index": 0,
+            "message": {
+                "role": "assistant",
+                "content": "Here are some events happening in Stuttgart this evening:\n\n- **Punk Concert** at Goldmarks starting at 21:00.\n- **Art Gallery** at Wizemann starting at 18:00.\n\nEnjoy your evening!",
+                "refusal": null,
+                "annotations": [
+
+                ]
+            },
+            "logprobs": null,
+            "finish_reason": "stop"
+        }
+    ],
+    "usage": {
+        "prompt_tokens": 156,
+        "completion_tokens": 47,
+        "total_tokens": 203,
+        "prompt_tokens_details": {
+            "cached_tokens": 0,
+            "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+            "reasoning_tokens": 0,
+            "audio_tokens": 0,
+            "accepted_prediction_tokens": 0,
+            "rejected_prediction_tokens": 0
+        }
+    },
+    "service_tier": "default",
+    "system_fingerprint": "fp_0d4eb8a50b"
+}

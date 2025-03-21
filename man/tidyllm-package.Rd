@@ -8,7 +8,7 @@
 \description{
 \if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
 
-A tidy interface for integrating large language model (LLM) APIs such as 'Claude', 'Openai', 'Groq','Mistral' and local models via 'Ollama' into R workflows. The package supports text and media-based interactions, interactive message history, batch request APIs, and a tidy, pipeline-oriented interface for streamlined integration into data workflows. Web services are available at \url{https://www.anthropic.com}, \url{https://openai.com}, \url{https://groq.com}, \url{https://mistral.ai/} and \url{https://ollama.com}.
+A tidy interface for integrating large language model (LLM) APIs such as 'Claude', 'Openai', 'Gemini','Mistral' and local models via 'Ollama' into R workflows. The package supports text and media-based interactions, interactive message history, batch request APIs, and a tidy, pipeline-oriented interface for streamlined integration into data workflows. Web services are available at \url{https://www.anthropic.com}, \url{https://openai.com}, \url{https://aistudio.google.com/}, \url{https://mistral.ai/} and \url{https://ollama.com}.
 }
 \seealso{
 Useful links:

@@ -367,6 +367,31 @@ address <- llm_message("Imagine an address in JSON format that matches the schem
         chat(groq(),.json_schema = address_schema)
 ```
 
+### Tool use
+
+In **tidyllm**, you can specify R functions that are dynamically called by an assistant to enrich model context as model tools. These tools can be dynmically reuqested by the assistant, run in your R-Session and their output resent to the model. Tools can be defined using `tidyllm_tool()`, where you specify an R function, its description, and expected arguments. For example, wrapping the `get_current_time()` function in a tool allows models to retrieve the current time for their answers:
+
+```{r, eval=FALSE, echo=TRUE}
+get_current_time <- function(tz, format = "%Y-%m-%d %H:%M:%S") {
+  format(Sys.time(), tz = tz, format = format, usetz = TRUE)
+}
+
+time_tool <- tidyllm_tool(
+  .f = get_current_time,
+  .description = "Returns the current time in a specified timezone. Use this to determine the current time in any location.",
+  tz = field_chr("The time zone identifier (e.g., 'Europe/Berlin', 'America/New_York', 'Asia/Tokyo', 'UTC'). Required."),
+  format = field_chr("Format string for the time output. Default is '%Y-%m-%d %H:%M:%S'.")
+)
+
+
+llm_message("What's the exact time in Stuttgart?") |>
+  chat(openai,.tools=time_tool)
+```
+```{r, eval=TRUE, echo=FALSE}
+llm_message("What's the exact time in Stuttgart?") |>
+   llm_message('The current time in Stuttgart (Europe/Berlin timezone) is 2025-03-03 09:51:22 CET.',.role="assistant")
+```
+
 ### Embeddings
 
 [Embedding models](https://cohere.com/llmu/text-embeddings) in **tidyllm** transform textual inputs into vector representations, capturing semantic information that can enhance similarity comparisons, clustering, and retrieval tasks. You can generate embeddings with the `embed()`-function. These functions return a semantic vector representation either for each message in a message history or, more typically for this application, for each entry in a character vector:
@@ -386,6 +411,7 @@ tibble::tibble(
 ```
 The output is a `tibble` with two columns, the text input for the embedding and a list column that contains a
 vector of semantic embeddings for each input.
+
 
 ### Batch requests
 
@@ -427,14 +453,14 @@ poems <- map_chr(conversations, get_reply)
 ```
 The output is a list of message histories, each now updated with new assistant replies. You can further process these responses with **tidyllm's** standard tools. Before launching a large batch operation, it’s good practice to run a few test requests and review outputs with the standard `chat()` function. This approach helps confirm that prompt settings and model configurations produce the desired responses, minimizing potential errors or resource waste.
 
-### Streaming back responses (Experimental)
+### Streaming back responses
 
 `chat()` supports real-time streaming of reply tokens to the console while the model works with the `.stream=TRUE` argument in `chat()`, for most api providers. 
 ```{r, eval=FALSE}
 llm_message("Write a lengthy magazine advertisement for an R package called tidyllm") |>
   chat(claude,.stream=TRUE)
 ```
-While this feature offers slightly better feedback on model behavior in real-time, it’s not particularly useful for data-analysis workflows. Metadata is not collected for streaming mode. We consider this feature experimental and recommend using non-streaming responses for production tasks. Note that error handling in streaming callbacks varies by API and differs in quality at this time. 
+While this feature offers slightly better feedback on model behavior in real-time, it is not particularly useful for data-analysis workflows. Since streaming responses do not always offer the full feature set as non-streaming responses in **tidyllm**, we recommend to not use it for typical production tasks, but just for checks during programming. 
 
 ### Choosing the Right Model and API
 

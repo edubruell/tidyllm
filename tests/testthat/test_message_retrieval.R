@@ -9,10 +9,10 @@ test_that("get_reply works with raw assistant message", {
 test_that("get_reply works with assistant JSON message", {
   llm <-llm_message("Provide data in JSON format")
   json_content <- '{"name": "Alice", "age": 30}'
-  llm <-add_message(llm = llm,
-                    role = "assistant", 
-                    content = json_content, 
-                    json = TRUE)
+  llm <-add_message(.llm = llm,
+                    .role = "assistant", 
+                    .content = json_content, 
+                    .json = TRUE)
   
   reply_string <- get_reply(llm)
   expect_equal(reply_string, json_content)
@@ -21,10 +21,10 @@ test_that("get_reply works with assistant JSON message", {
 test_that("get_reply_data works with assistant JSON message", {
   llm <-llm_message("Provide data in JSON format")
   json_content <- '{"name": "Alice", "age": 30}'
-  llm <-add_message(llm = llm,
-                    role = "assistant", 
-                    content = json_content, 
-                    json = TRUE)
+  llm <-add_message(.llm = llm,
+                    .role = "assistant", 
+                    .content = json_content, 
+                    .json = TRUE)
   parsed_data <- get_reply_data(llm)
   expect_equal(parsed_data, jsonlite::fromJSON(json_content))
 })
@@ -32,10 +32,10 @@ test_that("get_reply_data works with assistant JSON message", {
 test_that("get_reply_data warns about corrupt JSON in assistant message marked as JSON", {
   llm <-llm_message("Provide data in JSON format")
   corrupt_json_content <- 'Garbage before JSON {"name": "Alice", "age": 30}'
-  llm <-add_message(llm = llm,
-                    role = "assistant", 
-                    content = corrupt_json_content, 
-                    json = TRUE)
+  llm <-add_message(.llm = llm,
+                    .role = "assistant", 
+                    .content = corrupt_json_content, 
+                    .json = TRUE)
   
   expect_warning(parsed_data <- get_reply_data(llm), "Failed to parse JSON content")
   expect_null(parsed_data)
@@ -45,10 +45,10 @@ test_that("get_reply_data warns about corrupt JSON in assistant message marked a
 test_that("get_reply_data extracts  JSON in assistant message not marked as JSON with warning", {
   llm <-llm_message("Provide data in JSON format")
   corrupt_json_content <- 'Garbage before JSON {"name": "Alice", "age": 30}'
-  llm <-add_message(llm = llm,
-                    role = "assistant", 
-                    content = corrupt_json_content, 
-                    json = FALSE)
+  llm <-add_message(.llm = llm,
+                    .role = "assistant", 
+                    .content = corrupt_json_content, 
+                    .json = FALSE)
   
   expect_warning(parsed_data <- get_reply_data(llm), "The reply is not explicitly marked as JSON. Trying to extract JSON.")
   expect_equal(parsed_data, jsonlite::fromJSON('{"name": "Alice", "age": 30}'))
@@ -63,14 +63,14 @@ test_that("last_reply returns NA_character_ when there are no assistant replies"
 
 test_that("last_reply returns the most recent assistant reply", {
   llm <- llm_message("Hello") 
-  llm <- add_message(llm = llm,
-                    role = "assistant", 
-                    content = "First reply", 
-                    json = FALSE)
-  llm <- add_message(llm = llm,
-                     role = "assistant", 
-                     content = '{"data": "Second reply"}', 
-                     json = TRUE)
+  llm <- add_message(.llm = llm,
+                     .role = "assistant", 
+                     .content = "First reply", 
+                     .json = FALSE)
+  llm <- add_message(.llm = llm,
+                     .role = "assistant", 
+                     .content = '{"data": "Second reply"}', 
+                     .json = TRUE)
   
   reply <- last_reply(llm)
   expect_equal(reply, '{"data": "Second reply"}')
@@ -129,19 +129,19 @@ test_that("last_user_message retrieves the most recent user message", {
 
 test_that("get_metadata works for multiple assistant replies", {
   llm <- llm_message("User message")
-  llm <- add_message(llm=llm,
-                     role = "assistant", 
-                     content = "First assistant message", 
-                     meta = list(model = "gpt-3", 
+  llm <- add_message(.llm=llm,
+                     .role = "assistant", 
+                     .content = "First assistant message", 
+                     .meta = list(model = "gpt-3", 
                                 timestamp = "2024-11-08T10:00:00Z", 
                                 prompt_tokens = 5, 
                                 completion_tokens = 15, 
                                 total_tokens = 20)
                      )
-  llm <- add_message(llm=llm,
-                     role = "assistant", 
-                     content = "Second assistant message", 
-                     meta = list(model = "gpt-4", 
+  llm <- add_message(.llm=llm,
+                     .role = "assistant", 
+                     .content = "Second assistant message", 
+                     .meta = list(model = "gpt-4", 
                                  timestamp = "2024-11-08T10:00:00Z", 
                                  prompt_tokens = 10, 
                                  completion_tokens = 20, 
@@ -166,19 +166,19 @@ test_that("get_metadata handles missing with an NA row", {
 
 test_that("get_metadata retrieves metadata for a specific index", {
   llm <- llm_message("User message")
-  llm <- add_message(llm=llm,
-                     role = "assistant", 
-                     content = "First assistant message", 
-                     meta = list(model = "gpt-3", 
+  llm <- add_message(.llm=llm,
+                     .role = "assistant", 
+                     .content = "First assistant message", 
+                     .meta = list(model = "gpt-3", 
                                  timestamp = "2024-11-08T10:00:00Z", 
                                  prompt_tokens = 5, 
                                  completion_tokens = 15, 
                                  total_tokens = 20)
   )
-  llm <- add_message(llm=llm,
-                     role = "assistant", 
-                     content = "Second assistant message", 
-                     meta = list(model = "gpt-4", 
+  llm <- add_message(.llm=llm,
+                     .role = "assistant", 
+                     .content = "Second assistant message", 
+                     .meta = list(model = "gpt-4", 
                                  timestamp = "2024-11-08T10:00:00Z", 
                                  prompt_tokens = 10, 
                                  completion_tokens = 20, 
@@ -193,10 +193,10 @@ test_that("get_metadata retrieves metadata for a specific index", {
 
 test_that("get_metadata returns error for out-of-bounds index", {
   llm <- llm_message("User message")
-  llm <- add_message(llm=llm,
-                     role = "assistant", 
-                     content = "First assistant message", 
-                     meta = list(model = "gpt-3", 
+  llm <- add_message(.llm=llm,
+                     .role = "assistant", 
+                     .content = "First assistant message", 
+                     .meta = list(model = "gpt-3", 
                                  timestamp = "2024-11-08T10:00:00Z", 
                                  prompt_tokens = 5, 
                                  completion_tokens = 15, 

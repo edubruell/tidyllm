@@ -125,3 +125,4 @@ guess_mime_type <- function(file_path) {
   # Return the corresponding MIME type(s) or a default value
   mime_types[[tolower(ext)]] %||% "application/octet-stream"
 }
+

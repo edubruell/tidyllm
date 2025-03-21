@@ -7,17 +7,20 @@
 mistral_chat(
   .llm,
   .model = "mistral-large-latest",
-  .stream = FALSE,
+  .frequency_penalty = NULL,
+  .logit_bias = NULL,
+  .presence_penalty = NULL,
   .seed = NULL,
-  .json = FALSE,
+  .stop = NULL,
+  .stream = FALSE,
   .temperature = 0.7,
   .top_p = 1,
-  .stop = NULL,
+  .min_tokens = NULL,
+  .max_tokens = NULL,
+  .json_schema = NULL,
   .safe_prompt = FALSE,
   .timeout = 120,
   .max_tries = 3,
-  .max_tokens = 1024,
-  .min_tokens = NULL,
   .dry_run = FALSE,
   .verbose = FALSE,
   .tools = NULL,
@@ -29,27 +32,33 @@ mistral_chat(
 
 \item{.model}{The model identifier to use (default: \code{"mistral-large-latest"}).}
 
-\item{.stream}{Whether to stream back partial progress to the console. (default: \code{FALSE}).}
+\item{.frequency_penalty}{Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency.}
 
-\item{.seed}{The seed to use for random sampling. If set, different calls will generate deterministic results (optional).}
+\item{.logit_bias}{A named list modifying the likelihood of specified tokens appearing in the completion.}
 
-\item{.json}{Whether the output should be in JSON mode(default: \code{FALSE}).}
+\item{.presence_penalty}{Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far.}
 
-\item{.temperature}{Sampling temperature to use, between \code{0.0} and \code{1.5}. Higher values make the output more random, while lower values make it more focused and deterministic (default: \code{0.7}).}
+\item{.seed}{If specified, the system will make a best effort to sample deterministically.}
 
-\item{.top_p}{Nucleus sampling parameter, between \code{0.0} and \code{1.0}. The model considers tokens with top_p probability mass (default: \code{1}).}
+\item{.stop}{Up to 4 sequences where the API will stop generating further tokens.}
 
-\item{.stop}{Stop generation if this token is detected, or if one of these tokens is detected when providing a list (optional).}
+\item{.stream}{If set to TRUE, the answer will be streamed to console as it comes (default: FALSE).}
+
+\item{.temperature}{What sampling temperature to use, between 0 and 2. Higher values make the output more random.}
+
+\item{.top_p}{An alternative to sampling with temperature, called nucleus sampling.}
+
+\item{.min_tokens}{The minimum number of tokens to generate in the completion. Must be \verb{>= 0} (optional).}
+
+\item{.max_tokens}{An upper bound for the number of tokens that can be generated for a completion.}
+
+\item{.json_schema}{A JSON schema object provided by tidyllm schema or ellmer schemata.}
 
 \item{.safe_prompt}{Whether to inject a safety prompt before all conversations (default: \code{FALSE}).}
 
 \item{.timeout}{When should our connection time out in seconds (default: \code{120}).}
 
 \item{.max_tries}{Maximum retries to peform request}
-
-\item{.max_tokens}{The maximum number of tokens to generate in the completion. Must be \verb{>= 0} (default: \code{1024}).}
-
-\item{.min_tokens}{The minimum number of tokens to generate in the completion. Must be \verb{>= 0} (optional).}
 
 \item{.dry_run}{If \code{TRUE}, perform a dry run and return the request object (default: \code{FALSE}).}
 

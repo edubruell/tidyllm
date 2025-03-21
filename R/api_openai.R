@@ -10,10 +10,10 @@ api_openai <- new_class("OpenAI", APIProvider)
 #' for the OpenAI's Chat Completions API.
 #'
 #' @noRd
-method(to_api_format, list(LLMMessage, api_openai)) <- function(llm, 
-                                                                api,
-                                                                no_system=FALSE) {
-  openai_history <- if (no_system) filter_roles(llm@message_history, c("user", "assistant")) else llm@message_history
+method(to_api_format, list(LLMMessage, api_openai)) <- function(.llm, 
+                                                                .api,
+                                                                .no_system=FALSE) {
+  openai_history <- if (.no_system) filter_roles(.llm@message_history, c("user", "assistant")) else .llm@message_history
   lapply(openai_history, function(m) {
     formatted_message <- format_message(m)
     if (!is.null(formatted_message$image)) {
@@ -32,96 +32,135 @@ method(to_api_format, list(LLMMessage, api_openai)) <- function(llm,
   })
 }
 
-
 #' Extract rate limit info from  Openai API-Headers
 #'
 #' @noRd
-method(ratelimit_from_header, list(api_openai,new_S3_class("httr2_headers"))) <- function(api,headers){
-  request_time <- strptime(headers["date"]$date, format="%a, %d %b %Y %H:%M:%S", tz="GMT")
+method(ratelimit_from_header, list(api_openai, new_S3_class("httr2_headers"))) <- function(.api, .headers) {
+  request_time <- strptime(.headers["date"]$date, format="%a, %d %b %Y %H:%M:%S", tz="GMT")
   
   ratelimit_requests_reset_dt <- parse_duration_to_seconds(
-    headers["x-ratelimit-reset-requests"]$`x-ratelimit-reset-requests`)
+    .headers["x-ratelimit-reset-requests"]$`x-ratelimit-reset-requests`)
   ratelimit_tokens_reset_dt <- parse_duration_to_seconds(
-    headers["x-ratelimit-reset-tokens"]$`x-ratelimit-reset-tokens`)
+    .headers["x-ratelimit-reset-tokens"]$`x-ratelimit-reset-tokens`)
   
   list(
     this_request_time = request_time,
     ratelimit_requests = as.integer(
-      headers["x-ratelimit-limit-requests"]),
+      .headers["x-ratelimit-limit-requests"]),
     ratelimit_requests_remaining = as.integer(
-      headers["x-ratelimit-remaining-requests"]),
+      .headers["x-ratelimit-remaining-requests"]),
     ratelimit_requests_reset_time = request_time + ratelimit_requests_reset_dt,
     ratelimit_tokens = as.integer(
-      headers["x-ratelimit-limit-tokens"]),
+      .headers["x-ratelimit-limit-tokens"]),
     ratelimit_tokens_remaining = as.integer(
-      headers["x-ratelimit-remaining-tokens"]),
+      .headers["x-ratelimit-remaining-tokens"]),
     ratelimit_tokens_reset_time = request_time + ratelimit_tokens_reset_dt
   )
 }
 
-#' A chat parsing method for Openai to extract the assitant response f
+#' A chat parsing method for Openai to extract the assitant response 
 #'
 #' @noRd
-method(parse_chat_function, api_openai) <- function(api) {
-  api_label <- api@long_name 
-  function(body_json){
-    if("error" %in% names(body_json)){
-      sprintf("%s returned an Error:\nType: %s\nMessage: %s",
-              api_label,
-              body_json$error$type,
-              body_json$error$message) |>
-        stop()
-    }
-    
-    if (length(body_json$choices) == 0) {
-      paste0("Received empty response from ",api_label) |>
-        stop()
-    }
-    body_json$choices[[1]]$message$content  
-  }
-}  
+method(parse_chat_response, list(api_openai,class_list)) <- function(.api,.content) {
+    api_label <- .api@long_name 
+      if("error" %in% names(.content)){
+        sprintf("%s returned an Error:\nType: %s\nMessage: %s",
+                api_label,
+                .content$error$type,
+                .content$error$message) |>
+          stop()
+      }
+      
+      if (length(.content$choices) == 0) {
+        paste0("Received empty response from ",api_label) |>
+          stop()
+      }
+    .content$choices[[1]]$message$content  
+}
+ 
 
-#' A function to get metadata from Openai responses
+#' A function to get metadata from Openai chat responses
 #'
 #' @noRd
-method(extract_metadata, list(api_openai,class_list))<- function(api,response) {
+method(extract_metadata, list(api_openai, class_list)) <- function(.api, .response) {
   list(
-    model             = response$model,
-    timestamp         = lubridate::as_datetime(response$created),
-    prompt_tokens     = response$usage$prompt_tokens,
-    completion_tokens = response$usage$completion_tokens,
-    total_tokens      = response$usage$total_tokens,
+    model             = .response$model,
+    timestamp         = lubridate::as_datetime(.response$created),
+    prompt_tokens     = .response$usage$prompt_tokens,
+    completion_tokens = .response$usage$completion_tokens,
+    total_tokens      = .response$usage$total_tokens,
+    stream            = FALSE,
     specific_metadata = list(
-      system_fingerprint        = response$system_fingerprint,
-      completion_tokens_details = response$usage$completion_tokens_details,
-      prompt_tokens_details     = response$usage$prompt_tokens_details
-      ) 
+      system_fingerprint        = .response$system_fingerprint,
+      completion_tokens_details = .response$usage$completion_tokens_details,
+      prompt_tokens_details     = .response$usage$prompt_tokens_details
+    ) 
+  )
+}
+
+#' A function to get metadata from Openai streaming responses
+#'
+#' @noRd
+method(extract_metadata_stream, list(api_openai,class_list))<- function(.api,.stream_raw_data) {
+  final_stream_chunk <- .stream_raw_data |> 
+    purrr::keep(~!is.null(.x$usage))|>
+    unlist(recursive = FALSE)
+  
+  list(
+    model             = final_stream_chunk$model,
+    timestamp         = lubridate::as_datetime(final_stream_chunk$created),
+    prompt_tokens     = final_stream_chunk$usage$prompt_tokens,
+    completion_tokens = final_stream_chunk$usage$completion_tokens,
+    total_tokens      = final_stream_chunk$usage$total_tokens,
+    stream            = TRUE,
+    specific_metadata = list(
+      system_fingerprint = final_stream_chunk$system_fingerprint,
+      completion_tokens_details = final_stream_chunk$usage$completion_tokens_details,
+      prompt_tokens_details = final_stream_chunk$usage$prompt_tokens_details
+    ) 
   )
 }  
 
 #' A function to get loprobs from Openai responses
 #'
 #' @noRd
-method(parse_logprobs, list(api_openai, class_list)) <- function(api, choices) {
+method(parse_logprobs, list(api_openai, class_list)) <- function(.api, .input) {
+
   # Helper to parse each token's logprobs
-  parse_token <- function(token_data) {
+  parse_token <- function(.token_data) {
     list(
-      token = token_data$token,
-      logprob = token_data$logprob,
-      bytes = if (!is.null(token_data$bytes)) unlist(token_data$bytes, use.names = FALSE) else NULL,
-      top_logprobs = purrr::map(token_data$top_logprobs, function(tlp) {
+      token = .token_data$token,
+      logprob = .token_data$logprob,
+      bytes = if (!is.null(.token_data$bytes)) unlist(.token_data$bytes, use.names = FALSE) else NULL,
+      top_logprobs = purrr::map(.token_data$top_logprobs, function(.tlp) {
         list(
-          token = tlp$token,
-          logprob = tlp$logprob,
-          bytes = if (!is.null(tlp$bytes)) unlist(tlp$bytes, use.names = FALSE) else NULL
+          token = .tlp$token,
+          logprob = .tlp$logprob,
+          bytes = if (!is.null(.tlp$bytes)) unlist(.tlp$bytes, use.names = FALSE) else NULL
         )
       })
     )
   }
   
-  # Extract logprobs if available
-  if (!is.null(choices$logprobs)) {
-    return(purrr::map(choices$logprobs$content, parse_token))
+  #Extract log-probs for standard responses
+  if(!is.null(.input$content$choices)){
+    input <- .input$content$choices[[1]]
+    if (!is.null(input$logprobs)) {
+      return(purrr::map(input$logprobs$content, parse_token))
+    }
+  }
+  
+  #Extract log-probs for streaming responses
+  if(r_has_name(.input,"delta")){
+    logprobs <- .input |> 
+        purrr::map("choices") |>
+        purrr::map(1) |>
+        purrr::map("logprobs") |>
+        purrr::map("content") |>
+        purrr::compact() |> 
+      purrr::map(~parse_token(.x[[1]])) 
+    
+    return(logprobs)
   }
   
   NULL  # Return NULL if no logprobs are found
@@ -130,17 +169,17 @@ method(parse_logprobs, list(api_openai, class_list)) <- function(api, choices) {
 #' A method to run tool calls on OpenAI and create the expected response
 #'
 #' @noRd
-method(run_tool_calls, list(api_openai, class_list, class_list)) <- function(api, tool_calls, tools) {
+method(run_tool_calls, list(api_openai, class_list, class_list)) <- function(.api, .tool_calls, .tools) {
   # Helper function to parse JSON arguments safely
-  parse_json_args <- function(json_str) {
-    tryCatch(jsonlite::fromJSON(json_str, simplifyVector = TRUE), error = function(e) NULL)
+  parse_json_args <- function(.json_str) {
+    tryCatch(jsonlite::fromJSON(.json_str, simplifyVector = TRUE), error = function(e) NULL)
   }
   
   # Iterate over tool calls
-  tool_results <- purrr::map(tool_calls, function(tool_call) {
-    tool_name <- tool_call$`function`$name
-    tool_args_json <- tool_call$`function`$arguments
-    tool_call_id <- tool_call$id
+  tool_results <- purrr::map(.tool_calls, function(.tool_call) {
+    tool_name <- .tool_call$`function`$name
+    tool_args_json <- .tool_call$`function`$arguments
+    tool_call_id <- .tool_call$id
     
     # Parse arguments
     tool_args <- parse_json_args(tool_args_json)
@@ -151,89 +190,189 @@ method(run_tool_calls, list(api_openai, class_list, class_list)) <- function(api
     }
     
     # Find the corresponding tool
-    matching_tool <- purrr::keep(tools, ~ .x@name == tool_name)
+    matching_tool <- purrr::keep(.tools, ~ .x@name == tool_name)
     
     if (length(matching_tool) == 0) {
       warning(sprintf("No matching tool found for: %s", tool_name))
       return(NULL)
     }
     
-    tool_function <-  matching_tool[[1]]@func
+    tool_function <- matching_tool[[1]]@func
     
     # Execute the function with extracted arguments
     tool_result <- do.call(tool_function, as.list(tool_args))
-  
-
+    
     # Format the response for OpenAI
     list(
       role = "tool",
       tool_call_id = tool_call_id,
       name = tool_name,
-      content = jsonlite::toJSON(tool_result, auto_unbox = TRUE) #tool_result
+      content = jsonlite::toJSON(tool_result, auto_unbox = TRUE)
     )
   })
   
   # Remove NULL results (failed tool executions)
   tool_results <- purrr::compact(tool_results)
-  list(list(role="assistant",
-       content=" ",
-       tool_calls=tool_calls)) |> 
+  list(list(role = "assistant",
+            content = " ",
+            tool_calls = .tool_calls)) |> 
     c(tool_results)
 }
 
 
-#' A callback function generator for an OpenAI request 
+#' A method to handle streaming requests
 #' request
 #'
 #' @noRd
-method(generate_callback_function,api_openai) <- function(api) {
-  callback_fn <- function(.data) {
-    # Read the stream content and split into lines
-    lines <- .data |>
-      rawToChar(multiple = FALSE) |>
-      stringr::str_split("\n") |>
-      unlist()
+method(handle_stream,list(api_openai,new_S3_class("httr2_response"))) <- function(.api,.stream_response) {
+  stream_text <- ""
+  stream_data <- list()
+  repeat {
+    stream_chunk <- httr2::resp_stream_sse(.stream_response)
     
-    # Initialize a flag to control early exit
-    continue_processing <- TRUE
+    # Skip empty chunks
+    if (is.null(stream_chunk$data) || !nzchar(stream_chunk$data)) {
+      next  
+    }
     
-    # Process lines that start with "data: "
-    data_lines <- lines |>
-      purrr::keep(~ grepl("^data: ", .x) && .x != "")
+    if (stream_chunk$data == "[DONE]") {
+      stream_data <- append(stream_data,list(parsed_event))
+      close(.stream_response)
+      message("\n---------\nStream finished\n---------\n")
+      break
+    }
     
-    # Process data lines
-    purrr::walk(data_lines, ~ {
-      
-      json_part <- sub("^data: ", "", .x)
-      
-      if (json_part != "[DONE]") {
-        # Try to parse the JSON content
-        parsed_event <- tryCatch(
-          jsonlite::fromJSON(json_part, simplifyVector = FALSE, simplifyDataFrame = FALSE),
-          error = function(e) {
-            message("Failed to parse JSON: ", e$message)
-            return(NULL)
-          }
-        )
-        
-        if (!is.null(parsed_event)) {
-          if(length(parsed_event$choices)>=1){
-            delta_content <- parsed_event$choices[[1]]$delta$content
-            if (!is.null(delta_content)) {
-              .tidyllm_stream_env$stream <- paste0(.tidyllm_stream_env$stream, delta_content)
-              cat(delta_content)
-              utils::flush.console()
-            }
-          }
-        }
-      } else {
-        message("\n---------\nStream finished\n---------\n")
-        continue_processing <<- FALSE
+    # Try to parse the JSON content
+    parsed_event <- tryCatch(
+      jsonlite::fromJSON(stream_chunk$data, simplifyVector = FALSE, simplifyDataFrame = FALSE),
+      error = function(e) {
+        message("Failed to parse JSON: ", e$message)
+        return(NULL)
       }
-    })
+    )
     
-    return(continue_processing)
+    if (!is.null(parsed_event)) {
+      if(length(parsed_event$choices) >= 1) {
+        stream_data <- append(stream_data,list(parsed_event))
+        
+        delta_content <- parsed_event$choices[[1]]$delta$content
+        if (!is.null(delta_content)) {
+          stream_text <- paste0(stream_text, delta_content)
+          cat(delta_content)
+          utils::flush.console()
+        }
+      }
+    }
   }
+  
+  list(
+    reply = stream_text,
+    raw_data = stream_data
+  )
+}
+
+
+#' Prepare OpenAI API request parameters
+#'
+#' @description
+#' Helper function to prepare common request parameters for OpenAI API calls,
+#' centralizing duplicated logic between chat and batch operations, as well as azure_openai
+#'
+#' @param .llm An LLMMessage object containing conversation history
+#' @param .model The model identifier to use
+#' @param .max_completion_tokens Maximum tokens for completion
+#' @param .reasoning_effort Reasoning effort level (low/medium/high)
+#' @param .frequency_penalty Frequency penalty parameter
+#' @param .logit_bias Logit bias parameters
+#' @param .presence_penalty Presence penalty parameter
+#' @param .seed Random seed for reproducibility
+#' @param .stop Sequence to stop generation
+#' @param .temperature Temperature parameter
+#' @param .top_p Top p parameter
+#' @param .json_schema JSON schema for structured output
+#' @param .logprobs Whether to include log probabilities
+#' @param .top_logprobs Number of top log probabilities to include
+#'
+#' @return A list containing prepared request parameters
+#' @noRd
+prepare_openai_request <- function(
+    .llm,
+    .api,
+    .model = "gpt-4o",
+    .max_completion_tokens = NULL,
+    .reasoning_effort = NULL,
+    .frequency_penalty = NULL,
+    .logit_bias = NULL,
+    .presence_penalty = NULL,
+    .seed = NULL,
+    .stop = NULL,
+    .temperature = NULL,
+    .top_p = NULL,
+    .json_schema = NULL,
+    .logprobs = NULL,
+    .top_logprobs = NULL
+) {
+
+  # Check for models that don't support system prompts
+  no_system_prompt <- FALSE
+  if (.model %in% c("o1", "o1-mini")) {
+    message("Note: o1 models do not support system prompts")
+    no_system_prompt <- TRUE
+  }
+  
+  # Format messages using the API format
+  messages <- to_api_format(.llm, .api, no_system_prompt)
+  
+  # Handle JSON schema and response format
+  response_format <- NULL
+  json <- FALSE
+  if (!is.null(.json_schema)) {
+    json <- TRUE
+    schema_name <- "empty"
+    if (requireNamespace("ellmer", quietly = TRUE)) {
+      # Handle ellmer json schema objects
+      if (S7_inherits(.json_schema, ellmer::TypeObject)) {
+        .json_schema <- to_schema(.json_schema)
+        schema_name <- "ellmer_schema"
+      }
+    }
+    if (schema_name != "ellmer_schema") {
+      schema_name <- attr(.json_schema, "name")
+    }
+    response_format <- list(
+      type = "json_schema",
+      json_schema = list(
+        name = schema_name,
+        schema = .json_schema
+      )
+    )
+  }
+  
+  # Build common request body parameters
+  request_body <- list(
+    model = .model,
+    messages = messages,
+    frequency_penalty = .frequency_penalty,
+    logit_bias = .logit_bias,
+    max_completion_tokens = .max_completion_tokens,
+    reasoning_effort = .reasoning_effort,
+    presence_penalty = .presence_penalty,
+    response_format = response_format,
+    seed = .seed,
+    stop = .stop,
+    temperature = .temperature,
+    top_p = .top_p,
+    logprobs = .logprobs,
+    top_logprobs = .top_logprobs
+  ) |> purrr::compact()
+  
+  # Return all prepared elements
+  list(
+    messages = messages,
+    request_body = request_body,
+    json = json,
+    no_system_prompt = no_system_prompt
+  )
 }
 
 #' Send LLM Messages to the OpenAI Chat Completions API
@@ -243,8 +382,8 @@ method(generate_callback_function,api_openai) <- function(api) {
 #'
 #' @param .llm An `LLMMessage` object containing the conversation history.
 #' @param .model The identifier of the model to use (default: "gpt-4o").
-#' @param .max_completion_tokens An upper bound for the number of tokens that can be generated for a completion, including visible output tokens and reasoning tokens.
-#' @param .frequency_penalty Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far.
+#' @param .max_completion_tokens An upper bound for the number of tokens that can be generated for a completion.
+#' @param .frequency_penalty Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency.
 #' @param .logit_bias A named list modifying the likelihood of specified tokens appearing in the completion.
 #' @param .presence_penalty Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far.
 #' @param .seed If specified, the system will make a best effort to sample deterministically.
@@ -297,7 +436,7 @@ openai_chat <- function(
 ) {
   # Validate inputs
   c(
-    "Input .llm must be an LLMMessage object" = S7_inherits(.llm,LLMMessage),
+    "Input .llm must be an LLMMessage object" = S7_inherits(.llm, LLMMessage),
     "Input .model must be a string" = is.character(.model),
     "Input .max_completion_tokens must be NULL or a positive integer" = is.null(.max_completion_tokens) | (is_integer_valued(.max_completion_tokens) & .max_completion_tokens > 0),   
     "Input .reasoning_effort must be NULL or one of 'low', 'medium', 'high'" = is.null(.reasoning_effort) | (.reasoning_effort %in% c("low", "medium", "high")),
@@ -322,83 +461,73 @@ openai_chat <- function(
     "Input .tools must be NULL, a TOOL object, or a list of TOOL objects" = is.null(.tools) || S7_inherits(.tools, TOOL) || (is.list(.tools) && all(purrr::map_lgl(.tools, ~ S7_inherits(.x, TOOL)))),
     "Input .tool_choice must be NULL or a character (one of 'none', 'auto', 'required')" = is.null(.tool_choice) || (is.character(.tool_choice) && .tool_choice %in% c("none", "auto", "required")),
     "Streaming is not supported for requests with tool calls" = is.null(.tools) || !isTRUE(.stream)
-    ) |> validate_inputs()
+  ) |> validate_inputs()
   
+  # Create API object
+  api_obj <- api_openai(
+    short_name = "openai",
+    long_name = "OpenAI",
+    api_key_env_var = "OPENAI_API_KEY"
+  )
   
-  api_obj <- api_openai(short_name = "openai",
-                        long_name  = "OpenAI",
-                        api_key_env_var = "OPENAI_API_KEY")
-  
-  #Filter out the system prompt for reasoning models.
-  no_system_prompt <- FALSE
-  if(.model %in% c("o1","o1-mini")){
-    message("Note: Reasoning models do not support system prompts")
-    no_system_prompt <- TRUE
-  }
-  
-  messages <- to_api_format(llm=.llm,
-                            api=api_obj,
-                            no_system=no_system_prompt)
-  
+  # Get API key if not using a compatible API
   if (!.compatible) {
-    api_key <- get_api_key(api_obj,.dry_run)
+    api_key <- get_api_key(api_obj, .dry_run)
+  } else {
+    api_key <- NULL
   }
   
-  # Handle JSON schema and JSON mode
-  response_format <- NULL
-  json = FALSE
-  if (!is.null(.json_schema)) {
-    json=TRUE
-    schema_name = "empty"
-    if (requireNamespace("ellmer", quietly = TRUE)) {
-      #Handle ellmer json schemata Objects
-      if(S7_inherits(.json_schema,ellmer::TypeObject)){
-          .json_schema = to_schema(.json_schema)
-          schema_name = "ellmer_schema"
-      } 
-    }
-    if(schema_name!="ellmer_schema"){schema_name <- attr(.json_schema,"name")}
-      response_format <- list(
-        type = "json_schema",
-        json_schema = list(name = schema_name,
-                           schema = .json_schema)
-      )
-  } 
+  # Use the helper function to prepare request components
+  request_data <- prepare_openai_request(
+    .llm = .llm,
+    .api = api_obj,
+    .model = .model,
+    .max_completion_tokens = .max_completion_tokens,
+    .reasoning_effort = .reasoning_effort,
+    .frequency_penalty = .frequency_penalty,
+    .logit_bias = .logit_bias,
+    .presence_penalty = .presence_penalty,
+    .seed = .seed,
+    .stop = .stop,
+    .temperature = .temperature,
+    .top_p = .top_p,
+    .json_schema = .json_schema,
+    .logprobs = .logprobs,
+    .top_logprobs = .top_logprobs
+  )
   
-  #Put a single tool into a list if only one is provided. 
+  # Get components from the request data
+  request_body <- request_data$request_body
+  json <- request_data$json
+  
+  # Handle tools
   tools_def <- if (!is.null(.tools)) {
-    if (S7_inherits(.tools, TOOL))  list(.tools) else .tools
+    if (S7_inherits(.tools, TOOL)) list(.tools) else .tools
   } else {
     NULL
   }
   
-  # Build the request body
-  request_body <- list(
-    model = .model,
-    messages = messages,
-    frequency_penalty = .frequency_penalty,
-    logit_bias = .logit_bias,
-    max_completion_tokens = .max_completion_tokens,
-    reasoning_effort = .reasoning_effort,
-    presence_penalty = .presence_penalty,
-    response_format = response_format,
-    seed = .seed,
-    stop = .stop,
-    stream = .stream,
-    temperature = .temperature,
-    top_p = .top_p,
-    logprobs = .logprobs,        
-    top_logprobs = .top_logprobs,
-    tools = if(!is.null(tools_def)) tools_to_api(api_obj,tools_def) else NULL,
-    tool_choice = .tool_choice
-  ) |> purrr::compact()
+  # Add tools to request body if provided
+  if (!is.null(tools_def)) {
+    request_body$tools <- tools_to_api(api_obj, tools_def)
+    request_body$tool_choice <- .tool_choice
+  }
   
+  # Add streaming options if requested
+  if (.stream == TRUE) {
+    request_body <- request_body |>
+      append(list(
+        stream = TRUE,
+        stream_options = list(include_usage = TRUE)
+      ))
+  }
   
-  # Build the request, omitting Authorization header if .compatible is TRUE
+  # Build the request
   request <- httr2::request(.api_url) |>
     httr2::req_url_path(.api_path) |>
     httr2::req_body_json(data = request_body)
   
+  # Add authorization header if not using a compatible API
   if (!.compatible) {
     request <- request |> httr2::req_headers(
       Authorization = sprintf("Bearer %s", api_key),
@@ -408,43 +537,48 @@ openai_chat <- function(
     request <- request |> httr2::req_headers(`Content-Type` = "application/json")
   }
   
-  # Return only the request object in a dry run.
+  # Return only the request object in a dry run
   if (.dry_run) {
     return(request)
   }
   
-  response <- perform_chat_request(request,api_obj,.stream,.timeout,.max_tries)
-  if(r_has_name(response$raw,"tool_calls")){
-    #Tool call logic can go here!
+  # Perform the request
+  response <- perform_chat_request(request, api_obj, .stream, .timeout, .max_tries)
+  
+  # Handle tool calls if any
+  if (r_has_name(response$raw, "tool_calls")) {
     tool_messages <- run_tool_calls(api_obj,
-                   response$raw$content$choices[[1]]$message$tool_calls,
-                   tools_def)
-    ##Append the tool call to API
-    request_body$messages <- request_body$messages |> 
-      append(tool_messages)
+                                    response$raw$content$choices[[1]]$message$tool_calls,
+                                    tools_def)
     
-    request <- request |>
-      httr2::req_body_json(data = request_body)
+    # Append the tool call to API
+    request_body$messages <- request_body$messages |> append(tool_messages)
     
-    response <- perform_chat_request(request,api_obj,.stream,.timeout,.max_tries)
+    # Update the request and perform it again
+    request <- request |> httr2::req_body_json(data = request_body)
+    response <- perform_chat_request(request, api_obj, .stream, .timeout, .max_tries)
   }
   
-  # Extract assistant reply and rate limiting info from response headers
+  # Extract assistant reply
   assistant_reply <- response$assistant_reply
   
-  #Check whether the result has logprobs in it 
-  logprobs  <- parse_logprobs(api_obj, response$raw$content$choices[[1]])
+  # Check for log probabilities
+  logprobs <- parse_logprobs(api_obj, response$raw)
   
+  # Track rate limit if not using a compatible API
+  if (!.compatible) {
+    track_rate_limit(api_obj, response$headers, .verbose)
+  }
   
-  #Track the rate limit if we are not using a non-openai api
-  if (!.compatible) {track_rate_limit(api_obj,response$headers,.verbose)}
-  
-  add_message(llm     = .llm,
-              role    = "assistant", 
-              content = assistant_reply , 
-              json    = json,
-              meta    = response$meta,
-              logprobs = logprobs)
+  # Update the LLMMessage with the assistant's response
+  add_message(
+    .llm = .llm,
+    .role = "assistant",
+    .content = assistant_reply,
+    .json = json,
+    .meta = response$meta,
+    .logprobs = logprobs
+  )
 }
 
 
@@ -576,7 +710,7 @@ send_openai_batch <- function(.llms,
                               .timeout = 60,
                               .verbose = FALSE,
                               .id_prefix = "tidyllm_openai_req_") {
-
+  
   # Input validation
   c(
     ".llms must be a list of LLMMessage objects" = is.list(.llms) && all(sapply(.llms, S7_inherits, LLMMessage)),
@@ -604,38 +738,9 @@ send_openai_batch <- function(.llms,
                         long_name  = "OpenAI",
                         api_key_env_var = "OPENAI_API_KEY")
   
-  api_key <- get_api_key(api_obj,.dry_run)
-
-
-  #This filters out the system prompt for reasoning models.
-  no_system_prompt <- FALSE
-  if(.model %in% c("o1","o1-mini")){
-    message("Note: Reasoning models do not support system prompts")
-    no_system_prompt <- TRUE
-  }
+  api_key <- get_api_key(api_obj, .dry_run)
   
-  # Handle JSON schema and JSON mode
-  response_format <- NULL
-  json = FALSE
-  if (!is.null(.json_schema)) {
-    json=TRUE
-    schema_name = "empty"
-    if (requireNamespace("ellmer", quietly = TRUE)) {
-      #Handle ellmer json schemata Objects
-      if(S7_inherits(.json_schema,ellmer::TypeObject)){
-        .json_schema = to_schema(.json_schema)
-        schema_name = "ellmer_schema"
-      } 
-    }
-    if(schema_name!="ellmer_schema"){schema_name <- attr(.json_schema,"name")}
-    response_format <- list(
-      type = "json_schema",
-      json_schema = list(name = schema_name,
-                         schema = .json_schema)
-    )
-  } 
-  
- prepared_llms  <- prepare_llms_for_batch(api_obj,
+  prepared_llms <- prepare_llms_for_batch(api_obj,
                                           .llms=.llms,
                                           .id_prefix=.id_prefix,
                                           .overwrite = .overwrite)
@@ -643,37 +748,32 @@ send_openai_batch <- function(.llms,
   # Prepare the request lines
   request_lines <- lapply(seq_along(prepared_llms), function(i) { 
     custom_id <- names(prepared_llms)[i]
-
-    # Get messages from each LLMMessage object
-    messages <- to_api_format(llm=.llms[[i]],
-                              api=api_obj,
-                              no_system=no_system_prompt)
-
-    # Build the request body
-    body <- list(
-      model = .model,
-      messages = messages,
-      frequency_penalty = .frequency_penalty,
-      logit_bias = .logit_bias,
-      max_completion_tokens = .max_completion_tokens,
-      reasoning_effort = .reasoning_effort,
-      presence_penalty = .presence_penalty,
-      response_format = response_format,
-      seed = .seed,
-      stop = .stop,
-      temperature = .temperature,
-      top_p = .top_p,
-      logprobs = .logprobs,        
-      top_logprobs = .top_logprobs
-    ) |> purrr::compact()
     
-   
+    # Use prepare_openai_request to set up common request parameters
+    request_data <- prepare_openai_request(
+      .llm = prepared_llms[[i]],
+      .api = api_obj,
+      .model = .model,
+      .max_completion_tokens = .max_completion_tokens,
+      .reasoning_effort = .reasoning_effort,
+      .frequency_penalty = .frequency_penalty,
+      .logit_bias = .logit_bias,
+      .presence_penalty = .presence_penalty,
+      .seed = .seed,
+      .stop = .stop,
+      .temperature = .temperature,
+      .top_p = .top_p,
+      .json_schema = .json_schema,
+      .logprobs = .logprobs,
+      .top_logprobs = .top_logprobs
+    )
+    
     # Create the request line as JSON
     request_line <- list(
       custom_id = custom_id,
       method = "POST",
       url = "/v1/chat/completions",
-      body = body
+      body = request_data$request_body
     )
     
     # Convert to JSON
@@ -686,7 +786,7 @@ send_openai_batch <- function(.llms,
   
   if (.dry_run) {
     # Return the prepared .jsonl file path
-    return(temp_file)
+    return(readLines(temp_file))
   }
   
   # Upload the .jsonl file via OpenAI's Files API
@@ -696,13 +796,13 @@ send_openai_batch <- function(.llms,
     ) |>
     httr2::req_body_multipart(
       purpose = "batch",
-      file = curl::form_file(temp_file) #httr2::req_file(temp_file)
+      file = curl::form_file(temp_file)
     )
   
   upload_response <- upload_request |>
     perform_generic_request(.timeout=.timeout,
                             .max_tries = .max_tries)
-    
+  
   
   if(.verbose){message("Batch request file uploaded via files API")}
   
@@ -743,11 +843,12 @@ send_openai_batch <- function(.llms,
       stop()
   }
   
-  # Attach batch_id as an attribute to .llms
+  
+    
+  # Attach batch_id as an attribute to prepared_llms
   batch_id <- batch_response_body$id
   attr(prepared_llms, "batch_id") <- batch_id
-  attr(prepared_llms, "json") <- json
-  
+  attr(prepared_llms, "json") <- if (!is.null(.json_schema)) TRUE else FALSE
   
   # Optionally, remove the temporary file
   unlink(temp_file)
@@ -1014,12 +1115,12 @@ fetch_openai_batch <- function(.llms,
         error = function(e) NULL
       )
       
-      llm <- add_message(llm = .llms[[custom_id]],
-                              role = "assistant", 
-                              content =  assistant_reply,
-                              json = .json,
-                              meta = meta_data, 
-                              logprobs = logprobs)
+      llm <- add_message(.llm = .llms[[custom_id]],
+                         .role = "assistant", 
+                         .content =  assistant_reply,
+                         .json = .json,
+                         .meta = meta_data, 
+                         .logprobs = logprobs)
       return(llm)
     } else {
       warning(sprintf("Result for custom_id %s was unsuccessful or not found", custom_id))

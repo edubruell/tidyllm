@@ -9,15 +9,15 @@ api_azure_openai <- new_class("Azure OpenAI", api_openai)
 #' Extract rate limit info from  Azure Openai API-Headers
 #'
 #' @noRd
-method(ratelimit_from_header, list(api_azure_openai,new_S3_class("httr2_headers"))) <- function(api,headers){
-  request_time <- strptime(headers["date"]$date, 
+method(ratelimit_from_header, list(api_azure_openai,new_S3_class("httr2_headers"))) <- function(.api, .headers) {
+  request_time <- strptime(.headers["date"]$date, 
                            format="%a, %d %b %Y %H:%M:%S", tz="GMT")
   
   # Extract remaining requests and tokens
   ratelimit_requests_remaining <- as.integer(
-    headers["x-ratelimit-remaining-requests"]$`x-ratelimit-remaining-requests`)
+    .headers["x-ratelimit-remaining-requests"]$`x-ratelimit-remaining-requests`)
   ratelimit_tokens_remaining <- as.integer(
-    headers["x-ratelimit-remaining-tokens"]$`x-ratelimit-remaining-tokens`)
+    .headers["x-ratelimit-remaining-tokens"]$`x-ratelimit-remaining-tokens`)
   
   # Assuming reset occurs every 60 seconds (at least I got minutes in my azure console)
   reset_interval <- 60         
@@ -40,41 +40,38 @@ method(ratelimit_from_header, list(api_azure_openai,new_S3_class("httr2_headers"
 #' A chat parsing method for Azure Openai to extract the assitant response
 #'
 #' @noRd
-method(parse_chat_function, api_azure_openai) <- function(api) {
-  api_label <- api@long_name 
-  function(body_json){
-    if("error" %in% names(body_json)){
-      sprintf("%s returned an Error:\nType: %s\nMessage: %s",
-              api_label,
-              body_json$error$code,
-              body_json$error$message) |>
-        stop()
-    }
-    
-    if (length(body_json$choices) == 0) {
-      paste0("Received empty response from ",api_label) |>
-        stop()
-    }
-    body_json$choices[[1]]$message$content  
+method(parse_chat_response, list(api_azure_openai,class_list)) <- function(.api,.content) {
+  api_label <- .api@long_name 
+  if("error" %in% names(.content)){
+    sprintf("%s returned an Error:\nType: %s\nMessage: %s",
+            api_label,
+            .content$error$code,
+            .content$error$message) |>
+      stop()
   }
-}  
+  
+  if (length(.content$choices) == 0) {
+    paste0("Received empty response from ",api_label) |>
+      stop()
+  }
+  .content$choices[[1]]$message$content  
+}
 
 
-#' Send LLM Messages to an OpenAI Chat Completions endpoint on Azure 
+
+#' Send LLM Messages to an Azure OpenAI Chat Completions endpoint 
 #'
 #' @description
-#' This function sends a message history to the Azure OpenAI Chat Completions API and returns the assistant's reply. 
-#' This function is work in progress and not fully tested
+#' This function sends a message history to the Azure OpenAI Chat Completions API and returns the assistant's reply.
 #'
 #' @param .llm An `LLMMessage` object containing the conversation history.
-#' @param .endpoint_url Base URL for the API (default:  Sys.getenv("AZURE_ENDPOINT_URL")).
+#' @param .endpoint_url Base URL for the API (default: Sys.getenv("AZURE_ENDPOINT_URL")).
 #' @param .deployment The identifier of the model that is deployed (default: "gpt-4o-mini").
-#' @param .api_version Which version of the API is deployed (default: "2024-10-01-preview")
-#' @param .max_completion_tokens An upper bound for the number of tokens that can be generated for a completion, including visible output tokens and reasoning tokens.
-#' @param .frequency_penalty Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far.
+#' @param .api_version Which version of the API is deployed (default: "2024-08-01-preview").
+#' @param .max_completion_tokens An upper bound for the number of tokens that can be generated for a completion.
+#' @param .reasoning_effort How long should reasoning models reason (can either be "low","medium" or "high").
+#' @param .frequency_penalty Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency.
 #' @param .logit_bias A named list modifying the likelihood of specified tokens appearing in the completion.
-#' @param .logprobs Whether to return log probabilities of the output tokens (default: FALSE).
-#' @param .top_logprobs An integer between 0 and 20 specifying the number of most likely tokens to return at each token position.
 #' @param .presence_penalty Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far.
 #' @param .seed If specified, the system will make a best effort to sample deterministically.
 #' @param .stop Up to 4 sequences where the API will stop generating further tokens.
@@ -83,27 +80,15 @@ method(parse_chat_function, api_azure_openai) <- function(api) {
 #' @param .top_p An alternative to sampling with temperature, called nucleus sampling.
 #' @param .timeout Request timeout in seconds (default: 60).
 #' @param .verbose Should additional information be shown after the API call (default: FALSE).
-#' @param .max_tries Maximum retries to perform request
-#' @param .json_schema A JSON schema object as R list to enforce the output structure (If defined has precedence over JSON mode).
+#' @param .json_schema A JSON schema object provided by tidyllm schema or ellmer schemata.
+#' @param .max_tries Maximum retries to perform request.
 #' @param .dry_run If TRUE, perform a dry run and return the request object (default: FALSE).
+#' @param .logprobs If TRUE, get the log probabilities of each output token (default: NULL).
+#' @param .top_logprobs If specified, get the top N log probabilities of each output token (0-5, default: NULL).
 #' @param .tools Either a single TOOL object or a list of TOOL objects representing the available functions for tool calls.
 #' @param .tool_choice A character string specifying the tool-calling behavior; valid values are "none", "auto", or "required".
 #'
-#'
 #' @return A new `LLMMessage` object containing the original messages plus the assistant's response.
-#' @examples
-#' \dontrun{
-#' # Basic usage
-#' msg <- llm_message("What is R programming?")
-#' result <- azure_openai_chat(msg)
-#' 
-#' # With custom parameters
-#' result2 <- azure_openai_chat(msg, 
-#'                  .deployment = "gpt-4o-mini",
-#'                  .temperature = 0.7, 
-#'                  .max_tokens = 1000)
-#' }
-#'
 #' @export
 azure_openai_chat <- function(
     .llm,
@@ -111,10 +96,9 @@ azure_openai_chat <- function(
     .deployment = "gpt-4o-mini",
     .api_version = "2024-08-01-preview",
     .max_completion_tokens = NULL,
+    .reasoning_effort = NULL,
     .frequency_penalty = NULL,
     .logit_bias = NULL,
-    .logprobs = NULL,
-    .top_logprobs = NULL,
     .presence_penalty = NULL,
     .seed = NULL,
     .stop = NULL,
@@ -124,24 +108,26 @@ azure_openai_chat <- function(
     .timeout = 60,
     .verbose = FALSE,
     .json_schema = NULL,
-    .dry_run = FALSE,
     .max_tries = 3,
+    .dry_run = FALSE,
+    .logprobs = NULL,       
+    .top_logprobs = NULL,
     .tools = NULL,
     .tool_choice = NULL
 ) {
-    #Check enpoint
-  if (.endpoint_url == ""& .dry_run==FALSE){
-   stop("No valid Azure endpoint defined. Please set it either as input to this function or with: Sys.setenv(AZURE_ENDPOINT_URL = \"https://endpoint.openai.azure.com/\")")
+  #Check endpoint
+  if (.endpoint_url == "" && .dry_run == FALSE) {
+    stop("No valid Azure endpoint defined. Please set it either as input to this function or with: Sys.setenv(AZURE_ENDPOINT_URL = \"https://endpoint.openai.azure.com/\")")
   }
   
   # Validate inputs
   c(
     "Input .llm must be an LLMMessage object" = S7_inherits(.llm, LLMMessage),
     "Input .deployment must be a string" = is.character(.deployment),
-    "Input .max_completion_tokens must be NULL or a positive integer" = is.null(.max_completion_tokens) | (is_integer_valued(.max_completion_tokens) & .max_completion_tokens > 0),    ".frequency_penalty must be numeric or NULL" = is.null(.frequency_penalty) | is.numeric(.frequency_penalty),
+    "Input .max_completion_tokens must be NULL or a positive integer" = is.null(.max_completion_tokens) | (is_integer_valued(.max_completion_tokens) & .max_completion_tokens > 0),
+    "Input .reasoning_effort must be NULL or one of 'low', 'medium', 'high'" = is.null(.reasoning_effort) | (.reasoning_effort %in% c("low", "medium", "high")),   
+    "Input .frequency_penalty must be numeric or NULL" = is.null(.frequency_penalty) | is.numeric(.frequency_penalty),
     "Input .logit_bias must be a list or NULL" = is.null(.logit_bias) | is.list(.logit_bias),
-    "Input .logprobs must be logical or NULL" = is.null(.logprobs) | is.logical(.logprobs),
-    "Input .top_logprobs must be NULL or an integer between 0 and 20" = is.null(.top_logprobs) | (is_integer_valued(.top_logprobs) & .top_logprobs >= 0 & .top_logprobs <= 20),
     "Input .presence_penalty must be numeric or NULL" = is.null(.presence_penalty) | is.numeric(.presence_penalty),
     "Input .seed must be NULL or an integer" = is.null(.seed) | is_integer_valued(.seed),
     "Input .stop must be NULL or a character vector or string" = is.null(.stop) | is.character(.stop),
@@ -151,128 +137,122 @@ azure_openai_chat <- function(
     "Input .timeout must be integer-valued numeric" = is_integer_valued(.timeout),
     "Input .verbose must be logical" = is.logical(.verbose),
     "Input .json_schema must be NULL or a list or an ellmer type object" = is.null(.json_schema) | is.list(.json_schema) | is_ellmer_type(.json_schema),
+    "Input .max_tries must be integer-valued numeric" = is_integer_valued(.max_tries),
     "Input .dry_run must be logical" = is.logical(.dry_run),
+    "Input .logprobs must be NULL or a logical" = is.null(.logprobs) | is.logical(.logprobs),
     "Input .top_logprobs must be NULL or an integer between 0 and 5" = is.null(.top_logprobs) | (is_integer_valued(.top_logprobs) && .top_logprobs >= 0 && .top_logprobs <= 5),
     "Input .tools must be NULL, a TOOL object, or a list of TOOL objects" = is.null(.tools) || S7_inherits(.tools, TOOL) || (is.list(.tools) && all(purrr::map_lgl(.tools, ~ S7_inherits(.x, TOOL)))),
     "Input .tool_choice must be NULL or a character (one of 'none', 'auto', 'required')" = is.null(.tool_choice) || (is.character(.tool_choice) && .tool_choice %in% c("none", "auto", "required")),
     "Streaming is not supported for requests with tool calls" = is.null(.tools) || !isTRUE(.stream)
   ) |> validate_inputs()
   
+  # Create API object
+  api_obj <- api_azure_openai(
+    short_name = "azure_openai",
+    long_name = "Azure OpenAI",
+    api_key_env_var = "AZURE_OPENAI_API_KEY"
+  )
   
-  api_obj <- api_azure_openai(short_name = "azure_openai",
-                              long_name  = "Azure OpenAI",
-                              api_key_env_var = "AZURE_OPENAI_API_KEY")
+  # Get API key
+  api_key <- get_api_key(api_obj, .dry_run)
   
-  api_key <- get_api_key(api_obj,.dry_run)
+  # Use the helper function to prepare request components
+  # We'll use .model parameter internally to pass the .deployment value
+  request_data <- prepare_openai_request(
+    .llm = .llm,
+    .api = api_obj,
+    .model = .deployment,  # Use deployment as model internally
+    .max_completion_tokens = .max_completion_tokens,
+    .reasoning_effort = .reasoning_effort,
+    .frequency_penalty = .frequency_penalty,
+    .logit_bias = .logit_bias,
+    .presence_penalty = .presence_penalty,
+    .seed = .seed,
+    .stop = .stop,
+    .temperature = .temperature,
+    .top_p = .top_p,
+    .json_schema = .json_schema,
+    .logprobs = .logprobs,
+    .top_logprobs = .top_logprobs
+  )
   
-  #This filters out the system prompt for reasoning models.
-  no_system_prompt <- FALSE
-  if(.deployment %in% c("o1-preview","o1-mini")){
-    message("Note: Reasoning models do not support system prompts")
-    no_system_prompt <- TRUE
-  }
+  # Get components from the request data
+  request_body <- request_data$request_body
+  json <- request_data$json
   
-  messages <- to_api_format(llm=.llm,
-                            api=api_obj,
-                            no_system=no_system_prompt)
-  
-  #Put a single tool into a list if only one is provided. 
+  # Handle tools
   tools_def <- if (!is.null(.tools)) {
-    if (S7_inherits(.tools, TOOL))  list(.tools) else .tools
+    if (S7_inherits(.tools, TOOL)) list(.tools) else .tools
   } else {
     NULL
   }
   
-  # Handle JSON schema
-  json <- FALSE
-  response_format <- NULL
-  if (!is.null(.json_schema)) {
-    json=TRUE
-    schema_name = "empty"
-    if (requireNamespace("ellmer", quietly = TRUE)) {
-      #Handle ellmer json schemata Objects
-      if(S7_inherits(.json_schema,ellmer::TypeObject)){
-        .json_schema = to_schema(.json_schema)
-        schema_name = "ellmer_schema"
-      } 
-    }
-    if(schema_name!="ellmer_schema"){schema_name <- attr(.json_schema,"name")}
-    response_format <- list(
-      type = "json_schema",
-      json_schema = list(name = schema_name,
-                         schema = .json_schema)
-    )
-  } 
-
-  # Build the request body
-  request_body <- list(
-    messages = messages,
-    frequency_penalty = .frequency_penalty,
-    logit_bias = .logit_bias,
-    logprobs = .logprobs,
-    top_logprobs = .top_logprobs,
-    max_completion_tokens = .max_completion_tokens,
-    presence_penalty = .presence_penalty,
-    response_format = response_format,
-    seed = .seed,
-    stop = .stop,
-    stream = .stream,
-    temperature = .temperature,
-    top_p = .top_p,
-    logprobs = .logprobs,        
-    top_logprobs = .top_logprobs,
-    tools = if(!is.null(tools_def)) tools_to_api(api_obj,tools_def) else NULL,
-    tool_choice = .tool_choice
-  ) |> purrr::compact()
-
-  # Build the request
+  # Add tools to request body if provided
+  if (!is.null(tools_def)) {
+    request_body$tools <- tools_to_api(api_obj, tools_def)
+    request_body$tool_choice <- .tool_choice
+  }
+  
+  # Add streaming options if requested
+  if (.stream == TRUE) {
+    request_body <- request_body |>
+      append(list(
+        stream = TRUE,
+        stream_options = list(include_usage = TRUE)
+      ))
+  }
+  
+  # Build the request with Azure-specific URL path
   request <- httr2::request(.endpoint_url) |>
-    httr2::req_url_path_append(paste0("openai/deployments/", .deployment,"/chat/completions")) |>
+    httr2::req_url_path_append(paste0("openai/deployments/", .deployment, "/chat/completions")) |>
     httr2::req_url_query(`api-version` = .api_version) |>
     httr2::req_headers(
       `Content-Type` = "application/json",
-      `api-key` = api_key,
-    )  |>
+      `api-key` = api_key
+    ) |>
     httr2::req_body_json(data = request_body)
   
-  # Return only the request object in a dry run.
+  # Return only the request object in a dry run
   if (.dry_run) {
     return(request)
   }
   
-  response <- perform_chat_request(request,api_obj,.stream,.timeout,.max_tries)
-  if(r_has_name(response$raw,"tool_calls")){
-    #Tool call logic can go here!
+  # Perform the request
+  response <- perform_chat_request(request, api_obj, .stream, .timeout, .max_tries)
+  
+  # Handle tool calls if any
+  if (r_has_name(response$raw, "tool_calls")) {
     tool_messages <- run_tool_calls(api_obj,
                                     response$raw$content$choices[[1]]$message$tool_calls,
                                     tools_def)
-    ##Append the tool call to API
-    request_body$messages <- request_body$messages |> 
-      append(tool_messages)
     
-    request <- request |>
-      httr2::req_body_json(data = request_body)
+    # Append the tool call to API
+    request_body$messages <- request_body$messages |> append(tool_messages)
     
-    response <- perform_chat_request(request,api_obj,.stream,.timeout,.max_tries)
+    # Update the request and perform it again
+    request <- request |> httr2::req_body_json(data = request_body)
+    response <- perform_chat_request(request, api_obj, .stream, .timeout, .max_tries)
   }
   
-  
-  # Extract assistant reply and rate limiting info from response headers
+  # Extract assistant reply
   assistant_reply <- response$assistant_reply
   
-  #Check whether the result has logprobs in it 
-  logprobs  <- parse_logprobs(api_obj, response$raw$content$choices[[1]])
+  # Check for log probabilities
+  logprobs <- parse_logprobs(api_obj, response$raw)
   
-  track_rate_limit(api_obj,response$headers,.verbose)
+  # Track rate limit
+  track_rate_limit(api_obj, response$headers, .verbose)
   
-  add_message(llm     = .llm,
-              role    = "assistant", 
-              content = assistant_reply , 
-              json    = json,
-              meta    = response$meta,
-              logprobs = logprobs)
+  # Update the LLMMessage with the assistant's response
+  add_message(
+    .llm = .llm,
+    .role = "assistant",
+    .content = assistant_reply,
+    .json = json,
+    .meta = response$meta,
+    .logprobs = logprobs
+  )
 }
-
 
 #' Generate Embeddings Using OpenAI API on Azure
 #'
@@ -352,57 +332,60 @@ azure_openai_embedding <- function(.input,
                             .fn_extract_embeddings = extract_embeddings_fn)
 }
 
+
 #' Send a Batch of Messages to Azure OpenAI Batch API
 #'
 #' This function creates and submits a batch of messages to the Azure OpenAI Batch API for asynchronous processing.
 #'
-#' @param .llms An `LLMMessage` object containing the conversation history.
-#' @param .endpoint_url Base URL for the API (default:  Sys.getenv("AZURE_ENDPOINT_URL")).
+#' @param .llms A list of LLMMessage objects containing conversation histories.
+#' @param .endpoint_url Base URL for the API (default: Sys.getenv("AZURE_ENDPOINT_URL")).
 #' @param .deployment The identifier of the model that is deployed (default: "gpt-4o-mini").
 #' @param .api_version Which version of the API is deployed (default: "2024-10-01-preview")
-#' @param .max_completion_tokens An upper bound for the number of tokens that can be generated for a completion, including visible output tokens and reasoning tokens.
-#' @param .frequency_penalty Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far.
+#' @param .max_completion_tokens Integer specifying the maximum tokens per response (default: NULL).
+#' @param .reasoning_effort How long should reasoning models reason (can either be "low","medium" or "high")
+#' @param .frequency_penalty Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency.
 #' @param .logit_bias A named list modifying the likelihood of specified tokens appearing in the completion.
-#' @param .logprobs Whether to return log probabilities of the output tokens (default: FALSE).
-#' @param .top_logprobs An integer between 0 and 20 specifying the number of most likely tokens to return at each token position.
 #' @param .presence_penalty Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far.
 #' @param .seed If specified, the system will make a best effort to sample deterministically.
 #' @param .stop Up to 4 sequences where the API will stop generating further tokens.
 #' @param .temperature What sampling temperature to use, between 0 and 2. Higher values make the output more random.
 #' @param .top_p An alternative to sampling with temperature, called nucleus sampling.
-#' @param .dry_run If TRUE, perform a dry run and return the request object (default: FALSE).
+#' @param .logprobs If TRUE, get the log probabilities of each output token (default: NULL).
+#' @param .top_logprobs If specified, get the top N log probabilities of each output token (0-5, default: NULL).
+#' @param .dry_run Logical; if TRUE, returns the prepared request object without executing it (default: FALSE).
 #' @param .overwrite Logical; if TRUE, allows overwriting an existing batch ID (default: FALSE).
 #' @param .max_tries Maximum number of retries to perform the request (default: 3).
-#' @param .timeout Request timeout in seconds (default: 60).
+#' @param .timeout Integer specifying the request timeout in seconds (default: 60).
 #' @param .verbose Logical; if TRUE, additional info about the requests is printed (default: FALSE).
-#' @param .json_schema A JSON schema object as R list to enforce the output structure (default: NULL).
-#' @param .id_prefix Character string to specify a prefix for generating custom IDs when names in `.llms` are missing (default: "tidyllm_openai_req_").
-#'
+#' @param .json_schema A JSON schema object provided by tidyllm schema or ellmer schemata (default: NULL).
+#' @param .id_prefix Character string to specify a prefix for generating custom IDs when names in `.llms` are missing (default: "tidyllm_azure_openai_req_").
+#' 
 #' @return An updated and named list of `.llms` with identifiers that align with batch responses, including a `batch_id` attribute.
 #' @export
 send_azure_openai_batch <- function(.llms,
-                              .deployment = 'gpt-4o-mini',
-                              .endpoint_url = Sys.getenv("AZURE_ENDPOINT_URL"),
-                              .api_version = "2024-10-01-preview",
-                              .max_completion_tokens = NULL,
-                              .frequency_penalty = NULL,
-                              .logit_bias = NULL,
-                              .logprobs = FALSE,
-                              .top_logprobs = NULL,
-                              .presence_penalty = NULL,
-                              .seed = NULL,
-                              .stop = NULL,
-                              .temperature = NULL,
-                              .top_p = NULL,
-                              .dry_run = FALSE,
-                              .overwrite = FALSE,
-                              .max_tries = 3,
-                              .timeout = 60,
-                              .verbose = FALSE,
-                              .json_schema = NULL,
-                              .id_prefix = "tidyllm_azure_openai_req_") {
-  #Check enpoint
-  if (.endpoint_url == ""& .dry_run==FALSE){
+                                    .endpoint_url = Sys.getenv("AZURE_ENDPOINT_URL"),
+                                    .deployment = "gpt-4o-mini",
+                                    .api_version = "2024-10-01-preview",
+                                    .max_completion_tokens = NULL,
+                                    .reasoning_effort = NULL,
+                                    .frequency_penalty = NULL,
+                                    .logit_bias = NULL,
+                                    .presence_penalty = NULL,
+                                    .seed = NULL,
+                                    .stop = NULL,
+                                    .temperature = NULL,
+                                    .top_p = NULL,
+                                    .logprobs = NULL,       
+                                    .top_logprobs = NULL,
+                                    .dry_run = FALSE,
+                                    .overwrite = FALSE,
+                                    .max_tries = 3,
+                                    .timeout = 60,
+                                    .verbose = FALSE,
+                                    .json_schema = NULL,
+                                    .id_prefix = "tidyllm_azure_openai_req_") {
+  # Check endpoint
+  if (.endpoint_url == "" && .dry_run == FALSE) {
     stop("No valid Azure endpoint defined. Please set it either as input to this function or with: Sys.setenv(AZURE_ENDPOINT_URL = \"https://endpoint.openai.azure.com/\")")
   }
   
@@ -411,6 +394,7 @@ send_azure_openai_batch <- function(.llms,
     ".llms must be a list of LLMMessage objects" = is.list(.llms) && all(sapply(.llms, S7_inherits, LLMMessage)),
     "Input .deployment must be a string" = is.character(.deployment),
     ".max_completion_tokens must be NULL or a positive integer" = is.null(.max_completion_tokens) | (is_integer_valued(.max_completion_tokens) & .max_completion_tokens > 0),
+    ".reasoning_effort must be NULL or one of 'low', 'medium', 'high'" = is.null(.reasoning_effort) | (.reasoning_effort %in% c("low", "medium", "high")),
     ".frequency_penalty must be numeric or NULL" = is.null(.frequency_penalty) | is.numeric(.frequency_penalty),
     ".logit_bias must be a list or NULL" = is.null(.logit_bias) | is.list(.logit_bias),
     ".presence_penalty must be numeric or NULL" = is.null(.presence_penalty) | is.numeric(.presence_penalty),
@@ -418,6 +402,9 @@ send_azure_openai_batch <- function(.llms,
     ".stop must be NULL or a character vector or string" = is.null(.stop) | is.character(.stop),
     ".temperature must be numeric or NULL" = is.null(.temperature) | is.numeric(.temperature),
     ".top_p must be numeric or NULL" = is.null(.top_p) | is.numeric(.top_p),
+    ".logprobs must be NULL or a logical" = is.null(.logprobs) | is.logical(.logprobs),
+    ".json_schema must be NULL or a list or an ellmer type object" = is.null(.json_schema) | is.list(.json_schema) | is_ellmer_type(.json_schema),
+    ".top_logprobs must be NULL or an integer between 0 and 5" = is.null(.top_logprobs) | (is_integer_valued(.top_logprobs) && .top_logprobs >= 0 && .top_logprobs <= 5),
     ".dry_run must be logical" = is.logical(.dry_run),
     ".verbose must be logical" = is.logical(.verbose),
     ".overwrite must be logical" = is.logical(.overwrite),
@@ -426,80 +413,53 @@ send_azure_openai_batch <- function(.llms,
     ".timeout must be integer-valued numeric" = is_integer_valued(.timeout)
   ) |> validate_inputs()
   
-  api_obj <- api_azure_openai(short_name = "azure_openai",
-                              long_name  = "Azure OpenAI",
-                              api_key_env_var = "AZURE_OPENAI_API_KEY")
+  # Create API object
+  api_obj <- api_azure_openai(
+    short_name = "azure_openai",
+    long_name = "Azure OpenAI",
+    api_key_env_var = "AZURE_OPENAI_API_KEY"
+  )
   
-  api_key <- get_api_key(api_obj,.dry_run)
+  # Get API key
+  api_key <- get_api_key(api_obj, .dry_run)
   
-  #This filters out the system prompt for reasoning models.
-  no_system_prompt <- FALSE
-  if(.deployment %in% c("o1-preview","o1-mini")){
-    message("Note: Reasoning models do not support system prompts")
-    no_system_prompt <- TRUE
-  }
-  
-  # Handle JSON schema and JSON mode
-  response_format <- NULL
-  json <- FALSE
-  if (!is.null(.json_schema)) {
-    json=TRUE
-    schema_name = "empty"
-    if (requireNamespace("ellmer", quietly = TRUE)) {
-      #Handle ellmer json schemata Objects
-      if(S7_inherits(.json_schema,ellmer::TypeObject)){
-        .json_schema = to_schema(.json_schema)
-        schema_name = "ellmer_schema"
-      } 
-    }
-    if(schema_name!="ellmer_schema"){schema_name <- attr(.json_schema,"name")}
-    response_format <- list(
-      type = "json_schema",
-      json_schema = list(name = schema_name,
-                         schema = .json_schema)
-    )
-  } 
-  
-  prepared_llms  <- prepare_llms_for_batch(api_obj,
-                                           .llms=.llms,
-                                           .id_prefix=.id_prefix,
-                                           .overwrite = .overwrite)
-  
-  
+  # Prepare LLMs for batch processing
+  prepared_llms <- prepare_llms_for_batch(
+    api_obj,
+    .llms = .llms,
+    .id_prefix = .id_prefix,
+    .overwrite = .overwrite
+  )
   
   # Prepare the request lines
   request_lines <- lapply(seq_along(prepared_llms), function(i) { 
     custom_id <- names(prepared_llms)[i]
     
-    # Get messages from each LLMMessage object
-    messages <- to_api_format(llm=.llms[[i]],
-                              api=api_obj,
-                              no_system=no_system_prompt)
-    
-    # Build the request body
-    body <- list(
-      model = .deployment, 
-      messages = messages,
-      frequency_penalty = .frequency_penalty,
-      logit_bias = .logit_bias,
-      logprobs = .logprobs,
-      top_logprobs = .top_logprobs,
-      max_completion_tokens = .max_completion_tokens,
-      presence_penalty = .presence_penalty,
-      response_format = response_format,
-      seed = .seed,
-      stop = .stop,
-      temperature = .temperature,
-      top_p = .top_p
-    ) |> purrr::compact()
-    
+    # Use prepare_openai_request to set up common request parameters
+    request_data <- prepare_openai_request(
+      .llm = prepared_llms[[i]],
+      .api = api_obj,
+      .model = .deployment,  # Use deployment as model internally
+      .max_completion_tokens = .max_completion_tokens,
+      .reasoning_effort = .reasoning_effort,
+      .frequency_penalty = .frequency_penalty,
+      .logit_bias = .logit_bias,
+      .presence_penalty = .presence_penalty,
+      .seed = .seed,
+      .stop = .stop,
+      .temperature = .temperature,
+      .top_p = .top_p,
+      .json_schema = .json_schema,
+      .logprobs = .logprobs,
+      .top_logprobs = .top_logprobs
+    )
     
     # Create the request line as JSON
     request_line <- list(
       custom_id = custom_id,
       method = "POST",
-      url = "/chat/completions", # ?
-      body = body
+      url = "/chat/completions",
+      body = request_data$request_body
     )
     
     # Convert to JSON
@@ -512,7 +472,7 @@ send_azure_openai_batch <- function(.llms,
   
   if (.dry_run) {
     # Return the prepared .jsonl file path
-    return(temp_file)
+    return(readLines(temp_file))
   }
   
   # Upload the .jsonl file via OpenAI's Files API
@@ -521,11 +481,11 @@ send_azure_openai_batch <- function(.llms,
     httr2::req_url_query(`api-version` = .api_version) |>
     httr2::req_headers(
       `Content-Type` = "multipart/form-data",
-      `api-key` = api_key,
+      `api-key` = api_key
     ) |>
     httr2::req_body_multipart(
       purpose = "batch",
-      file = curl::form_file(temp_file),#httr2::req_file(temp_file)
+      file = curl::form_file(temp_file),
       type = 'application/json'
     )
   
@@ -557,17 +517,19 @@ send_azure_openai_batch <- function(.llms,
     httr2::req_url_query(`api-version` = .api_version) |>
     httr2::req_headers(
       `Content-Type` = "application/json",
-      `api-key` = api_key,
+      `api-key` = api_key
     ) |>
     httr2::req_body_json(batch_request_body)
   
   batch_response <- batch_request |>
-    perform_generic_request(.timeout=.timeout,
-                            .max_tries = .max_tries)
+    perform_generic_request(.timeout = .timeout, .max_tries = .max_tries)
   
   batch_response_body <- batch_response$content
   
-  if(.verbose){message("Batch request for file sent")}
+  if (.verbose) {
+    message("Batch request for file sent")
+  }
+  
   if ("error" %in% names(batch_response_body)) {
     sprintf("Azure OpenAI API returned an Error during batch creation:\nType: %s\nMessage: %s",
             batch_response_body$error$type,
@@ -575,11 +537,10 @@ send_azure_openai_batch <- function(.llms,
       stop()
   }
   
-  # Attach batch_id as an attribute to .llms
+  # Attach batch_id as an attribute to prepared_llms
   batch_id <- batch_response_body$id
   attr(prepared_llms, "batch_id") <- batch_id
-  attr(prepared_llms, "json") <- json
-  
+  attr(prepared_llms, "json") <- if (!is.null(.json_schema)) TRUE else FALSE
   
   # Optionally, remove the temporary file
   unlink(temp_file)
@@ -849,11 +810,11 @@ fetch_azure_openai_batch <- function(.llms,
     if (!is.null(result) && is.null(result$error) && result$response$status_code == 200) {
       assistant_reply <- result$response$body$choices$message$content
       meta_data <- extract_metadata(api_obj,result$response$body)
-      llm <- add_message(llm = .llms[[custom_id]],
-                         role = "assistant", 
-                         content =  assistant_reply,
-                         json = .json,
-                         meta = meta_data)
+      llm <- add_message(.llm = .llms[[custom_id]],
+                         .role = "assistant", 
+                         .content =  assistant_reply,
+                         .json = .json,
+                         .meta = meta_data)
       return(llm)
     } else {
       warning(sprintf("Result for custom_id %s was unsuccessful or not found", custom_id))

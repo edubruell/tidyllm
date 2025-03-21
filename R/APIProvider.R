@@ -7,18 +7,20 @@ APIProvider <- new_class("APIProvider",properties = list(
   api_key_env_var = class_character
 ))
 
-generate_callback_function <- new_generic("generate_callback_function","api")
-ratelimit_from_header      <- new_generic("ratelimit_from_header",c("api", "headers"))
-parse_chat_function        <- new_generic("parse_chat_response","api")
-get_api_key                <- new_generic("get_api_key","api")
-prepare_llms_for_batch     <- new_generic("prepare_llms_for_batch","api")
-extract_metadata           <- new_generic("extract_metadata",c("api", "response"))
-parse_logprobs             <- new_generic("parse_logprobs", c("api", "choices"))
+parse_chat_response        <- new_generic("parse_chat_response",c(".api",".content"))
+handle_stream              <- new_generic("handle_stream",c(".api",".stream_response"))
+generate_callback_function <- new_generic("generate_callback_function",".api")
+ratelimit_from_header      <- new_generic("ratelimit_from_header",c(".api", ".headers"))
+get_api_key                <- new_generic("get_api_key",".api")
+prepare_llms_for_batch     <- new_generic("prepare_llms_for_batch",".api")
+extract_metadata           <- new_generic("extract_metadata",c(".api", ".response"))
+extract_metadata_stream    <- new_generic("extract_metadata_stream",c(".api", ".stream_raw_data"))
+parse_logprobs             <- new_generic("parse_logprobs", c(".api", ".input"))
 
 #Default method for the streaming callback function
 #'
 #' @noRd
-method(generate_callback_function,APIProvider) <- function(api) {
+method(generate_callback_function,APIProvider) <- function(.api) {
   # Default testing callback implementation
   function(.data) {
     if (is.null(.tidyllm_stream_env$testing_chunck_list)) {
@@ -36,28 +38,42 @@ method(generate_callback_function,APIProvider) <- function(api) {
 
 
 #Default method for metadata extraction
-#' A function to get metadata from Claude responses
 #'
 #' @noRd
-method(extract_metadata, list(APIProvider,class_list))<- function(api,response) {
+method(extract_metadata, list(APIProvider,class_list))<- function(.api,.response) {
   list(
     model             = NA_character_,
     timestamp         = lubridate::as_datetime(lubridate::now()),
     prompt_tokens     = NA_integer_,
     completion_tokens = NA_integer_,
     total_tokens      = NA_integer_,
+    stream            = FALSE,
+    specific_metadata = list() 
+  )
+}  
+
+#Default method for metadata extraction
+#'
+#' @noRd
+method(extract_metadata_stream, list(APIProvider,class_list))<- function(.api,.stream_raw_data) {
+  list(
+    model             = NA_character_,
+    timestamp         = lubridate::as_datetime(lubridate::now()),
+    prompt_tokens     = NA_integer_,
+    completion_tokens = NA_integer_,
+    total_tokens      = NA_integer_,
+    stream            = TRUE,
     specific_metadata = list() 
   )
 }  
 
 
-
 #Default method for the API key checks
 #'
 #' @noRd
-method(get_api_key, APIProvider) <- function(api,dry_run=FALSE) {
-  api_key <- Sys.getenv(api@api_key_env_var)
-  if (api_key == "" & dry_run==FALSE) {
+method(get_api_key, APIProvider) <- function(.api,.dry_run=FALSE) {
+  api_key <- Sys.getenv(.api@api_key_env_var)
+  if (api_key == "" & .dry_run==FALSE) {
     paste0("API key is not set. Please set it with: Sys.setenv(",api@api_key_env_var," = \"YOUR-KEY-GOES-HERE\")." ) |>
       rlang::abort()
   }
@@ -68,7 +84,7 @@ method(get_api_key, APIProvider) <- function(api,dry_run=FALSE) {
 #Prepare a list of LLMs for batch requests 
 #'
 #' @noRd
-method(prepare_llms_for_batch, APIProvider) <- function(api, .llms, .id_prefix, .overwrite = FALSE) {
+method(prepare_llms_for_batch, APIProvider) <- function(.api, .llms, .id_prefix, .overwrite = FALSE) {
   # Check for unique non-missing names
   non_missing_names <- names(.llms)[!(is.na(names(.llms)) | names(.llms) == "")]
   if (anyDuplicated(non_missing_names)) {

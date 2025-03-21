@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -48,8 +48,8 @@
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">claude_chat</span><span class="op">(</span></span>
 <span>  <span class="va">.llm</span>,</span>
-<span>  .model <span class="op">=</span> <span class="st">"claude-3-5-sonnet-20241022"</span>,</span>
-<span>  .max_tokens <span class="op">=</span> <span class="fl">1024</span>,</span>
+<span>  .model <span class="op">=</span> <span class="st">"claude-3-7-sonnet-20250219"</span>,</span>
+<span>  .max_tokens <span class="op">=</span> <span class="fl">2048</span>,</span>
 <span>  .temperature <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .top_k <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .top_p <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -61,7 +61,9 @@
 <span>  .max_tries <span class="op">=</span> <span class="fl">3</span>,</span>
 <span>  .timeout <span class="op">=</span> <span class="fl">60</span>,</span>
 <span>  .stream <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  .dry_run <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  .dry_run <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  .thinking <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  .thinking_budget <span class="op">=</span> <span class="fl">1024</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -127,6 +129,14 @@
 
 <dt id="arg--dry-run">.dry_run<a class="anchor" aria-label="anchor" href="#arg--dry-run"></a></dt>
 <dd><p>Logical; if TRUE, returns the prepared request object without executing it (default: FALSE).</p></dd>
+
+
+<dt id="arg--thinking">.thinking<a class="anchor" aria-label="anchor" href="#arg--thinking"></a></dt>
+<dd><p>Logical; if TRUE, enables Claude's thinking mode for complex reasoning tasks (default: FALSE).</p></dd>
+
+
+<dt id="arg--thinking-budget">.thinking_budget<a class="anchor" aria-label="anchor" href="#arg--thinking-budget"></a></dt>
+<dd><p>Integer specifying the maximum tokens Claude can spend on thinking (default: 1024). Must be at least 1024.</p></dd>
 
 </dl></div>
     <div class="section level2">

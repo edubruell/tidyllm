@@ -116,3 +116,4 @@ test_that("gemini_embedding returns expected response", {
   },simplify = FALSE)
 })
 }
+

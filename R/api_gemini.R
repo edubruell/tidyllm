@@ -13,11 +13,11 @@ api_gemini <- new_class("Google Gemini", APIProvider)
 #' one needed for the Google Gemini API.
 #'
 #' @noRd
-method(to_api_format, list(LLMMessage, api_gemini)) <- function(llm, 
-                                                                api) {
+method(to_api_format, list(LLMMessage, api_gemini)) <- function(.llm, 
+                                                                .api) {
   
   # Filter to only include user and assistant messages
-  gemini_history <- filter_roles(llm@message_history, c("user", "assistant"))
+  gemini_history <- filter_roles(.llm@message_history, c("user", "assistant"))
   
   # Map each message to the expected Gemini format
   lapply(gemini_history, function(m) {
@@ -46,78 +46,116 @@ method(to_api_format, list(LLMMessage, api_gemini)) <- function(llm,
 }
 
 
-#' A chat parsing method for Gemini to extract the assistant response 
+#' A chat response parsing method for Gemini to extract the assistant response 
 #'
 #' @noRd
-method(parse_chat_function, api_gemini) <- function(api) {
-  function(body_json) {
-    if ("error" %in% names(body_json)) {
-      stop(sprintf("Gemini API returned an Error:\nCode: %s\nMessage: %s",
-                   body_json$error$code, body_json$error$message))
-    }
-    if (!"candidates" %in% names(body_json) || length(body_json$candidates) == 0) {
-      stop("Received empty response from Gemini API")
-    }
-    body_json$candidates[[1]]$content$parts[[1]]$text
+method(parse_chat_response, list(api_gemini,class_list)) <- function(.api,.content) {
+  api_label <- .api@long_name 
+  if("error" %in% names(.content)){
+    sprintf("%s returned an Error:\nCode: %s\nMessage: %s",
+            api_label,
+            .content$error$code,
+            .content$error$message) |>
+      stop()
   }
-}  
+  
+  if (!"candidates" %in% names(.content) || length(.content$candidates) == 0) {
+    paste0("Received empty response from ", api_label) |>
+      stop()
+  }
+  
+  .content$candidates[[1]]$content$parts[[1]]$text
+}
 
 
-#' A callback function generator for an Gemini Streaming requests 
+#' A method to handle streaming requests for Gemini
 #'
 #' @noRd
-method(generate_callback_function,api_gemini) <- function(api) {
-  # Default testing callback implementation
-  function(.data) {
-    if(is.null(.tidyllm_stream_env$buffer)){
-      .tidyllm_stream_env$buffer <- ""
-    }
+method(handle_stream,list(api_gemini,new_S3_class("httr2_response"))) <- function(.api,.stream_response) {
+  stream_data <- ""
+  current_buffer <-  ""
+  repeat {
+    stream_chunk   <- httr2::resp_stream_lines(.stream_response)
+    stream_data    <- paste0(stream_data,stream_chunk)
+    current_buffer <- paste0(current_buffer,stream_chunk) 
     
-    # Append new data to the buffer
-    new_data <- rawToChar(.data, multiple = FALSE)
-    .tidyllm_stream_env$buffer <- paste0(.tidyllm_stream_env$buffer,new_data) 
-    
-    parts_section <- stringr::str_extract(.tidyllm_stream_env$buffer, 
+    parts_section <- stringr::str_extract(current_buffer, 
                                           '"parts":\\s*\\[\\s*\\{[^\\}]*\\}\\s*\\]')
     
     if(!is.na(parts_section)){
       current_part <- jsonlite::fromJSON(paste0("{",parts_section,"}"))
       stream_response <- current_part$parts$text
-      .tidyllm_stream_env$stream <- paste0(.tidyllm_stream_env$stream,stream_response)
       cat(stream_response)
       utils::flush.console()
-      .tidyllm_stream_env$buffer <- NULL
+      current_buffer <-  ""
     }
     
-    TRUE
+    # Skip empty chunks
+    if (httr2::resp_stream_is_complete(.stream_response)) {
+      close(.stream_response)
+      message("\n---------\nStream finished\n---------\n")
+      break
+    }
   }
+  stream_data_parsed <- jsonlite::fromJSON(stream_data)
+  stream_text <- stream_data_parsed$candidates |> 
+    purrr::map_chr(~.x$content$parts[[1]]$text) |>
+    stringr::str_c(collapse = "")
+  
+  list(
+    reply = stream_text,
+    raw_data = list(parsed=stream_data_parsed)
+  )
 }
+    
 
 
 #' A function to get metadata from Openai responses
 #'
 #' @noRd
-method(extract_metadata, list(api_gemini,class_list))<- function(api,response) {
+method(extract_metadata, list(api_gemini,class_list))<- function(.api,.response) {
   list(
-    model             = response$modelVersion,
+    model             = .response$modelVersion,
     timestamp         = lubridate::as_datetime(lubridate::now()),
-    prompt_tokens     = response$usageMetadata$promptTokenCount,
-    completion_tokens = response$usageMetadata$candidatesTokenCount,
-    total_tokens      = response$usageMetadata$totalTokenCount,
+    prompt_tokens     = .response$usageMetadata$promptTokenCount,
+    completion_tokens = .response$usageMetadata$candidatesTokenCount,
+    total_tokens      = .response$usageMetadata$totalTokenCount,
     specific_metadata = list(
-      finishReason = response$candidates[[1]]$finishReason,
-      avgLogprobs  = response$candidates[[1]]$avgLogprobs,
-      groundingMetadata = response$candidates[[1]]$groundingMetadata
+      finishReason = .response$candidates[[1]]$finishReason,
+      avgLogprobs  = .response$candidates[[1]]$avgLogprobs,
+      groundingMetadata = .response$candidates[[1]]$groundingMetadata
       ) 
   )
 }  
 
+#' A function to get metadata from Openai streaming responses
+#'
+#' @noRd
+method(extract_metadata_stream, list(api_gemini,class_list))<- function(.api,.stream_raw_data) {
+  parsed_stream_data <- .stream_raw_data$parsed
+  final_stream_chunk <- parsed_stream_data[nrow(parsed_stream_data),]
+
+  list(
+    model             = final_stream_chunk$modelVersion,
+    timestamp         = lubridate::as_datetime(lubridate::now()),
+    prompt_tokens     = final_stream_chunk$usageMetadata$promptTokenCount,
+    completion_tokens = final_stream_chunk$usageMetadata$candidatesTokenCount,
+    total_tokens      = final_stream_chunk$usageMetadata$totalTokenCount,
+    stream            = TRUE,
+    specific_metadata = list(
+      warning    = "Gemini outputs different metadata for streaming and non-streaming responses",
+      token_details = final_stream_chunk$usageMetadata
+    ) 
+  )
+}  
+
+
 #' Method to convert a tidyllm TOOL definition to the expected input for Gemini
 #'
 #' @noRd
-method(tools_to_api, list(api_gemini, class_list)) <- function(api, tools) {
+method(tools_to_api, list(api_gemini, class_list)) <- function(.api, .tools) {
   list(
-    function_declarations = purrr::map(tools, function(tool) {
+    function_declarations = purrr::map(.tools, function(tool) {
       tool_def <- list(
         name = tool@name,
         description = tool@description
@@ -142,16 +180,16 @@ method(tools_to_api, list(api_gemini, class_list)) <- function(api, tools) {
 #' A method to run tool calls on Gemini and create the expected response
 #'
 #' @noRd
-method(run_tool_calls, list(api_gemini, class_list, class_list)) <- function(api, tool_calls, tools) {
+method(run_tool_calls, list(api_gemini, class_list, class_list)) <- function(.api, .tool_calls, .tools) {
   # Iterate over each tool call returned by Gemini and build a list of parts.
-  tool_parts <- purrr::map(tool_calls, function(tool_call) {
+  tool_parts <- purrr::map(.tool_calls, function(tool_call) {
     # Gemini returns the tool call information in a structure like:
     # list(name = "<tool_name>", args = list(...))
     tool_name <- tool_call$name
     tool_args <- tool_call$args
     
     # Find the corresponding tool in the provided tools list.
-    matching_tool <- purrr::keep(tools, ~ .x@name == tool_name)
+    matching_tool <- purrr::keep(.tools, ~ .x@name == tool_name)
     if (length(matching_tool) == 0) {
       warning(sprintf("No matching tool found for: %s", tool_name))
       return(NULL)
@@ -419,44 +457,46 @@ gemini_chat <- function(.llm,
   
   # Perform the API request
   response <- perform_chat_request(request,api_obj,.stream,.timeout,.max_tries)
-  #Handle tool calls
-  if (!is.null(response$raw$content$candidates[[1]]$content$parts[[1]]$functionCall)) {
-    tool_call <- response$raw$content$candidates[[1]]$content$parts[[1]]$functionCall
-    
-    tool_messages <- run_tool_calls(api_obj, list(tool_call), .tools)
-    
-    # Create an assistant message that contains the functionCall.
-    assistant_function_call_message <- list(
-      role = "model",
-      parts = list(
-        list(
-          functionCall = tool_call
+  
+  if(.stream==FALSE) {
+    #Handle tool calls
+    if (!is.null(response$raw$content$candidates[[1]]$content$parts[[1]]$functionCall)) {
+      tool_call <- response$raw$content$candidates[[1]]$content$parts[[1]]$functionCall
+      
+      tool_messages <- run_tool_calls(api_obj, list(tool_call), .tools)
+      
+      # Create an assistant message that contains the functionCall.
+      assistant_function_call_message <- list(
+        role = "model",
+        parts = list(
+          list(
+            functionCall = tool_call
+          )
         )
       )
-    )
-    
-    # Append both the assistant's functionCall message and the tool response (user message)
-    # to the conversation history.
-    request_body$contents <- c(
-      request_body$contents,
-      list(assistant_function_call_message),
-      list(tool_messages)
-    )
-    
-    # Update the request with the new conversation history.
-    request <- request |>
-      httr2::req_body_json(data = request_body)
-    
-    # Resend the request to Gemini with the appended tool responses.
-    response <- perform_chat_request(request, api_obj, .stream, .timeout, .max_tries)
+      
+      # Append both the assistant's functionCall message and the tool response (user message)
+      # to the conversation history.
+      request_body$contents <- c(
+        request_body$contents,
+        list(assistant_function_call_message),
+        list(tool_messages)
+      )
+      
+      # Update the request with the new conversation history.
+      request <- request |>
+        httr2::req_body_json(data = request_body)
+      
+      # Resend the request to Gemini with the appended tool responses.
+      response <- perform_chat_request(request, api_obj, .stream, .timeout, .max_tries)
+    }
   }
   
-  
-  add_message(llm     = .llm,
-              role    = "assistant", 
-              content = response$assistant_reply, 
-              json    = json,
-              meta    = response$meta)
+  add_message(.llm     = .llm,
+              .role    = "assistant", 
+              .content = response$assistant_reply, 
+              .json    = json,
+              .meta    = response$meta)
 }
 
 

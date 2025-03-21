@@ -1,4 +1,15 @@
 # Latest Changes
+# Dev-Version 0.3.4
+Major internal refactor with many small feature improvements:
+
+- Streaming is now done with `httr2::req_peform_connection()` from *httr2 1.1.1.* and later and became much more robust
+- Metadata extraction, logprobs and more other features are now also available in streaming requests
+- Better use of `S7` methods for handling streams and parsing chats
+- Openai and Azure OpenAI as well as their batch functions were improved to avoid some code duplication
+- Mistral now supports `.json_schema`
+- New tests for batch functions
+- Bug fixed where the system prompts did not work in `claude()` batch requests
+
 # Dev-Version 0.3.3
 
 ## Thinking support in Claude

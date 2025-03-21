@@ -36,11 +36,11 @@ openai_chat(
 
 \item{.model}{The identifier of the model to use (default: "gpt-4o").}
 
-\item{.max_completion_tokens}{An upper bound for the number of tokens that can be generated for a completion, including visible output tokens and reasoning tokens.}
+\item{.max_completion_tokens}{An upper bound for the number of tokens that can be generated for a completion.}
 
 \item{.reasoning_effort}{How long should reasoning models reason (can either be "low","medium" or "high")}
 
-\item{.frequency_penalty}{Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far.}
+\item{.frequency_penalty}{Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency.}
 
 \item{.logit_bias}{A named list modifying the likelihood of specified tokens appearing in the completion.}
 
