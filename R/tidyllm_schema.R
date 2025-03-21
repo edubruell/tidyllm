@@ -2,12 +2,13 @@ tidyllm_field <- new_class("tidyllm_field", properties = list(
   type = class_character,
   description = class_character,
   enum = class_character,   # For factor (enum) fields only.
-  vector = class_logical
+  vector = class_logical,
+  schema = class_list       # New: holds a nested schema (if any)
 ))
 
 #' Define Field Descriptors for JSON Schema
 #'
-#' These functions create field descriptors used in `tidyllm_schema()` to define JSON schema fields. They support character, factor, numeric, and logical types.
+#' These functions create field descriptors used in `tidyllm_schema()` or `field_object()` to define JSON schema fields. They support character, factor, numeric, and logical types.
 #'
 #' @param .description A character string describing the field (optional).
 #' @param .vector A logical value indicating if the field is a vector (default: FALSE).
@@ -27,7 +28,8 @@ field_chr <- function(.description = character(0), .vector = FALSE) {
     type = "string",
     description = .description,
     enum = character(0),
-    vector = .vector
+    vector = .vector,
+    schema = list()
   )
 }
 
@@ -38,7 +40,8 @@ field_fct <- function(.description = character(0), .levels, .vector = FALSE) {
     type = "string",
     description = .description,
     enum = .levels,
-    vector = .vector
+    vector = .vector,
+    schema = list()
   )
 }
 
@@ -49,7 +52,8 @@ field_dbl <- function(.description = character(0), .vector = FALSE) {
     type = "number",
     description = .description,
     enum = character(0),
-    vector = .vector
+    vector = .vector,
+    schema = list()
   )
 }
 
@@ -60,10 +64,147 @@ field_lgl <- function(.description = character(0), .vector = FALSE) {
     type = "boolean",
     description = .description,
     enum = character(0),
-    vector = .vector
+    vector = .vector,
+    schema = list()
   )
 }
 
+#' Define a nested object field
+#'
+#' @param ... Named fields to include in the object definition (required).
+#' @return An S7 `tidyllm_field` object of type "object" containing nested fields.
+#' @examples
+#' # Define an address object with nested fields
+#' address <- field_object("A mailing address",
+#'   street = field_chr("Street name"),
+#'   city = field_chr("City name"),
+#'   zipcode = field_chr("Postal code")
+#' )
+#' 
+#' # Create a vector of objects
+#' addresses <- field_object("List of addresses", 
+#'   street = field_chr("Street name"),
+#'   city = field_chr("City name"),
+#'   .vector = TRUE
+#' )
+#' @export
+field_object <- function(.description = character(0), ..., .vector = FALSE) {
+  nested_fields <- list(...)
+  if (length(nested_fields) == 0) {
+    stop("field_object must have at least one nested field.")
+  }
+  nested_schema <- build_schema(nested_fields)
+  
+  tidyllm_field(
+    type = "object",
+    description = .description,
+    enum = character(0),
+    vector = .vector,
+    schema = nested_schema
+  )
+}
+
+
+#'parse_field converts a tidyllm_field (or a shorthand string) to its JSON schema fragment.
+#'  
+#'@noRd
+parse_field <- function(field) {
+  # If ellmer is available and the field is an ellmer type, use ellmer's to_schema().
+  if (requireNamespace("ellmer", quietly = TRUE) &&
+      any(class(field) %in% c("ellmer::TypeBasic", "ellmer::TypeEnum", "ellmer::TypeObject", "ellmer::TypeArray"))) {
+    json_type <- to_schema(field)
+    return(json_type)
+  }
+  
+  # If field is an S7 tidyllm_field, process it.
+  if (S7_inherits(field, tidyllm_field)) {
+    # If the field is an object with a nested schema.
+    if (field@type == "object" && length(field@schema)>=1) {
+      json_type <- list(
+        type = "object",
+        properties = field@schema$properties,
+        required = field@schema$required
+      )
+      if (length(field@description) > 0) {
+        json_type$description <- field@description
+      }
+      if (isTRUE(field@vector)) {
+        json_type <- list(
+          type = "array",
+          items = json_type
+        )
+      }
+      return(json_type)
+    }
+    
+    # For non-object fields.
+    json_type <- list(type = field@type)
+    if (length(field@description) > 0) {
+      json_type$description <- field@description
+    }
+    if (length(field@enum) > 0) {
+      json_type$enum <- field@enum
+    }
+    if (isTRUE(field@vector)) {
+      json_type <- list(
+        type = "array",
+        items = json_type
+      )
+    }
+    return(json_type)
+  }
+  
+  # Fallback for character shorthand specifications.
+  is_array <- grepl("\\[\\]$", field)
+  base_field <- sub("\\[\\]$", "", field)
+  
+  if (grepl("^factor\\(.*\\)$", base_field)) {
+    enums <- base_field |>
+      stringr::str_replace("^factor\\((.*)\\)$", "\\1") |>
+      stringr::str_split(",") |>
+      (\(x) x[[1]])()
+    enums <- stringr::str_trim(enums)
+    json_type <- list(type = "string", enum = enums)
+  } else if (base_field %in% c("string", "character", "logical", "numeric", "factor")) {
+    type_map <- list(
+      string    = "string",
+      character = "string",
+      factor    = "string",
+      logical   = "boolean",
+      numeric   = "number"
+    )
+    json_type <- list(type = type_map[[base_field]])
+  } else {
+    stop("Unsupported field type: ", field)
+  }
+  
+  if (is_array) {
+    json_type <- list(
+      type = "array",
+      items = json_type
+    )
+  }
+  return(json_type)
+}
+
+#' build_schema constructs a JSON schema list from a list of named field definitions.
+#'  
+#' @noRd
+build_schema <- function(fields, name = NULL) {
+  if (!all(nzchar(names(fields)))) {
+    stop("Field names must be non-empty character strings")
+  }
+  properties <- lapply(fields, parse_field)
+  schema <- list(
+    type = "object",
+    properties = properties,
+    required = I(names(fields))
+  )
+  if (!is.null(name)) {
+    attr(schema, "name") <- name
+  }
+  schema
+}
 
 #' Create a JSON Schema for Structured Outputs
 #'
@@ -117,84 +258,11 @@ tidyllm_schema <- function(name = "tidyllm_schema", ...) {
           is_ellmer_type(field)
       }))
   ))
-  
-  
-  # Mapping for simple character-based type specifications.
-  type_map <- list(
-    string    = "string",
-    character = "string",
-    factor    = "string",  # factors become strings (with enum specification below)
-    logical   = "boolean",
-    numeric   = "number"
-  )
-  
-  # Convert each field to its JSON schema fragment.
-  parse_field <- function(field) {
-    # If ellmer is available and the field is an ellmer type, use ellmer's to_schema().
-    if (requireNamespace("ellmer", quietly = TRUE) &&
-        any(class(field) %in% c("ellmer::TypeBasic", "ellmer::TypeEnum", "ellmer::TypeObject", "ellmer::TypeArray"))) {
-      json_type <- to_schema(field)
-      return(json_type)
-    }
-    
-    # If field is an S7 tidyllm_field object, extract its properties.
-    if (S7_inherits(field, tidyllm_field)) {
-      json_type <- list(type = field@type)
-      if (length(field@description) > 0) {
-        json_type$description <- field@description
-      }
-      if (length(field@enum) > 0) {
-        json_type$enum <- field@enum
-      }
-      if (isTRUE(field@vector)) {
-        json_type <- list(
-          type = "array",
-          items = json_type
-        )
-      }
-      return(json_type)
-    }
-    
-    # Otherwise, assume a character string specification.
-    is_array <- grepl("\\[\\]$", field)
-    base_field <- sub("\\[\\]$", "", field)
-    
-    if (grepl("^factor\\(.*\\)$", base_field)) {
-      enums <- base_field |>
-        stringr::str_replace("^factor\\((.*)\\)$", "\\1") |>
-        stringr::str_split(",") |>
-        (\(x) x[[1]])()
-      enums <- stringr::str_trim(enums)
-      json_type <- list(type = "string", enum = enums)
-    } else if (base_field %in% names(type_map)) {
-      json_type <- list(type = type_map[[base_field]])
-    } else {
-      stop("Unsupported field type: ", field)
-    }
-    
-    if (is_array) {
-      json_type <- list(
-        type = "array",
-        items = json_type
-      )
-    }
-    return(json_type)
-  }
-  
-  properties <- lapply(fields, parse_field)
-  
-  schema <- list(
-    type = "object",
-    properties = properties,
-    required = I(names(fields))
-  )
-  
-  attr(schema, "name") <- name
-  
-  return(schema)
+  build_schema(fields, name = name)
 }
 
-to_schema <- new_generic("to_schema","x")
+
+to_schema <- new_generic("to_schema", "x")
 if (requireNamespace("ellmer", quietly = TRUE)) {
   method(to_schema, ellmer::TypeBasic) <- function(x) {
     list(type = x@type, description = x@description %||% "")
@@ -230,9 +298,10 @@ if (requireNamespace("ellmer", quietly = TRUE)) {
       description = x@description %||% "",
       items = to_schema(x@items)
     )
-  }  
+  }
   
   method(to_schema, class_list) <- function(x) {
-      lapply(x, to_schema)
+    lapply(x, to_schema)
   }
 }
+

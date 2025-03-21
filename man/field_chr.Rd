@@ -26,7 +26,7 @@ field_lgl(.description = character(0), .vector = FALSE)
 An S7 \code{tidyllm_field} object representing the field descriptor.
 }
 \description{
-These functions create field descriptors used in \code{tidyllm_schema()} to define JSON schema fields. They support character, factor, numeric, and logical types.
+These functions create field descriptors used in \code{tidyllm_schema()} or \code{field_object()} to define JSON schema fields. They support character, factor, numeric, and logical types.
 }
 \examples{
 field_chr("A common street name")

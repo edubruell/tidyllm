@@ -9,6 +9,7 @@ Major internal refactor with many small feature improvements:
 - Mistral now supports `.json_schema`
 - New tests for batch functions
 - Bug fixed where the system prompts did not work in `claude()` batch requests
+- New `field_object()` for tidyllm schemata
 
 # Dev-Version 0.3.3
 
