@@ -132,6 +132,10 @@ reference:
       - groq_chat
       - groq_transcribe
       - groq_list_models
+      - send_groq_batch
+      - check_groq_batch
+      - fetch_groq_batch
+      - list_groq_batches
 
   - title: "Azure-Specific Functions"
     desc: >

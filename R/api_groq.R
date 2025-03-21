@@ -373,6 +373,446 @@ groq_list_models <- function(.api_url = "https://api.groq.com",
   }
 }
 
+#' Send a Batch of Messages to the Groq API
+#'
+#' This function creates and submits a batch of messages to the Groq API for asynchronous processing.
+#'
+#' @param .llms A list of LLMMessage objects containing conversation histories.
+#' @param .model Character string specifying the model to use (default: "deepseek-r1-distill-llama-70b").
+#' @param .max_tokens Integer specifying the maximum tokens per response (default: 1024).
+#' @param .temperature Numeric between 0 and 2 controlling response randomness.
+#' @param .top_p Numeric between 0 and 1 for nucleus sampling.
+#' @param .frequency_penalty Number between -2.0 and 2.0 to penalize repetition.
+#' @param .presence_penalty Number between -2.0 and 2.0 to encourage new topics.
+#' @param .stop One or more sequences where the API will stop generating further tokens.
+#' @param .seed An integer for deterministic sampling.
+#' @param .api_url Base URL for the Groq API (default: "https://api.groq.com/").
+#' @param .json Whether the response should be structured as JSON (default: FALSE).
+#' @param .completion_window Character string for the batch completion window (default: "24h").
+#' @param .verbose Logical; if TRUE, prints a message with the batch ID (default: FALSE).
+#' @param .overwrite Logical; if TRUE, allows overwriting an existing batch ID (default: FALSE).
+#' @param .max_tries Maximum number of retries to perform the request.
+#' @param .timeout Integer specifying the request timeout in seconds (default: 60).
+#' @param .dry_run Logical; if TRUE, returns the prepared request objects without executing (default: FALSE).
+#' @param .id_prefix Character string to specify a prefix for generating custom IDs when names in `.llms` are missing.
+#' 
+#' @return An updated and named list of `.llms` with identifiers that align with batch responses, including a `batch_id` attribute.
+#' @export
+send_groq_batch <- function(.llms, 
+                            .model = "deepseek-r1-distill-llama-70b", 
+                            .max_tokens = 1024, 
+                            .temperature = NULL, 
+                            .top_p = NULL, 
+                            .frequency_penalty = NULL,
+                            .presence_penalty = NULL,
+                            .stop = NULL, 
+                            .seed = NULL,
+                            .api_url = "https://api.groq.com/",
+                            .json = FALSE,
+                            .completion_window = "24h",
+                            .verbose = FALSE,
+                            .dry_run = FALSE,
+                            .overwrite = FALSE,
+                            .max_tries = 3,
+                            .timeout = 60,
+                            .id_prefix = "tidyllm_groq_req_") {
+
+  # Input validation
+  c(
+    ".llms must be a list of LLMMessage objects" = is.list(.llms) && all(sapply(.llms, S7_inherits, LLMMessage)),
+    ".max_tokens must be an integer" = is_integer_valued(.max_tokens),
+    ".model must be a non-empty string" = is.character(.model) & nzchar(.model),
+    ".temperature must be numeric between 0 and 2 if provided" = is.null(.temperature) || (.temperature >= 0 && .temperature <= 2),
+    ".top_p must be numeric between 0 and 1 if provided" = is.null(.top_p) || (.top_p >= 0 && .top_p <= 1),
+    ".frequency_penalty must be numeric between -2 and 2 if provided" = is.null(.frequency_penalty) || (.frequency_penalty >= -2 && .frequency_penalty <= 2),
+    ".presence_penalty must be numeric between -2 and 2 if provided" = is.null(.presence_penalty) || (.presence_penalty >= -2 && .presence_penalty <= 2),
+    ".stop must be a character vector or NULL" = is.null(.stop) || is.character(.stop) || is.list(.stop),
+    ".seed must be an integer if provided" = is.null(.seed) || is_integer_valued(.seed),
+    ".completion_window must be a valid window format" = is.character(.completion_window) && grepl("^\\d+[hd]$", .completion_window),
+    ".verbose must be logical" = is.logical(.verbose),
+    ".dry_run must be logical" = is.logical(.dry_run),
+    ".overwrite must be logical" = is.logical(.overwrite),
+    ".id_prefix must be a character vector of length 1" = is.character(.id_prefix),
+    ".max_tries must be integer-valued numeric" = is_integer_valued(.max_tries),
+    ".timeout must be an integer" = is_integer_valued(.timeout)
+  ) |> validate_inputs()
+  
+  api_obj <- api_groq(short_name = "groq",
+                      long_name  = "Groq",
+                      api_key_env_var = "GROQ_API_KEY")
+  
+  api_key <- get_api_key(api_obj, .dry_run)
+  
+  prepared_llms <- prepare_llms_for_batch(api_obj,
+                                          .llms = .llms,
+                                          .id_prefix = .id_prefix,
+                                          .overwrite = .overwrite)
+  
+  # Create JSONL content for batch submission
+  jsonl_lines <- lapply(seq_along(prepared_llms), function(i) {
+    # Get messages from each LLMMessage object
+    messages <- to_api_format(prepared_llms[[i]], api_obj, TRUE)
+    
+    custom_id <- names(prepared_llms)[i]
+    request_body <- list(
+      model = .model,
+      max_tokens = .max_tokens,
+      messages = messages,
+      temperature = .temperature,
+      top_p = .top_p,
+      frequency_penalty = .frequency_penalty,
+      presence_penalty = .presence_penalty,
+      stop = .stop,
+      seed = .seed
+    ) |> purrr::compact()
+    
+    # Handle JSON mode
+    if (.json == TRUE) {
+      request_body$response_format <- list(type = "json_object")
+    }
+    
+    # Create the batch request entry
+    batch_entry <- list(
+      custom_id = custom_id,
+      method = "POST",
+      url = "/v1/chat/completions",
+      body = request_body
+    )
+    
+    # Convert to JSON string
+    jsonlite::toJSON(batch_entry, auto_unbox = TRUE)
+  })
+  
+  # Combine all lines into a single JSONL string
+  jsonl_content <- paste(jsonl_lines, collapse = "\n")
+  
+  # Create a temporary file to hold the JSONL content
+  temp_file <- tempfile(fileext = ".jsonl")
+  writeLines(jsonl_content, temp_file)
+  
+  if (.dry_run) {
+    return(readLines(temp_file))
+  }
+  
+  # 1. Upload the JSONL file
+  upload_request <- httr2::request(paste0(.api_url, "openai/v1/files")) |>
+    httr2::req_headers(
+      Authorization = sprintf("Bearer %s", api_key),
+      .redact = "Authorization"
+    ) |>
+    httr2::req_body_multipart(
+      file = curl::form_file(temp_file),
+      purpose = "batch"
+    )
+  
+  upload_response <- upload_request |>
+    perform_generic_request(.timeout = .timeout, .max_tries = .max_tries)
+  
+  if ("error" %in% names(upload_response$content)) {
+    stop(sprintf("Groq API returned an Error while uploading file:\nMessage: %s",
+                 upload_response$content$error$message))
+  }
+  
+  file_id <- upload_response$content$id
+  
+  # 2. Create the batch job
+  batch_request <- httr2::request(paste0(.api_url, "openai/v1/batches")) |>
+    httr2::req_headers(
+      Authorization = sprintf("Bearer %s", api_key),
+      "Content-Type" = "application/json",
+      .redact = "Authorization"
+    ) |>
+    httr2::req_body_json(list(
+      input_file_id = file_id,
+      endpoint = "/v1/chat/completions",
+      completion_window = .completion_window
+    ))
+  
+  batch_response <- batch_request |>
+    perform_generic_request(.timeout = .timeout, .max_tries = .max_tries)
+  
+  if ("error" %in% names(batch_response$content)) {
+    stop(sprintf("Groq API returned an Error while creating batch:\nMessage: %s",
+                 batch_response$content$error$message))
+  }
+  
+  # Attach batch_id as an attribute to .llms
+  batch_id <- batch_response$content$id
+  attr(prepared_llms, "batch_id") <- batch_id
+  attr(prepared_llms, "file_id") <- file_id
+  
+  if (.verbose) {
+    message("Batch submitted successfully. Batch ID: ", batch_id)
+  }
+  
+  return(prepared_llms)
+}
+
+#' Check Batch Processing Status for Groq API
+#'
+#' This function retrieves the processing status and other details of a specified Groq batch.
+#'
+#' @param .llms A list of LLMMessage objects with a batch_id attribute.
+#' @param .batch_id A character string with the batch ID to check.
+#' @param .api_url Character; base URL of the Groq API (default: "https://api.groq.com/").
+#' @param .max_tries Maximum retries to perform request.
+#' @param .timeout Integer specifying the request timeout in seconds (default: 60).
+#' @param .dry_run Logical; if TRUE, returns the prepared request object without executing (default: FALSE).
+#' 
+#' @return A tibble with information about the status of batch processing.
+#' @export
+check_groq_batch <- function(.llms = NULL, 
+                             .batch_id = NULL, 
+                             .api_url = "https://api.groq.com/",
+                             .dry_run = FALSE,
+                             .max_tries = 3,
+                             .timeout = 60) {
+  # Extract batch_id
+  if (is.null(.batch_id)) {
+    if (!is.null(.llms)) {
+      .batch_id <- attr(.llms, "batch_id")
+      if (is.null(.batch_id)) {
+        stop("No batch_id attribute found in the provided list.")
+      }
+    } else {
+      stop("Either .llms or .batch_id must be provided.")
+    }
+  }
+  
+  # Retrieve API key
+  api_key <- Sys.getenv("GROQ_API_KEY")
+  if ((api_key == "") & !.dry_run) {
+    stop("API key is not set.")
+  }
+  
+  # Build request
+  request_url <- paste0(.api_url, "openai/v1/batches/", .batch_id)
+  request <- httr2::request(request_url) |>
+    httr2::req_headers(
+      Authorization = sprintf("Bearer %s", api_key),
+      .redact = "Authorization"
+    )
+  
+  if (.dry_run) {
+    return(request)
+  }
+  
+  # Perform request with retries and error handling
+  response <- request |>
+    perform_generic_request(.timeout = .timeout, .max_tries = .max_tries)
+  
+  # Parse response
+  response_body <- response$content
+  if ("error" %in% names(response_body)) {
+    stop(sprintf("Groq API returned an Error:\nMessage: %s",
+                 response_body$error$message))
+  }
+  
+  # Create tibble with batch details
+  tibble::tibble(
+    batch_id = response_body$id,
+    status = response_body$status,
+    created_at = lubridate::as_datetime(response_body$created_at, origin = "1970-01-01"),
+    expires_at = lubridate::as_datetime(response_body$expires_at, origin = "1970-01-01"),
+    req_total = response_body$request_counts$total,
+    req_completed = response_body$request_counts$completed,
+    req_failed = response_body$request_counts$failed,
+    input_file_id = response_body$input_file_id,
+    output_file_id = response_body$output_file_id,
+    error_file_id = response_body$error_file_id
+  )
+}
+
+#' Fetch Results for a Groq Batch
+#'
+#' This function retrieves the results of a completed Groq batch and updates
+#' the provided list of `LLMMessage` objects with the responses.
+#'
+#' @param .llms A list of `LLMMessage` objects that were part of the batch.
+#' @param .batch_id Character; the unique identifier for the batch.
+#' @param .api_url Character; the base URL for the Groq API (default: "https://api.groq.com/").
+#' @param .dry_run Logical; if `TRUE`, returns the constructed request without executing it (default: `FALSE`).
+#' @param .max_tries Integer; maximum number of retries if the request fails (default: `3`).
+#' @param .timeout Integer; request timeout in seconds (default: `60`).
+#'
+#' @return A list of updated `LLMMessage` objects, each with the assistant's response added if successful.
+#' @export
+fetch_groq_batch <- function(.llms, 
+                             .batch_id = NULL, 
+                             .api_url = "https://api.groq.com/",
+                             .dry_run = FALSE,
+                             .max_tries = 3,
+                             .timeout = 60) {
+  c(
+    ".llms must be a list of LLMMessage objects with names as custom IDs" = is.list(.llms) && all(sapply(.llms, S7_inherits, LLMMessage)),
+    ".batch_id must be a non-empty character string or NULL" = is.null(.batch_id) || (is.character(.batch_id) && nzchar(.batch_id)),
+    ".api_url must be a non-empty character string" = is.character(.api_url) && nzchar(.api_url),
+    ".dry_run must be logical" = is.logical(.dry_run),
+    ".max_tries must be an integer" = is_integer_valued(.max_tries),
+    ".timeout must be an integer" = is_integer_valued(.timeout)
+  ) |> validate_inputs()
+  
+  # Preserve original names
+  original_names <- names(.llms)
+  
+  # Retrieve batch_id from .llms if not provided
+  if (is.null(.batch_id)) {
+    .batch_id <- attr(.llms, "batch_id")
+    if (is.null(.batch_id)) {
+      stop("No batch_id provided and no batch_id attribute found in the provided list.")
+    }
+  }
+  
+  api_obj <- api_groq(short_name = "groq",
+                      long_name  = "Groq",
+                      api_key_env_var = "GROQ_API_KEY")
+  
+  api_key <- get_api_key(api_obj, .dry_run)
+  
+  batch_status <- check_groq_batch(.batch_id = .batch_id)
+  
+  # Check if batch has completed processing
+  if (batch_status$status != "completed") {
+    stop("Batch processing has not completed yet. Current status: ", batch_status$status)
+  }
+  
+  if (is.null(batch_status$output_file_id)) {
+    stop("Batch completed but no output file is available.")
+  }
+  
+  # Download the results file
+  output_file_id <- batch_status$output_file_id
+  file_download_url <- paste0(.api_url, "openai/v1/files/", output_file_id, "/content")
+  file_download_request <- httr2::request(file_download_url) |>
+    httr2::req_headers(
+      Authorization = sprintf("Bearer %s", api_key),
+      .redact = "Authorization"
+    )
+  
+  file_download_response <- file_download_request |>
+    httr2::req_timeout(.timeout) |>
+    httr2::req_retry(max_tries = .max_tries) |>
+    httr2::req_perform()
+  
+  # Parse the JSONL response
+  results_content <- httr2::resp_body_string(file_download_response)
+  results_lines <- strsplit(results_content, "\n")[[1]]
+  results_list <- lapply(results_lines, function(line) {
+    if (nzchar(line)) jsonlite::fromJSON(line) else NULL
+  })
+  results_list <- Filter(Negate(is.null), results_list)
+  
+  # Map results by custom_id
+  results_by_custom_id <- purrr::set_names(
+    results_list, 
+    sapply(results_list, function(x) x$custom_id)
+  )
+  
+  # Map results back to the original .llms list using names as custom IDs
+  updated_llms <- lapply(names(.llms), function(custom_id) {
+    result <- results_by_custom_id[[custom_id]]
+    
+    if (!is.null(result) && result$response$status_code == 200) {
+      # Extract response content
+      response_body <- result$response$body
+      
+      # Extract assistant message content
+      assistant_reply <- result$response$body$choices$message$content
+      metadata        <- extract_metadata(api_obj,result$response$body)
+      
+      # Update LLMMessage object with response
+      llm <- add_message(
+        .llm = .llms[[custom_id]],
+        .role = "assistant",
+        .content = assistant_reply,
+        .meta = metadata
+      )
+      
+      return(llm)
+    } else {
+      if (!is.null(result$error)) {
+        warning(sprintf("Error for custom_id %s: %s", custom_id, result$error$message))
+      } else {
+        warning(sprintf("Result for custom_id %s was unsuccessful or not found", custom_id))
+      }
+      return(.llms[[custom_id]])
+    }
+  })
+  
+  # Restore original names
+  names(updated_llms) <- original_names
+  
+  # Remove batch attributes before returning to avoid reuse conflicts
+  attr(updated_llms, "batch_id") <- NULL
+  attr(updated_llms, "file_id") <- NULL
+  
+  return(updated_llms)
+}
+
+#' List Groq Batch Requests
+#'
+#' Retrieves batch request details from the Groq API.
+#'
+#' @param .api_url Base URL for the Groq API (default: "https://api.groq.com/").
+#' @param .limit Maximum number of batches to retrieve (default: 20).
+#' @param .max_tries Maximum retry attempts for requests (default: 3).
+#' @param .timeout Request timeout in seconds (default: 60).
+#'
+#' @return A tibble with batch details including batch ID, status, creation time, and request counts.
+#'
+#' @export
+list_groq_batches <- function(.api_url = "https://api.groq.com/", 
+                              .limit = 20, 
+                              .max_tries = 3,
+                              .timeout = 60) {
+  # Retrieve API key
+  api_key <- Sys.getenv("GROQ_API_KEY")
+  if (api_key == "") {
+    stop("API key is not set. Please set it with: Sys.setenv(GROQ_API_KEY = \"YOUR-KEY-GOES-HERE\").")
+  }
+  
+  # Set up request URL with query parameters
+  request <- httr2::request(.api_url) |>
+    httr2::req_url_path("openai/v1/batches") |>
+    httr2::req_headers(
+      Authorization = sprintf("Bearer %s", api_key),
+      .redact = "Authorization"
+    ) |>
+    httr2::req_url_query(limit = .limit)
+  
+  # Perform the request with retries and error handling
+  response <- request |>
+    perform_generic_request(.timeout = .timeout, .max_tries = .max_tries)
+  
+  # Parse response and handle any errors
+  if ("error" %in% names(response$content)) {
+    stop(sprintf("Groq API Error: %s", response$content$error$message))
+  }
+  
+  # Extract batch list details
+  batches <- response$content$data
+  if (length(batches) == 0) {
+    return(tibble::tibble())
+  }
+  
+  batch_list <- purrr::map_dfr(batches, function(batch) {
+    tibble::tibble(
+      batch_id = batch$id,
+      status = batch$status,
+      created_at = lubridate::as_datetime(batch$created_at, origin = "1970-01-01"),
+      expires_at = lubridate::as_datetime(batch$expires_at, origin = "1970-01-01"),
+      req_total = batch$request_counts$total,
+      req_completed = batch$request_counts$completed,
+      req_failed = batch$request_counts$failed,
+      input_file_id = batch$input_file_id,
+      output_file_id = batch$output_file_id,
+      error_file_id = batch$error_file_id
+    )
+  })
+  
+  return(batch_list)
+}
+
 #' Groq API Provider Function
 #'
 #' The `groq()` function acts as an interface for interacting with the Groq API 
@@ -395,5 +835,9 @@ groq_list_models <- function(.api_url = "https://api.groq.com",
 groq <- create_provider_function(
   .name = "groq",
   chat = groq_chat,
-  list_models = groq_list_models
+  list_models = groq_list_models,
+  send_batch = send_groq_batch,
+  check_batch = check_groq_batch,
+  fetch_batch = fetch_groq_batch,
+  list_batches = list_groq_batches
 )
