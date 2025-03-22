@@ -5,11 +5,42 @@ Major internal refactor with many small feature improvements:
 - Streaming is now done with `httr2::req_peform_connection()` from *httr2 1.1.1.* and later and became much more robust
 - Metadata extraction, logprobs and more other features are now also available in streaming requests
 - Better use of `S7` methods for handling streams and parsing chats
-- Openai and Azure OpenAI as well as their batch functions were improved to avoid some code duplication
+- OpenAI and Azure OpenAI as well as their batch functions now rely on a request construction function to avoid some code duplication
 - Mistral now supports `.json_schema`
 - New tests for batch functions
 - Bug fixed where the system prompts did not work in `claude()` batch requests
-- New `field_object()` for tidyllm schemata
+- New `field_object()` for tidyllm schemata:
+```r
+person_schema <- tidyllm_schema(
+  first_name = field_chr("A persons first name"),
+  last_name = field_chr("A persons last name"),
+  occupation = field_chr("A quirky occupation"),
+  address = field_object(
+    "The persons home address",
+    street = field_chr("A street name"),
+    number = field_dbl("A house number"),
+    plz = field_dbl("A zip code for the address"),
+    country = field_fct("Either Germany or France",.levels = c("Germany","France"))
+  )
+)
+
+answer <- llm_message("Imagine a person with a quirky job") |>
+  chat(openai,.json_schema=person_schema)
+  
+answer |>
+   get_reply_data() |>
+   str()
+#> List of 4
+#> $ first_name: chr "Eulalie"
+#>  $ last_name : chr "Featherstone"
+#>  $ occupation: chr "Professional Ostrich Plume Arranger"
+#> $ address   :List of 4
+#> ..$ street : chr "Rue des Plumassiers"
+#>  ..$ number : int 47
+#>  ..$ plz    : int 75004
+#> ..$ country: chr "France"  
+```
+
 - Batch API implemented for `groq()`
 
 # Dev-Version 0.3.3

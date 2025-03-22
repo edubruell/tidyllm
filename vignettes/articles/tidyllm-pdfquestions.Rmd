@@ -24,37 +24,14 @@ dir("aipapers")
 
 Our goal is to get a first overview of these papers and what they are about and to give them good file names.
 
-### Step 1: Setting up the Document Prompt
+### Step 1:  Generating Messages for Each Document
 
-First, we create a prompt designed to elicit detailed responses for each document. This structured prompt asks for specific metadata like title, authors, and type, along with deeper content-related questions about empirical methods and theoretical frameworks.
-
-```{r document_prompt, message=FALSE}
-
-document_prompt <- '
-Below are the first 5 pages of a document. Answer the questions below in detail.
-Provide each answer as a standalone response. 
-
-1. Title: Provide the full, exact title of the document as it appears on the first page.
-2. Authors: List all authors as stated in the document, including any institutional affiliations if mentioned.
-3. Suggested Filename: Suggest a filename in the format "ReleaseYear_Author_etal_ShortTitle.pdf". Use the publication year if available; otherwise, use XXXX.
-4. Document Type: Specify if this is a "Policy Report" or a "Research Paper" based on the document’s style, structure, and purpose.
-5. Key Citations: Identify the four most frequently cited or critical references in the first 5 pages that support the document’s primary claims or background.
-
-Additionally, answer the following questions about the document’s content. Each answer should be concise but comprehensive, ideally 150 words:
-
-6. Empirical Methods: Describe any empirical methods used, including data collection, statistical techniques, or analysis methods mentioned.
-7. Theoretical Framework: Outline the primary theoretical framework or models discussed, if any, that underpin the analysis or arguments.
-8. Main Point: Summarize the central argument or main point the document presents.
-9. Key Contribution: Explain the unique contribution of this document, particularly what it adds to the field or topic.
-'
-```
-
-### Step 2: Generating Messages for Each Document
-
-Next, we prepare a list of messages for all PDFs in the folder by applying `llm_message()` with the prompt to the first five pages of each document. This step sets up a list of messages, where each entry specifies a task to retrieve structured answers on one file. Even though the `gpt-4o-mini model` we will use in this example can process up to 128,000 tokens -approximately 80-90 pages of English text- we limit the input to five pages for demonstration purposes and to maintain focus on the introduction that is usually enough to get a first overview of a paper. 
+First, we need to prepare a list of messages for all PDFs in the folder by applying `llm_message()` with a prompt to the first five pages of each document. This step sets up a list of messages, where each entry specifies a task to retrieve structured answers on one file. Even though the `gpt-4o-mini model` we will use in this example can process up to 128,000 tokens -approximately 80-90 pages of English text- we limit the input to five pages for demonstration purposes and to maintain focus on the introduction that is usually enough to get a first overview of a paper. 
 
 ```{r document_tasks, eval=FALSE}
-document_tasks <- map(files,~llm_message(document_prompt, 
+document_tasks <- files |> 
+  map(~llm_message("Below are the first 5 pages of a document. 
+                     Summarise the document based on the provided schema.", 
             .pdf = list(
               filename = .x,
               start_page = 1,
@@ -62,28 +39,28 @@ document_tasks <- map(files,~llm_message(document_prompt,
 ) 
 ```
 
-### Step 3: Defining the Schema for Structured Output
+### Step 2: Defining the Schema for Structured Output
 
 In this step, we define a schema that outlines the expected data types for each field in the model's responses. This schema enables the large language model to return answers in a structured, consistent format that can later be converted into a table, making it easy to analyze and compare results across documents.
 
 ```{r document_schema}
 document_schema <- tidyllm_schema(
   name = "DocumentAnalysisSchema",
-  Title = "character",
-  Authors = "character",
-  SuggestedFilename = "character",
-  Type = "factor(Policy, Research)",
-  Empirics = "character",
-  Theory = "character",
-  MainPoint = "character",
-  Contribution = "character",
-  KeyCitations = "character"
+  Title = field_chr("The full title of the provided document"),
+  Authors = field_chr("A semicolon-seperated list of Authors"),
+  SuggestedFilename = field_chr("Suggest a filename in the format \"ReleaseYear_Author_etal_ShortTitle.pdf\". Use the publication year if available; otherwise, use XXXX."),
+  Type = field_fct("Is the document a Policy Report or a Research Paper based on  it’s style, structure, and purpose?",.levels =c("Policy", "Research")),
+  Empirics =  field_chr("A 100 word description of empirical methods used, including data collection, statistical techniques, or analysis methods mentioned."),
+  Theory = field_chr("A 100 word outline the primary theoretical framework or models discussed if any."),
+  MainPoint = field_chr("A one sentence summary ot the main point raised"),
+  Contribution = field_chr("A short explanation of the main contributions claimed in the document"),
+  KeyCitations = field_chr("The four most frequently cited or critical references in the first 5 pages")
 )
 ```
 
-In `tidyllm_schema()`, we specify each field along with its expected data type. Supported types include `character` (with `string` as an accepted synonym), `logical`, and `numeric`. For fields where categorical responses are needed, we can use `factor()` to define specific allowed options. For instance, `factor(Policy, Research)` creates a categorical field with the choices "Policy" and "Research." To indicate that a field should return a list of values, we append `[]` to the type. For example, setting `Authors = "character[]"` allows multiple entries in a list format for the Authors field. However, we intentionally avoid lists here to maintain a flat structure. This ensures that the output can be easily converted to a single-row `tibble`. `name` is a special field, which creates an identifier for a schema. By default it is `"tidyllm_schema"`
+In `tidyllm_schema()`, we specify each field field with a description. The seperate field functions indicate what kind of type we expect for the answer (i.e. `field_chr()` for text or `field_dbl()` for numbers). For fields where categorical responses are needed, we can use `field_fct()` to define specific allowed options with the `.levels` argument. For instance `field_fct()`, in the schema above creates a categorical field with the choices "Policy" and "Research." To indicate that a field should return a list of values, you can set `.vector=TRUE` in the field functions. He, we intentionally avoid lists  to maintain a flat structure. This ensures that the output can be easily converted to a single-row `tibble`. `name` is a special field, which creates an identifier for a schema. By default it is `"tidyllm_schema"`
 
-### Step 4: Running the Analysis on a Sample Document
+### Step 3: Running the Analysis on a Sample Document
 To test the setup, we run the analysis on a single document with the standard `chat()` function, using the schema to ensure structured output.
 
 ```{r example_task, eval=FALSE}
@@ -94,27 +71,31 @@ example_task <- document_tasks[[1]] |>
 ```{r example_task_hidden, echo=FALSE}
 example_task <- read_rds("example_task.rds")
 ```
-### Step 5: Extracting and Formatting the Results for our example task
+### Step 4: Extracting and Formatting the Results for our example task
 We use `get_reply_data()` to extract the model’s structured responses from the model reply.
 ```{r example_task_get_reply}
 get_reply_data(example_task)
 ```
 The model seems to have reasonably answered our questions in the structured format we provided for our first example task. Here we can also look at the token usage of the example task:
 ```{r example_task_get_metadata, eval=FALSE}
-get_reply_data(example_task)
+get_metadata(example_task)
 ```
 ```{r, echo=FALSE}
 tibble(
   model = "gpt-4o-mini-2024-07-18",
-  timestamp = as.POSIXct("2024-11-13 07:41:29"),
-  prompt_tokens = 4356L,
-  completion_tokens = 273L,
-  total_tokens = 4629L
-)
+  timestamp = as.POSIXct("2025-03-22 22:07:53"),
+  prompt_tokens = 4265L,
+  completion_tokens = 337L,
+  total_tokens = 4602L,
+  stream = FALSE
+) |>
+  mutate(api_specific=list(list(system_fingerprint = "", 
+                           completion_tokens_details = list(),
+                           prompt_tokens_details = list())))
 ```
 At a price for `gpt-4o-mini` of  \$0.15 / million input tokens and \$0.60 / million output tokens the cost of our example task is less than a cent.
 
-### Step 6: Scaling up to a whole batch of papers
+### Step 5: Scaling up to a whole batch of papers
 
 After confirming that our single-document analysis is working well, we can extend this workflow to process a larger batch of documents. Batch processing is particularly valuable when handling a large collection of files, as it allows us to submit multiple messages at once, which are then processed together on the model provider’s servers. 
 
@@ -136,7 +117,7 @@ read_rds("document_batch.rds")|>
 ```
 Alternatively you can list all OpenAI batches with `list_openai_batches()`or `list_batchers(openai())`. Of course, you can also look into the [batches dashboard of the OpenAI platform](https://platform.openai.com/batches/) for the same overview. Since OpenAI batches are sent as `.jsonl` and saved on the OpenAI server, you can also look into the file tab of the dashboard to delete old files from time to time. 
 
-### Step 7: Getting data from the entire batch
+### Step 6: Getting data from the entire batch
 
 Once the batch is complete, we fetch all responses with `fetch_batch()`:
 ```{r, eval=FALSE}
@@ -175,7 +156,7 @@ For `gemini()` there is an alternative to adding the text from a PDF with `llm_m
 
 ### Local Models
  
-Using open-source local models for PDF processing is also possible, though remote models like `gpt-4o-mini` tend to handle longer documents more effectively. Smaller local models, like `gemma2:9B` in `ollama()`, may struggle with large content and complex, structured queries, even if they support extended context lengths. For more demanding tasks, larger local models like `llama3:70B` may perform better with complex queries, but they require substantial hardware resources to run smoothly. Since Ollama has a default context length of just 2,048 tokens, you will likely need to adjust the context length with the `.num_ctx` option in `ollama()`. Sending a message that is longer than the context length might lead to strange errors, since the input will be truncated by Ollama, which might lead to cases where only parts of the document are processed without your instructions.  Note that increasing context length will likely slow down processing due to higher memory usage. In these cases, reducing the number of pages may help.
+Using open-source local models for PDF processing is also possible, though remote models like `gpt-4o-mini` tend to handle longer documents more effectively. Smaller local models in `ollama()`, may struggle with large content and complex, structured queries, even if they support extended context lengths. For more demanding tasks, larger local models may perform better with complex queries, but they require substantial hardware resources to run smoothly. Since Ollama has a default context length of just 2,048 tokens, you will likely also need to adjust the context length with the `.num_ctx` option in `ollama()`. Sending a message that is longer than the context length might lead to strange errors, since the input will be truncated by Ollama, which might lead to cases where only parts of the document are processed without your instructions.  Note that increasing context length will likely slow down processing due to higher memory usage. In these cases, reducing the number of pages may help.
 
 > ⚠️ **Note:** When using paid remote models, it's important to consider data privacy and security, especially if you're processing sensitive documents, as uploading data to external servers may introduce risks — local models provide more control in such cases. 
 

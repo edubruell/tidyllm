@@ -122,46 +122,21 @@ but no structure yet:</p>
 <p>Our goal is to get a first overview of these papers and what they are
 about and to give them good file names.</p>
 <div class="section level3">
-<h3 id="step-1-setting-up-the-document-prompt">Step 1: Setting up the Document Prompt<a class="anchor" aria-label="anchor" href="#step-1-setting-up-the-document-prompt"></a>
+<h3 id="step-1-generating-messages-for-each-document">Step 1: Generating Messages for Each Document<a class="anchor" aria-label="anchor" href="#step-1-generating-messages-for-each-document"></a>
 </h3>
-<p>First, we create a prompt designed to elicit detailed responses for
-each document. This structured prompt asks for specific metadata like
-title, authors, and type, along with deeper content-related questions
-about empirical methods and theoretical frameworks.</p>
+<p>First, we need to prepare a list of messages for all PDFs in the
+folder by applying <code><a href="../reference/llm_message.html">llm_message()</a></code> with a prompt to the first
+five pages of each document. This step sets up a list of messages, where
+each entry specifies a task to retrieve structured answers on one file.
+Even though the <code>gpt-4o-mini model</code> we will use in this
+example can process up to 128,000 tokens -approximately 80-90 pages of
+English text- we limit the input to five pages for demonstration
+purposes and to maintain focus on the introduction that is usually
+enough to get a first overview of a paper.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span></span>
-<span><span class="va">document_prompt</span> <span class="op">&lt;-</span> <span class="st">'</span></span>
-<span><span class="st">Below are the first 5 pages of a document. Answer the questions below in detail.</span></span>
-<span><span class="st">Provide each answer as a standalone response. </span></span>
-<span><span class="st"></span></span>
-<span><span class="st">1. Title: Provide the full, exact title of the document as it appears on the first page.</span></span>
-<span><span class="st">2. Authors: List all authors as stated in the document, including any institutional affiliations if mentioned.</span></span>
-<span><span class="st">3. Suggested Filename: Suggest a filename in the format "ReleaseYear_Author_etal_ShortTitle.pdf". Use the publication year if available; otherwise, use XXXX.</span></span>
-<span><span class="st">4. Document Type: Specify if this is a "Policy Report" or a "Research Paper" based on the document’s style, structure, and purpose.</span></span>
-<span><span class="st">5. Key Citations: Identify the four most frequently cited or critical references in the first 5 pages that support the document’s primary claims or background.</span></span>
-<span><span class="st"></span></span>
-<span><span class="st">Additionally, answer the following questions about the document’s content. Each answer should be concise but comprehensive, ideally 150 words:</span></span>
-<span><span class="st"></span></span>
-<span><span class="st">6. Empirical Methods: Describe any empirical methods used, including data collection, statistical techniques, or analysis methods mentioned.</span></span>
-<span><span class="st">7. Theoretical Framework: Outline the primary theoretical framework or models discussed, if any, that underpin the analysis or arguments.</span></span>
-<span><span class="st">8. Main Point: Summarize the central argument or main point the document presents.</span></span>
-<span><span class="st">9. Key Contribution: Explain the unique contribution of this document, particularly what it adds to the field or topic.</span></span>
-<span><span class="st">'</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="step-2-generating-messages-for-each-document">Step 2: Generating Messages for Each Document<a class="anchor" aria-label="anchor" href="#step-2-generating-messages-for-each-document"></a>
-</h3>
-<p>Next, we prepare a list of messages for all PDFs in the folder by
-applying <code><a href="../reference/llm_message.html">llm_message()</a></code> with the prompt to the first five
-pages of each document. This step sets up a list of messages, where each
-entry specifies a task to retrieve structured answers on one file. Even
-though the <code>gpt-4o-mini model</code> we will use in this example
-can process up to 128,000 tokens -approximately 80-90 pages of English
-text- we limit the input to five pages for demonstration purposes and to
-maintain focus on the introduction that is usually enough to get a first
-overview of a paper.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">document_tasks</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="va">files</span>,<span class="op">~</span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="va">document_prompt</span>, </span>
+<code class="sourceCode R"><span><span class="va">document_tasks</span> <span class="op">&lt;-</span> <span class="va">files</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="op">~</span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Below are the first 5 pages of a document. </span></span>
+<span><span class="st">                     Summarise the document based on the provided schema."</span>, </span>
 <span>            .pdf <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>              filename <span class="op">=</span> <span class="va">.x</span>,</span>
 <span>              start_page <span class="op">=</span> <span class="fl">1</span>,</span>
@@ -169,66 +144,65 @@ overview of a paper.</p>
 <span><span class="op">)</span> </span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="step-3-defining-the-schema-for-structured-output">Step 3: Defining the Schema for Structured Output<a class="anchor" aria-label="anchor" href="#step-3-defining-the-schema-for-structured-output"></a>
+<h3 id="step-2-defining-the-schema-for-structured-output">Step 2: Defining the Schema for Structured Output<a class="anchor" aria-label="anchor" href="#step-2-defining-the-schema-for-structured-output"></a>
 </h3>
 <p>In this step, we define a schema that outlines the expected data
 types for each field in the model’s responses. This schema enables the
 large language model to return answers in a structured, consistent
 format that can later be converted into a table, making it easy to
 analyze and compare results across documents.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">document_schema</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tidyllm_schema.html">tidyllm_schema</a></span><span class="op">(</span></span>
 <span>  name <span class="op">=</span> <span class="st">"DocumentAnalysisSchema"</span>,</span>
-<span>  Title <span class="op">=</span> <span class="st">"character"</span>,</span>
-<span>  Authors <span class="op">=</span> <span class="st">"character"</span>,</span>
-<span>  SuggestedFilename <span class="op">=</span> <span class="st">"character"</span>,</span>
-<span>  Type <span class="op">=</span> <span class="st">"factor(Policy, Research)"</span>,</span>
-<span>  Empirics <span class="op">=</span> <span class="st">"character"</span>,</span>
-<span>  Theory <span class="op">=</span> <span class="st">"character"</span>,</span>
-<span>  MainPoint <span class="op">=</span> <span class="st">"character"</span>,</span>
-<span>  Contribution <span class="op">=</span> <span class="st">"character"</span>,</span>
-<span>  KeyCitations <span class="op">=</span> <span class="st">"character"</span></span>
+<span>  Title <span class="op">=</span> <span class="fu"><a href="../reference/field_chr.html">field_chr</a></span><span class="op">(</span><span class="st">"The full title of the provided document"</span><span class="op">)</span>,</span>
+<span>  Authors <span class="op">=</span> <span class="fu"><a href="../reference/field_chr.html">field_chr</a></span><span class="op">(</span><span class="st">"A semicolon-seperated list of Authors"</span><span class="op">)</span>,</span>
+<span>  SuggestedFilename <span class="op">=</span> <span class="fu"><a href="../reference/field_chr.html">field_chr</a></span><span class="op">(</span><span class="st">"Suggest a filename in the format \"ReleaseYear_Author_etal_ShortTitle.pdf\". Use the publication year if available; otherwise, use XXXX."</span><span class="op">)</span>,</span>
+<span>  Type <span class="op">=</span> <span class="fu"><a href="../reference/field_chr.html">field_fct</a></span><span class="op">(</span><span class="st">"Is the document a Policy Report or a Research Paper based on  it’s style, structure, and purpose?"</span>,.levels <span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Policy"</span>, <span class="st">"Research"</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  Empirics <span class="op">=</span>  <span class="fu"><a href="../reference/field_chr.html">field_chr</a></span><span class="op">(</span><span class="st">"A 100 word description of empirical methods used, including data collection, statistical techniques, or analysis methods mentioned."</span><span class="op">)</span>,</span>
+<span>  Theory <span class="op">=</span> <span class="fu"><a href="../reference/field_chr.html">field_chr</a></span><span class="op">(</span><span class="st">"A 100 word outline the primary theoretical framework or models discussed if any."</span><span class="op">)</span>,</span>
+<span>  MainPoint <span class="op">=</span> <span class="fu"><a href="../reference/field_chr.html">field_chr</a></span><span class="op">(</span><span class="st">"A one sentence summary ot the main point raised"</span><span class="op">)</span>,</span>
+<span>  Contribution <span class="op">=</span> <span class="fu"><a href="../reference/field_chr.html">field_chr</a></span><span class="op">(</span><span class="st">"A short explanation of the main contributions claimed in the document"</span><span class="op">)</span>,</span>
+<span>  KeyCitations <span class="op">=</span> <span class="fu"><a href="../reference/field_chr.html">field_chr</a></span><span class="op">(</span><span class="st">"The four most frequently cited or critical references in the first 5 pages"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>In <code><a href="../reference/tidyllm_schema.html">tidyllm_schema()</a></code>, we specify each field along with
-its expected data type. Supported types include <code>character</code>
-(with <code>string</code> as an accepted synonym), <code>logical</code>,
-and <code>numeric</code>. For fields where categorical responses are
-needed, we can use <code><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor()</a></code> to define specific allowed
-options. For instance, <code>factor(Policy, Research)</code> creates a
+<p>In <code><a href="../reference/tidyllm_schema.html">tidyllm_schema()</a></code>, we specify each field field with a
+description. The seperate field functions indicate what kind of type we
+expect for the answer (i.e. <code><a href="../reference/field_chr.html">field_chr()</a></code> for text or
+<code><a href="../reference/field_chr.html">field_dbl()</a></code> for numbers). For fields where categorical
+responses are needed, we can use <code><a href="../reference/field_chr.html">field_fct()</a></code> to define
+specific allowed options with the <code>.levels</code> argument. For
+instance <code><a href="../reference/field_chr.html">field_fct()</a></code>, in the schema above creates a
 categorical field with the choices “Policy” and “Research.” To indicate
-that a field should return a list of values, we append <code>[]</code>
-to the type. For example, setting <code>Authors = "character[]"</code>
-allows multiple entries in a list format for the Authors field. However,
-we intentionally avoid lists here to maintain a flat structure. This
-ensures that the output can be easily converted to a single-row
-<code>tibble</code>. <code>name</code> is a special field, which creates
-an identifier for a schema. By default it is
-<code>"tidyllm_schema"</code></p>
+that a field should return a list of values, you can set
+<code>.vector=TRUE</code> in the field functions. He, we intentionally
+avoid lists to maintain a flat structure. This ensures that the output
+can be easily converted to a single-row <code>tibble</code>.
+<code>name</code> is a special field, which creates an identifier for a
+schema. By default it is <code>"tidyllm_schema"</code></p>
 </div>
 <div class="section level3">
-<h3 id="step-4-running-the-analysis-on-a-sample-document">Step 4: Running the Analysis on a Sample Document<a class="anchor" aria-label="anchor" href="#step-4-running-the-analysis-on-a-sample-document"></a>
+<h3 id="step-3-running-the-analysis-on-a-sample-document">Step 3: Running the Analysis on a Sample Document<a class="anchor" aria-label="anchor" href="#step-3-running-the-analysis-on-a-sample-document"></a>
 </h3>
 <p>To test the setup, we run the analysis on a single document with the
 standard <code><a href="../reference/chat.html">chat()</a></code> function, using the schema to ensure
 structured output.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example_task</span> <span class="op">&lt;-</span> <span class="va">document_tasks</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span> <span class="op">|&gt;</span> </span>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.json_schema <span class="op">=</span> <span class="va">document_schema</span>,</span>
 <span>              .model       <span class="op">=</span> <span class="st">"gpt-4o-mini"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="step-5-extracting-and-formatting-the-results-for-our-example-task">Step 5: Extracting and Formatting the Results for our example
-task<a class="anchor" aria-label="anchor" href="#step-5-extracting-and-formatting-the-results-for-our-example-task"></a>
+<h3 id="step-4-extracting-and-formatting-the-results-for-our-example-task">Step 4: Extracting and Formatting the Results for our example
+task<a class="anchor" aria-label="anchor" href="#step-4-extracting-and-formatting-the-results-for-our-example-task"></a>
 </h3>
 <p>We use <code><a href="../reference/get_reply_data.html">get_reply_data()</a></code> to extract the model’s
 structured responses from the model reply.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_reply_data.html">get_reply_data</a></span><span class="op">(</span><span class="va">example_task</span><span class="op">)</span></span>
 <span><span class="co">## $Title</span></span>
 <span><span class="co">## [1] "A Method to Link Advances in Artificial Intelligence to Occupational Abilities"</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $Authors</span></span>
-<span><span class="co">## [1] "Edward W. Felten (Princeton University), Manav Raj (NYU Stern School of Business), Robert Seamans (NYU Stern School of Business)"</span></span>
+<span><span class="co">## [1] "Edward W. Felten; Manav Raj; Robert Seamans"</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $SuggestedFilename</span></span>
 <span><span class="co">## [1] "2018_Felten_etal_AILinkOccupations.pdf"</span></span>
@@ -237,34 +211,35 @@ structured responses from the model reply.</p>
 <span><span class="co">## [1] "Research"</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $Empirics</span></span>
-<span><span class="co">## [1] "The paper employs empirical methods using two databases: the Electronic Frontier Foundation AI Progress Measurement dataset and the Occupational Information Network (O*NET) from the US Department of Labor. The authors collect data on AI progress metrics and correlate these with occupational definitions and the abilities required for various jobs to derive impact scores for the effect of AI advancements on occupations."</span></span>
+<span><span class="co">## [1] "The study employs two main databases: the Electronic Frontier Foundation (EFF) AI Progress Measurement dataset and the Occupational Information Network (O*NET). The EFF dataset tracks task-specific AI performance metrics across various categories from 2010 to 2015, while O*NET provides contemporary occupational definitions. The authors calculate the correlation between AI advancements and occupational changes using an analysis of variance methodology to derive impact scores for occupations."</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $Theory</span></span>
-<span><span class="co">## [1] "The primary theoretical framework is based on task variation in occupations and the effects of AI on the bundle of skills required for specific occupations. The authors complement the work of previous scholars by linking advancements in AI technologies directly to job abilities, rather than relying solely on expert predictions about AI's future impact."</span></span>
+<span><span class="co">## [1] "The theoretical framework relies on linking advancements in various AI fields (e.g., image recognition) to a set of 52 abilities outlined by O*NET. The authors construct a matrix correlating EFF AI categories to O*NET abilities, assessing how AI impacts specific skills important for different occupations, theoretically grounded in human capital and job task frameworks."</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $MainPoint</span></span>
-<span><span class="co">## [1] "The document presents a new methodology to link advancements in artificial intelligence to the abilities required in various occupations. It highlights how AI affects the nature of labor, suggesting significant implications for understanding job susceptibility to automation and changes in job requirements."</span></span>
+<span><span class="co">## [1] "The paper introduces a novel methodology to quantitatively assess the impact of AI advancements on occupational abilities, facilitating better understanding for researchers and policymakers."</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $Contribution</span></span>
-<span><span class="co">## [1] "The key contribution of this research is the development of a systematic methodology to assess how AI advancements impact specific occupational abilities. This approach enables researchers, practitioners, and policymakers to analyze and compare the potential threats and opportunities posed by AI across different job sectors, guiding informed decisions and policies regarding technology and labor market adaptation."</span></span>
+<span><span class="co">## [1] "This research contributes a systematic approach for linking AI advancements to occupational changes, enhancing the understanding of AI's role in labor markets and the skills needed across different jobs. The methodology allows for further analysis of the varying impacts of AI on occupations, potentially aiding policy development."</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $KeyCitations</span></span>
-<span><span class="co">## [1] "1. Autor, David H., and Anna Salomons. 2017; 2. Brynjolfsson, Erik, Tom Mitchell, and Daniel Rock. 2018; 3. Frey, Carl Benedikt, and Michael A. Osborne. 2017; 4. Graetz, Georg, and Guy Michaels. 2015."</span></span></code></pre></div>
+<span><span class="co">## [1] "Autor and Handel (2013); Brynjolfsson et al. (2018); Acemoglu and Restrepo (2017); Frey and Osborne (2017)"</span></span></code></pre></div>
 <p>The model seems to have reasonably answered our questions in the
 structured format we provided for our first example task. Here we can
 also look at the token usage of the example task:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/get_reply_data.html">get_reply_data</a></span><span class="op">(</span><span class="va">example_task</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
-<span><span class="co">##   model         timestamp           prompt_tokens completion_tokens total_tokens</span></span>
-<span><span class="co">##   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;dttm&gt;</span>                      <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">1</span> gpt-4o-mini-… 2024-11-13 <span style="color: #949494;">07:41:29</span>          <span style="text-decoration: underline;">4</span>356               273         <span style="text-decoration: underline;">4</span>629</span></span></code></pre>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/get_metadata.html">get_metadata</a></span><span class="op">(</span><span class="va">example_task</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 1 × 7</span></span></span>
+<span><span class="co">##   model  timestamp           prompt_tokens completion_tokens total_tokens stream</span></span>
+<span><span class="co">##   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dttm&gt;</span>                      <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span> </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">1</span> gpt-4… 2025-03-22 <span style="color: #949494;">22:07:53</span>          <span style="text-decoration: underline;">4</span>265               337         <span style="text-decoration: underline;">4</span>602 FALSE </span></span>
+<span><span class="co">## <span style="color: #949494;"># ℹ 1 more variable: api_specific &lt;list&gt;</span></span></span></code></pre>
 <p>At a price for <code>gpt-4o-mini</code> of $0.15 / million input
 tokens and $0.60 / million output tokens the cost of our example task is
 less than a cent.</p>
 </div>
 <div class="section level3">
-<h3 id="step-6-scaling-up-to-a-whole-batch-of-papers">Step 6: Scaling up to a whole batch of papers<a class="anchor" aria-label="anchor" href="#step-6-scaling-up-to-a-whole-batch-of-papers"></a>
+<h3 id="step-5-scaling-up-to-a-whole-batch-of-papers">Step 5: Scaling up to a whole batch of papers<a class="anchor" aria-label="anchor" href="#step-5-scaling-up-to-a-whole-batch-of-papers"></a>
 </h3>
 <p>After confirming that our single-document analysis is working well,
 we can extend this workflow to process a larger batch of documents.
@@ -279,7 +254,7 @@ batch requests. The OpenAI Batch API, supports up to 50,000 requests in
 a single batch with a maximum file size of 100 MB. Additionally, batch
 API rate limits are separate from the standard per-model limits, meaning
 batch usage doesn’t impact your regular API rate allocations.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">document_tasks</span> <span class="op">|&gt;</span> </span>
 <span>  <span class="fu"><a href="../reference/send_batch.html">send_batch</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.json_schema <span class="op">=</span> <span class="va">document_schema</span>,</span>
 <span>                     .model       <span class="op">=</span> <span class="st">"gpt-4o-mini"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -303,7 +278,7 @@ the mean time.</p>
 </blockquote>
 <p>To check whether a batch was compeleted you can load the output file
 into <code><a href="../reference/check_openai_batch.html">check_openai_batch()</a></code>:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://readr.tidyverse.org/reference/read_rds.html" class="external-link">read_rds</a></span><span class="op">(</span><span class="st">"document_batch.rds"</span><span class="op">)</span><span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/check_batch.html">check_batch</a></span><span class="op">(</span><span class="va">openai</span><span class="op">)</span></span></code></pre></div>
 <p>Alternatively you can list all OpenAI batches with
@@ -316,17 +291,17 @@ look into the file tab of the dashboard to delete old files from time to
 time.</p>
 </div>
 <div class="section level3">
-<h3 id="step-7-getting-data-from-the-entire-batch">Step 7: Getting data from the entire batch<a class="anchor" aria-label="anchor" href="#step-7-getting-data-from-the-entire-batch"></a>
+<h3 id="step-6-getting-data-from-the-entire-batch">Step 6: Getting data from the entire batch<a class="anchor" aria-label="anchor" href="#step-6-getting-data-from-the-entire-batch"></a>
 </h3>
 <p>Once the batch is complete, we fetch all responses with
 <code><a href="../reference/fetch_batch.html">fetch_batch()</a></code>:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://readr.tidyverse.org/reference/read_rds.html" class="external-link">read_rds</a></span><span class="op">(</span><span class="st">"document_batch.rds"</span><span class="op">)</span><span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/fetch_batch.html">fetch_batch</a></span><span class="op">(</span><span class="va">openai</span><span class="op">)</span></span></code></pre></div>
 <p>We can then process the results into a table by mapping
 <code><a href="../reference/get_reply_data.html">get_reply_data()</a></code> and <code><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble()</a></code> over the
 batch output:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">docuemnt_table</span> <span class="op">&lt;-</span> <span class="va">results</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="va">get_reply_data</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://purrr.tidyverse.org/reference/map_dfr.html" class="external-link">map_dfr</a></span><span class="op">(</span><span class="va">as_tibble</span><span class="op">)</span></span>
@@ -335,16 +310,16 @@ batch output:</p>
 <span><span class="co">## <span style="color: #949494;"># A tibble: 24 × 9</span></span></span>
 <span><span class="co">##    Title  Authors SuggestedFilename Type  Empirics Theory MainPoint Contribution</span></span>
 <span><span class="co">##    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 1</span> A Met… Edward… 2018_Felten_etal… Rese… The doc… The t… The docu… This paper'…</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 2</span> The R… Alexan… 2024_Bick_etal_R… Rese… The pap… The f… The cent… The documen…</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 3</span> THE A… Andrew… 2024_Caplin_etal… Rese… The doc… The d… The cent… The paper's…</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 4</span> Large… John J… 2023_Horton_etal… Rese… The pap… The p… The cent… The documen…</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 5</span> The I… Sida P… 2023_Peng_etal_G… Rese… Conduct… Theor… The stud… This resear…</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 6</span> GPTs … Tyna E… 2023_Eloundou_et… Rese… The stu… The d… The cent… The paper p…</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 7</span> Autom… Philip… 2023_Lergetporer… Rese… The stu… The t… The docu… This resear…</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 8</span> Artif… Andrew… 2024_Green_etal_… Rese… The rep… The t… The cent… This docume…</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 9</span> THE A… Andrew… 2024_Caplin_etal… Rese… The res… The p… The docu… This docume…</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">10</span> Autom… Daron … 2019_Acemoglu_Re… Rese… The pap… The t… The docu… This paper …</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 1</span> A Met… Edward… 2018_Felten_etal… Rese… The pap… Theor… The pape… The primary…</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 2</span> The R… Alexan… 2024_Bick_etal_R… Rese… The emp… The t… The pape… The primary…</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 3</span> The A… Andrew… 2024_Caplin_etal… Rese… The stu… The t… AI can s… The paper c…</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 4</span> Large… John J… 2023_Horton_etal… Rese… The doc… The c… The pape… This resear…</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 5</span> The I… Sida P… 2023_Peng_etal_I… Rese… The stu… The p… The stud… This resear…</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 6</span> GPTs … Tyna E… 2023_Eloundou_et… Rese… The stu… The t… The intr… This paper …</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 7</span> Autom… Philip… 2023_Lergetporer… Rese… This st… The u… Workers … This paper …</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 8</span> Artif… Andrew… 2024_Green_etal_… Rese… The doc… The r… AI is tr… The primary…</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 9</span> The A… Andrew… 2024_Caplin_etal… Rese… The res… The s… The abil… This resear…</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">10</span> Autom… Daron … 2019_Acemoglu_Re… Rese… The doc… The p… The impa… The authors…</span></span>
 <span><span class="co">## <span style="color: #949494;"># ℹ 14 more rows</span></span></span>
 <span><span class="co">## <span style="color: #949494;"># ℹ 1 more variable: KeyCitations &lt;chr&gt;</span></span></span></code></pre></div>
 <p>This table can be exported to Excel with
@@ -403,20 +378,20 @@ and Audio Data with the Gemini API</a> for an example how to use the
 </h3>
 <p>Using open-source local models for PDF processing is also possible,
 though remote models like <code>gpt-4o-mini</code> tend to handle longer
-documents more effectively. Smaller local models, like
-<code>gemma2:9B</code> in <code><a href="../reference/ollama.html">ollama()</a></code>, may struggle with large
-content and complex, structured queries, even if they support extended
-context lengths. For more demanding tasks, larger local models like
-<code>llama3:70B</code> may perform better with complex queries, but
-they require substantial hardware resources to run smoothly. Since
-Ollama has a default context length of just 2,048 tokens, you will
-likely need to adjust the context length with the <code>.num_ctx</code>
-option in <code><a href="../reference/ollama.html">ollama()</a></code>. Sending a message that is longer than
-the context length might lead to strange errors, since the input will be
-truncated by Ollama, which might lead to cases where only parts of the
-document are processed without your instructions. Note that increasing
-context length will likely slow down processing due to higher memory
-usage. In these cases, reducing the number of pages may help.</p>
+documents more effectively. Smaller local models in
+<code><a href="../reference/ollama.html">ollama()</a></code>, may struggle with large content and complex,
+structured queries, even if they support extended context lengths. For
+more demanding tasks, larger local models may perform better with
+complex queries, but they require substantial hardware resources to run
+smoothly. Since Ollama has a default context length of just 2,048
+tokens, you will likely also need to adjust the context length with the
+<code>.num_ctx</code> option in <code><a href="../reference/ollama.html">ollama()</a></code>. Sending a message
+that is longer than the context length might lead to strange errors,
+since the input will be truncated by Ollama, which might lead to cases
+where only parts of the document are processed without your
+instructions. Note that increasing context length will likely slow down
+processing due to higher memory usage. In these cases, reducing the
+number of pages may help.</p>
 <blockquote>
 <p>⚠️ <strong>Note:</strong> When using paid remote models, it’s
 important to consider data privacy and security, especially if you’re

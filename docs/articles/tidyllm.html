@@ -503,57 +503,35 @@ that models reply with structured outputs in <a href="https://de.wikipedia.org/w
 (JavaScript Object Notation)</a> following your specifications. JSON is
 a standard format for organizing data in simple key-value pairs, which
 is both human-readable and machine-friendly.</p>
-<p>Currently, <code><a href="../reference/openai.html">openai()</a></code>, <code><a href="../reference/gemini.html">gemini()</a></code> and
-<code><a href="../reference/ollama.html">ollama()</a></code> are the only API provider functions in
-<strong>tidyllm</strong> that support schema enforcement through the
-<code>.json_schema</code> argument. This ensures that replies conform to
-a pre-defined consistent data formatting.</p>
+<p>Many API provider functions in <strong>tidyllm</strong> support
+schema enforcement through the <code>.json_schema</code> argument. This
+ensures that replies conform to a pre-defined consistent data
+formatting.</p>
 <p>To create schemas, you can use the <code><a href="../reference/tidyllm_schema.html">tidyllm_schema()</a></code>
 function, which translates your data format specifications into the <a href="https://json-schema.org/" class="external-link">JSON-schema format</a> the API requires.
-This helper function standardizes the data layout by ensuring flat
-(non-nested) JSON structures with defined data types. Here’s how to
-define a schema:</p>
-<ul>
-<li>
-<strong><code>name</code></strong>: A name identifier for the
-schema. By default this name is <code>"tidyllm_schema"</code>.</li>
-<li>
-<strong><code>...</code> (fields)</strong>: Named arguments for
-field names and their data types, including:
-<ul>
-<li>
-<code>"character"</code> or <code>"string"</code>: Text fields.</li>
-<li>
-<code>"factor(...)"</code>: Enumerations with allowable values, like
-<code>factor(Germany, France)</code>.</li>
-<li>
-<code>"logical"</code>: <code>TRUE</code> or <code>FALSE</code>
-</li>
-<li>
-<code>"numeric"</code>: Numeric fields.</li>
-<li>
-<code>"type[]"</code>: Lists of a given type, such as
-<code>"character[]"</code>.</li>
-</ul>
-</li>
-</ul>
-<p>Alternatively, you can use a set of <strong>field functions</strong>
-that offer additional flexibility and readability when defining fields.
-These functions allow you to provide descriptions for each field, giving
-models more context how fields in the assistant reply should be
-filled:</p>
+It accepts a <strong><code>name</code></strong> and
+<code>...</code>,named arguments for field names and their data types,
+which can be defined using these helper functions:</p>
 <ul>
 <li>
 <code><a href="../reference/field_chr.html">field_chr()</a></code>: For text fields.</li>
 <li>
 <code><a href="../reference/field_chr.html">field_dbl()</a></code>: For numeric fields.</li>
 <li>
-<code><a href="../reference/field_chr.html">field_lgl()</a></code>: For boolean fields.</li>
+<code><a href="../reference/field_chr.html">field_lgl()</a></code>: For boolean (TRUE/FALSE) fields.</li>
 <li>
 <code><a href="../reference/field_chr.html">field_fct()</a></code>: For enumerations (factors), with a
 <code>.levels</code> argument to specify valid values.</li>
+<li>
+<code><a href="../reference/field_object.html">field_object()</a></code>: Defines structured objects with nested
+fields.</li>
 <li>All functions accept <code>.description</code> (for adding
 descriptions) and <code>.vector = TRUE</code> (for defining lists).</li>
+<li>field_object</li>
+<li>Alternatively, if you do not need a detailed description you can use
+shorthands like <code>"character"</code>, <code>"logical"</code> or
+<code>"numerical"</code>
+</li>
 </ul>
 <p>If the <strong>ellmer</strong> package is installed, you can also use
 <strong>ellmer type definitions</strong> directly in
@@ -564,53 +542,75 @@ as field definitions. Moreover, you can supply an entire
 <code>.json_schema</code> argument in API calls.</p>
 <p>Here’s an example schema defining an address format:</p>
 <div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">address_schema</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tidyllm_schema.html">tidyllm_schema</a></span><span class="op">(</span></span>
-<span>  name <span class="op">=</span> <span class="st">"AddressSchema"</span>,</span>
-<span>  street <span class="op">=</span> <span class="st">"character"</span>,</span>
-<span>  houseNumber <span class="op">=</span> <span class="st">"numeric"</span>,</span>
-<span>  postcode <span class="op">=</span> <span class="fu"><a href="../reference/field_chr.html">field_chr</a></span><span class="op">(</span><span class="st">"A postal code for a city"</span><span class="op">)</span>,</span>
-<span>  city <span class="op">=</span> <span class="st">"character"</span>,</span>
-<span>  region <span class="op">=</span> <span class="st">"character"</span>,</span>
-<span>  country <span class="op">=</span> <span class="fu"><a href="../reference/field_chr.html">field_fct</a></span><span class="op">(</span><span class="st">"A European Country"</span>, .levels<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Germany"</span>,<span class="st">"France"</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">person_schema</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tidyllm_schema.html">tidyllm_schema</a></span><span class="op">(</span></span>
+<span>  first_name <span class="op">=</span> <span class="fu"><a href="../reference/field_chr.html">field_chr</a></span><span class="op">(</span><span class="st">"A male first name"</span><span class="op">)</span>,</span>
+<span>  last_name <span class="op">=</span> <span class="fu"><a href="../reference/field_chr.html">field_chr</a></span><span class="op">(</span><span class="st">"A common last name"</span><span class="op">)</span>,</span>
+<span>  occupation <span class="op">=</span> <span class="fu"><a href="../reference/field_chr.html">field_chr</a></span><span class="op">(</span><span class="st">"A quirky occupation"</span><span class="op">)</span>,</span>
+<span>  address <span class="op">=</span> <span class="fu"><a href="../reference/field_object.html">field_object</a></span><span class="op">(</span></span>
+<span>    <span class="st">"The persons home address"</span>,</span>
+<span>    street <span class="op">=</span> <span class="fu"><a href="../reference/field_chr.html">field_chr</a></span><span class="op">(</span><span class="st">"A common street name in the city"</span><span class="op">)</span>,</span>
+<span>    number <span class="op">=</span> <span class="fu"><a href="../reference/field_chr.html">field_dbl</a></span><span class="op">(</span><span class="st">"A house number"</span><span class="op">)</span>,</span>
+<span>    city <span class="op">=</span> <span class="fu"><a href="../reference/field_chr.html">field_chr</a></span><span class="op">(</span><span class="st">"A large city"</span><span class="op">)</span>,</span>
+<span>    zip <span class="op">=</span> <span class="fu"><a href="../reference/field_chr.html">field_dbl</a></span><span class="op">(</span><span class="st">"A zip code for the address"</span><span class="op">)</span>,</span>
+<span>    country <span class="op">=</span> <span class="fu"><a href="../reference/field_chr.html">field_fct</a></span><span class="op">(</span><span class="st">"Either Germany or France"</span>,.levels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Germany"</span>,<span class="st">"France"</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span><span class="va">address</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Imagine an address in JSON format that matches the schema."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>        <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span><span class="op">)</span>,.json_schema <span class="op">=</span> <span class="va">address_schema</span><span class="op">)</span></span>
-<span><span class="va">address</span></span></code></pre></div>
+<span></span>
+<span><span class="va">profile</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Imagine an person profile that matches the schema."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span><span class="op">)</span>,.json_schema <span class="op">=</span> <span class="va">person_schema</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">profile</span></span></code></pre></div>
 <pre><code><span><span class="co">## Message History:</span></span>
 <span><span class="co">## system:</span></span>
 <span><span class="co">## You are a helpful assistant</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span>
 <span><span class="co">## user:</span></span>
-<span><span class="co">## Imagine an address in JSON format that matches the schema.</span></span>
+<span><span class="co">## Imagine an person profile that matches the schema.</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span>
 <span><span class="co">## assistant:</span></span>
-<span><span class="co">## {"street":"Hauptstraße","houseNumber":123,"postcode":"10115","city":"Berlin","region":"Berlin","country":"Germany"}</span></span>
+<span><span class="co">## {"first_name":"Julien","last_name":"Martin","occupation":"Gondola</span></span>
+<span><span class="co">## Repair Specialist","address":{"street":"Rue de</span></span>
+<span><span class="co">## Rivoli","number":112,"city":"Paris","zip":75001,"country":"France"}}</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span></code></pre>
 <p>The model responded in JSON format, organizing data into key-value
 pairs like specified. You can then convert this JSON output into an R
 list for easier handling with <code><a href="../reference/get_reply_data.html">get_reply_data()</a></code>:</p>
 <div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">address</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/get_reply_data.html">get_reply_data</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## List of 6</span></span>
-<span><span class="co">##  $ street     : chr "Hauptstraße"</span></span>
-<span><span class="co">##  $ houseNumber: int 123</span></span>
-<span><span class="co">##  $ postcode   : chr "10115"</span></span>
-<span><span class="co">##  $ city       : chr "Berlin"</span></span>
-<span><span class="co">##  $ region     : chr "Berlin"</span></span>
-<span><span class="co">##  $ country    : chr "Germany"</span></span></code></pre>
-<p>Ollama, OpenAI and the Google Gemini API work with a schema provided
-by <code><a href="../reference/tidyllm_schema.html">tidyllm_schema()</a></code>. Other API providers like
-<code><a href="../reference/groq.html">groq()</a></code>, and <code><a href="../reference/mistral.html">mistral()</a></code> only support structured
-outputs through a simpler JSON mode, accessible with the
-<code>.json</code> argument in these provider functions. Since these
-APIs do not currently support native schema enforcement, you’ll need to
-prompt the model to follow a specified format directly in your messages.
-Although <code><a href="../reference/get_reply_data.html">get_reply_data()</a></code> can help extract structured data
-from these responses when you set <code>.json=TRUE</code> in each of the
-API provider functions, the model may not always adhere strictly to the
-specified structure. Once these APIs support native schema enforcement,
-<strong>tidyllm</strong> will integrate full schema functionality for
-them.</p>
+<code class="sourceCode R"><span><span class="va">profile</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/get_reply_data.html">get_reply_data</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## List of 4</span></span>
+<span><span class="co">##  $ first_name: chr "Julien"</span></span>
+<span><span class="co">##  $ last_name : chr "Martin"</span></span>
+<span><span class="co">##  $ occupation: chr "Gondola Repair Specialist"</span></span>
+<span><span class="co">##  $ address   :List of 5</span></span>
+<span><span class="co">##   ..$ street : chr "Rue de Rivoli"</span></span>
+<span><span class="co">##   ..$ number : int 112</span></span>
+<span><span class="co">##   ..$ city   : chr "Paris"</span></span>
+<span><span class="co">##   ..$ zip    : int 75001</span></span>
+<span><span class="co">##   ..$ country: chr "France"</span></span></code></pre>
+<p><code><a href="../reference/field_object.html">field_object()</a></code> can be used to create many types of
+nested schemata, but one particularly useful application is to set its
+<code>.vector</code> argument to get outputs that can easily be turned
+into a <code>data.frame</code>:</p>
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Imagine five people"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="va">openai</span>,.json_schema <span class="op">=</span> </span>
+<span>         <span class="fu"><a href="../reference/tidyllm_schema.html">tidyllm_schema</a></span><span class="op">(</span></span>
+<span>            person <span class="op">=</span> <span class="fu"><a href="../reference/field_object.html">field_object</a></span><span class="op">(</span></span>
+<span>              first_name <span class="op">=</span> <span class="fu"><a href="../reference/field_chr.html">field_chr</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>              last_name <span class="op">=</span> <span class="fu"><a href="../reference/field_chr.html">field_chr</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>              occupation <span class="op">=</span> <span class="fu"><a href="../reference/field_chr.html">field_chr</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>              .vector <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>              <span class="op">)</span></span>
+<span>         <span class="op">)</span></span>
+<span>       <span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/get_reply_data.html">get_reply_data</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">##   first_name last_name          occupation</span></span>
+<span><span class="co">## 1      Alice   Johnson  Software Developer</span></span>
+<span><span class="co">## 2     Robert  Anderson    Graphic Designer</span></span>
+<span><span class="co">## 3      Maria  Gonzalez      Data Scientist</span></span>
+<span><span class="co">## 4       Liam  O'Connor Mechanical Engineer</span></span>
+<span><span class="co">## 5     Sophia       Lee      Content Writer</span></span></code></pre>
 </div>
 <div class="section level4">
 <h4 id="api-parameters">API parameters<a class="anchor" aria-label="anchor" href="#api-parameters"></a>
@@ -625,7 +625,7 @@ temperature, can be specified directly through the main verbs like
 such as <code>.model</code>,<code>.temperature</code>,
 <code>.json_schema</code> and more (see the full list in the
 <code><a href="../reference/chat.html">chat()</a></code> documentation) directly.</p>
-<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span>  <span class="va">temp_example</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Explain how temperature parameters work </span></span>
 <span><span class="st">in large language models and why temperature 0 gives you deterministic outputs </span></span>
 <span><span class="st">in one sentence."</span><span class="op">)</span></span>
@@ -652,7 +652,7 @@ such as <code>.model</code>,<code>.temperature</code>,
 <span><span class="co">## outputs because it sets the probability of each token to its</span></span>
 <span><span class="co">## maximum likelihood value.</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span></code></pre>
-<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span>  <span class="co">#Retrying with .temperature=0</span></span>
 <span>  <span class="va">temp_example</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="va">ollama</span>,.temperature<span class="op">=</span><span class="fl">0</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Message History:</span></span>
@@ -678,14 +678,14 @@ such as <code>.model</code>,<code>.temperature</code>,
 <p>Provider-specific arguments—such as <code>.ollama_server</code> for
 <code><a href="../reference/ollama.html">ollama()</a></code> or <code>.fileid</code> for <code><a href="../reference/gemini.html">gemini()</a></code>
 are set directly in the provider function:</p>
-<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">conversation</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Hello"</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/ollama.html">ollama</a></span><span class="op">(</span>.ollama_server <span class="op">=</span> <span class="st">"http://localhost:11434"</span><span class="op">)</span>, </span>
 <span>       .temperature <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span></code></pre></div>
 <p>When an argument is provided in both <code><a href="../reference/chat.html">chat()</a></code> and the
 provider, the value specified in <code><a href="../reference/chat.html">chat()</a></code> takes precedence.
 For instance:</p>
-<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">#This uses GPT-4o</span></span>
 <span><span class="va">conversation</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Hello"</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model<span class="op">=</span><span class="st">"gpt-4o-mini"</span><span class="op">)</span>,</span>
@@ -694,7 +694,7 @@ For instance:</p>
 <code><a href="../reference/chat.html">chat()</a></code> will raise an error. For example, sending a
 <code>.json_schema</code> to a provider that does not support it will
 raise an error:</p>
-<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">address</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Imagine an address in JSON format that matches the schema."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>        <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/groq.html">groq</a></span><span class="op">(</span><span class="op">)</span>,.json_schema <span class="op">=</span> <span class="va">address_schema</span><span class="op">)</span></span></code></pre></div>
 </div>
@@ -709,7 +709,7 @@ defined using <code><a href="../reference/tidyllm_tool.html">tidyllm_tool()</a><
 function, its description, and expected arguments. For example, wrapping
 the <code>get_current_time()</code> function in a tool allows models to
 retrieve the current time for their answers:</p>
-<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">get_current_time</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">tz</span>, <span class="va">format</span> <span class="op">=</span> <span class="st">"%Y-%m-%d %H:%M:%S"</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/format.html" class="external-link">format</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.time</a></span><span class="op">(</span><span class="op">)</span>, tz <span class="op">=</span> <span class="va">tz</span>, format <span class="op">=</span> <span class="va">format</span>, usetz <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
@@ -747,7 +747,7 @@ generate embeddings with the <code><a href="../reference/embed.html">embed()</a>
 functions return a semantic vector representation either for each
 message in a message history or, more typically for this application,
 for each entry in a character vector:</p>
-<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"What is the meaning of life?"</span>,</span>
 <span>  <span class="st">"How much wood would a woodchuck chuck?"</span>,</span>
 <span>  <span class="st">"How does the brain work?"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -774,9 +774,9 @@ use the <code><a href="../reference/send_batch.html">send_batch()</a></code> fun
 requests to either API.</p>
 <p>Here’s an example of how to send a batch request to Claude’s batch
 API:</p>
-<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">#Create a message batch and save it to disk to fetch it later</span></span>
-<span><span class="fu"><a href="https://glue.tidyverse.org/reference/glue.html" class="external-link">glue</a></span><span class="op">(</span><span class="st">"Write a poem about {x}"</span>, x<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cats"</span>,<span class="st">"dogs"</span>,<span class="st">"hamsters"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span><span class="fu">glue</span><span class="op">(</span><span class="st">"Write a poem about {x}"</span>, x<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cats"</span>,<span class="st">"dogs"</span>,<span class="st">"hamsters"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">purrr</span><span class="fu">::</span><span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="va">llm_message</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/send_batch.html">send_batch</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="st">"claude_batch.rds"</span><span class="op">)</span></span></code></pre></div>
@@ -792,7 +792,7 @@ persist them across R sessions, making it easier to manage large jobs
 and access results later.</p>
 <p>After sending a batch request, you can check its status with
 <code><a href="../reference/check_batch.html">check_batch()</a></code>. For example:</p>
-<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">#Check the status of the batch</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"claude_batch.rds"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>   <span class="fu"><a href="../reference/check_batch.html">check_batch</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
@@ -807,7 +807,7 @@ current status. You can also see all your batch requests with
 <code><a href="../reference/list_batches.html">list_batches()</a></code> (or in the batches dashboard of the your API
 provider). Once the processing of a batch is completed you can fetch its
 results with <code><a href="../reference/fetch_batch.html">fetch_batch()</a></code>:</p>
-<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">conversations</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"claude_batch.rds"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/fetch_batch.html">fetch_batch</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
@@ -827,7 +827,7 @@ waste.</p>
 <p><code><a href="../reference/chat.html">chat()</a></code> supports real-time streaming of reply tokens to
 the console while the model works with the <code>.stream=TRUE</code>
 argument in <code><a href="../reference/chat.html">chat()</a></code>, for most api providers.</p>
-<div class="sourceCode" id="cb48"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb50"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Write a lengthy magazine advertisement for an R package called tidyllm"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="va">claude</span>,.stream<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p>While this feature offers slightly better feedback on model behavior
@@ -866,7 +866,7 @@ you can use the <code>.grounding_threshold</code>-parameter in the
 searches. The lower the threshold is the more Gemini relies on the
 search instead of its internal knowledge:</p></li>
 </ol>
-<div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb51"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"What is tidyllm and who maintains this package?"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/gemini_chat.html">gemini_chat</a></span><span class="op">(</span>.grounding_threshold <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span></span></code></pre></div>
 <p>Moreover, with the Gemini API you are able to upload a wide range of
@@ -874,7 +874,7 @@ media files and use them in the prompts of your models with functions
 like <code><a href="../reference/gemini_upload_file.html">gemini_upload_file()</a></code>. Using this, Gemini models can be
 used to process video and audio together with your messages. Here is an
 example of summarizing a speech:</p>
-<div class="sourceCode" id="cb50"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb52"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">#Upload a file for use with gemini</span></span>
 <span><span class="va">upload_info</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gemini_upload_file.html">gemini_upload_file</a></span><span class="op">(</span><span class="st">"example.mp3"</span><span class="op">)</span></span>
 <span></span>
@@ -910,7 +910,7 @@ high-quality embedding models. It has a unique <strong>multimodal
 embeddings feature</strong>, allowing you to generate embeddings in the
 same vector space for both text and images:</p></li>
 </ol>
-<div class="sourceCode" id="cb51"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb53"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"tidyllm"</span>, <span class="fu"><a href="../reference/img.html">img</a></span><span class="op">(</span><span class="fu">here</span><span class="fu">::</span><span class="fu"><a href="https://here.r-lib.org//reference/here.html" class="external-link">here</a></span><span class="op">(</span><span class="st">"docs"</span>, <span class="st">"logo.png"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/embed.html">embed</a></span><span class="op">(</span><span class="va">voyage</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # A tibble: 2 × 2</span></span>
@@ -943,7 +943,7 @@ depending on the specific API’s implementation, and full functionality
 cannot be guaranteed. Ideally you can save complicated configurations
 like these in an object:</p></li>
 </ol>
-<div class="sourceCode" id="cb52"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">my_provider</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model<span class="op">=</span><span class="st">"llama3.2:90b"</span>,</span>
 <span>          .api_url<span class="op">=</span><span class="st">"http://localhost:11434"</span>,</span>
 <span>          .compatible <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -957,7 +957,7 @@ like these in an object:</p></li>
 <h4 id="setting-a-default-provider">Setting a Default Provider<a class="anchor" aria-label="anchor" href="#setting-a-default-provider"></a>
 </h4>
 <p>You can also specify default provider with options:</p>
-<div class="sourceCode" id="cb53"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb55"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Set default providers</span></span>
 <span><span class="co">#chat provider</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>tidyllm_chat_default <span class="op">=</span> <span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-4o"</span><span class="op">)</span><span class="op">)</span></span>
