@@ -234,6 +234,40 @@ method(handle_stream,list(api_claude,new_S3_class("httr2_response"))) <- functio
   )
 }
 
+#' A small helper function to handle schemata or tool requests in claude
+#'
+#' @description
+#' @noRd
+claude_process_tools<- function(.api,
+                                .response,
+                                .tools_def,
+                                .request_body,
+                                .request,
+                                .timeout,
+                                .max_tries){
+    if(.response$raw$content$stop_reason == "tool_use"){
+      
+      tool_calls <- .response$raw$content$content |>
+        purrr::keep(~{.x$type=="tool_use"})
+      
+      #Tool call logic can go here!
+      tool_messages <- run_tool_calls(.api,
+                                      tool_calls,
+                                      .tools_def)
+      ##Append the tool call to API
+      .request_body$messages <- .request_body$messages |> 
+        append(list(list(role="assistant", content = .response$raw$content$content))) |>
+        append(list(tool_messages))
+      
+      .request <- .request |>
+        httr2::req_body_json(data = .request_body)
+      
+      response <- perform_chat_request(.request,.api,FALSE,.timeout,.max_tries)
+      return(response)
+    }
+ return(.response)
+}
+
 
 #' Interact with Claude AI models via the Anthropic API
 #'
@@ -246,6 +280,7 @@ method(handle_stream,list(api_claude,new_S3_class("httr2_response"))) <- functio
 #' @param .metadata List of additional metadata to include with the request.
 #' @param .stop_sequences Character vector of sequences that will halt response generation.
 #' @param .tools List of additional tools or functions the model can use.
+#' @param .json_schema A schema to enforce an output structure
 #' @param .api_url Base URL for the Anthropic API (default: "https://api.anthropic.com/").
 #' @param .verbose Logical; if TRUE, displays additional information about the API call (default: FALSE).
 #' @param .max_tries Maximum retries to peform request
@@ -278,6 +313,7 @@ claude_chat <- function(.llm,
                         .metadata = NULL,
                         .stop_sequences = NULL,
                         .tools = NULL,
+                        .json_schema = NULL,
                         .api_url = "https://api.anthropic.com/",
                         .verbose = FALSE,
                         .max_tries = 3,
@@ -308,11 +344,30 @@ claude_chat <- function(.llm,
     ".max_tries must be integer-valued numeric" = is_integer_valued(.max_tries),
     ".dry_run must be logical" = is.logical(.dry_run),
     "Streaming is not supported for requests with tool calls" = is.null(.tools) || !isTRUE(.stream),
+    "For claude, .json_schema is implement a tool use. Only one can be used at a time" = is.null(.tools) || is.null(.json_schema),
+    "Input .json_schema must be NULL or a list or an ellmer type object" = is.null(.json_schema) | is.list(.json_schema) | is_ellmer_type(.json_schema),
+    "Streaming is not supported for requests with structured outputs" = is.null(.json_schema) || !isTRUE(.stream),
     ".thinking must be logical" = is.logical(.thinking),
     ".thinking_budget must be a positive integer larger than 1024" = is_integer_valued(.thinking_budget) && .thinking_budget >= 1024
   ) |>
     validate_inputs()
   
+  json <- FALSE
+  tools_def_schema <- NULL
+  if(!is.null(.json_schema)){
+    json <- TRUE
+    if (requireNamespace("ellmer", quietly = TRUE)) {
+      #Handle ellmer json schemata Objects
+      if(S7_inherits(.json_schema,ellmer::TypeObject)){
+        .json_schema = to_schema(.json_schema)
+      }
+    }
+    tools_def_schema <- list(list(
+      name = "claude_json_extractor",
+      description = "Formulates a claude answer in a prespecified schema",
+      input_schema = .json_schema # Assume all are required
+    ))
+  }
   
   api_obj <- api_claude(short_name = "claude",
                         long_name  = "Anthropic Claude",
@@ -341,8 +396,9 @@ claude_chat <- function(.llm,
     metadata = .metadata,
     stop_sequences = .stop_sequences,
     stream = .stream,
-    tools = if(!is.null(tools_def)) tools_to_api(api_obj,tools_def) else NULL,
-    thinking = if(.thinking) list(type = "enabled", budget_tokens = .thinking_budget) else NULL
+    tools = if(!is.null(tools_def)) tools_to_api(api_obj,tools_def) else tools_def_schema,
+    thinking = if(.thinking) list(type = "enabled", budget_tokens = .thinking_budget) else NULL,
+    tool_choice =  if(!is.null(.json_schema)) list(type= "tool", name = "claude_json_extractor") else NULL
   ) |> purrr::compact()
   
   # Build request with httr2
@@ -362,38 +418,33 @@ claude_chat <- function(.llm,
   }
   
   response <- perform_chat_request(request,api_obj,.stream,.timeout)
+  if(.stream == FALSE & is.null(.json_schema)){
+  response <- claude_process_tools(.api=api_obj,
+                                  .response=response,
+                                  .tools_def=tools_def,
+                                  .request_body=request_body,
+                                  .request=request,
+                                  .timeout=.timeout,
+                                  .max_tries=.max_tries)
+  }
   
-  if(.stream == FALSE){
-    if(response$raw$content$stop_reason == "tool_use"){
+  #Build the assistant reply for structured outputs
+  if(!is.null(.json_schema)){
+    #Write the assistant reply as json to be consistent with the output from other APIs
+    assistant_reply <-  response$raw$content$content[[1]]$input |> 
+      jsonlite::toJSON(auto_unbox = TRUE,pretty = TRUE)
+  } else {
+    assistant_reply <- response$assistant_reply
+  }
     
-    tool_calls <- response$raw$content$content |>
-      purrr::keep(~{.x$type=="tool_use"})
-    
-    #Tool call logic can go here!
-    tool_messages <- run_tool_calls(api_obj,
-                                    tool_calls,
-                                    tools_def)
-    ##Append the tool call to API
-    request_body$messages <- request_body$messages |> 
-      append(list(list(role="assistant", content = response$raw$content$content))) |>
-      append(list(tool_messages))
-    
-    request <- request |>
-      httr2::req_body_json(data = request_body)
-    
-    response <- perform_chat_request(request,api_obj,.stream,.timeout,.max_tries)
-  }}
-  
   # Extract the assistant reply and headers from response
-  assistant_reply <- response$assistant_reply
-
   track_rate_limit(api_obj,response$headers,.verbose)
   
   # Return the updated LLMMessage object
   add_message(.llm     = .llm, 
               .role    = "assistant", 
               .content = assistant_reply, 
-              .json    = FALSE,
+              .json    = json,
               .meta    = response$meta)
 }
 

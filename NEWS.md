@@ -6,7 +6,8 @@ Major internal refactor with many small feature improvements:
 - Metadata extraction, logprobs and more other features are now also available in streaming requests
 - Better use of `S7` methods for handling streams and parsing chats
 - OpenAI and Azure OpenAI as well as their batch functions now rely on a request construction function to avoid some code duplication
-- Mistral now supports `.json_schema`
+- `mistral()` now supports the `.json_schema` argument
+- `claude_chat()` now supports `.json_schema` argument via a json-extractor `TOOL` as suggested by the Anthropic documentation.
 - New tests for batch functions
 - Bug fixed where the system prompts did not work in `claude()` batch requests
 - New `field_object()` for tidyllm schemata:
