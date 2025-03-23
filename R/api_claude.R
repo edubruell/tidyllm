@@ -236,7 +236,6 @@ method(handle_stream,list(api_claude,new_S3_class("httr2_response"))) <- functio
 
 #' A small helper function to handle schemata or tool requests in claude
 #'
-#' @description
 #' @noRd
 claude_process_tools<- function(.api,
                                 .response,
@@ -345,7 +344,7 @@ claude_chat <- function(.llm,
     ".dry_run must be logical" = is.logical(.dry_run),
     "Streaming is not supported for requests with tool calls" = is.null(.tools) || !isTRUE(.stream),
     "For claude, .json_schema is implement a tool use. Only one can be used at a time" = is.null(.tools) || is.null(.json_schema),
-    "Input .json_schema must be NULL or a list or an ellmer type object" = is.null(.json_schema) | is.list(.json_schema) | is_ellmer_type(.json_schema),
+    ".json_schema must be NULL or a list or an ellmer type object" = is.null(.json_schema) | is.list(.json_schema) | is_ellmer_type(.json_schema),
     "Streaming is not supported for requests with structured outputs" = is.null(.json_schema) || !isTRUE(.stream),
     ".thinking must be logical" = is.logical(.thinking),
     ".thinking_budget must be a positive integer larger than 1024" = is_integer_valued(.thinking_budget) && .thinking_budget >= 1024
@@ -466,6 +465,7 @@ claude_chat <- function(.llm,
 #' @param .timeout Integer specifying the request timeout in seconds (default: 60).
 #' @param .dry_run Logical; if TRUE, returns the prepared request object without executing it (default: FALSE).
 #' @param .id_prefix Character string to specify a prefix for generating custom IDs when names in `.llms` are missing.
+#' @param .json_schema A schema to enforce an output structure
 #' @param .thinking Logical; if TRUE, enables Claude's thinking mode for complex reasoning tasks (default: FALSE).
 #' @param .thinking_budget Integer specifying the maximum tokens Claude can spend on thinking (default: 1024). Must be at least 1024.
 #'
@@ -480,6 +480,7 @@ send_claude_batch <- function(.llms,
                               .top_k = NULL, 
                               .top_p = NULL, 
                               .stop_sequences = NULL, 
+                              .json_schema = NULL,
                               .thinking = FALSE,
                               .thinking_budget = 1024,
                               .api_url = "https://api.anthropic.com/", 
@@ -502,6 +503,7 @@ send_claude_batch <- function(.llms,
     ".verbose must be logical" = is.logical(.verbose),
     ".dry_run must be logical" = is.logical(.dry_run),
     ".overwrite must be logical" = is.logical(.overwrite),
+    ".json_schema must be NULL or a list or an ellmer type object" = is.null(.json_schema) | is.list(.json_schema) | is_ellmer_type(.json_schema),
     ".id_prefix must be a character vector of length 1" = is.character(.id_prefix),
     ".max_tries must be integer-valued numeric" = is_integer_valued(.max_tries),
     ".timeout must be an integer" = is_integer_valued(.timeout)
@@ -518,6 +520,22 @@ send_claude_batch <- function(.llms,
                                            .llms=.llms,
                                            .id_prefix=.id_prefix,
                                            .overwrite = .overwrite)
+  
+  json <- FALSE
+  if(!is.null(.json_schema)){
+    json <- TRUE
+    if (requireNamespace("ellmer", quietly = TRUE)) {
+      #Handle ellmer json schemata Objects
+      if(S7_inherits(.json_schema,ellmer::TypeObject)){
+        .json_schema = to_schema(.json_schema)
+      }
+    }
+    tools_def_schema <- list(list(
+      name = "claude_json_extractor",
+      description = "Formulates a claude answer in a prespecified schema",
+      input_schema = .json_schema # Assume all are required
+    ))
+  }
   
   requests_list <- lapply(seq_along(prepared_llms), function(i) { 
     
@@ -536,7 +554,10 @@ send_claude_batch <- function(.llms,
         top_p = .top_p,
         system = .llms[[i]]@system_prompt,
         stop_sequences = .stop_sequences,
-        thinking = if(.thinking) list(type = "enabled", budget_tokens = .thinking_budget) else NULL
+        thinking = if(.thinking) list(type = "enabled", budget_tokens = .thinking_budget) else NULL,
+        tools = if(!is.null(.json_schema)) tools_def_schema else NULL,
+        tool_choice =  if(!is.null(.json_schema)) list(type= "tool", name = "claude_json_extractor") else NULL
+        
       ) |> purrr::compact()  # Remove NULL values
     )
   })
@@ -571,6 +592,8 @@ send_claude_batch <- function(.llms,
   # Attach batch_id as an attribute to .llms
   batch_id <- response$content$id
   attr(prepared_llms, "batch_id") <- batch_id
+  attr(prepared_llms, "json") <- json
+  
   
   if (.verbose) {
     message("Batch submitted successfully. Batch ID: ", batch_id)
@@ -689,6 +712,7 @@ fetch_claude_batch <- function(.llms,
   
   # Preserve original names
   original_names <- names(.llms)
+  if(!is.null(attr(.llms,"json"))) json <- attr(.llms,"json") else json <- FALSE
   
   # Retrieve batch_id from .llms if not provided
   if (is.null(.batch_id)) {
@@ -771,10 +795,17 @@ fetch_claude_batch <- function(.llms,
     result <- results_by_custom_id[[custom_id]]
     
     if (!is.null(result) && result$result$type == "succeeded") {
-      assistant_reply <- result$result$message$content$text
+      if(json==FALSE){
+        assistant_reply <- result$result$message$content$text
+      }
+      if(json==TRUE){
+        assistant_reply <-  result$result$message$content$input |> 
+          jsonlite::toJSON(auto_unbox = TRUE,pretty = TRUE)
+      }
       llm <- add_message(.llm = .llms[[custom_id]],
                          .role = "assistant", 
                          .content = assistant_reply,
+                         .json = json,
                          .meta = extract_metadata(api_obj,result$result$message))
       return(llm)
     } else {
@@ -788,6 +819,7 @@ fetch_claude_batch <- function(.llms,
   
   # Remove batch_id attribute before returning to avoid reuse conflicts
   attr(updated_llms, "batch_id") <- NULL
+  attr(updated_llms, "json") <- NULL
   
   return(updated_llms)
 }

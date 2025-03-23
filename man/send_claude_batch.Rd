@@ -12,6 +12,7 @@ send_claude_batch(
   .top_k = NULL,
   .top_p = NULL,
   .stop_sequences = NULL,
+  .json_schema = NULL,
   .thinking = FALSE,
   .thinking_budget = 1024,
   .api_url = "https://api.anthropic.com/",
@@ -37,6 +38,8 @@ send_claude_batch(
 \item{.top_p}{Numeric between 0 and 1 for nucleus sampling.}
 
 \item{.stop_sequences}{Character vector of sequences that halt response generation.}
+
+\item{.json_schema}{A schema to enforce an output structure}
 
 \item{.thinking}{Logical; if TRUE, enables Claude's thinking mode for complex reasoning tasks (default: FALSE).}
 
