@@ -70,8 +70,9 @@ field_lgl <- function(.description = character(0), .vector = FALSE) {
 }
 
 #' Define a nested object field
-#'
+#' @param .description A character string describing the field (optional).
 #' @param ... Named fields to include in the object definition (required).
+#' @param .vector A logical value indicating if the field is a list of objects (default: FALSE).
 #' @return An S7 `tidyllm_field` object of type "object" containing nested fields.
 #' @examples
 #' # Define an address object with nested fields

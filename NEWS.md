@@ -1,48 +1,31 @@
-# Latest Changes
-# Dev-Version 0.3.4
-Major internal refactor with many small feature improvements:
 
-- Streaming is now done with `httr2::req_peform_connection()` from *httr2 1.1.1.* and later and became much more robust
-- Metadata extraction, logprobs and more other features are now also available in streaming requests
-- Better use of `S7` methods for handling streams and parsing chats
-- OpenAI and Azure OpenAI as well as their batch functions now rely on a request construction function to avoid some code duplication
-- `mistral()` now supports the `.json_schema` argument
-- `claude()` now supports `.json_schema` argument via a json-extractor `TOOL` as suggested by the Anthropic documentation.
-- New tests for batch functions
-- Bug fixed where the system prompts did not work in `claude()` batch requests
-- New `field_object()` for tidyllm schemata:
-```r
-person_schema <- tidyllm_schema(
-  first_name = field_chr("A persons first name"),
-  last_name = field_chr("A persons last name"),
-  occupation = field_chr("A quirky occupation"),
-  address = field_object(
-    "The persons home address",
-    street = field_chr("A street name"),
-    number = field_dbl("A house number"),
-    plz = field_dbl("A zip code for the address"),
-    country = field_fct("Either Germany or France",.levels = c("Germany","France"))
-  )
-)
+# Version 0.3.4
+This release marks a **major internal refactor** accompanied by a suite of subtle yet impactful improvements. While many changes occur under the hood, they collectively deliver a more robust, flexible, and maintainable framework.
 
-answer <- llm_message("Imagine a person with a quirky job") |>
-  chat(openai,.json_schema=person_schema)
-  
-answer |>
-   get_reply_data() |>
-   str()
-#> List of 4
-#> $ first_name: chr "Eulalie"
-#>  $ last_name : chr "Featherstone"
-#>  $ occupation: chr "Professional Ostrich Plume Arranger"
-#> $ address   :List of 4
-#> ..$ street : chr "Rue des Plumassiers"
-#>  ..$ number : int 47
-#>  ..$ plz    : int 75004
-#> ..$ country: chr "France"  
-```
+## Key Improvements
 
-- Batch API implemented for `groq()`
+- **Robust Streaming:**
+  - **New Streaming Backend:** Streaming is now handled via `httr2::req_perform_connection()` (httr2 ≥ 1.1.1), resulting in a more stable and reliable experience.
+  - **Metadata for Streaming:** Streaming requests now also support metadata extraction, logprobs, and other features, making them even more informative.
+
+- **Optimized Internal Processing:**
+  - **S7 Methods Integration:** Improved handling of streams and chat parsing using more proper S7 methods instead of clunky old function generation.
+  - **OpenAI Request Construction:** Both OpenAI and Azure OpenAI (along with their batch functions) now use a common request construction function to reduce code duplication and simplify maintenance.
+
+- **Schema support:**
+ -  New `field_object()` function to allow for nested schemata 
+
+- **Expanded API Features:**
+  - **JSON Schema Support:** 
+    - `mistral()` now accepts the `.json_schema` argument.
+    - `claude()` incorporates `.json_schema` via a JSON-extractor tool, in line with Anthropic's guidelines.
+  - **Batch API for groq():** A new batch processing interface has been implemented for groq().
+
+## Bug Fixes
+
+- **claude() Batch Requests:** Fixed an issue where system prompts were not transmitted correctly in batch mode.
+- **gemini() Prompt Handling:** Resolved a bug causing system prompts to be omitted from API calls in older versions.
+
 
 # Dev-Version 0.3.3
 

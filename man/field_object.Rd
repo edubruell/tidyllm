@@ -7,7 +7,11 @@
 field_object(.description = character(0), ..., .vector = FALSE)
 }
 \arguments{
+\item{.description}{A character string describing the field (optional).}
+
 \item{...}{Named fields to include in the object definition (required).}
+
+\item{.vector}{A logical value indicating if the field is a list of objects (default: FALSE).}
 }
 \value{
 An S7 \code{tidyllm_field} object of type "object" containing nested fields.
