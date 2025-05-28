@@ -298,7 +298,7 @@ method(handle_stream,list(api_openai,new_S3_class("httr2_response"))) <- functio
 prepare_openai_request <- function(
     .llm,
     .api,
-    .model = "gpt-4o",
+    .model = "gpt-4.1",
     .max_completion_tokens = NULL,
     .reasoning_effort = NULL,
     .frequency_penalty = NULL,
@@ -410,7 +410,7 @@ prepare_openai_request <- function(
 #' @export
 openai_chat <- function(
     .llm,
-    .model = "gpt-4o",
+    .model = "gpt-4.1",
     .max_completion_tokens = NULL,
     .reasoning_effort = NULL,
     .frequency_penalty = NULL,
@@ -691,7 +691,7 @@ openai_embedding <- function(.input,
 #' @return An updated and named list of `.llms` with identifiers that align with batch responses, including a `batch_id` attribute.
 #' @export
 send_openai_batch <- function(.llms,
-                              .model = "gpt-4o",
+                              .model = "gpt-4.1",
                               .max_completion_tokens = NULL,
                               .reasoning_effort = NULL,
                               .frequency_penalty = NULL,
