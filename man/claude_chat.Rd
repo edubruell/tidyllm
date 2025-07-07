@@ -6,7 +6,7 @@
 \usage{
 claude_chat(
   .llm,
-  .model = "claude-3-7-sonnet-20250219",
+  .model = "claude-sonnet-4-20250514",
   .max_tokens = 2048,
   .temperature = NULL,
   .top_k = NULL,
