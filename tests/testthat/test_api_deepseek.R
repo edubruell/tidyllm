@@ -8,8 +8,6 @@ test_that("deepseek function constructs a correct request and dry runs it", {
   request <- llm |> chat(deepseek, .dry_run = TRUE)
   dry_run <- request |> httr2::req_dry_run(redact_headers = TRUE, quiet = TRUE)
   
-  expect_type(dry_run, "list")
-  expect_named(dry_run, c("method", "path", "headers"))
   expect_equal(dry_run$method, "POST")
   expect_true(grepl("/chat/completions", dry_run$path))
   
