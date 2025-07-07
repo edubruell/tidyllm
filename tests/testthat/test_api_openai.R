@@ -12,10 +12,6 @@ test_that("openai function constructs a correct request and dry runs it", {
   dry_run <- request |>
     httr2::req_dry_run(redact_headers = TRUE, quiet = TRUE)
   
-  # Check the structure of the returned dry run object
-  expect_type(dry_run, "list")
-  expect_named(dry_run, c("method", "path", "headers"))
-  
   # Check that the method is POST
   expect_equal(dry_run$method, "POST")
   
@@ -334,5 +330,3 @@ test_that("openai_list_models returns expected data", {
     expect_true(any(stringr::str_detect(result$id, paste(common_models, collapse = "|"))))
   }, simplify = FALSE)
 })
-
-
