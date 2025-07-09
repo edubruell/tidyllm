@@ -268,6 +268,57 @@ claude_process_tools<- function(.api,
 }
 
 
+#' Inject files into Claude message contents (auto-detect block type)
+#'
+#' @param .claude_messages List of messages as output from to_api_format(.llm, api_claude)
+#' @param .file_ids Character vector of Claude file IDs (from claude_upload_file)
+#' @return Updated list of messages with appropriate file content blocks added to last user message
+#' @noRd
+claude_inject_files <- function(.claude_messages, .file_ids) {
+  if (is.null(.file_ids) || length(.file_ids) == 0) return(.claude_messages)
+  
+  user_idxs <- which(sapply(.claude_messages, function(msg) msg$role == "user"))
+  if (length(user_idxs) == 0) stop("No user message found to inject files into.")
+  last_user_idx <- user_idxs[length(user_idxs)]
+  msg <- .claude_messages[[last_user_idx]]
+  
+  # For each file, get metadata and inject correct block type
+  file_blocks <- lapply(.file_ids, function(fid) {
+    meta <- claude_file_metadata(fid)
+    mime <- meta$mime_type[1] # always a tibble, so use [1]
+    
+    if (mime %in% c("application/pdf", "text/plain")) {
+      # Document block for PDF or text
+      list(
+        type = "document",
+        source = list(
+          type = "file",
+          file_id = fid
+        )
+      )
+    } else if (grepl("^image/", mime)) {
+      # Image block for images
+      list(
+        type = "image",
+        source = list(
+          type = "file",
+          file_id = fid
+        )
+      )
+    } else {
+      stop(sprintf(
+        "Unsupported file type for Claude message: %s (%s). Only PDF, plaintext, and images are supported.",
+        fid, mime
+      ))
+    }
+  })
+  
+  msg$content <- c(msg$content, file_blocks)
+  .claude_messages[[last_user_idx]] <- msg
+  .claude_messages
+}
+
+
 #' Interact with Claude AI models via the Anthropic API
 #'
 #' @param .llm An LLMMessage object containing the conversation history and system prompt.
@@ -286,6 +337,7 @@ claude_process_tools<- function(.api,
 #' @param .timeout Integer specifying the request timeout in seconds (default: 60).
 #' @param .stream Logical; if TRUE, streams the response piece by piece (default: FALSE).
 #' @param .dry_run Logical; if TRUE, returns the prepared request object without executing it (default: FALSE).
+#' @param .file_ids Character; A vector of file IDs for files that were uploaded to Anthropics Servers
 #' @param .thinking Logical; if TRUE, enables Claude's thinking mode for complex reasoning tasks (default: FALSE).
 #' @param .thinking_budget Integer specifying the maximum tokens Claude can spend on thinking (default: 1024). Must be at least 1024.
 #'
@@ -313,6 +365,7 @@ claude_chat <- function(.llm,
                         .stop_sequences = NULL,
                         .tools = NULL,
                         .json_schema = NULL,
+                        .file_ids = NULL,
                         .api_url = "https://api.anthropic.com/",
                         .verbose = FALSE,
                         .max_tries = 3,
@@ -347,7 +400,9 @@ claude_chat <- function(.llm,
     ".json_schema must be NULL or a list or an ellmer type object" = is.null(.json_schema) | is.list(.json_schema) | is_ellmer_type(.json_schema),
     "Streaming is not supported for requests with structured outputs" = is.null(.json_schema) || !isTRUE(.stream),
     ".thinking must be logical" = is.logical(.thinking),
-    ".thinking_budget must be a positive integer larger than 1024" = is_integer_valued(.thinking_budget) && .thinking_budget >= 1024
+    ".thinking_budget must be a positive integer larger than 1024" = is_integer_valued(.thinking_budget) && .thinking_budget >= 1024,
+    ".file_ids must be a character vector" = 
+      is.null(.file_ids) | is.character(.file_ids)
   ) |>
     validate_inputs()
   
@@ -376,6 +431,7 @@ claude_chat <- function(.llm,
   
   # Format message list for Claude model
   messages <- to_api_format(.llm,api_obj)
+  messages <- claude_inject_files(messages, .file_ids)
   
   #Put a single tool into a list if only one is provided. 
   tools_def <- if (!is.null(.tools)) {
@@ -405,6 +461,7 @@ claude_chat <- function(.llm,
     httr2::req_url_path("/v1/messages") |>
     httr2::req_headers(
       `x-api-key` = Sys.getenv("ANTHROPIC_API_KEY"),
+      `anthropic-beta` = "files-api-2025-04-14", # <--- CRUCIAL
       `anthropic-version` = "2023-06-01",
       `content-type` = "application/json; charset=utf-8",
       .redact = "x-api-key"

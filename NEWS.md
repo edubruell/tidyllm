@@ -1,3 +1,8 @@
+# Dev-Version 0.3.5
+
+## Key Improvements
+
+- Rudimentary support for file uploads in `claude()`. At the moment only implemented for the `chat()` verb
 
 # Version 0.3.4
 This release marks a **major internal refactor** accompanied by a suite of subtle yet impactful improvements. While many changes occur under the hood, they collectively deliver a more robust, flexible, and maintainable framework.
