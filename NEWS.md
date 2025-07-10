@@ -3,6 +3,40 @@
 ## Key Improvements
 
 - Rudimentary support for file uploads in `claude()`. At the moment only implemented for the `chat()` verb
+```r
+example_file <- here::here("vignettes","die_verwandlung.pdf") |> 
+  claude_upload_file()
+
+llm_message("Summarize the document in 100 words") |>
+  chat(claude(.file_ids = example_file$file_id)) 
+  
+#> Message History:
+#> system:
+#> You are a helpful assistant
+#> --------------------------------------------------------------
+#> user:
+#> Summarize the document in 100 words
+#> --------------------------------------------------------------
+#> assistant:
+#> This document is the German text of Franz Kafka's novella
+#> "Die Verwandlung" (The Metamorphosis), published through
+#> Project Gutenberg. The story follows Gregor Samsa, a
+#> traveling salesman who wakes up one morning transformed into
+#> a monstrous insect-like creature. Unable to work and support
+#> his family, Gregor becomes isolated in his room while his
+#> family struggles with the burden of his transformation.
+#> His sister Grete initially cares for him, bringing food
+#> and cleaning his room, but over time the family's situation
+#> deteriorates financially and emotionally. The story explores
+#> themes of alienation, family duty, and dehumanization as
+#> Gregor gradually loses his human identity and connection to
+#> his family. Eventually, Gregor dies, and his family, though
+#> initially grief-stricken, ultimately feels relieved and
+#> optimistic about their future without the burden of caring
+#> for him. The text includes the complete three-part novella
+#> along with Project Gutenberg licensing information.
+#> --------------------------------------------------------------  
+```
 
 # Version 0.3.4
 This release marks a **major internal refactor** accompanied by a suite of subtle yet impactful improvements. While many changes occur under the hood, they collectively deliver a more robust, flexible, and maintainable framework.

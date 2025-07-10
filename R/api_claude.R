@@ -97,7 +97,7 @@ method(extract_metadata, list(api_claude,class_list))<- function(.api,.response)
   )
 }  
 
-#' A function to get metadata from Openai streaming responses
+#' A function to get metadata from claude streaming responses
 #'
 #' @noRd
 method(extract_metadata_stream, list(api_claude,class_list))<- function(.api,.stream_raw_data) {

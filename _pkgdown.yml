@@ -82,6 +82,10 @@ reference:
       - fetch_claude_batch
       - list_claude_batches
       - claude_list_models
+      - claude_upload_file
+      - claude_delete_file 
+      - claude_file_metadata 
+      - claude_list_files
 
   - title: "Gemini-Specific Functions"
     desc: >

@@ -22,11 +22,16 @@
 <url><loc>https://edubruell.github.io/tidyllm/reference/check_azure_openai_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/check_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/check_claude_batch.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/check_groq_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/check_mistral_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/check_openai_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/claude.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/claude_chat.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/claude_delete_file.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/claude_file_metadata.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/claude_list_files.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/claude_list_models.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/claude_upload_file.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/deepseek.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/deepseek_chat.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/df_llm_message.html</loc></url>
@@ -34,9 +39,11 @@
 <url><loc>https://edubruell.github.io/tidyllm/reference/fetch_azure_openai_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/fetch_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/fetch_claude_batch.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/fetch_groq_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/fetch_mistral_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/fetch_openai_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/field_chr.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/field_object.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/gemini.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/gemini_chat.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/gemini_delete_file.html</loc></url>
@@ -58,6 +65,7 @@
 <url><loc>https://edubruell.github.io/tidyllm/reference/list_azure_openai_batches.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/list_batches.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/list_claude_batches.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/list_groq_batches.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/list_mistral_batches.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/list_models.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/list_openai_batches.html</loc></url>
@@ -83,6 +91,7 @@
 <url><loc>https://edubruell.github.io/tidyllm/reference/send_azure_openai_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/send_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/send_claude_batch.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/send_groq_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/send_mistral_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/send_ollama_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/send_openai_batch.html</loc></url>
