@@ -310,7 +310,7 @@ gemini_inject_files <- function(.gemini_contents,
 #'
 #' @export
 gemini_chat <- function(.llm,
-                   .model = "gemini-2.0-flash",
+                   .model = "gemini-2.5-flash",
                    .fileid = NULL,
                    .temperature = NULL,
                    .max_output_tokens = NULL,
@@ -736,6 +736,393 @@ gemini_embedding <- function(.input,
                             .fn_extract_embeddings = extract_embeddings_fn)
 }
 
+#' Submit a list of LLMMessage objects to Gemini's batch API
+#'
+#' Returns a named list (same as input) with batch_id and json attributes.
+#' @param .llms List of LLMMessage objects (named or unnamed).
+#' @param .model The model identifier (default: "gemini-1.5-flash").
+#' @param .temperature Controls randomness (default: NULL, range: 0–2).
+#' @param .max_output_tokens Maximum tokens in the response (default: NULL).
+#' @param .top_p Nucleus sampling (default: NULL, range: 0–1).
+#' @param .top_k Diversity in token selection (default: NULL).
+#' @param .presence_penalty Penalizes new tokens (default: NULL, -2 to 2).
+#' @param .frequency_penalty Penalizes frequent tokens (default: NULL, -2 to 2).
+#' @param .stop_sequences Character vector or NULL (up to 5).
+#' @param .safety_settings Optional list of safety settings (default: NULL).
+#' @param .json_schema Optional schema to enforce output structure.
+#' @param .grounding_threshold Optional grounding threshold (0–1) to enable Google Search.
+#' @param .timeout Timeout in seconds (default: 120).
+#' @param .dry_run If TRUE, returns the constructed request (default: FALSE).
+#' @param .max_tries Maximum retry attempts (default: 3).
+#' @param .display Display name for this batch (default: "tidyllm_batch").
+#' @param .id_prefix Prefix for message IDs (default: "tidyllm_gemini_req_").
+#' @return Named list of LLMMessage objects with attributes `batch_id` and `json`
+#' @export
+send_gemini_batch <- function(.llms,
+                              .model = "gemini-2.5-flash",
+                              .temperature = NULL,
+                              .max_output_tokens = NULL,
+                              .top_p = NULL,
+                              .top_k = NULL,
+                              .presence_penalty = NULL,
+                              .frequency_penalty = NULL,
+                              .stop_sequences = NULL,
+                              .safety_settings = NULL,
+                              .json_schema = NULL,
+                              .grounding_threshold = NULL,
+                              .timeout = 120,
+                              .dry_run = FALSE,
+                              .max_tries = 3,
+                              .display = "tidyllm_batch",
+                              .id_prefix = "tidyllm_gemini_req_") {
+  
+  # --- Input validation ---
+  c(
+    "Input .llms must be a list of LLMMessage objects" =
+      is.list(.llms) && all(vapply(.llms, S7_inherits, logical(1), LLMMessage)),
+    "Input .model must be a string" = is.character(.model) && length(.model) == 1,
+    "Input .temperature must be NULL or in [0.0, 2.0]" =
+      is.null(.temperature) || (.temperature >= 0.0 && .temperature <= 2.0),
+    "Input .max_output_tokens must be NULL or integer >= 1" =
+      is.null(.max_output_tokens) || (is_integer_valued(.max_output_tokens) && .max_output_tokens >= 1),
+    "Input .top_p must be NULL or in [0.0, 1.0]" =
+      is.null(.top_p) || (.top_p >= 0.0 && .top_p <= 1.0),
+    "Input .top_k must be NULL or non-negative" =
+      is.null(.top_k) || .top_k >= 0,
+    "Input .presence_penalty must be NULL or in [-2.0, 2.0]" =
+      is.null(.presence_penalty) || (.presence_penalty >= -2.0 && .presence_penalty <= 2.0),
+    "Input .frequency_penalty must be NULL or in [-2.0, 2.0]" =
+      is.null(.frequency_penalty) || (.frequency_penalty >= -2.0 && .frequency_penalty <= 2.0),
+    "Input .stop_sequences must be NULL or a character vector of ≤ 5" =
+      is.null(.stop_sequences) || (is.character(.stop_sequences) && length(.stop_sequences) <= 5),
+    "Input .safety_settings must be NULL or a list" =
+      is.null(.safety_settings) || is.list(.safety_settings),
+    "Input .json_schema must be NULL, a list, or an ellmer type" =
+      is.null(.json_schema) || is.list(.json_schema) || is_ellmer_type(.json_schema),
+    "Input .grounding_threshold must be NULL or in [0.0, 1.0]" =
+      is.null(.grounding_threshold) || (.grounding_threshold >= 0.0 && .grounding_threshold <= 1.0),
+    "Input .timeout must be a positive integer" =
+      is_integer_valued(.timeout) && .timeout > 0,
+    "Input .max_tries must be a positive integer" =
+      is_integer_valued(.max_tries) && .max_tries > 0,
+    "Input .dry_run must be logical" = is.logical(.dry_run)
+  ) |> validate_inputs()
+  
+  # --- Auto-name messages if needed ---
+  if (is.null(names(.llms)) || anyNA(names(.llms)) || any(names(.llms) == "")) {
+    names(.llms) <- sprintf("%s%s", .id_prefix, seq_along(.llms))
+  }
+  ids <- names(.llms)
+  
+  # --- Schema handling ---
+  json <- FALSE
+  if (requireNamespace("ellmer", quietly = TRUE)) {
+    if (S7_inherits(.json_schema, ellmer::TypeObject)) {
+      .json_schema <- to_schema(.json_schema)
+    }
+  }
+  if (!is.null(.json_schema)) {
+    json <- TRUE
+    if ("additionalProperties" %in% names(.json_schema)) {
+      .json_schema <- .json_schema[setdiff(names(.json_schema), "additionalProperties")]
+    }
+  }
+  
+  # --- Generation config ---
+  gen_config <- list(
+    temperature = .temperature,
+    topP = .top_p,
+    topK = .top_k,
+    presencePenalty = .presence_penalty,
+    frequencyPenalty = .frequency_penalty,
+    maxOutputTokens = .max_output_tokens,
+    stopSequences = .stop_sequences
+  )
+  if (json) {
+    gen_config$response_mime_type <- "application/json"
+    gen_config$response_schema <- .json_schema
+  }
+  gen_config <- purrr::compact(gen_config)
+  
+  # --- Only Google search grounding tool if specified ---
+  grounding_tool <- if (!is.null(.grounding_threshold)) {
+    list(
+      google_search_retrieval = list(
+        dynamic_retrieval_config = list(
+          mode = "MODE_DYNAMIC",
+          dynamic_threshold = .grounding_threshold
+        )
+      )
+    )
+  } else NULL
+  
+  # --- API key and API object ---
+  api_obj <- api_gemini(short_name = "gemini",
+                        long_name = "Google Gemini",
+                        api_key_env_var = "GOOGLE_API_KEY")
+  api_key <- get_api_key(api_obj, .dry_run)
+  
+  # --- Build batch requests, tagged with names as keys ---
+  requests <- purrr::imap(.llms, function(msg, id) {
+    list(
+      request = purrr::compact(list(
+        contents = to_api_format(msg, api_obj),
+        system_instruction = list(parts = list(text = msg@system_prompt)),
+        generationConfig = gen_config,
+        safetySettings = .safety_settings,
+        tools = if (!is.null(grounding_tool)) list(grounding_tool)
+      )),
+      metadata = list(key = id)
+    )
+  })
+  
+  # --- Final body for Gemini batch ---
+  body <- list(
+    batch = list(
+      display_name = .display,
+      input_config = list(
+        requests = list(requests = unname(requests))
+      )
+    )
+  )
+  
+  req <- httr2::request("https://generativelanguage.googleapis.com") |>
+    httr2::req_url_path(paste0("/v1beta/models/", .model, ":batchGenerateContent")) |>
+    httr2::req_url_query(key = api_key) |>
+    httr2::req_body_json(body)
+  
+  if (.dry_run) return(req)
+  
+  resp <- perform_generic_request(req, .timeout, .max_tries)
+  
+  # --- Surface Gemini API errors as R errors ---
+  if (!is.null(resp$content$error)) {
+    err <- resp$content$error
+    stop(sprintf("Gemini batch request failed [%s]: %s\n%s",
+                 err$status, err$message,
+                 if (!is.null(err$details[[1]]$links[[1]]$url)) err$details[[1]]$links[[1]]$url else ""
+    ),
+    call. = FALSE
+    )
+  }
+  
+  batch_id <- resp$content$name
+  
+  # --- Attach attributes, return named list (same as Claude) ---
+  attr(.llms, "batch_id") <- batch_id
+  attr(.llms, "json") <- json
+  .llms
+}
+
+
+#' Check the Status of a Gemini Batch Operation
+#'
+#' Retrieves processing status and metadata for a Gemini batch operation.
+#'
+#' You can supply either the `.batch_id` string (e.g. `"batches/xyz..."`) **or**
+#' a list of LLMMessage objects (`.llms`) with a `"batch_id"` attribute as returned by `send_gemini_batch()`.
+#'
+#' @param .llms (Optional) List of LLMMessage objects with a `"batch_id"` attribute (as returned by `send_gemini_batch()`).
+#' @param .batch_id (Optional) Character string: full batch operation name, e.g. `"batches/xyz123"`.
+#'   If both `.llms` and `.batch_id` are provided, `.batch_id` is used.
+#' @param .timeout Integer. Request timeout in seconds. Default: 60.
+#' @param .max_tries Integer. Maximum retry attempts. Default: 3.
+#' @param .dry_run Logical. If TRUE, return the request object instead of making the request (for debugging). Default: FALSE.
+#' @return A tibble with the operation's metadata, including name, state, creation time, completion time, and done status.
+#' @export
+check_gemini_batch <- function(.llms = NULL,
+                               .batch_id = NULL,
+                               .timeout = 60,
+                               .max_tries = 3,
+                               .dry_run = FALSE) {
+  # If .batch_id missing, try to get from .llms 
+  if (is.null(.batch_id)) {
+    if (!is.null(.llms)) {
+      .batch_id <- attr(.llms, "batch_id")
+      if (is.null(.batch_id)) {
+        stop("No batch_id attribute found in provided .llms object. Use send_gemini_batch() to generate batch_id.")
+      }
+    } else {
+      stop("Must provide either .batch_id or .llms with a batch_id attribute.")
+    }
+  }
+
+  
+  api_key <- Sys.getenv("GOOGLE_API_KEY")
+  if (api_key == "") stop("Google API key is not set (GOOGLE_API_KEY).")
+  op_path <- if (!startsWith(.batch_id, "/v1beta/")) paste0("/v1beta/", .batch_id) else .batch_id
+  req <- httr2::request("https://generativelanguage.googleapis.com") |>
+    httr2::req_url_path(op_path) |>
+    httr2::req_url_query(key = api_key)
+  if (.dry_run) return(req)
+  resp <- perform_generic_request(req, .timeout, .max_tries)
+  content <- resp$content
+  if (!is.null(content$error)) {
+    stop(sprintf("Gemini API Error: %s - %s", content$error$code, content$error$message))
+  }
+  tibble::tibble(
+    name = content$name,
+    state = purrr::pluck(content, "metadata", "state", .default=NA_character_),
+    done = purrr::pluck(content, "done", .default=NA),
+    create_time = lubridate::ymd_hms(purrr::pluck(content, "metadata", "createTime", .default=NA_character_), tz="UTC"),
+    complete_time = lubridate::ymd_hms(purrr::pluck(content, "metadata", "completeTime", .default=NA_character_), tz="UTC")
+  )
+}
+#' List Recent Gemini Batch Operations
+#'
+#' Returns a tibble with recent Gemini batch operations and their metadata.
+#'
+#' @param .filter Optional filter expression for batch listing (see Gemini API docs).
+#' @param .page_size Integer. Maximum number of results to return. Default: 20.
+#' @param .timeout Integer. Request timeout in seconds. Default: 60.
+#' @param .max_tries Integer. Maximum retry attempts. Default: 3.
+#' @param .dry_run Logical. If TRUE, returns the request object (for debugging). Default: FALSE.
+#' @return A tibble with columns: name, state, done, create_time, complete_time.
+#' @export
+list_gemini_batches <- function(.filter    = NULL,
+                                .page_size = 20,
+                                .timeout   = 60,
+                                .max_tries = 3,
+                                .dry_run   = FALSE) {
+  api_key <- Sys.getenv("GOOGLE_API_KEY")
+  if (api_key == "") stop("Google API key is not set (GOOGLE_API_KEY).")
+  req <- httr2::request("https://generativelanguage.googleapis.com") |>
+    httr2::req_url_path("/v1beta/batches") |>
+    httr2::req_url_query(
+      key      = api_key,
+      filter   = .filter,
+      pageSize = .page_size
+    )
+  if (.dry_run) return(req)
+  resp <- perform_generic_request(req, .timeout, .max_tries)
+  content <- resp$content
+  if (!is.null(content$error)) {
+    stop(sprintf("Gemini API Error: %s - %s", content$error$code, content$error$message))
+  }
+  batches <- purrr::pluck(content, "operations", .default = list())
+  purrr::map_dfr(batches, function(x) tibble::tibble(
+    name = x$name,
+    state = purrr::pluck(x, "metadata", "state", .default=NA_character_),
+    done = purrr::pluck(x, "done", .default=NA),
+    create_time = lubridate::ymd_hms(purrr::pluck(x, "metadata", "createTime", .default=NA_character_), tz="UTC"),
+    complete_time = lubridate::ymd_hms(purrr::pluck(x, "metadata", "completeTime", .default=NA_character_), tz="UTC")
+  ))
+}
+
+#' Fetch Results for a Gemini Batch
+#'
+#' Retrieves the results of a completed Gemini batch and updates
+#' the provided list of LLMMessage objects with the assistant's responses,
+#' matching by original list order.
+#'
+#' @param .llms List of `LLMMessage` objects (as from `send_gemini_batch()`), must have a `batch_id` attribute if `.batch_name` is not given.
+#' @param .batch_name (Optional) Character; batch operation name (e.g. "batches/xyz123"). If not provided, is taken from `attr(.llms, "batch_id")`.
+#' @param .timeout Integer; request timeout in seconds (default: 60).
+#' @param .max_tries Integer; maximum retry attempts (default: 3).
+#' @param .dry_run Logical; if `TRUE`, returns the GET request object (default: FALSE).
+#'
+#' @return A list of updated LLMMessage objects with the assistant response appended to each, in the same order.
+#' @export
+fetch_gemini_batch <- function(.llms,
+                               .batch_name = NULL,
+                               .timeout = 60,
+                               .max_tries = 3,
+                               .dry_run = FALSE){
+  
+  # Preserve original names
+  original_names <- names(.llms)
+  if(!is.null(attr(.llms,"json"))) json <- attr(.llms,"json") else json <- FALSE
+  
+  # Validate inputs
+  stopifnot(is.list(.llms), !is.null(.llms[[1]]))
+  
+  # Retrieve batch name
+  if (is.null(.batch_name)) {
+    .batch_name <- attr(.llms, "batch_id")
+    if (is.null(.batch_name)) stop("No batch_name provided and no batch_id attribute found in .llms.")
+  }
+  
+  api_obj <- api_gemini(short_name = "gemini",
+                        long_name  = "Google Gemini",
+                        api_key_env_var = "GOOGLE_API_KEY")
+  
+  api_key <- get_api_key(api_obj,.dry_run)
+  
+  op_path <- if (!startsWith(.batch_name, "/v1beta/")) paste0("/v1beta/", .batch_name) else .batch_name
+  
+  # Build GET request for batch status
+  req <- httr2::request("https://generativelanguage.googleapis.com") |>
+    httr2::req_url_path(op_path) |>
+    httr2::req_url_query(key = api_key) |>
+    httr2::req_headers(`Content-Type` = "application/json")
+  
+  if (.dry_run) return(req)
+  
+  resp <- perform_generic_request(req, .timeout, .max_tries)
+  content <- resp$content
+  
+  # Handle batch not done or error state
+  batch_state <- purrr::pluck(content, "metadata", "state", .default = "UNKNOWN")
+  is_done <- purrr::pluck(content, "done", .default = FALSE)
+  
+  if (!is_done) stop(sprintf("Batch not finished processing (state: %s)", batch_state))
+  
+  if (batch_state == "JOB_STATE_FAILED") {
+    stop(sprintf("Batch failed: %s", jsonlite::toJSON(content$error, auto_unbox=TRUE)))
+  }
+  if (batch_state == "JOB_STATE_CANCELLED") {
+    stop("Batch was cancelled by the user.")
+  }
+  
+  # Get responses: either inline or downloadable file
+  response <- content$response
+  responses <- NULL
+  
+  if (!is.null(response$inlinedResponses)) {
+    # Inline responses: take as-is
+    responses <- response$inlinedResponses$inlinedResponses
+  } else if (!is.null(response$responsesFile)) {
+    # Download responses file (JSONL format)
+    file_path <- paste0("/download/v1beta/", response$responsesFile, ":download")
+    download_req <- httr2::request("https://generativelanguage.googleapis.com") |>
+      httr2::req_url_path(file_path) |>
+      httr2::req_url_query(key = api_key, alt = "media")
+    download_resp <- perform_generic_request(download_req, .timeout, .max_tries)
+    responses_lines <- strsplit(httr2::resp_body_string(download_resp$raw_response), "\n")[[1]]
+    responses <- lapply(responses_lines, function(line) if (nzchar(line)) jsonlite::fromJSON(line) else NULL)
+    responses <- Filter(Negate(is.null), responses)
+  } else {
+    stop("No batch responses found in Gemini batch response.")
+  }
+  
+  # Gemini batches preserve order; map responses to .llms in order
+  if (length(responses) != length(.llms)) {
+    stop(sprintf("Number of responses (%d) does not match number of LLM messages (%d).", length(responses), length(.llms)))
+  }
+  
+  
+  # Update LLMMessage objects with responses
+  # Map results back to the original .llms list using names as custom IDs
+  updated_llms <- purrr::imap(names(.llms),function(x,y){
+    chat_response <- parse_chat_response(api_obj,responses[[y]]$response) 
+    
+    llm <- add_message(.llm = .llms[[x]],
+                .role = "assistant", 
+                .content = chat_response,
+                .json = json,
+                .meta = extract_metadata(api_obj,responses[[y]]$response) )
+    llm
+  }) 
+  
+  
+  # Return updated list, with batch_id and json attributes removed
+  attr(updated_llms, "batch_id") <- NULL
+  attr(updated_llms, "json") <- NULL
+  names(updated_llms) <- original_names
+  updated_llms
+}
+
+
 #' Google Gemini Provider Function
 #'
 #' The `gemini()` function acts as a provider interface for interacting with the Google Gemini API 
@@ -759,5 +1146,9 @@ gemini_embedding <- function(.input,
 gemini <- create_provider_function(
   .name = "gemini",
   chat = gemini_chat,
-  embed = gemini_embedding
+  embed = gemini_embedding,
+  send_batch = send_gemini_batch,
+  check_batch = check_gemini_batch,
+  list_batches = list_gemini_batches,
+  fetch_batch = fetch_gemini_batch
 )

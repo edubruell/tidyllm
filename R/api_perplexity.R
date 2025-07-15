@@ -97,105 +97,132 @@ method(handle_stream,list(api_perplexity,new_S3_class("httr2_response"))) <- fun
 }
 
 
-#' Send LLM Messages to the Perplexity Chat API
+#' Send LLM Messages to the Perplexity Chat API (All Features, No .json Option)
 #'
 #' @description
-#' This function sends a message history to the Perplexity Chat API and returns the assistant's reply.
+#' Sends a chat message history to the Perplexity Chat API, supporting all documented API parameters as of July 2025.
 #'
 #' @param .llm An `LLMMessage` object containing the conversation history.
-#' @param .model The identifier of the model to use (default: "sonar").
-#' @param .max_tokens The maximum number of tokens that can be generated in the response (default: 1024).
-#' @param .temperature Controls the randomness in the model's response. Values between 0 (exclusive) and 2 (exclusive) are allowed, where higher values increase randomness (optional).
-#' @param .top_p Nucleus sampling parameter that controls the proportion of probability mass considered. Values between 0 (exclusive) and 1 (exclusive) are allowed (optional).
-#' @param .frequency_penalty Number greater than 0. Values > 1.0 penalize repeated tokens, reducing the likelihood of repetition (optional).
-#' @param .presence_penalty Number between -2.0 and 2.0. Positive values encourage new topics by penalizing tokens that have appeared so far (optional).
-#' @param .stop One or more sequences where the API will stop generating further tokens. Can be a string or a list of strings (optional).
-#' @param .search_domain_filter A vector of domains to limit or exclude from search results. For exclusion, prefix domains with a "-" (optional, currently in closed beta).
-#' @param .return_images Logical; if TRUE, enables returning images from the model's response (default: FALSE, currently in closed beta).
-#' @param .search_recency_filter Limits search results to a specific time interval (e.g., "month", "week", "day", or "hour"). Only applies to online models (optional).
-#' @param .api_url Base URL for the Perplexity API (default: "https://api.perplexity.ai/").
-#' @param .json Whether the response should be structured as JSON (default: FALSE).
-#' @param .timeout Request timeout in seconds (default: 60).
-#' @param .stream Logical; if TRUE, streams the response piece by piece (default: FALSE).
-#' @param .verbose If TRUE, displays additional information after the API call, including rate limit details (default: FALSE).
-#' @param .max_tries Maximum retries to perform the request (default: 3).
-#' @param .dry_run If TRUE, performs a dry run and returns the constructed request object without executing it (default: FALSE).
+#' @param .model Model name to use (default: "sonar").
+#' @param .max_tokens Max completion tokens (default: 1024).
+#' @param .temperature Controls response randomness (0 < x < 2).
+#' @param .top_p Nucleus sampling threshold (0 < x < 1).
+#' @param .frequency_penalty Number > 0. Penalizes frequent tokens.
+#' @param .presence_penalty Numeric between -2 and 2. Penalizes present tokens.
+#' @param .stop Stop sequence(s), string or character vector/list.
+#' @param .search_domain_filter Domains to allowlist/denylist for search (max 10, "-domain" for denylist).
+#' @param .return_images Logical; if TRUE, returns images from search.
+#' @param .search_recency_filter Restrict search to recent ("hour","day","week","month").
+#' @param .search_mode "web" (default) or "academic" (prioritize scholarly sources).
+#' @param .reasoning_effort Reasoning level: "low", "medium" (default), "high" (for deep research models).
+#' @param .return_related_questions Logical; if TRUE, returns related questions.
+#' @param .search_after_date_filter Only content published after date (mm/dd/yyyy).
+#' @param .search_before_date_filter Only content published before date (mm/dd/yyyy).
+#' @param .last_updated_after_filter Only content updated after date (mm/dd/yyyy).
+#' @param .last_updated_before_filter Only content updated before date (mm/dd/yyyy).
+#' @param .top_k Top-k token sampling (integer, 0 disables).
+#' @param .web_search_options Named list with search config (e.g. list(search_context_size = "high")).
+#' @param .api_url API endpoint (default: "https://api.perplexity.ai/").
+#' @param .timeout Timeout in seconds (default: 60).
+#' @param .stream If TRUE, streams response.
+#' @param .verbose If TRUE, prints additional info.
+#' @param .max_tries Max request retries (default: 3).
+#' @param .dry_run If TRUE, returns constructed request instead of sending.
 #'
-#' @return A new `LLMMessage` object containing the original messages plus the assistant's response.
-#'
+#' @return An updated `LLMMessage` object with the assistant's reply and metadata, including citations and search_results.
 #' @export
-perplexity_chat <- function(.llm,
-                            .model = "sonar",
-                            .max_tokens = 1024,
-                            .temperature = NULL,
-                            .top_p = NULL,
-                            .frequency_penalty = NULL,
-                            .presence_penalty = NULL,
-                            .stop = NULL,
-                            .search_domain_filter = NULL,
-                            .return_images = FALSE,
-                            .search_recency_filter = NULL,
-                            .api_url = "https://api.perplexity.ai/",
-                            .json = FALSE,
-                            .timeout = 60,
-                            .verbose = FALSE,
-                            .stream = FALSE,
-                            .dry_run = FALSE,
-                            .max_tries = 3) {
-
-  # Validate inputs
+perplexity_chat <- function(
+    .llm,
+    .model = "sonar",
+    .max_tokens = 1024,
+    .temperature = NULL,
+    .top_p = NULL,
+    .frequency_penalty = NULL,
+    .presence_penalty = NULL,
+    .stop = NULL,
+    .search_domain_filter = NULL,
+    .return_images = FALSE,
+    .search_recency_filter = NULL,
+    .search_mode = "web",
+    .reasoning_effort = NULL,
+    .return_related_questions = FALSE,
+    .search_after_date_filter = NULL,
+    .search_before_date_filter = NULL,
+    .last_updated_after_filter = NULL,
+    .last_updated_before_filter = NULL,
+    .top_k = NULL,
+    .web_search_options = NULL,
+    .api_url = "https://api.perplexity.ai/",
+    .timeout = 60,
+    .stream = FALSE,
+    .verbose = FALSE,
+    .max_tries = 3,
+    .dry_run = FALSE
+) {
   c(
     "Input .llm must be an LLMMessage object" = S7_inherits(.llm, LLMMessage),
-    "Input .max_tokens must be an integer" = is_integer_valued(.max_tokens) & .max_tokens > 0,
+    "Input .max_tokens must be a positive integer" = is_integer_valued(.max_tokens) & .max_tokens > 0,
     "Input .model must be a non-empty string" = is.character(.model) & nzchar(.model),
-    "Input .api_url must be a valid URL" = is.character(.api_url) & nzchar(.api_url),
-    "Input .timeout must be an integer-valued numeric greater than 0" = is_integer_valued(.timeout) & .timeout > 0,
-    "Input .temperature must be numeric between 0 (exclusive) and 2 (exclusive) if provided" = is.null(.temperature) | (.temperature > 0 & .temperature < 2),
-    "Input .top_p must be numeric between 0 (exclusive) and 1 (exclusive) if provided" = is.null(.top_p) | (.top_p > 0 & .top_p < 1),
-    "Input .frequency_penalty must be greater than 0 if provided" = is.null(.frequency_penalty) | (.frequency_penalty > 0),
-    "Input .presence_penalty must be numeric between -2 and 2 if provided" = is.null(.presence_penalty) | (.presence_penalty >= -2 & .presence_penalty <= 2),
-    "Input .stop must be a character vector or a list of character vectors, or NULL" = is.null(.stop) | is.character(.stop) | is.list(.stop),
-    "Input .search_domain_filter must be NULL or a character vector" = is.null(.search_domain_filter) | is.character(.search_domain_filter),
+    "Input .api_url must be a non-empty string" = is.character(.api_url) & nzchar(.api_url),
+    "Input .timeout must be positive integer" = is_integer_valued(.timeout) & .timeout > 0,
+    "Input .temperature must be NULL or 0 < x < 2" = is.null(.temperature) | (.temperature > 0 & .temperature < 2),
+    "Input .top_p must be NULL or 0 < x < 1" = is.null(.top_p) | (.top_p > 0 & .top_p < 1),
+    "Input .frequency_penalty must be NULL or > 0" = is.null(.frequency_penalty) | (.frequency_penalty > 0),
+    "Input .presence_penalty must be NULL or -2 <= x <= 2" = is.null(.presence_penalty) | (.presence_penalty >= -2 & .presence_penalty <= 2),
+    "Input .stop must be NULL, character, or list" = is.null(.stop) | is.character(.stop) | is.list(.stop),
+    "Input .search_domain_filter must be NULL or character vector" = is.null(.search_domain_filter) | is.character(.search_domain_filter),
+    "If .search_domain_filter provided, must be <= 10 domains" = is.null(.search_domain_filter) | (length(.search_domain_filter) <= 10),
     "Input .return_images must be logical" = is.logical(.return_images),
-    "Input .search_recency_filter must be NULL or a valid time interval string" = is.null(.search_recency_filter) | is.character(.search_recency_filter),
-    "Input .json must be logical" = is.logical(.json),
+    "Input .return_related_questions must be logical" = is.logical(.return_related_questions),
+    "Input .search_recency_filter must be NULL or character" = is.null(.search_recency_filter) | is.character(.search_recency_filter),
+    "Input .search_mode must be 'web' or 'academic'" = .search_mode %in% c("web", "academic"),
+    "Input .reasoning_effort must be NULL or one of 'low', 'medium', 'high'" = is.null(.reasoning_effort) | .reasoning_effort %in% c("low", "medium", "high"),
+    "Input .search_after_date_filter must be NULL or character" = is.null(.search_after_date_filter) | is.character(.search_after_date_filter),
+    "Input .search_before_date_filter must be NULL or character" = is.null(.search_before_date_filter) | is.character(.search_before_date_filter),
+    "Input .last_updated_after_filter must be NULL or character" = is.null(.last_updated_after_filter) | is.character(.last_updated_after_filter),
+    "Input .last_updated_before_filter must be NULL or character" = is.null(.last_updated_before_filter) | is.character(.last_updated_before_filter),
+    "Input .top_k must be NULL or a single non-negative integer" = is.null(.top_k) | (is.numeric(.top_k) & length(.top_k) == 1 & .top_k >= 0),
+    "Input .web_search_options must be NULL or named list" = is.null(.web_search_options) | (is.list(.web_search_options) & !is.null(names(.web_search_options))),
     "Input .verbose must be logical" = is.logical(.verbose),
-    "Input .max_tries must be integer-valued numeric" = is_integer_valued(.max_tries),
+    "Input .max_tries must be positive integer" = is_integer_valued(.max_tries) & .max_tries > 0,
     "Input .dry_run must be logical" = is.logical(.dry_run)
   ) |>
     validate_inputs()
   
   api_obj <- api_perplexity(short_name = "perplexity",
-                      long_name  = "Perplexity",
-                      api_key_env_var = "PERPLEXITY_API_KEY")
+                            long_name  = "Perplexity",
+                            api_key_env_var = "PERPLEXITY_API_KEY")
   
-  # Get formatted message list for Perplexity models
-  messages <- to_api_format(.llm,api_obj, TRUE)
-  
+  messages <- to_api_format(.llm, api_obj, TRUE)
   api_key <- get_api_key(api_obj, .dry_run)
   
-  if(!is.null(.search_domain_filter)){.search_domain_filter <- as.list(.search_domain_filter)}
+  # Convert to list for API if provided
+  search_domain_filter <- if(!is.null(.search_domain_filter)) as.list(.search_domain_filter) else NULL
   
-  # Fill the request body
+  # --- Build Request Body ---
   request_body <- list(
     model = .model,
-    max_tokens = .max_tokens,
     messages = messages,
+    max_tokens = .max_tokens,
     temperature = .temperature,
     top_p = .top_p,
     frequency_penalty = .frequency_penalty,
     presence_penalty = .presence_penalty,
     stop = .stop,
-    search_domain_filter = .search_domain_filter,
+    search_domain_filter = search_domain_filter,
     return_images = .return_images,
     search_recency_filter = .search_recency_filter,
+    search_mode = .search_mode,
+    reasoning_effort = .reasoning_effort,
+    return_related_questions = .return_related_questions,
+    search_after_date_filter = .search_after_date_filter,
+    search_before_date_filter = .search_before_date_filter,
+    last_updated_after_filter = .last_updated_after_filter,
+    last_updated_before_filter = .last_updated_before_filter,
+    top_k = .top_k,
+    web_search_options = .web_search_options,
     stream = .stream
   ) |> purrr::compact()
-  
-  # Handle JSON mode
-  if (.json == TRUE) {
-    request_body$response_format <- list(type = "json_object")
-  }
   
   request <- httr2::request(.api_url) |>
     httr2::req_url_path("/chat/completions") |>
@@ -205,23 +232,26 @@ perplexity_chat <- function(.llm,
     ) |>
     httr2::req_body_json(data = request_body)
   
-  # Return only the request object in a dry run.
-  if (.dry_run) {
-    return(request)  
+  # Dry run returns request object for inspection
+  if (.dry_run) return(request)
+  
+  # --- Perform Request (may stream) ---
+  response <- perform_chat_request(request, api_obj, .stream, .timeout, .max_tries)
+  assistant_reply <- response$assistant_reply
+  
+  # --- Extract metadata including search_results if present ---
+  meta <- response$meta
+  if (!is.null(response$search_results)) {
+    meta$specific_metadata$search_results <- response$search_results
   }
   
-  response <- perform_chat_request(request, api_obj, .stream, .timeout, .max_tries)
-  
-  # Extract assistant reply and rate limiting info from response headers
-  assistant_reply <- response$assistant_reply
-
-  # Add model's message to the history of the LLMMessage object
   add_message(.llm     = .llm,
               .role    = "assistant", 
               .content = assistant_reply, 
-              .json    = .json,
-              .meta    = response$meta)
+              .meta    = meta,
+              .json    = FALSE)
 }
+
 
 #' Perplexity Provider Function
 #'

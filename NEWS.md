@@ -38,6 +38,10 @@ llm_message("Summarize the document in 100 words") |>
 #> --------------------------------------------------------------  
 ```
 
+- **Expanded Perplexity Support:** The `perplexity()` provider now supports  more Perplexity API parameters, allowing you to set reasoning and search effort.
+- **Gemini Batches:** Rudimentary batch support for `gemini()`, only minimally tested.
+
+
 # Version 0.3.4
 This release marks a **major internal refactor** accompanied by a suite of subtle yet impactful improvements. While many changes occur under the hood, they collectively deliver a more robust, flexible, and maintainable framework.
 
