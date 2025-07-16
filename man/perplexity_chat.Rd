@@ -2,7 +2,7 @@
 % Please edit documentation in R/api_perplexity.R
 \name{perplexity_chat}
 \alias{perplexity_chat}
-\title{Send LLM Messages to the Perplexity Chat API}
+\title{Send LLM Messages to the Perplexity Chat API (All Features, No .json Option)}
 \usage{
 perplexity_chat(
   .llm,
@@ -16,55 +16,79 @@ perplexity_chat(
   .search_domain_filter = NULL,
   .return_images = FALSE,
   .search_recency_filter = NULL,
+  .search_mode = "web",
+  .reasoning_effort = NULL,
+  .return_related_questions = FALSE,
+  .search_after_date_filter = NULL,
+  .search_before_date_filter = NULL,
+  .last_updated_after_filter = NULL,
+  .last_updated_before_filter = NULL,
+  .top_k = NULL,
+  .web_search_options = NULL,
   .api_url = "https://api.perplexity.ai/",
-  .json = FALSE,
   .timeout = 60,
-  .verbose = FALSE,
   .stream = FALSE,
-  .dry_run = FALSE,
-  .max_tries = 3
+  .verbose = FALSE,
+  .max_tries = 3,
+  .dry_run = FALSE
 )
 }
 \arguments{
 \item{.llm}{An \code{LLMMessage} object containing the conversation history.}
 
-\item{.model}{The identifier of the model to use (default: "sonar").}
+\item{.model}{Model name to use (default: "sonar").}
 
-\item{.max_tokens}{The maximum number of tokens that can be generated in the response (default: 1024).}
+\item{.max_tokens}{Max completion tokens (default: 1024).}
 
-\item{.temperature}{Controls the randomness in the model's response. Values between 0 (exclusive) and 2 (exclusive) are allowed, where higher values increase randomness (optional).}
+\item{.temperature}{Controls response randomness (0 < x < 2).}
 
-\item{.top_p}{Nucleus sampling parameter that controls the proportion of probability mass considered. Values between 0 (exclusive) and 1 (exclusive) are allowed (optional).}
+\item{.top_p}{Nucleus sampling threshold (0 < x < 1).}
 
-\item{.frequency_penalty}{Number greater than 0. Values > 1.0 penalize repeated tokens, reducing the likelihood of repetition (optional).}
+\item{.frequency_penalty}{Number > 0. Penalizes frequent tokens.}
 
-\item{.presence_penalty}{Number between -2.0 and 2.0. Positive values encourage new topics by penalizing tokens that have appeared so far (optional).}
+\item{.presence_penalty}{Numeric between -2 and 2. Penalizes present tokens.}
 
-\item{.stop}{One or more sequences where the API will stop generating further tokens. Can be a string or a list of strings (optional).}
+\item{.stop}{Stop sequence(s), string or character vector/list.}
 
-\item{.search_domain_filter}{A vector of domains to limit or exclude from search results. For exclusion, prefix domains with a "-" (optional, currently in closed beta).}
+\item{.search_domain_filter}{Domains to allowlist/denylist for search (max 10, "-domain" for denylist).}
 
-\item{.return_images}{Logical; if TRUE, enables returning images from the model's response (default: FALSE, currently in closed beta).}
+\item{.return_images}{Logical; if TRUE, returns images from search.}
 
-\item{.search_recency_filter}{Limits search results to a specific time interval (e.g., "month", "week", "day", or "hour"). Only applies to online models (optional).}
+\item{.search_recency_filter}{Restrict search to recent ("hour","day","week","month").}
 
-\item{.api_url}{Base URL for the Perplexity API (default: "https://api.perplexity.ai/").}
+\item{.search_mode}{"web" (default) or "academic" (prioritize scholarly sources).}
 
-\item{.json}{Whether the response should be structured as JSON (default: FALSE).}
+\item{.reasoning_effort}{Reasoning level: "low", "medium" (default), "high" (for deep research models).}
 
-\item{.timeout}{Request timeout in seconds (default: 60).}
+\item{.return_related_questions}{Logical; if TRUE, returns related questions.}
 
-\item{.verbose}{If TRUE, displays additional information after the API call, including rate limit details (default: FALSE).}
+\item{.search_after_date_filter}{Only content published after date (mm/dd/yyyy).}
 
-\item{.stream}{Logical; if TRUE, streams the response piece by piece (default: FALSE).}
+\item{.search_before_date_filter}{Only content published before date (mm/dd/yyyy).}
 
-\item{.dry_run}{If TRUE, performs a dry run and returns the constructed request object without executing it (default: FALSE).}
+\item{.last_updated_after_filter}{Only content updated after date (mm/dd/yyyy).}
 
-\item{.max_tries}{Maximum retries to perform the request (default: 3).}
+\item{.last_updated_before_filter}{Only content updated before date (mm/dd/yyyy).}
+
+\item{.top_k}{Top-k token sampling (integer, 0 disables).}
+
+\item{.web_search_options}{Named list with search config (e.g. list(search_context_size = "high")).}
+
+\item{.api_url}{API endpoint (default: "https://api.perplexity.ai/").}
+
+\item{.timeout}{Timeout in seconds (default: 60).}
+
+\item{.stream}{If TRUE, streams response.}
+
+\item{.verbose}{If TRUE, prints additional info.}
+
+\item{.max_tries}{Max request retries (default: 3).}
+
+\item{.dry_run}{If TRUE, returns constructed request instead of sending.}
 }
 \value{
-A new \code{LLMMessage} object containing the original messages plus the assistant's response.
+An updated \code{LLMMessage} object with the assistant's reply and metadata, including citations and search_results.
 }
 \description{
-This function sends a message history to the Perplexity Chat API and returns the assistant's reply.
+Sends a chat message history to the Perplexity Chat API, supporting all documented API parameters as of July 2025.
 }

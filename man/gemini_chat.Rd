@@ -6,7 +6,7 @@
 \usage{
 gemini_chat(
   .llm,
-  .model = "gemini-2.0-flash",
+  .model = "gemini-2.5-flash",
   .fileid = NULL,
   .temperature = NULL,
   .max_output_tokens = NULL,

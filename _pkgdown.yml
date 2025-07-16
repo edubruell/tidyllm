@@ -98,6 +98,10 @@ reference:
       - gemini_list_files
       - gemini_file_metadata
       - gemini_delete_file
+      - send_gemini_batch
+      - check_gemini_batch
+      - list_gemini_batches
+      - fetch_gemini_batch
   
   - title: "Ollama-Specific Functions"
     desc: >
