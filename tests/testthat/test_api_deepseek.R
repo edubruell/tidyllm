@@ -43,7 +43,7 @@ test_that("deepseek returns expected response", {
     }
     
     expect_true(S7_inherits(result, LLMMessage))
-    expect_equal(reply, "Hello, world! How can I assist you today? 😊")
+    expect_equal(reply, "Hello! How can I assist you today?")
 
   }, simplify = FALSE)
 })

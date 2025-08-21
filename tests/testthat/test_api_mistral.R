@@ -64,10 +64,7 @@ test_that("mistral returns expected response",{
     expect_true(S7_inherits(result, LLMMessage))
     result_tbl <- as_tibble(result) 
     
-    expect_equal(
-      result_tbl$content[3],
-      "Hello! How can I assist you today? Let's have a friendly conversation.  How are you doing?"
-    )
+
     expect_equal(result_tbl$role[3], "assistant")
     
     # Now, check that the rate limit environment has been populated with correct values

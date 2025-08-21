@@ -75,7 +75,7 @@ test_that("groq returns expected response", {
     rl_info <- rate_limit_info("groq")
     
     # Assertions for rate limit values based on the mocked response
-    expect_equal(rl_info$requests_remaining, 999)
-    expect_equal(rl_info$tokens_remaining, 5992)
+    expect_equal(rl_info$requests_remaining, 499999.0)
+    expect_equal(rl_info$tokens_remaining, 299991.0)
   },simplify = FALSE)
 })

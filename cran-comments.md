@@ -1,2 +1,0 @@
-**CRAN comments for version 0.3.4**
-This update improves streaming stability using `httr2::req_perform_streaming()`, adds nested schema support via `field_object()`, and extends `.json_schema` compatibility to `mistral()` and `claude()`. It also fixes bugs in batch workflows and expands test coverage.

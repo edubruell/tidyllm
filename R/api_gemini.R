@@ -741,16 +741,16 @@ gemini_embedding <- function(.input,
 #' Returns a named list (same as input) with batch_id and json attributes.
 #' @param .llms List of LLMMessage objects (named or unnamed).
 #' @param .model The model identifier (default: "gemini-1.5-flash").
-#' @param .temperature Controls randomness (default: NULL, range: 0–2).
+#' @param .temperature Controls randomness (default: NULL, range: 0-2).
 #' @param .max_output_tokens Maximum tokens in the response (default: NULL).
-#' @param .top_p Nucleus sampling (default: NULL, range: 0–1).
+#' @param .top_p Nucleus sampling (default: NULL, range: 0-1).
 #' @param .top_k Diversity in token selection (default: NULL).
 #' @param .presence_penalty Penalizes new tokens (default: NULL, -2 to 2).
 #' @param .frequency_penalty Penalizes frequent tokens (default: NULL, -2 to 2).
-#' @param .stop_sequences Character vector or NULL (up to 5).
+#' @param .stop_sequences Character vector or NULL of up to 5.
 #' @param .safety_settings Optional list of safety settings (default: NULL).
 #' @param .json_schema Optional schema to enforce output structure.
-#' @param .grounding_threshold Optional grounding threshold (0–1) to enable Google Search.
+#' @param .grounding_threshold Optional grounding threshold (0-1) to enable Google Search.
 #' @param .timeout Timeout in seconds (default: 120).
 #' @param .dry_run If TRUE, returns the constructed request (default: FALSE).
 #' @param .max_tries Maximum retry attempts (default: 3).
@@ -793,7 +793,7 @@ send_gemini_batch <- function(.llms,
       is.null(.presence_penalty) || (.presence_penalty >= -2.0 && .presence_penalty <= 2.0),
     "Input .frequency_penalty must be NULL or in [-2.0, 2.0]" =
       is.null(.frequency_penalty) || (.frequency_penalty >= -2.0 && .frequency_penalty <= 2.0),
-    "Input .stop_sequences must be NULL or a character vector of ≤ 5" =
+    "Input .stop_sequences must be NULL or a character vector of less or equal 5" =
       is.null(.stop_sequences) || (is.character(.stop_sequences) && length(.stop_sequences) <= 5),
     "Input .safety_settings must be NULL or a list" =
       is.null(.safety_settings) || is.list(.safety_settings),

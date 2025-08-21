@@ -29,11 +29,11 @@ send_gemini_batch(
 
 \item{.model}{The model identifier (default: "gemini-1.5-flash").}
 
-\item{.temperature}{Controls randomness (default: NULL, range: 0–2).}
+\item{.temperature}{Controls randomness (default: NULL, range: 0-2).}
 
 \item{.max_output_tokens}{Maximum tokens in the response (default: NULL).}
 
-\item{.top_p}{Nucleus sampling (default: NULL, range: 0–1).}
+\item{.top_p}{Nucleus sampling (default: NULL, range: 0-1).}
 
 \item{.top_k}{Diversity in token selection (default: NULL).}
 
@@ -41,13 +41,13 @@ send_gemini_batch(
 
 \item{.frequency_penalty}{Penalizes frequent tokens (default: NULL, -2 to 2).}
 
-\item{.stop_sequences}{Character vector or NULL (up to 5).}
+\item{.stop_sequences}{Character vector or NULL of up to 5.}
 
 \item{.safety_settings}{Optional list of safety settings (default: NULL).}
 
 \item{.json_schema}{Optional schema to enforce output structure.}
 
-\item{.grounding_threshold}{Optional grounding threshold (0–1) to enable Google Search.}
+\item{.grounding_threshold}{Optional grounding threshold (0-1) to enable Google Search.}
 
 \item{.timeout}{Timeout in seconds (default: 120).}
 
