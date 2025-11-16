@@ -1,4 +1,22 @@
-# Dev-Version 0.3.5
+# Dev-Version 0.3.6
+
+## Key Improvements
+
+- `list_models()` implemented for `gemini()`
+
+## Small Changes/Housekeeping
+
+- Default Embedding models for `gemini()` updated to `gemini-embedding-001`
+- Default chat model for `ollama()` is now set to `qwen3-vl`
+- Default chat model for `openai()` is now set to `gpt-5.1-chat-latest`
+- Default chat model for `groq()` is now set to `moonshotai/kimi-k2-instruct-0905`
+
+## Bug-Fixes
+
+- `voyage()` had a **major bug in multimodal embeddings**. A single embedding request with mutliple payloads was made instead of separate embeddings for all inputs
+- `ollama()`-Error-Messages in chat-responses are now printed out right.
+
+# Version 0.3.5
 
 ## Key Improvements
 
@@ -40,20 +58,7 @@ llm_message("Summarize the document in 100 words") |>
 
 - **Expanded Perplexity Support:** The `perplexity()` provider now supports  more Perplexity API parameters, allowing you to set reasoning and search effort.
 - **Gemini Batches:** Batch support for `gemini()` with most functionality of `chat()` requests.
-- `list_models()` implemented for `gemini()`
 
-## Small Changes/Housekeeping
-
-- Default Embedding models for `gemini()` updated to `gemini-embedding-001`
-- Default chat model for `ollama()` is now set to `qwen3-vl`
-- Default chat model for `openai()` is now set to `gpt-5.1-chat-latest`
-- Default chat model for `groq()` is now set to `moonshotai/kimi-k2-instruct-0905`
-
-
-## Bug-Fixes
-
-- `voyage()` had a **major bug in multimodal embeddings**. A single embedding request with mutliple payloads was made instead of separate embeddings for all inputs
-- `ollama()`-Error-Messages in chat-responses are now printed out right.
 
 # Version 0.3.4
 This release marks a **major internal refactor** accompanied by a suite of subtle yet impactful improvements. While many changes occur under the hood, they collectively deliver a more robust, flexible, and maintainable framework.
