@@ -117,7 +117,7 @@ method(parse_chat_response, list(api_ollama,class_list)) <- function(.api,.conte
   if("error" %in% names(.content)){
     sprintf("%s returned an Error:\nMessage: %s",
             api_label,
-            .content$error$type) |>
+            .content$error) |>
       stop()
   }
   
@@ -181,7 +181,7 @@ method(run_tool_calls, list(api_ollama, class_list, class_list)) <- function(.ap
 #'
 #'
 #' @param .llm An LLMMessage object containing the conversation history and system prompt.
-#' @param .model Character string specifying the Ollama model to use (default: "gemma2")
+#' @param .model Character string specifying the Ollama model to use (default: "qwen3-vl")
 #' @param .stream Logical; whether to stream the response (default: FALSE)
 #' @param .seed Integer; seed for reproducible generation (default: NULL)
 #' @param .json_schema A JSON schema object as R list to enforce the output structure (default: NULL)
@@ -231,7 +231,7 @@ method(run_tool_calls, list(api_ollama, class_list, class_list)) <- function(.ap
 #'
 #' @export
 ollama_chat <- function(.llm,
-                   .model = "gemma2",
+                   .model = "qwen3-vl",
                    .stream = FALSE,
                    .seed = NULL,
                    .json_schema = NULL,
@@ -442,7 +442,7 @@ ollama_embedding <- function(.input,
 #' requests quicker than many individual chat requests.
 #'
 #' @param .llms A list of LLMMessage objects containing conversation histories.
-#' @param .model Character string specifying the Ollama model to use (default: "gemma2")
+#' @param .model Character string specifying the Ollama model to use (default: "qwen3-vl")
 #' @param .stream Logical; whether to stream the response (default: FALSE)
 #' @param .seed Integer; seed for reproducible generation (default: NULL)
 #' @param .json_schema A JSON schema object as R list to enforce the output structure (default: NULL)
@@ -476,7 +476,7 @@ ollama_embedding <- function(.input,
 #'
 #' @export
 send_ollama_batch <- function(.llms,
-                        .model = "gemma2",
+                        .model = "qwen3-vl",
                         .stream = FALSE,
                         .seed = NULL,
                         .json_schema = NULL,
@@ -656,7 +656,6 @@ ollama_list_models <- function(.ollama_server = "http://localhost:11434") {
 #' @return NULL
 #' @export
 ollama_download_model <- function(.model, .ollama_server = "http://localhost:11434") {
-  
   # Initialize a progress bar
   progress_bar <- cli::cli_progress_bar(auto_terminate = FALSE, type = "download")
   

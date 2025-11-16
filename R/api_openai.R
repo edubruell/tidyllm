@@ -381,7 +381,7 @@ prepare_openai_request <- function(
 #' This function sends a message history to the OpenAI Chat Completions API and returns the assistant's reply.
 #'
 #' @param .llm An `LLMMessage` object containing the conversation history.
-#' @param .model The identifier of the model to use (default: "gpt-4o").
+#' @param .model The identifier of the model to use (default: "gpt-5.1-chat-latest").
 #' @param .max_completion_tokens An upper bound for the number of tokens that can be generated for a completion.
 #' @param .frequency_penalty Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency.
 #' @param .logit_bias A named list modifying the likelihood of specified tokens appearing in the completion.
@@ -410,7 +410,7 @@ prepare_openai_request <- function(
 #' @export
 openai_chat <- function(
     .llm,
-    .model = "gpt-4.1",
+    .model = "gpt-5.1-chat-latest",
     .max_completion_tokens = NULL,
     .reasoning_effort = NULL,
     .frequency_penalty = NULL,
@@ -668,7 +668,7 @@ openai_embedding <- function(.input,
 #' This function creates and submits a batch of messages to the OpenAI Batch API for asynchronous processing.
 #'
 #' @param .llms A list of LLMMessage objects containing conversation histories.
-#' @param .model Character string specifying the OpenAI model version (default: "gpt-4o").
+#' @param .model Character string specifying the OpenAI model version (default: "gpt-5.1-chat-latest").
 #' @param .max_completion_tokens Integer specifying the maximum tokens per response (default: NULL).
 #' @param .reasoning_effort How long should reasoning models reason (can either be "low","medium" or "high")
 #' @param .frequency_penalty Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far.
@@ -691,7 +691,7 @@ openai_embedding <- function(.input,
 #' @return An updated and named list of `.llms` with identifiers that align with batch responses, including a `batch_id` attribute.
 #' @export
 send_openai_batch <- function(.llms,
-                              .model = "gpt-4.1",
+                              .model = "gpt-5.1-chat-latest",
                               .max_completion_tokens = NULL,
                               .reasoning_effort = NULL,
                               .frequency_penalty = NULL,

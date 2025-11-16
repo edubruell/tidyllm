@@ -6,7 +6,7 @@
 \usage{
 send_groq_batch(
   .llms,
-  .model = "deepseek-r1-distill-llama-70b",
+  .model = "moonshotai/kimi-k2-instruct-0905",
   .max_tokens = 1024,
   .temperature = NULL,
   .top_p = NULL,

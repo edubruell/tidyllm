@@ -40,7 +40,7 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.3.5" id="dev-version-035">Dev-Version 0.3.5<a class="anchor" aria-label="anchor" href="#dev-version-035"></a></h2>
+<h2 class="pkg-version" data-toc-text="0.3.5" id="dev-version-035">Dev-Version 0.3.5<a class="anchor" aria-label="anchor" href="#dev-version-035"></a></h2><p class="text-muted">CRAN release: 2025-08-22</p>
 <div class="section level3">
 <h3 id="key-improvements-0-3-5">Key Improvements<a class="anchor" aria-label="anchor" href="#key-improvements-0-3-5"></a></h3>
 <ul><li>Rudimentary support for file uploads in <code><a href="../reference/claude.html">claude()</a></code>. At the moment only implemented for the <code><a href="../reference/chat.html">chat()</a></code> verb</li>
@@ -80,7 +80,28 @@
 <ul><li>
 <strong>Expanded Perplexity Support:</strong> The <code><a href="../reference/perplexity.html">perplexity()</a></code> provider now supports more Perplexity API parameters, allowing you to set reasoning and search effort.</li>
 <li>
-<strong>Gemini Batches:</strong> Rudimentary batch support for <code><a href="../reference/gemini.html">gemini()</a></code>, only minimally tested.</li>
+<strong>Gemini Batches:</strong> Batch support for <code><a href="../reference/gemini.html">gemini()</a></code> with most functionality of <code><a href="../reference/chat.html">chat()</a></code> requests.</li>
+<li>
+<code><a href="../reference/list_models.html">list_models()</a></code> implemented for <code><a href="../reference/gemini.html">gemini()</a></code>
+</li>
+</ul></div>
+<div class="section level3">
+<h3 id="small-changeshousekeeping-0-3-5">Small Changes/Housekeeping<a class="anchor" aria-label="anchor" href="#small-changeshousekeeping-0-3-5"></a></h3>
+<ul><li>Default Embedding models for <code><a href="../reference/gemini.html">gemini()</a></code> updated to <code>gemini-embedding-001</code>
+</li>
+<li>Default chat model for <code><a href="../reference/ollama.html">ollama()</a></code> is now set to <code>qwen3-vl</code>
+</li>
+<li>Default chat model for <code><a href="../reference/openai.html">openai()</a></code> is now set to <code>gpt-5.1-chat-latest</code>
+</li>
+<li>Default chat model for <code><a href="../reference/groq.html">groq()</a></code> is now set to <code>moonshotai/kimi-k2-instruct-0905</code>
+</li>
+</ul></div>
+<div class="section level3">
+<h3 id="bug-fixes-0-3-5">Bug-Fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-3-5"></a></h3>
+<ul><li>
+<code><a href="../reference/voyage.html">voyage()</a></code> had a <strong>major bug in multimodal embeddings</strong>. A single embedding request with mutliple payloads was made instead of separate embeddings for all inputs</li>
+<li>
+<code><a href="../reference/ollama.html">ollama()</a></code>-Error-Messages in chat-responses are now printed out right.</li>
 </ul></div>
 </div>
     <div class="section level2">

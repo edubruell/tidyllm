@@ -6,7 +6,7 @@
 \usage{
 openai_chat(
   .llm,
-  .model = "gpt-4.1",
+  .model = "gpt-5.1-chat-latest",
   .max_completion_tokens = NULL,
   .reasoning_effort = NULL,
   .frequency_penalty = NULL,
@@ -34,7 +34,7 @@ openai_chat(
 \arguments{
 \item{.llm}{An \code{LLMMessage} object containing the conversation history.}
 
-\item{.model}{The identifier of the model to use (default: "gpt-4o").}
+\item{.model}{The identifier of the model to use (default: "gpt-5.1-chat-latest").}
 
 \item{.max_completion_tokens}{An upper bound for the number of tokens that can be generated for a completion.}
 

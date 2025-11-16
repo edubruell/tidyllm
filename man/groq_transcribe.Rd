@@ -6,7 +6,7 @@
 \usage{
 groq_transcribe(
   .audio_file,
-  .model = "whisper-large-v3",
+  .model = "playai-tts",
   .language = NULL,
   .prompt = NULL,
   .temperature = 0,

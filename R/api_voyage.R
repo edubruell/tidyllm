@@ -16,7 +16,7 @@
 #'   - A character vector of texts
 #'   - An `LLMMessage` object (all textual components will be embedded)
 #'   - A list containing a mix of character strings and `tidyllm_image` objects created with `img()`
-#' @param .model The embedding model identifier. For text-only: "voyage-3" (default).
+#' @param .model The embedding model identifier. For text-only: "voyage-3.5-lite" (default).
 #'               For multimodal inputs: "voyage-multimodal-3" is used automatically.
 #' @param .timeout Timeout for the API request in seconds (default: 120).
 #' @param .dry_run If TRUE, perform a dry run and return the request object without sending.
@@ -38,7 +38,7 @@
 #' }
 #' @export
 voyage_embedding <- function(.input,
-                             .model = "voyage-3",
+                             .model = "voyage-3.5-lite",
                              .timeout = 120,
                              .dry_run = FALSE,
                              .max_tries = 3,
@@ -73,25 +73,33 @@ voyage_embedding <- function(.input,
       # Multimodal API
       model_to_use <- if (grepl("multimodal", .model)) .model else "voyage-multimodal-3"
       
-      # Prepare the multimodal content
-      content_items <- lapply(.input, function(item) {
+      # Prepare the multimodal content: ONE content wrapper per item
+      inputs_list <- purrr::map(.input, function(item) {
+        
         if (S7::S7_inherits(item, tidyllm_image)) {
-          list(
-            type = "image_base64",
-            image_base64 = item@imagebase64
-          )
+          list(content = list(
+            list(
+              type = "image_base64",
+              image_base64 = item@imagebase64
+            )
+          ))
+          
         } else if (is.character(item)) {
-          list(
-            type = "text",
-            text = item
-          )
+          list(content = list(
+            list(
+              type = "text",
+              text = item
+            )
+          ))
+          
         } else {
           stop("Unsupported item type in list input")
         }
+        
       })
       
       # Create input labels
-      input_labels <- sapply(.input, function(item) {
+      input_labels <- purrr::map_chr(.input, function(item) {
         if (S7::S7_inherits(item, tidyllm_image)) {
           paste0("[IMG] ", item@imagename)
         } else if (is.character(item)) {
@@ -103,10 +111,8 @@ voyage_embedding <- function(.input,
       
       # Prepare multimodal request body
       request_body <- list(
-        inputs = list(
-          list(content = content_items)
-        ),
-        model = model_to_use
+        inputs = inputs_list,
+        model  = model_to_use
       )
       
       # Build multimodal request

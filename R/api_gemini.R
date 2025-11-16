@@ -669,7 +669,7 @@ gemini_delete_file <- function(.file_name) {
 #' @return A matrix where each column corresponds to the embedding of a message in the message history.
 #' @export
 gemini_embedding <- function(.input,
-                             .model = "text-embedding-004",
+                             .model = "gemini-embedding-001",
                              .truncate = TRUE,
                              .timeout = 120,
                              .dry_run = FALSE,
@@ -915,6 +915,7 @@ send_gemini_batch <- function(.llms,
 }
 
 
+
 #' Check the Status of a Gemini Batch Operation
 #'
 #' Retrieves processing status and metadata for a Gemini batch operation.
@@ -1123,6 +1124,71 @@ fetch_gemini_batch <- function(.llms,
 }
 
 
+#' List Available Models from the Google Gemini API
+#'
+#' @param .timeout Request timeout in seconds (default: 60).
+#' @param .max_tries Maximum number of retries for the API request (default: 3).
+#' @param .dry_run Logical; if TRUE, returns the prepared request object without executing it.
+#'
+#' @return A tibble containing model information with columns including `name`, `base_model_id`, 
+#'   `version`, `display_name`, `description`, `input_token_limit`, `output_token_limit`, 
+#'   `supported_generation_methods`, `thinking`, `temperature`, `max_temperature`, `top_p`, and `top_k`,
+#'   or NULL if no models are found.
+#'
+#' @export
+gemini_list_models <- function(.timeout = 60,
+                               .max_tries = 3,
+                               .dry_run = FALSE) {
+  
+  api_obj <- api_gemini(short_name = "gemini",
+                        long_name  = "Google Gemini",
+                        api_key_env_var = "GOOGLE_API_KEY")
+  
+  api_key <- get_api_key(api_obj, .dry_run)
+  
+  request <- httr2::request("https://generativelanguage.googleapis.com") |>
+    httr2::req_url_path("/v1beta/models") |>
+    httr2::req_url_query(key = api_key)
+  
+  if (.dry_run) {
+    return(request)
+  }
+  
+  response <- request |>
+    httr2::req_timeout(.timeout) |>
+    httr2::req_retry(max_tries = .max_tries) |>
+    httr2::req_perform() |>
+    httr2::resp_body_json()
+  
+  if (!is.null(response$models)) {
+    models <- response$models
+    
+    model_info <- purrr::map_dfr(models, function(m) {
+      tibble::tibble(
+        name = m$name,
+        display_name = purrr::pluck(m, "displayName", .default = NA_character_),
+        version = purrr::pluck(m, "version", .default = NA_character_),
+        description = purrr::pluck(m, "description", .default = NA_character_),
+        input_token_limit = purrr::pluck(m, "inputTokenLimit", .default = NA_integer_),
+        output_token_limit = purrr::pluck(m, "outputTokenLimit", .default = NA_integer_),
+        supported_generation_methods = list(purrr::pluck(m, "supportedGenerationMethods", .default = list())),
+        thinking = purrr::pluck(m, "thinking", .default = NA),
+        temperature = purrr::pluck(m, "temperature", .default = NA_real_),
+        max_temperature = purrr::pluck(m, "maxTemperature", .default = NA_real_),
+        top_p = purrr::pluck(m, "topP", .default = NA_real_),
+        top_k = purrr::pluck(m, "topK", .default = NA_integer_)
+      )
+    })
+    
+    return(model_info)
+  } else {
+    return(NULL)
+  }
+}
+
+
+
+
 #' Google Gemini Provider Function
 #'
 #' The `gemini()` function acts as a provider interface for interacting with the Google Gemini API 
@@ -1150,5 +1216,6 @@ gemini <- create_provider_function(
   send_batch = send_gemini_batch,
   check_batch = check_gemini_batch,
   list_batches = list_gemini_batches,
-  fetch_batch = fetch_gemini_batch
+  fetch_batch = fetch_gemini_batch,
+  list_models = gemini_list_models
 )

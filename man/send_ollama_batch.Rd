@@ -6,7 +6,7 @@
 \usage{
 send_ollama_batch(
   .llms,
-  .model = "gemma2",
+  .model = "qwen3-vl",
   .stream = FALSE,
   .seed = NULL,
   .json_schema = NULL,
@@ -32,7 +32,7 @@ send_ollama_batch(
 \arguments{
 \item{.llms}{A list of LLMMessage objects containing conversation histories.}
 
-\item{.model}{Character string specifying the Ollama model to use (default: "gemma2")}
+\item{.model}{Character string specifying the Ollama model to use (default: "qwen3-vl")}
 
 \item{.stream}{Logical; whether to stream the response (default: FALSE)}
 

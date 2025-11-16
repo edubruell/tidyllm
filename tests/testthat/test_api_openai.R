@@ -32,7 +32,7 @@ test_that("openai function constructs a correct request and dry runs it", {
   # Now check the body content to ensure the JSON is constructed as expected
   body_json <- request$body |> jsonlite::toJSON() |> as.character()
   
-  expected_json <- "{\"data\":{\"model\":[\"gpt-4.1\"],\"messages\":[{\"role\":[\"system\"],\"content\":[\"You are a helpful assistant \"]},{\"role\":[\"user\"],\"content\":[\"Write a poem about a (stochastic) parrot \"]}]},\"type\":[\"json\"],\"content_type\":[\"application/json\"],\"params\":{\"auto_unbox\":[true],\"digits\":[22],\"null\":[\"null\"]}}"
+  expected_json <- "{\"data\":{\"model\":[\"gpt-5.1-chat-latest\"],\"messages\":[{\"role\":[\"system\"],\"content\":[\"You are a helpful assistant \"]},{\"role\":[\"user\"],\"content\":[\"Write a poem about a (stochastic) parrot \"]}]},\"type\":[\"json\"],\"content_type\":[\"application/json\"],\"params\":{\"auto_unbox\":[true],\"digits\":[22],\"null\":[\"null\"]}}"
   # Check if the JSON matches the expected JSON
   expect_equal(body_json, expected_json)
   
@@ -56,7 +56,6 @@ test_that("openai returns expected response", {
     
     result <- openai_chat(
       .llm = llm,
-      .temperature = 0,
       .stream = FALSE
     )
     result_tbl <- as_tibble(result)
@@ -69,7 +68,7 @@ test_that("openai returns expected response", {
     expect_true(S7_inherits(result, LLMMessage))
     expect_equal(
       result_tbl$content[3],
-      "Hello, world! 👋 How can I help you today?"
+      "Hello! How can I help you today?"
     )
     expect_equal(result_tbl$role[3], "assistant")
     

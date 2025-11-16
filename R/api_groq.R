@@ -65,7 +65,7 @@ method(extract_metadata, list(api_groq,class_list))<- function(.api, .response) 
 #'
 #' @export
 groq_chat <- function(.llm,
-                 .model = "deepseek-r1-distill-llama-70b",
+                 .model = "moonshotai/kimi-k2-instruct-0905",
                  .max_tokens = 1024,
                  .temperature = NULL,
                  .top_p = NULL,
@@ -210,7 +210,7 @@ groq_chat <- function(.llm,
 #' @export
 groq_transcribe <- function(
     .audio_file,
-    .model = "whisper-large-v3",
+    .model = "playai-tts",
     .language = NULL,
     .prompt = NULL,
     .temperature = 0,
@@ -399,7 +399,7 @@ groq_list_models <- function(.api_url = "https://api.groq.com",
 #' @return An updated and named list of `.llms` with identifiers that align with batch responses, including a `batch_id` attribute.
 #' @export
 send_groq_batch <- function(.llms, 
-                            .model = "deepseek-r1-distill-llama-70b", 
+                            .model = "moonshotai/kimi-k2-instruct-0905", 
                             .max_tokens = 1024, 
                             .temperature = NULL, 
                             .top_p = NULL, 

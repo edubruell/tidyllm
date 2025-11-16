@@ -1,0 +1,13 @@
+structure(list(method = "POST", url = "https://api.groq.com/openai/v1/chat/completions", 
+    status_code = 200L, headers = structure(list(date = "Sun, 16 Nov 2025 13:02:44 GMT", 
+        `content-type` = "application/json", `cache-control` = "private, max-age=0, no-store, no-cache, must-revalidate", 
+        server = "cloudflare", vary = "Origin", `x-groq-region` = "fra", 
+        `x-ratelimit-limit-requests` = "500000", `x-ratelimit-limit-tokens` = "250000", 
+        `x-ratelimit-remaining-requests` = "499999", `x-ratelimit-remaining-tokens` = "249969", 
+        `x-ratelimit-reset-requests` = "172.799999ms", `x-ratelimit-reset-tokens` = "7.44ms", 
+        `x-request-id` = "req_01ka6c5fgseaksg4wxp79d43hm", via = "1.1 google", 
+        `cf-cache-status` = "DYNAMIC", `content-encoding` = "gzip", 
+        `set-cookie` = "REDACTED", `cf-ray` = "99f72f3679d791fc-FRA", 
+        `alt-svc` = "h3=\":443\"; ma=86400"), redact = character(0), class = "httr2_headers"), 
+    body = charToRaw("{\"id\":\"chatcmpl-59364eff-df3b-4826-b4d6-1562b9cdf2be\",\"object\":\"chat.completion\",\"created\":1763298164,\"model\":\"moonshotai/kimi-k2-instruct-0905\",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",\"content\":\"Hello! How can I help you today?\"},\"logprobs\":null,\"finish_reason\":\"stop\"}],\"usage\":{\"queue_time\":0.190203705,\"prompt_tokens\":30,\"prompt_time\":0.010721307,\"completion_tokens\":10,\"completion_time\":0.012596456,\"total_tokens\":40,\"total_time\":0.023317763},\"usage_breakdown\":null,\"system_fingerprint\":\"fp_05df423bab\",\"x_groq\":{\"id\":\"req_01ka6c5fgseaksg4wxp79d43hm\"},\"service_tier\":\"on_demand\"}\n"), 
+    cache = new.env(parent = emptyenv())), class = "httr2_response")

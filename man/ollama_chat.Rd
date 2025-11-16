@@ -6,7 +6,7 @@
 \usage{
 ollama_chat(
   .llm,
-  .model = "gemma2",
+  .model = "qwen3-vl",
   .stream = FALSE,
   .seed = NULL,
   .json_schema = NULL,
@@ -33,7 +33,7 @@ ollama_chat(
 \arguments{
 \item{.llm}{An LLMMessage object containing the conversation history and system prompt.}
 
-\item{.model}{Character string specifying the Ollama model to use (default: "gemma2")}
+\item{.model}{Character string specifying the Ollama model to use (default: "qwen3-vl")}
 
 \item{.stream}{Logical; whether to stream the response (default: FALSE)}
 

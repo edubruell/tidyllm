@@ -6,7 +6,7 @@
 \usage{
 voyage_embedding(
   .input,
-  .model = "voyage-3",
+  .model = "voyage-3.5-lite",
   .timeout = 120,
   .dry_run = FALSE,
   .max_tries = 3,
@@ -21,7 +21,7 @@ voyage_embedding(
 \item A list containing a mix of character strings and \code{tidyllm_image} objects created with \code{img()}
 }}
 
-\item{.model}{The embedding model identifier. For text-only: "voyage-3" (default).
+\item{.model}{The embedding model identifier. For text-only: "voyage-3.5-lite" (default).
 For multimodal inputs: "voyage-multimodal-3" is used automatically.}
 
 \item{.timeout}{Timeout for the API request in seconds (default: 120).}
