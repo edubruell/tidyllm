@@ -2,6 +2,8 @@
 
 ## Key Improvements
 
+- Multiturn tool use and parallel tool use for `claude()`
+- New non-tool-based structured output for `claude()`
 - `list_models()` implemented for `gemini()`
 
 ## Small Changes/Housekeeping
@@ -10,6 +12,7 @@
 - Default chat model for `ollama()` is now set to `qwen3-vl`
 - Default chat model for `openai()` is now set to `gpt-5.1-chat-latest`
 - Default chat model for `groq()` is now set to `moonshotai/kimi-k2-instruct-0905`
+- Default chat model for `claude()` is now set to `claude-sonnet-4-5-20250929`
 
 ## Bug-Fixes
 

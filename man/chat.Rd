@@ -17,6 +17,7 @@ chat(
   .verbose = NULL,
   .json_schema = NULL,
   .tools = NULL,
+  .max_tool_rounds = NULL,
   .seed = NULL,
   .stop = NULL,
   .frequency_penalty = NULL,
@@ -49,6 +50,8 @@ You can also set a default provider function via the \code{tidyllm_chat_default}
 \item{.json_schema}{List; A JSON schema object as R list to enforce the output structure}
 
 \item{.tools}{Either a single TOOL object or a list of TOOL objects representing the available functions for tool calls.}
+
+\item{.max_tool_rounds}{Integer; the maximum number of tool use iterations for multi-turn tool calling (default varies by provider).}
 
 \item{.seed}{Integer; sets a random seed for reproducibility.}
 

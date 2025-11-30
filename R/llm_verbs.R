@@ -83,6 +83,7 @@ create_provider_function <- function(.name, ...) {
 #' @param .verbose Logical; if `TRUE`, prints additional information about the request and response.
 #' @param .json_schema List; A JSON schema object as R list to enforce the output structure 
 #' @param .tools Either a single TOOL object or a list of TOOL objects representing the available functions for tool calls.
+#' @param .max_tool_rounds Integer; the maximum number of tool use iterations for multi-turn tool calling (default varies by provider).
 #' @param .seed Integer; sets a random seed for reproducibility.
 #' @param .stop Character vector; specifies sequences where the model should stop generating further tokens.
 #' @param .frequency_penalty Numeric; adjusts the likelihood of repeating tokens (positive values decrease repetition).
@@ -125,6 +126,7 @@ chat <- function(
     .verbose = NULL,
     .json_schema = NULL,
     .tools = NULL,
+    .max_tool_rounds = NULL,
     .seed = NULL,
     .stop = NULL,
     .frequency_penalty = NULL,
@@ -172,7 +174,8 @@ chat <- function(
     .stop = .stop,
     .frequency_penalty = .frequency_penalty,
     .presence_penalty = .presence_penalty,
-    .tools = .tools
+    .tools = .tools,
+    .max_tool_rounds = .max_tool_rounds
   )
   
   common_args <- common_args[!sapply(common_args, is.null)]
@@ -575,8 +578,6 @@ list_models <- function(.provider = getOption("tidyllm_lmodels_default"), ...) {
   # Evaluate the modified provider call
   return(rlang::eval_tidy(modified_call))
 }
-
-
 
 
 

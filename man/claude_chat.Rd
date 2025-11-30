@@ -6,7 +6,7 @@
 \usage{
 claude_chat(
   .llm,
-  .model = "claude-sonnet-4-20250514",
+  .model = "claude-sonnet-4-5-20250929",
   .max_tokens = 2048,
   .temperature = NULL,
   .top_k = NULL,
@@ -23,13 +23,14 @@ claude_chat(
   .stream = FALSE,
   .dry_run = FALSE,
   .thinking = FALSE,
-  .thinking_budget = 1024
+  .thinking_budget = 1024,
+  .max_tool_rounds = 10
 )
 }
 \arguments{
 \item{.llm}{An LLMMessage object containing the conversation history and system prompt.}
 
-\item{.model}{Character string specifying the Claude model version (default: "claude-3-5-sonnet-20241022").}
+\item{.model}{Character string specifying the Claude model version (default: "claude-sonnet-4-5-20250929").}
 
 \item{.max_tokens}{Integer specifying the maximum number of tokens in the response (default: 1024).}
 
@@ -64,6 +65,9 @@ claude_chat(
 \item{.thinking}{Logical; if TRUE, enables Claude's thinking mode for complex reasoning tasks (default: FALSE).}
 
 \item{.thinking_budget}{Integer specifying the maximum tokens Claude can spend on thinking (default: 1024). Must be at least 1024.}
+
+\item{.max_tool_rounds}{Integer specifying the maximum number of tool use iterations (default: 10).
+Set to 1 for single-round tool use, or higher for multi-turn agentic loops.}
 }
 \value{
 A new LLMMessage object containing the original messages plus Claude's response.

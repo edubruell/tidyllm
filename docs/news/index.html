@@ -43,7 +43,11 @@
 <h2 class="pkg-version" data-toc-text="0.3.6" id="dev-version-036">Dev-Version 0.3.6<a class="anchor" aria-label="anchor" href="#dev-version-036"></a></h2>
 <div class="section level3">
 <h3 id="key-improvements-0-3-6">Key Improvements<a class="anchor" aria-label="anchor" href="#key-improvements-0-3-6"></a></h3>
-<ul><li>
+<ul><li>Multiturn tool use and parallel tool use for <code><a href="../reference/claude.html">claude()</a></code>
+</li>
+<li>New non-tool-based structured output for <code><a href="../reference/claude.html">claude()</a></code>
+</li>
+<li>
 <code><a href="../reference/list_models.html">list_models()</a></code> implemented for <code><a href="../reference/gemini.html">gemini()</a></code>
 </li>
 </ul></div>
@@ -56,6 +60,8 @@
 <li>Default chat model for <code><a href="../reference/openai.html">openai()</a></code> is now set to <code>gpt-5.1-chat-latest</code>
 </li>
 <li>Default chat model for <code><a href="../reference/groq.html">groq()</a></code> is now set to <code>moonshotai/kimi-k2-instruct-0905</code>
+</li>
+<li>Default chat model for <code><a href="../reference/claude.html">claude()</a></code> is now set to <code>claude-sonnet-4-5-20250929</code>
 </li>
 </ul></div>
 <div class="section level3">
@@ -460,7 +466,7 @@
 <li>API formatting methods are now in the code files for API providers</li>
 <li>Rate-limit header extraction for tracking and streaming callback generation are now methods for <code>APIProvider</code> classes</li>
 <li>All api-specific code is now in the <code>api_openai.R</code>,<code>api_gemini.R</code>,etc. files</li>
-<li>Support for <code><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble()</a></code> S3 Generic for <code>LLMMessage</code>
+<li>Support for <code>as_tibble()</code> S3 Generic for <code>LLMMessage</code>
 </li>
 <li>Rate limit tracking and output for verbose mode in API-functions moved to a single function <code>track_rate_limit()</code>
 </li>
@@ -897,7 +903,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer></div>

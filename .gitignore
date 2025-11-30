@@ -3,8 +3,11 @@
 .RData
 .Ruserdata
 .DS_Store
+claude.md
 inst/doc
 /doc/
 /Meta/
 /local_wip/
+/local_tests/
+/.sidekick/
 /vignettes/articles/aipapers
