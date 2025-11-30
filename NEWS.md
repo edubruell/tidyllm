@@ -2,7 +2,7 @@
 
 ## Key Improvements
 
-- Multiturn tool use and parallel tool use for `claude()`
+- Multiturn tool use and parallel tool use for `claude()`, `gemini()` and `ollama()` implemented
 - New non-tool-based structured output for `claude()`
 - `list_models()` implemented for `gemini()`
 

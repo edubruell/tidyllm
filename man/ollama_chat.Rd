@@ -22,6 +22,7 @@ ollama_chat(
   .repeat_last_n = NULL,
   .repeat_penalty = NULL,
   .tools = NULL,
+  .max_tool_rounds = 10,
   .tfs_z = NULL,
   .stop = NULL,
   .ollama_server = "http://localhost:11434",
@@ -64,6 +65,9 @@ ollama_chat(
 \item{.repeat_penalty}{Float; penalty for repeated tokens (default: NULL)}
 
 \item{.tools}{Either a single TOOL object or a list of TOOL objects representing the available functions for tool calls.}
+
+\item{.max_tool_rounds}{Integer; maximum number of tool use iterations for multi-turn tool calling (default: 10).
+Set to 1 for single-round tool use, or higher for multi-turn agentic loops.}
 
 \item{.tfs_z}{Float; tail free sampling parameter (default: NULL)}
 

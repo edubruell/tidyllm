@@ -127,10 +127,9 @@ guess_mime_type <- function(file_path) {
 }
 
 
-#' @title GRecursively enforces Anthropic's structured output requirement that
+#' Recursively enforces Anthropic's structured output requirement that
 #' every object-type node in a JSON schema must explicitly declare that
 #' no unspecified fields are allowed. 
-#' 
 #' The function walks the schema, identifies nodes with type set to "object", adds
 #' additionalProperties set to FALSE, and then applies the same logic
 #' to all nested properties. Used only inside the Claude backend to

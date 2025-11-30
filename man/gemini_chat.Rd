@@ -23,7 +23,8 @@ gemini_chat(
   .dry_run = FALSE,
   .max_tries = 3,
   .verbose = FALSE,
-  .stream = FALSE
+  .stream = FALSE,
+  .max_tool_rounds = 10
 )
 }
 \arguments{
@@ -66,6 +67,9 @@ before answering.  (default: NULL).}
 \item{.verbose}{Should additional information be shown after the API call.}
 
 \item{.stream}{Should the response be streamed (default: FALSE).}
+
+\item{.max_tool_rounds}{Integer specifying the maximum number of tool use iterations (default: 10).
+Set to 1 for single-round tool use, or higher for multi-turn agentic loops.}
 }
 \value{
 A new \code{LLMMessage} object containing the original messages plus the assistant's response.
