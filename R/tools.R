@@ -93,6 +93,142 @@ tidyllm_tool <- function(.f, .description = character(0), ...) {
 }
 
 
+
+#' Convert an ellmer Tool to a tidyllm TOOL
+#'
+#' @description
+#' Converts an ellmer `ToolDef` object to a tidyllm `TOOL` object,
+#' allowing seamless integration of ellmer-defined tools with tidyllm workflows.
+#'
+#' @param .ellmer_tool An ellmer `ToolDef` object created via `ellmer::tool()`
+#'
+#' @return A `TOOL` class object that can be used with tidyllm `chat()` functions
+#'
+#' @details
+#' This function extracts the function, description, and argument schemas from
+#' an ellmer tool and converts them to tidyllm's internal representation.
+#' Ellmer type objects are automatically converted to tidyllm field descriptors.
+#'
+#' @examples
+#' \dontrun{
+#' library(ellmer)
+#'
+#' tool_rnorm <- ellmer::tool(
+#'   rnorm,
+#'   description = "Draw numbers from a random normal distribution",
+#'   arguments = list(
+#'     n = ellmer::type_integer("The number of observations"),
+#'     mean = ellmer::type_number("The mean value"),
+#'     sd = ellmer::type_number("The standard deviation")
+#'   )
+#' )
+#'
+#' tidyllm_tool_rnorm <- ellmer_tool(tool_rnorm)
+#'
+#' # Now use with tidyllm
+#' llm_message("Generate 100 random numbers") |> 
+#'   chat(openai(), .tools = tidyllm_tool_rnorm)
+#' }
+#'
+#' @export
+ellmer_tool <- function(.ellmer_tool) {
+  if (!requireNamespace("ellmer", quietly = TRUE)) {
+    stop("ellmer package required for ellmer_tool(). Install with: install.packages('ellmer')")
+  }
+  
+  if (!any(class(.ellmer_tool) %in% c("ellmer::ToolDef", "ellmer_ToolDef"))) {
+    stop("Input must be an ellmer ToolDef object created via ellmer::tool()")
+  }
+  
+  fn_name <- .ellmer_tool@name %||% "unknown"
+  fn_desc <- .ellmer_tool@description %||% ""
+  fn <- .ellmer_tool
+  
+  arguments_obj <- .ellmer_tool@arguments
+  
+  if (!any(class(arguments_obj) %in% c("ellmer::TypeObject", "ellmer_TypeObject"))) {
+    stop("ellmer tool @arguments must be a TypeObject")
+  }
+  
+  properties <- arguments_obj@properties
+  
+  if (length(properties) == 0) {
+    input_schema <- list()
+  } else {
+    input_schema <- purrr::map(properties, function(arg_type) {
+      convert_ellmer_type_to_field(arg_type)
+    })
+  }
+  
+  TOOL(
+    description = fn_desc,
+    input_schema = input_schema,
+    func = fn,
+    name = fn_name
+  )
+}
+
+
+#' Convert an ellmer Type to a tidyllm Field
+#'
+#' @description Internal helper to convert ellmer type objects to tidyllm field descriptors
+#'
+#' @param .ellmer_type An ellmer type object (TypeBasic, TypeEnum, TypeArray, TypeObject)
+#'
+#' @return A `tidyllm_field` object
+#'
+#' @noRd
+convert_ellmer_type_to_field <- function(.ellmer_type) {
+  type_class <- class(.ellmer_type)
+  
+  if (any(type_class %in% c("ellmer::TypeBasic", "ellmer_TypeBasic"))) {
+    ellmer_type_name <- .ellmer_type@type
+    
+    type_map <- c(
+      "string" = "string",
+      "integer" = "number",
+      "number" = "number",
+      "boolean" = "boolean"
+    )
+    
+    tidyllm_type <- type_map[ellmer_type_name] %||% "string"
+    
+    tidyllm_field(
+      type = tidyllm_type,
+      description = .ellmer_type@description %||% "",
+      enum = character(0),
+      vector = FALSE,
+      schema = list()
+    )
+  } else if (any(type_class %in% c("ellmer::TypeEnum", "ellmer_TypeEnum"))) {
+    tidyllm_field(
+      type = "string",
+      description = .ellmer_type@description %||% "",
+      enum = as.character(.ellmer_type@values),
+      vector = FALSE,
+      schema = list()
+    )
+  } else if (any(type_class %in% c("ellmer::TypeArray", "ellmer_TypeArray"))) {
+    inner_field <- convert_ellmer_type_to_field(.ellmer_type@items)
+    inner_field@vector <- TRUE
+    inner_field
+  } else if (any(type_class %in% c("ellmer::TypeObject", "ellmer_TypeObject"))) {
+    properties <- .ellmer_type@properties
+    nested_fields <- purrr::map(properties, convert_ellmer_type_to_field)
+    nested_schema <- build_schema(nested_fields)
+    
+    tidyllm_field(
+      type = "object",
+      description = .ellmer_type@description %||% "",
+      enum = character(0),
+      vector = FALSE,
+      schema = nested_schema
+    )
+  } else {
+    stop("Unsupported ellmer type class: ", paste(type_class, collapse = ", "))
+  }
+}
+
 #Generics for tools
 tools_to_api <- new_generic("tools_to_api", c(".api", ".tools"))
 run_tool_calls <- new_generic("run_tool_calls", c(".api",".tool_calls",".tools"))
