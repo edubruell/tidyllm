@@ -46,6 +46,8 @@ method(extract_metadata, list(api_deepseek,class_list))<- function(.api,.respons
 #' @param .verbose If TRUE, displays additional information after the API call (default: FALSE).
 #' @param .dry_run If TRUE, returns the constructed request object without executing it (default: FALSE).
 #' @param .max_tries Maximum retries to perform the request (default: 3).
+#' @param .max_tool_rounds Integer specifying the maximum number of tool use iterations (default: 10). 
+#'   Set to 1 for single-round tool use, or higher for multi-turn agentic loops.
 #'
 #' @return A new `LLMMessage` object containing the original messages plus the assistant's response.
 #'
@@ -67,7 +69,8 @@ deepseek_chat <- function(.llm,
                           .timeout = 60,
                           .verbose = FALSE,
                           .dry_run = FALSE,
-                          .max_tries = 3) {
+                          .max_tries = 3,
+                          .max_tool_rounds = 10) {
 
   # Validate inputs
   c(
@@ -91,7 +94,8 @@ deepseek_chat <- function(.llm,
     "Input .timeout must be a positive integer" = is_integer_valued(.timeout) & .timeout > 0,
     "Input .verbose must be logical" = is.logical(.verbose),
     "Input .dry_run must be logical" = is.logical(.dry_run),
-    "Input .max_tries must be integer-valued numeric" = is_integer_valued(.max_tries)
+    "Input .max_tries must be integer-valued numeric" = is_integer_valued(.max_tries),
+    ".max_tool_rounds must be a positive integer" = is_integer_valued(.max_tool_rounds) && .max_tool_rounds >= 1
   ) |> validate_inputs()
   
   api_obj <- api_deepseek(short_name = "deepseek",
@@ -139,19 +143,19 @@ deepseek_chat <- function(.llm,
   }
   
   response <- perform_chat_request(request, api_obj, .stream, .timeout, .max_tries)
-  if(r_has_name(response$raw,"tool_calls")){
-    #Tool call logic can go here!
-    tool_messages <- run_tool_calls(api_obj,
-                                    response$raw$content$choices[[1]]$message$tool_calls,
-                                    tools_def)
-    ##Append the tool call to API
-    request_body$messages <- request_body$messages |> 
-      append(tool_messages)
-    
-    request <- request |>
-      httr2::req_body_json(data = request_body)
-    
-    response <- perform_chat_request(request,api_obj,.stream,.timeout,.max_tries)
+  
+  # Handle tool calls with multi-turn support
+  if (.stream == FALSE && !is.null(tools_def)) {
+    response <- openai_process_tools(
+      .api = api_obj,
+      .response = response,
+      .tools_def = tools_def,
+      .request_body = request_body,
+      .request = request,
+      .timeout = .timeout,
+      .max_tries = .max_tries,
+      .max_tool_rounds = .max_tool_rounds
+    )
   }
   
   assistant_reply <- response$assistant_reply

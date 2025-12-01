@@ -150,6 +150,8 @@ prepare_mistral_request <- function(
 #' @param .verbose Should additional information be shown after the API call? (default: `FALSE`)
 #' @param .dry_run If `TRUE`, perform a dry run and return the request object (default: `FALSE`).
 #' @param .max_tries Maximum retries to peform request
+#' @param .max_tool_rounds Integer specifying the maximum number of tool use iterations (default: 10). 
+#'   Set to 1 for single-round tool use, or higher for multi-turn agentic loops.
 #' @return Returns an updated `LLMMessage` object.
 #' @export
 mistral_chat <- function(.llm,
@@ -171,7 +173,8 @@ mistral_chat <- function(.llm,
                          .dry_run = FALSE,
                          .verbose = FALSE,
                          .tools = NULL,
-                         .tool_choice = NULL) {
+                         .tool_choice = NULL,
+                         .max_tool_rounds = 10) {
   
   # Validate the inputs
   c(
@@ -195,6 +198,7 @@ mistral_chat <- function(.llm,
     "Input .tool_choice must be NULL or a character (one of 'none', 'auto', 'required')" = is.null(.tool_choice) || (is.character(.tool_choice) && .tool_choice %in% c("none", "auto", "required")),
     "Input .dry_run must be logical" = is.logical(.dry_run) && length(.dry_run) == 1,
     "Input .verbose must be logical" = is.logical(.verbose) && length(.verbose) == 1,
+    ".max_tool_rounds must be a positive integer" = is_integer_valued(.max_tool_rounds) && .max_tool_rounds >= 1,
     "Streaming is not supported for requests with tool calls" = is.null(.tools) || !isTRUE(.stream)
   ) |>
     validate_inputs()
@@ -268,18 +272,18 @@ mistral_chat <- function(.llm,
   # Perform the request
   response <- perform_chat_request(request, api_obj, .stream, .timeout, .max_tries)
   
-  # Handle tool calls if any
-  if (!is.null(response$raw$content$choices[[1]]$message$tool_calls)) {
-    tool_messages <- run_tool_calls(api_obj,
-                                    response$raw$content$choices[[1]]$message$tool_calls,
-                                    tools_def)
-    
-    # Append the tool call to API
-    request_body$messages <- request_body$messages |> append(tool_messages)
-    
-    # Update the request and perform it again
-    request <- request |> httr2::req_body_json(data = request_body)
-    response <- perform_chat_request(request, api_obj, .stream, .timeout, .max_tries)
+  # Handle tool calls with multi-turn support
+  if (.stream == FALSE && !is.null(tools_def)) {
+    response <- openai_process_tools(
+      .api = api_obj,
+      .response = response,
+      .tools_def = tools_def,
+      .request_body = request_body,
+      .request = request,
+      .timeout = .timeout,
+      .max_tries = .max_tries,
+      .max_tool_rounds = .max_tool_rounds
+    )
   }
   
   # Extract assistant reply

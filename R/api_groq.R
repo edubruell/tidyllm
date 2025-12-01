@@ -47,6 +47,8 @@ method(extract_metadata, list(api_groq,class_list))<- function(.api, .response) 
 #' @param .verbose If TRUE, displays additional information after the API call, including rate limit details (default: FALSE).
 #' @param .max_tries Maximum retries to peform request
 #' @param .dry_run If TRUE, performs a dry run and returns the constructed request object without executing it (default: FALSE).
+#' @param .max_tool_rounds Integer specifying the maximum number of tool use iterations (default: 10). 
+#'   Set to 1 for single-round tool use, or higher for multi-turn agentic loops.
 #'
 #' @return A new `LLMMessage` object containing the original messages plus the assistant's response.
 #' 
@@ -81,7 +83,8 @@ groq_chat <- function(.llm,
                  .verbose = FALSE,
                  .stream = FALSE,
                  .dry_run = FALSE,
-                 .max_tries = 3) {
+                 .max_tries = 3,
+                 .max_tool_rounds = 10) {
 
   # Validate inputs
   c(
@@ -102,6 +105,7 @@ groq_chat <- function(.llm,
     "Input .verbose must be logical" = is.logical(.verbose),
     "Input .max_tries must be integer-valued numeric" = is_integer_valued(.max_tries),
     "Input .dry_run must be logical" = is.logical(.dry_run),
+    ".max_tool_rounds must be a positive integer" = is_integer_valued(.max_tool_rounds) && .max_tool_rounds >= 1,
     "Streaming is not supported for requests with tool calls" = is.null(.tools) || !isTRUE(.stream)
   ) |>
     validate_inputs()
@@ -157,18 +161,19 @@ groq_chat <- function(.llm,
   }
   
   response <- perform_chat_request(request,api_obj,.stream,.timeout,.max_tries)
-  if(!is.null(response$raw$content$choices[[1]]$message$tool_calls)){
-    tool_messages <- run_tool_calls(api_obj,
-                                    response$raw$content$choices[[1]]$message$tool_calls,
-                                    tools_def)
-    ##Append the tool call to API
-    request_body$messages <- request_body$messages |> 
-      append(tool_messages)
-    
-    request <- request |>
-      httr2::req_body_json(data = request_body)
-    
-    response <- perform_chat_request(request,api_obj,.stream,.timeout,.max_tries)
+  
+  # Handle tool calls with multi-turn support
+  if (.stream == FALSE && !is.null(tools_def)) {
+    response <- openai_process_tools(
+      .api = api_obj,
+      .response = response,
+      .tools_def = tools_def,
+      .request_body = request_body,
+      .request = request,
+      .timeout = .timeout,
+      .max_tries = .max_tries,
+      .max_tool_rounds = .max_tool_rounds
+    )
   }
   
   # Extract assistant reply and rate limiting info from response headers

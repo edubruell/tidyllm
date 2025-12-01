@@ -200,7 +200,7 @@ format_message <- function(message) {
   combined_text <- paste(base_content, text_media, sep = " ")
   
   if (length(image_media) > 0) {
-    image_file_type <- paste("image", tools::file_ext(image_media[[1]]$filename), sep = "/")
+    image_file_type <- guess_mime_type(image_media[[1]]$filename)
     base64_image <- image_media[[1]]$content
     
     list(

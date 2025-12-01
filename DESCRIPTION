@@ -62,6 +62,7 @@ Collate:
     'api_ollama.R'
     'api_claude.R'
     'api_gemini.R'
+    'api_ellmer.R'
     'pdfbatch.R'
     'zzz.R'
 Depends: 

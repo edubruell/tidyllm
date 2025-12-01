@@ -175,6 +175,8 @@ reference:
         Functions to let tidyllm work with ellmer tools and chat objects
     contents: 
       - ellmer_tool
+      - chat_ellmer
+      - ellmer
       
   - title: "PDF Processing"
     desc: >

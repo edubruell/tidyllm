@@ -24,7 +24,8 @@ mistral_chat(
   .dry_run = FALSE,
   .verbose = FALSE,
   .tools = NULL,
-  .tool_choice = NULL
+  .tool_choice = NULL,
+  .max_tool_rounds = 10
 )
 }
 \arguments{
@@ -67,6 +68,9 @@ mistral_chat(
 \item{.tools}{Either a single TOOL object or a list of TOOL objects representing the available functions for tool calls.}
 
 \item{.tool_choice}{A character string specifying the tool-calling behavior; valid values are "none", "auto", or "required".}
+
+\item{.max_tool_rounds}{Integer specifying the maximum number of tool use iterations (default: 10).
+Set to 1 for single-round tool use, or higher for multi-turn agentic loops.}
 }
 \value{
 Returns an updated \code{LLMMessage} object.

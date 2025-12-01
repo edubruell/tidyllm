@@ -2,11 +2,17 @@
 
 ## Key Improvements
 
-- Multiturn tool use and parallel tool use for `claude()`, `gemini()` and `ollama()` implemented
+- Multiturn tool use and parallel tool use implemented for all providers. 
 - New non-tool-based structured output for `claude()`
-- `list_models()` implemented for `gemini()`
-- Tool compatibility with ellmer via `ellmer_tool()`-function
 - Support for builtin tools in tidyllm tools. New builtin websearch tool for `claude()`.
+- `list_models()` implemented for `gemini()`
+- Tool compatibility with ellmer via `ellmer_tool()`-function. This allows using tools from the ellmer ecosystem such as in btw with tidyllm:
+```r
+btw_file_tool <- ellmer_tool(btw::btw_tool_files_list_files)
+llm_message("List the riles in the R folder of my project") |>
+  chat(claude,.tools =btw_file_tool)
+```
+- A minimal `chat_ellmer()` function that allows you to use a ellmer chat object in tidyllm's chat verb as interface to an LLM API.
 
 ## Small Changes/Housekeeping
 
