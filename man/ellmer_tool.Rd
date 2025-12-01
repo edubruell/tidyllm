@@ -7,24 +7,34 @@
 ellmer_tool(.ellmer_tool)
 }
 \arguments{
-\item{.ellmer_tool}{An ellmer \code{ToolDef} object created via \code{ellmer::tool()}}
+\item{.ellmer_tool}{An ellmer \code{ToolDef} object created via \code{ellmer::tool()},
+or a builtin tool like \code{ellmer::claude_tool_web_search()}}
 }
 \value{
 A \code{TOOL} class object that can be used with tidyllm \code{chat()} functions
 }
 \description{
-Converts an ellmer \code{ToolDef} object to a tidyllm \code{TOOL} object,
-allowing seamless integration of ellmer-defined tools with tidyllm workflows.
+Converts an ellmer \code{ToolDef} or \code{ToolBuiltIn} object to a tidyllm \code{TOOL} object,
+allowing seamless integration of ellmer-defined tools and builtin provider tools
+with tidyllm workflows.
 }
 \details{
-This function extracts the function, description, and argument schemas from
-an ellmer tool and converts them to tidyllm's internal representation.
+This function supports two types of ellmer tools:
+
+\strong{Custom ToolDef objects}: Extracts the function, description, and argument
+schemas from an ellmer tool and converts them to tidyllm's internal representation.
 Ellmer type objects are automatically converted to tidyllm field descriptors.
+
+\strong{Builtin ToolBuiltIn objects}: Converts provider-native builtin tools (like
+Claude's web search) to tidyllm format. For builtin tools, the tool definition
+is passed through as-is to the provider's API, which handles the tool execution
+natively.
 }
 \examples{
 \dontrun{
 library(ellmer)
 
+# Example 1: Custom tool
 tool_rnorm <- ellmer::tool(
   rnorm,
   description = "Draw numbers from a random normal distribution",
@@ -37,9 +47,13 @@ tool_rnorm <- ellmer::tool(
 
 tidyllm_tool_rnorm <- ellmer_tool(tool_rnorm)
 
-# Now use with tidyllm
 llm_message("Generate 100 random numbers") |> 
   chat(openai(), .tools = tidyllm_tool_rnorm)
+
+# Example 2: Builtin tool
+web_search <- ellmer_tool(ellmer::claude_tool_web_search())
+llm_message("What are the latest AI developments?") |>
+  chat(claude(), .tools = web_search)
 }
 
 }

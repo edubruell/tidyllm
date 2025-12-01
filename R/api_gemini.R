@@ -156,23 +156,27 @@ method(extract_metadata_stream, list(api_gemini,class_list))<- function(.api,.st
 method(tools_to_api, list(api_gemini, class_list)) <- function(.api, .tools) {
   list(
     function_declarations = purrr::map(.tools, function(tool) {
-      tool_def <- list(
-        name = tool@name,
-        description = tool@description
-      )
-      if (length(tool@input_schema) > 0) {
-        tool_def$parameters <- list(
-          type = "object",
-          properties = purrr::map(tool@input_schema, function(param) {
-            list(
-              type = param@type,
-              description = param@description
-            )
-          }),
-          required = names(tool@input_schema)
+      if (length(tool@builtin) > 0) {
+        tool@builtin[[1]]
+      } else {
+        tool_def <- list(
+          name = tool@name,
+          description = tool@description
         )
+        if (length(tool@input_schema) > 0) {
+          tool_def$parameters <- list(
+            type = "object",
+            properties = purrr::map(tool@input_schema, function(param) {
+              list(
+                type = param@type,
+                description = param@description
+              )
+            }),
+            required = names(tool@input_schema)
+          )
+        }
+        tool_def
       }
-      tool_def
     })
   )
 }

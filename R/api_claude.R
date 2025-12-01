@@ -123,20 +123,24 @@ method(extract_metadata_stream, list(api_claude,class_list))<- function(.api,.st
 #Claude-specific method to format tool calls for the API
 method(tools_to_api, list(api_claude, class_list)) <- function(.api, .tools) {
   purrr::map(.tools, function(tool) {
-    list(
-      name = tool@name,
-      description = tool@description,
-      input_schema = list(
-        type = "object",
-        properties = purrr::map(tool@input_schema, function(param) {
-          list(
-            type = param@type,
-            description = param@description
-          )
-        }),
-        required = as.list(names(tool@input_schema)) # Assume all are required
+    if (length(tool@builtin) > 0) {
+      tool@builtin[[1]]
+    } else {
+      list(
+        name = tool@name,
+        description = tool@description,
+        input_schema = list(
+          type = "object",
+          properties = purrr::map(tool@input_schema, function(param) {
+            list(
+              type = param@type,
+              description = param@description
+            )
+          }),
+          required = as.list(names(tool@input_schema)) # Assume all are required
+        )
       )
-    )
+    }
   })
 }
 
@@ -234,11 +238,9 @@ method(handle_stream,list(api_claude,new_S3_class("httr2_response"))) <- functio
   )
 }
 
-#' Process tool calls in a multi-turn loop
-#'
-#' Handles tool use requests from Claude, executing tools and continuing
 
-#' the conversation until the model stops requesting tools or max rounds is reached.
+#' Handles tool use requests from Claude by executing local tools
+#' until the model stops requesting tools or max rounds are reached.
 #'
 #' @noRd
 claude_process_tools <- function(.api,
@@ -251,35 +253,53 @@ claude_process_tools <- function(.api,
                                  .max_tool_rounds = 10) {
   round <- 0
   
-  while (.response$raw$content$stop_reason == "tool_use" && round < .max_tool_rounds) {
-    round <- round + 1
+  repeat {
+    stop_reason <- .response$raw$content$stop_reason
     
-    tool_calls <- .response$raw$content$content |>
-      purrr::keep(~.x$type == "tool_use")
+    # Only local tool use
+    if (stop_reason == "tool_use") {
+      round <- round + 1
+      if (round > .max_tool_rounds) {
+        stop("Maximum tool rounds reached")
+      }
+      
+      tool_calls <- .response$raw$content$content |>
+        purrr::keep(~ .x$type == "tool_use")
+      
+      tool_messages <- run_tool_calls(.api, tool_calls, .tools_def)
+      
+      .request_body$messages <- .request_body$messages |>
+        append(list(list(role = "assistant", content = .response$raw$content$content))) |>
+        append(list(tool_messages))
+      
+      .request <- httr2::req_body_json(.request, data = .request_body)
+      .response <- perform_chat_request(.request, .api, FALSE, .timeout, .max_tries)
+      next
+    }
     
-    tool_messages <- run_tool_calls(.api, tool_calls, .tools_def)
-    
-    .request_body$messages <- .request_body$messages |> 
-      append(list(list(role = "assistant", content = .response$raw$content$content))) |>
-      append(list(tool_messages))
-    
-    .request <- .request |>
-      httr2::req_body_json(data = .request_body)
-    
-    .response <- perform_chat_request(.request, .api, FALSE, .timeout, .max_tries)
-  }
-  
-  if (round >= .max_tool_rounds && .response$raw$content$stop_reason == "tool_use") {
-    stop(
-      sprintf(
-        "Maximum tool rounds (%s) reached; the model continued requesting tools. ",
-        .max_tool_rounds
-      ),
-      "\nThe conversation did not reach a valid assistant message."
-    )
+    break
   }
   
   .response
+}
+
+
+
+#' Collapse Claude content blocks into a single character string
+#'
+#' @noRd
+collapse_claude_blocks <- function(blocks) {
+  if (is.null(blocks)) {
+    return("")
+  }
+  
+  txt <- purrr::map_chr(blocks, function(b) {
+    if (!is.list(b) || is.null(b$type)) return("")
+    if (b$type == "text") return(b$text)
+    ""
+  })
+  
+  paste(txt[nzchar(txt)], collapse = "")
 }
 
 
@@ -511,18 +531,18 @@ claude_chat <- function(.llm,
     )
   }
   
-  assistant_reply <- response$assistant_reply
-    
-  # Extract the assistant reply and headers from response
-  track_rate_limit(api_obj,response$headers,.verbose)
+  assistant_reply <- collapse_claude_blocks(response$raw$content$content)
   
-  # Return the updated LLMMessage object
-  add_message(.llm     = .llm, 
-              .role    = "assistant", 
-              .content = assistant_reply, 
-              .json    = json,
-              .meta    = response$meta)
-}
+  track_rate_limit(api_obj, response$headers, .verbose)
+  
+  add_message(
+    .llm     = .llm,
+    .role    = "assistant",
+    .content = assistant_reply,
+    .json    = json,
+    .meta    = response$meta
+  )
+}  
 
 #' Send a Batch of Messages to Claude API
 #'
@@ -1311,6 +1331,27 @@ claude_delete_file <- function(.file_id,
   message("File ", .file_id, " has been successfully deleted.")
   invisible(NULL)
 }
+
+
+#' Builtin Claude Web Search Tool
+#'
+#' Returns a TOOL object for Claude's builtin web_search tool.
+#'
+#' @export
+claude_websearch <- function() {
+  TOOL(
+    name = "web_search",
+    description = "Builtin tool: web_search",
+    input_schema = list(),           # no input schema needed
+    func = function() NULL,          # not used for builtin tools
+    builtin = list(list(
+      name = "web_search",
+      type = "web_search_20250305"
+    ))
+  )
+}
+
+
 
 #' Provider Function for Claude models on the Anthropic API
 #'

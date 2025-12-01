@@ -64,6 +64,7 @@
 <span>  .repeat_last_n <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .repeat_penalty <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .tools <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  .max_tool_rounds <span class="op">=</span> <span class="fl">10</span>,</span>
 <span>  .tfs_z <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .stop <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .ollama_server <span class="op">=</span> <span class="st">"http://localhost:11434"</span>,</span>
@@ -145,6 +146,11 @@
 <dd><p>Either a single TOOL object or a list of TOOL objects representing the available functions for tool calls.</p></dd>
 
 
+<dt id="arg--max-tool-rounds">.max_tool_rounds<a class="anchor" aria-label="anchor" href="#arg--max-tool-rounds"></a></dt>
+<dd><p>Integer; maximum number of tool use iterations for multi-turn tool calling (default: 10).
+Set to 1 for single-round tool use, or higher for multi-turn agentic loops.</p></dd>
+
+
 <dt id="arg--tfs-z">.tfs_z<a class="anchor" aria-label="anchor" href="#arg--tfs-z"></a></dt>
 <dd><p>Float; tail free sampling parameter (default: NULL)</p></dd>
 
@@ -209,7 +215,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer></div>

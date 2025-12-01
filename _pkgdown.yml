@@ -86,6 +86,7 @@ reference:
       - claude_delete_file 
       - claude_file_metadata 
       - claude_list_files
+      - claude_websearch
 
   - title: "Gemini-Specific Functions"
     desc: >
@@ -168,6 +169,12 @@ reference:
       Functions for VoyageAI Embeddings.
     contents: 
       - voyage_embedding
+      
+  - title: "Ellmer Compatibility"
+    desc: >  
+        Functions to let tidyllm work with ellmer tools and chat objects
+    contents: 
+      - ellmer_tool
       
   - title: "PDF Processing"
     desc: >

@@ -65,6 +65,7 @@ while allowing for the specification of common arguments applicable across diffe
 <span>  .verbose <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .json_schema <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .tools <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  .max_tool_rounds <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .stop <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .frequency_penalty <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -126,6 +127,10 @@ You can also set a default provider function via the <code>tidyllm_chat_default<
 <dd><p>Either a single TOOL object or a list of TOOL objects representing the available functions for tool calls.</p></dd>
 
 
+<dt id="arg--max-tool-rounds">.max_tool_rounds<a class="anchor" aria-label="anchor" href="#arg--max-tool-rounds"></a></dt>
+<dd><p>Integer; the maximum number of tool use iterations for multi-turn tool calling (default varies by provider).</p></dd>
+
+
 <dt id="arg--seed">.seed<a class="anchor" aria-label="anchor" href="#arg--seed"></a></dt>
 <dd><p>Integer; sets a random seed for reproducibility.</p></dd>
 
@@ -179,7 +184,7 @@ passed directly to <code>chat()</code>. If a provider does not support a particu
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer></div>
