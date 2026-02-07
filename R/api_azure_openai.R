@@ -618,8 +618,8 @@ check_azure_openai_batch <- function(.llms = NULL,
   result_tbl <- tibble::tibble(
     batch_id = response_body$id,
     status = response_body$status,
-    created_at = lubridate::as_datetime(response_body$created_at),
-    expires_at = lubridate::as_datetime(response_body$expires_at),
+    created_at = lubridate::as_datetime(if(is.null(response_body$created_at)) NA_real_ else response_body$created_at),
+    expires_at = lubridate::as_datetime(if(is.null(response_body$expires_at)) NA_real_ else response_body$expires_at),
     total_requests = response_body$request_counts$total,
     completed_requests = response_body$request_counts$completed,
     failed_requests = response_body$request_counts$failed
@@ -679,8 +679,8 @@ list_azure_openai_batches <- function(.endpoint_url = Sys.getenv('AZURE_ENDPOINT
   batch_tibble <- purrr::map_dfr(batch_data, ~ tibble::tibble(
     batch_id = .x$id,
     status = .x$status,
-    created_at = as.POSIXct(.x$created_at, origin = "1970-01-01", tz = "UTC"),
-    expires_at = as.POSIXct(.x$expires_at, origin = "1970-01-01", tz = "UTC"),
+    created_at = lubridate::as_datetime(if(is.null(response_body$created_at)) NA_real_ else response_body$created_at),
+    expires_at = lubridate::as_datetime(if(is.null(response_body$expires_at)) NA_real_ else response_body$expires_at),
     request_total = .x$request_counts$total,
     request_completed = .x$request_counts$completed,
     request_failed = .x$request_counts$failed
