@@ -192,58 +192,21 @@ method(run_tool_calls, list(api_ollama, class_list, class_list)) <- function(.ap
   purrr::compact(tool_results)
 }
 
-#' Process tool calls in a multi-turn loop for Ollama
-#'
-#' Handles tool use requests from Ollama, executing tools and continuing
-#' the conversation until the model stops requesting tools or max rounds is reached.
-#'
-#' @noRd
-ollama_process_tools <- function(.api,
-                                 .response,
-                                 .tools_def,
-                                 .request_body,
-                                 .request,
-                                 .timeout,
-                                 .max_tries,
-                                 .max_tool_rounds = 10) {
-  round <- 0
-  
-  has_tool_calls <- function(.resp) {
-    !is.null(.resp$raw$content$message$tool_calls) && 
-      length(.resp$raw$content$message$tool_calls) > 0
-  }
-  
-  while (has_tool_calls(.response) && round < .max_tool_rounds) {
-    round <- round + 1
-    
-    tool_calls <- .response$raw$content$message$tool_calls
-    assistant_message <- .response$raw$content$message
-    
-    tool_results <- run_tool_calls(.api, tool_calls, .tools_def)
-    
-    tool_messages <- format_ollama_tool_messages(assistant_message, tool_results)
-    
-    .request_body$messages <- .request_body$messages |> 
-      append(tool_messages)
-    
-    .request <- .request |>
-      httr2::req_body_json(data = .request_body)
-    
-    .response <- perform_chat_request(.request, .api, FALSE, .timeout, .max_tries)
-  }
-  
-  if (round >= .max_tool_rounds && has_tool_calls(.response)) {
-    stop(
-      sprintf(
-        "Maximum tool rounds (%s) reached; the model continued requesting tools. ",
-        .max_tool_rounds
-      ),
-      "\nThe conversation did not reach a valid assistant message."
-    )
-  }
-  
-  .response
+method(has_tool_calls, list(api_ollama, class_any)) <- function(.api, .response) {
+  !is.null(.response$raw$content$message$tool_calls) &&
+    length(.response$raw$content$message$tool_calls) > 0
 }
+
+method(extract_tool_calls, list(api_ollama, class_any)) <- function(.api, .response)
+  .response$raw$content$message$tool_calls
+
+method(append_tool_messages, list(api_ollama, class_any, class_any, class_any)) <-
+  function(.api, .request_body, .response, .tool_results) {
+    assistant_message <- .response$raw$content$message
+    tool_messages <- format_ollama_tool_messages(assistant_message, .tool_results)
+    .request_body$messages <- .request_body$messages |> append(tool_messages)
+    .request_body
+  }
 
 
 #' Interact with local AI models via the Ollama API
@@ -302,7 +265,7 @@ ollama_process_tools <- function(.api,
 #'
 #' @export
 ollama_chat <- function(.llm,
-                   .model = "qwen3-vl",
+                   .model = "qwen3.5",
                    .stream = FALSE,
                    .seed = NULL,
                    .json_schema = NULL,
@@ -423,7 +386,7 @@ ollama_chat <- function(.llm,
   response <- perform_chat_request(request, api_obj, .stream, .timeout, 3)
   
   if (.stream == FALSE && !is.null(tools_def)) {
-    response <- ollama_process_tools(
+    response <- process_tool_loop(
       .api = api_obj,
       .response = response,
       .tools_def = tools_def,
@@ -454,7 +417,7 @@ ollama_chat <- function(.llm,
 #' @return A matrix where each column corresponds to the embedding of a message in the message history.
 #' @export
 ollama_embedding <- function(.input,
-                             .model = "all-minilm",
+                             .model = "qwen3-embedding:0.6b",
                              .truncate = TRUE,
                              .ollama_server = "http://localhost:11434",
                              .timeout = 120,
@@ -548,7 +511,7 @@ ollama_embedding <- function(.input,
 #'
 #' @export
 send_ollama_batch <- function(.llms,
-                        .model = "qwen3-vl",
+                        .model = "qwen3.5",
                         .stream = FALSE,
                         .seed = NULL,
                         .json_schema = NULL,

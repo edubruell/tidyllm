@@ -166,12 +166,7 @@ method(tools_to_api, list(api_gemini, class_list)) <- function(.api, .tools) {
         if (length(tool@input_schema) > 0) {
           tool_def$parameters <- list(
             type = "object",
-            properties = purrr::map(tool@input_schema, function(param) {
-              list(
-                type = param@type,
-                description = param@description
-              )
-            }),
+            properties = purrr::map(tool@input_schema, field_to_param_schema),
             required = names(tool@input_schema)
           )
         }
@@ -180,6 +175,33 @@ method(tools_to_api, list(api_gemini, class_list)) <- function(.api, .tools) {
     })
   )
 }
+
+method(has_tool_calls, list(api_gemini, class_any)) <- function(.api, .response) {
+  parts <- .response$raw$content$candidates[[1]]$content$parts
+  if (is.null(parts)) return(FALSE)
+  any(purrr::map_lgl(parts, ~!is.null(.x$functionCall)))
+}
+
+method(extract_tool_calls, list(api_gemini, class_any)) <- function(.api, .response) {
+  parts <- .response$raw$content$candidates[[1]]$content$parts
+  purrr::keep(parts, ~!is.null(.x$functionCall)) |>
+    purrr::map(~.x$functionCall)
+}
+
+method(append_tool_messages, list(api_gemini, class_any, class_any, class_any)) <-
+  function(.api, .request_body, .response, .tool_results) {
+    tool_calls <- extract_tool_calls(.api, .response)
+    assistant_message <- list(
+      role = "model",
+      parts = purrr::map(tool_calls, ~list(functionCall = .x))
+    )
+    .request_body$contents <- c(
+      .request_body$contents,
+      list(assistant_message),
+      list(.tool_results)
+    )
+    .request_body
+  }
 
 #' A method to run tool calls on Gemini and create the expected response
 #'
@@ -229,71 +251,8 @@ method(run_tool_calls, list(api_gemini, class_list, class_list)) <- function(.ap
   )
 }
 
-#' Detect tool calls in gemini responses
-#' 
-#' @noRd
- has_gemini_tool_calls <- function(.response) {
-     parts <- .response$raw$content$candidates[[1]]$content$parts
-     if (is.null(parts)) return(FALSE)
-       any(purrr::map_lgl(parts, ~!is.null(.x$functionCall)))
-}
 
-#' Extract tool calls in gemini responses
-#' 
-#' @noRd  
-extract_gemini_tool_calls <- function(.response) {
-     parts <- .response$raw$content$candidates[[1]]$content$parts
-      purrr::keep(parts, ~!is.null(.x$functionCall)) |>
-      purrr::map(~.x$functionCall)
-}
-   
-gemini_process_tools <- function(.api,
-                                .response,
-                                .tools_def,
-                                .request_body,
-                                .request,
-                                .timeout,
-                                .max_tries,
-                                .max_tool_rounds = 10) {
-  round <- 0
-  while (has_gemini_tool_calls(.response) && round < .max_tool_rounds) {
-      round <- round + 1
-      
-        tool_calls <- extract_gemini_tool_calls(.response)
-        
-          tool_messages <- run_tool_calls(.api, tool_calls, .tools_def)
-          
-            assistant_function_call_message <- list(
-                role = "model",
-                parts = purrr::map(tool_calls, ~list(functionCall = .x))
-              )
-            
-              .request_body$contents <- c(
-                  .request_body$contents,
-                  list(assistant_function_call_message),
-                  list(tool_messages)
-                )
-              
-                .request <- .request |>
-                    httr2::req_body_json(data = .request_body)
-                
-                  .response <- perform_chat_request(.request, .api, FALSE, .timeout, .max_tries)
-      }
 
-      if (round >= .max_tool_rounds && has_gemini_tool_calls(.response)) {
-            stop(
-                sprintf(
-                    "Maximum tool rounds (%s) reached; the model continued requesting tools. ",
-                    .max_tool_rounds
-                  ),
-                "\nThe conversation did not reach a valid assistant message."
-              )
-          }
-      
-  .response
-}
-        
-          
 
 
 #' Inject files into Gemini message contents
@@ -460,10 +419,14 @@ gemini_chat <- function(.llm,
   } 
   
   
-  #Put a single tool into a list if only one is provided. 
-  tools_def <- if (!is.null(.tools)) {
-    .tools <- if (S7_inherits(.tools, TOOL))  list(.tools) else .tools
-    tools_to_api(api_obj,.tools) 
+  #Put a single tool into a list if only one is provided.
+  raw_tools_def <- if (!is.null(.tools)) {
+    if (S7_inherits(.tools, TOOL)) list(.tools) else .tools
+  } else {
+    NULL
+  }
+  tools_def <- if (!is.null(raw_tools_def)) {
+    tools_to_api(api_obj, raw_tools_def)
   } else {
     NULL
   }
@@ -532,11 +495,11 @@ gemini_chat <- function(.llm,
   # Perform the API request
   response <- perform_chat_request(request,api_obj,.stream,.timeout,.max_tries)
   
-  if (.stream == FALSE && !is.null(tools_def)) {
-    response <- gemini_process_tools(
+  if (.stream == FALSE && !is.null(raw_tools_def)) {
+    response <- process_tool_loop(
       .api = api_obj,
       .response = response,
-      .tools_def = .tools,
+      .tools_def = raw_tools_def,
       .request_body = request_body,
       .request = request,
       .timeout = .timeout,
@@ -722,7 +685,7 @@ gemini_delete_file <- function(.file_name) {
 #' @return A matrix where each column corresponds to the embedding of a message in the message history.
 #' @export
 gemini_embedding <- function(.input,
-                             .model = "gemini-embedding-001",
+                             .model = "gemini-embedding-2-preview",
                              .truncate = TRUE,
                              .timeout = 120,
                              .dry_run = FALSE,

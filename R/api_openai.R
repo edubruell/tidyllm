@@ -220,62 +220,17 @@ method(run_tool_calls, list(api_openai, class_list, class_list)) <- function(.ap
 }
 
 
-#' Process tool calls in a multi-turn loop for OpenAI-like APIs
-#'
-#' Handles multi-turn tool calling by continuously checking for tool_calls in responses
-#' and executing them until the model stops requesting tools or max rounds is reached.
-#'
-#' @param .api The API provider object
-#' @param .response The initial response object
-#' @param .tools_def List of TOOL objects
-#' @param .request_body The request body (will be modified with tool results)
-#' @param .request The httr2 request object
-#' @param .timeout Request timeout in seconds
-#' @param .max_tries Maximum retry attempts
-#' @param .max_tool_rounds Maximum number of tool use iterations
-#'
-#' @return Updated response object after all tool rounds complete
-#' @noRd
-openai_process_tools <- function(.api,
-                                 .response,
-                                 .tools_def,
-                                 .request_body,
-                                 .request,
-                                 .timeout,
-                                 .max_tries,
-                                 .max_tool_rounds = 10) {
-  round <- 0
+method(has_tool_calls, list(api_openai, class_any)) <- function(.api, .response)
+  !is.null(.response$raw$content$choices[[1]]$message$tool_calls)
 
-  repeat {
-    # Check if response contains tool calls
-    if (!r_has_name(.response$raw, "tool_calls") || 
-        is.null(.response$raw$content$choices[[1]]$message$tool_calls)) {
-      break
-    }
+method(extract_tool_calls, list(api_openai, class_any)) <- function(.api, .response)
+  .response$raw$content$choices[[1]]$message$tool_calls
 
-    round <- round + 1
-    if (round > .max_tool_rounds) {
-      stop("Maximum tool rounds reached")
-    }
-
-    tool_calls <- .response$raw$content$choices[[1]]$message$tool_calls
-
-    # Execute tools and get formatted responses
-    tool_messages <- run_tool_calls(.api, tool_calls, .tools_def)
-
-    # Append assistant response with tool calls and tool results to messages
-    .request_body$messages <- .request_body$messages |>
-      append(tool_messages)
-
-    # Update request with new message history
-    .request <- httr2::req_body_json(.request, data = .request_body)
-
-    # Get next response
-    .response <- perform_chat_request(.request, .api, FALSE, .timeout, .max_tries)
+method(append_tool_messages, list(api_openai, class_any, class_any, class_any)) <-
+  function(.api, .request_body, .response, .tool_results) {
+    .request_body$messages <- .request_body$messages |> append(.tool_results)
+    .request_body
   }
-
-  .response
-}
 
 
 #' A method to handle streaming requests
@@ -607,9 +562,8 @@ openai_chat <- function(
   # Perform the request
   response <- perform_chat_request(request, api_obj, .stream, .timeout, .max_tries)
   
-  # Handle tool calls with multi-turn support
   if (.stream == FALSE && !is.null(tools_def)) {
-    response <- openai_process_tools(
+    response <- process_tool_loop(
       .api = api_obj,
       .response = response,
       .tools_def = tools_def,

@@ -11,6 +11,25 @@
 #' @return A function that dynamically routes to the appropriate action based on its 
 #'   inputs.
 #' @noRd 
+dispatch_to_provider <- function(provider_expr, verb_name, common_args,
+                                  validate = TRUE, env = rlang::caller_env()) {
+  if (validate) {
+    meta      <- rlang::call_modify(provider_expr, .called_from = "metadata") |> rlang::eval_tidy()
+    supported <- meta$supported_args[[verb_name]]
+    unsupported <- setdiff(names(common_args), supported)
+    if (length(unsupported) > 0) {
+      stop(glue::glue(
+        "The following arguments are not supported by the provider's `{verb_name}()` function: {paste(unsupported, collapse = ', ')}."
+      ))
+    }
+    valid_args <- common_args[names(common_args) %in% supported]
+  } else {
+    valid_args <- common_args
+  }
+  valid_args$.called_from <- verb_name
+  rlang::eval_tidy(rlang::call_modify(provider_expr, !!!valid_args), env = env)
+}
+
 create_provider_function <- function(.name, ...) {
   function_map <- list(...)
   
@@ -152,13 +171,6 @@ chat <- function(
     provider_expr <- .provider
   }
   
-  provider_meta_data <- rlang::call_modify(provider_expr ,
-                                           .called_from = "metadata") |>
-    rlang::eval_tidy()
-  
-  supported_args <- provider_meta_data$supported_args$chat
-
-  # Collect common arguments only if they are not NULL
   common_args <- list(
     .llm = .llm,
     .model = .model,
@@ -177,23 +189,9 @@ chat <- function(
     .tools = .tools,
     .max_tool_rounds = .max_tool_rounds
   )
-  
   common_args <- common_args[!sapply(common_args, is.null)]
-  
-  # Warn about unsupported arguments
-  unsupported_args <- setdiff(names(common_args), supported_args)
-  if (length(unsupported_args) > 0) {
-    stop(glue::glue(
-      "The following arguments are not supported by the provider's `chat()` function: {paste(unsupported_args, collapse = ', ')}."
-    ))
-  }
-  
-  # Inject valid arguments into the provider function call
-  valid_args <- common_args[names(common_args) %in% supported_args]
-  valid_args <- valid_args |> append(list(.called_from= "chat")) 
-  modified_call <- rlang::call_modify(provider_expr, !!!valid_args)
-  
-  return(rlang::eval_tidy(modified_call))
+
+  return(dispatch_to_provider(provider_expr, "chat", common_args))
 }
 
 
@@ -249,13 +247,6 @@ embed <- function(.input,
   }
   
   
-  provider_meta_data <- rlang::call_modify(provider_expr ,
-                                           .called_from = "metadata") |>
-    rlang::eval_tidy()
-  
-  supported_args <- provider_meta_data$supported_args$embed
-  
-  # Collect common arguments only if they are not NULL
   common_args <- list(
     .input = .input,
     .model = .model,
@@ -265,21 +256,8 @@ embed <- function(.input,
     .dry_run = .dry_run
   )
   common_args <- common_args[!sapply(common_args, is.null)]
-  
-  # Throw an error for  unsupported arguments
-  unsupported_args <- setdiff(names(common_args), supported_args)
-  if (length(unsupported_args) > 0) {
-    stop(glue::glue(
-      "The following arguments are not supported by the provider's `embed()` function: {paste(unsupported_args, collapse = ', ')}."
-    ))
-  }
-  
-  # Inject valid arguments into the provider function call
-  valid_args <- common_args[names(common_args) %in% supported_args]
-  valid_args <- valid_args |> append(list(.called_from= "embed")) 
-  modified_call <- rlang::call_modify(provider_expr, !!!valid_args)
-  
-  return(rlang::eval_tidy(modified_call))
+
+  return(dispatch_to_provider(provider_expr, "embed", common_args))
 }
 
 
@@ -342,13 +320,6 @@ send_batch <- function(.llms,
     provider_expr <- .provider
   }
   
-  provider_meta_data <- rlang::call_modify(provider_expr ,
-                                           .called_from = "metadata") |>
-    rlang::eval_tidy()
-  
-  supported_args <- provider_meta_data$supported_args$send_batch
-  
-  # Collect common arguments only if they are not NULL
   common_args <- list(
     .llms = .llms,
     .model = .model,
@@ -366,21 +337,8 @@ send_batch <- function(.llms,
     .id_prefix = .id_prefix
   )
   common_args <- common_args[!sapply(common_args, is.null)]
-  
-  # Warn about unsupported arguments
-  unsupported_args <- setdiff(names(common_args), supported_args)
-  if (length(unsupported_args) > 0) {
-    stop(glue::glue(
-      "The following arguments are not supported by the provider's `send_batch()` function: {paste(unsupported_args, collapse = ', ')}."
-    ))
-  }
-  
-  # Inject valid arguments into the provider function call
-  valid_args <- common_args[names(common_args) %in% supported_args]
-  valid_args <- valid_args |> append(list(.called_from= "send_batch")) 
-  modified_call <- rlang::call_modify(provider_expr, !!!valid_args)
-  
-  return(rlang::eval_tidy(modified_call))
+
+  return(dispatch_to_provider(provider_expr, "send_batch", common_args))
 }
 
 #' Check Batch Processing Status 
@@ -432,7 +390,6 @@ check_batch <- function(.llms,
   }
   
   
-  # Collect common arguments only if they are not NULL
   common_args <- list(
     .batch_id = batch_id,
     .max_tries = .max_tries,
@@ -440,12 +397,8 @@ check_batch <- function(.llms,
     .dry_run = .dry_run
   )
   common_args <- common_args[!sapply(common_args, is.null)]
-  
-  valid_args <- common_args |> append(list(.called_from= "check_batch")) 
-  modified_call <- rlang::call_modify(provider_expr, !!!valid_args)
-  
-  # Evaluate the modified provider call
-  return(rlang::eval_tidy(modified_call))
+
+  return(dispatch_to_provider(provider_expr, "check_batch", common_args, validate = FALSE))
 }
 
 #' List all Batch Requests on a Batch API
@@ -473,14 +426,7 @@ list_batches <- function(.provider = getOption("tidyllm_lbatch_default")) {
     provider_expr <- .provider
   }
   
-  # Modify the provider call by injecting .llm and .called_from
-  modified_call <- rlang::call_modify(
-    provider_expr,
-    .called_from = "list_batches" 
-  )
-  
-  # Evaluate the modified provider call
-  return(rlang::eval_tidy(modified_call))
+  return(dispatch_to_provider(provider_expr, "list_batches", list(), validate = FALSE))
 }
 
 
@@ -525,7 +471,6 @@ fetch_batch <- function(.llms,
     provider_expr <- .provider
   }
   
-  # Collect common arguments only if they are not NULL
   common_args <- list(
     .llms = .llms,
     .max_tries = .max_tries,
@@ -533,12 +478,8 @@ fetch_batch <- function(.llms,
     .dry_run = .dry_run
   )
   common_args <- common_args[!sapply(common_args, is.null)]
-  
-  valid_args <- common_args |> append(list(.called_from= "fetch_batch")) 
-  modified_call <- rlang::call_modify(provider_expr, !!!valid_args)
-  
-  # Evaluate the modified provider call
-  return(rlang::eval_tidy(modified_call))
+
+  return(dispatch_to_provider(provider_expr, "fetch_batch", common_args, validate = FALSE))
 }
 
 #' List Available Models for a Provider
@@ -568,15 +509,8 @@ list_models <- function(.provider = getOption("tidyllm_lmodels_default"), ...) {
     provider_expr <- .provider
   }
   
-  # Inject .called_from = "list_models" along with any additional arguments
-  modified_call <- rlang::call_modify(
-    provider_expr,
-    .called_from = "list_models",
-    ...
-  )
-  
-  # Evaluate the modified provider call
-  return(rlang::eval_tidy(modified_call))
+  extra_args <- list(...)
+  return(dispatch_to_provider(provider_expr, "list_models", extra_args, validate = FALSE))
 }
 
 

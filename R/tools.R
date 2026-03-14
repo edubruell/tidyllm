@@ -147,6 +147,11 @@ tidyllm_tool <- function(.f, .description = character(0), ...) {
 #' llm_message("What are the latest AI developments?") |>
 #'   chat(claude(), .tools = web_search)
 #' }
+
+is_ellmer_class <- function(classes, class_name) {
+  any(classes %in% c(paste0("ellmer::", class_name), paste0("ellmer_", class_name)))
+}
+
 #'
 #' @export
 ellmer_tool <- function(.ellmer_tool) {
@@ -155,8 +160,8 @@ ellmer_tool <- function(.ellmer_tool) {
   }
   
   tool_classes <- class(.ellmer_tool)
-  is_tool_def <- any(tool_classes %in% c("ellmer::ToolDef", "ellmer_ToolDef"))
-  is_builtin <- any(tool_classes %in% c("ellmer::ToolBuiltIn", "ellmer_ToolBuiltIn"))
+  is_tool_def <- is_ellmer_class(tool_classes, "ToolDef")
+  is_builtin  <- is_ellmer_class(tool_classes, "ToolBuiltIn")
   
   if (!is_tool_def && !is_builtin) {
     stop("Input must be an ellmer ToolDef or ToolBuiltIn object created via ellmer::tool() or ellmer::*_tool_*()")
@@ -180,7 +185,7 @@ ellmer_tool <- function(.ellmer_tool) {
     fn_desc <- .ellmer_tool@description %||% ""
     arguments_obj <- .ellmer_tool@arguments
     
-    if (!any(class(arguments_obj) %in% c("ellmer::TypeObject", "ellmer_TypeObject"))) {
+    if (!is_ellmer_class(class(arguments_obj), "TypeObject")) {
       stop("ellmer tool @arguments must be a TypeObject")
     }
     
@@ -217,7 +222,7 @@ ellmer_tool <- function(.ellmer_tool) {
 convert_ellmer_type_to_field <- function(.ellmer_type) {
   type_class <- class(.ellmer_type)
   
-  if (any(type_class %in% c("ellmer::TypeBasic", "ellmer_TypeBasic"))) {
+  if (is_ellmer_class(type_class, "TypeBasic")) {
     ellmer_type_name <- .ellmer_type@type
     
     type_map <- c(
@@ -236,7 +241,7 @@ convert_ellmer_type_to_field <- function(.ellmer_type) {
       vector = FALSE,
       schema = list()
     )
-  } else if (any(type_class %in% c("ellmer::TypeEnum", "ellmer_TypeEnum"))) {
+  } else if (is_ellmer_class(type_class, "TypeEnum")) {
     tidyllm_field(
       type = "string",
       description = .ellmer_type@description %||% "",
@@ -244,11 +249,11 @@ convert_ellmer_type_to_field <- function(.ellmer_type) {
       vector = FALSE,
       schema = list()
     )
-  } else if (any(type_class %in% c("ellmer::TypeArray", "ellmer_TypeArray"))) {
+  } else if (is_ellmer_class(type_class, "TypeArray")) {
     inner_field <- convert_ellmer_type_to_field(.ellmer_type@items)
     inner_field@vector <- TRUE
     inner_field
-  } else if (any(type_class %in% c("ellmer::TypeObject", "ellmer_TypeObject"))) {
+  } else if (is_ellmer_class(type_class, "TypeObject")) {
     properties <- .ellmer_type@properties
     nested_fields <- purrr::map(properties, convert_ellmer_type_to_field)
     nested_schema <- build_schema(nested_fields)
@@ -270,6 +275,13 @@ tools_to_api <- new_generic("tools_to_api", c(".api", ".tools"))
 run_tool_calls <- new_generic("run_tool_calls", c(".api",".tool_calls",".tools"))
 send_tool_results <- new_generic("send_tool_results", c(".api",".request",".request_body"))
 
+#Generics for the unified tool loop
+has_tool_calls <- new_generic("has_tool_calls", c(".api", ".response"))
+extract_tool_calls <- new_generic("extract_tool_calls", c(".api", ".response"))
+append_tool_messages <- new_generic("append_tool_messages", c(".api", ".request_body", ".response", ".tool_results"))
+
+method(has_tool_calls, list(APIProvider, class_any)) <- function(.api, .response) FALSE
+
 print.TOOL  <- new_external_generic("base", "print", "x")
 
 #' Print method for a Tool Definition for tidyllm
@@ -279,6 +291,14 @@ method(print.TOOL,TOOL) <- function(x, ...){
   cat("  Description: ", x@description, "\n", sep = "")
   cat("  Arguments: \n")
   purrr::iwalk(x@input_schema, ~ cat("    -", .y, ": ", .x@type, "\n"))
+}
+
+field_to_param_schema <- function(param) {
+  schema <- parse_field(param)
+  if (length(param@description) > 0) {
+    schema$description <- param@description
+  }
+  schema
 }
 
 #' Generic method to convert a tidyllm TOOL definition for a generic API
@@ -295,16 +315,28 @@ method(tools_to_api, list(APIProvider, class_list)) <- function(.api, .tools) {
           description = tool@description,
           parameters = list(
             type = "object",
-            properties = purrr::map(tool@input_schema, function(param) {
-              list(
-                type = param@type,
-                description = param@description
-              )
-            }),
-            required = as.list(names(tool@input_schema)) # Assume all are required
+            properties = purrr::map(tool@input_schema, field_to_param_schema),
+            required = as.list(names(tool@input_schema))
           )
         )
       )
     }
   })
+}
+
+process_tool_loop <- function(.api, .response, .tools_def, .request_body,
+                               .request, .timeout, .max_tries, .max_tool_rounds = 10) {
+  round <- 0
+  while (has_tool_calls(.api, .response) && round < .max_tool_rounds) {
+    round <- round + 1
+    tool_calls   <- extract_tool_calls(.api, .response)
+    tool_results <- run_tool_calls(.api, tool_calls, .tools_def)
+    .request_body <- append_tool_messages(.api, .request_body, .response, tool_results)
+    .request  <- httr2::req_body_json(.request, data = .request_body)
+    .response <- perform_chat_request(.request, .api, FALSE, .timeout, .max_tries)
+  }
+  if (round >= .max_tool_rounds && has_tool_calls(.api, .response)) {
+    stop(sprintf("Maximum tool rounds (%d) reached with pending tool calls", .max_tool_rounds))
+  }
+  .response
 }

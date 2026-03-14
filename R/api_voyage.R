@@ -38,7 +38,7 @@
 #' }
 #' @export
 voyage_embedding <- function(.input,
-                             .model = "voyage-3.5-lite",
+                             .model = "voyage-4",
                              .timeout = 120,
                              .dry_run = FALSE,
                              .max_tries = 3,

@@ -113,7 +113,8 @@ azure_openai_chat <- function(
     .logprobs = NULL,       
     .top_logprobs = NULL,
     .tools = NULL,
-    .tool_choice = NULL
+    .tool_choice = NULL,
+    .max_tool_rounds = 10
 ) {
   #Check endpoint
   if (.endpoint_url == "" && .dry_run == FALSE) {
@@ -220,18 +221,17 @@ azure_openai_chat <- function(
   # Perform the request
   response <- perform_chat_request(request, api_obj, .stream, .timeout, .max_tries)
   
-  # Handle tool calls if any
-  if (r_has_name(response$raw, "tool_calls")) {
-    tool_messages <- run_tool_calls(api_obj,
-                                    response$raw$content$choices[[1]]$message$tool_calls,
-                                    tools_def)
-    
-    # Append the tool call to API
-    request_body$messages <- request_body$messages |> append(tool_messages)
-    
-    # Update the request and perform it again
-    request <- request |> httr2::req_body_json(data = request_body)
-    response <- perform_chat_request(request, api_obj, .stream, .timeout, .max_tries)
+  if (.stream == FALSE && !is.null(tools_def)) {
+    response <- process_tool_loop(
+      .api = api_obj,
+      .response = response,
+      .tools_def = tools_def,
+      .request_body = request_body,
+      .request = request,
+      .timeout = .timeout,
+      .max_tries = .max_tries,
+      .max_tool_rounds = .max_tool_rounds
+    )
   }
   
   # Extract assistant reply

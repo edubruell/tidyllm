@@ -131,18 +131,27 @@ method(tools_to_api, list(api_claude, class_list)) <- function(.api, .tools) {
         description = tool@description,
         input_schema = list(
           type = "object",
-          properties = purrr::map(tool@input_schema, function(param) {
-            list(
-              type = param@type,
-              description = param@description
-            )
-          }),
-          required = as.list(names(tool@input_schema)) # Assume all are required
+          properties = purrr::map(tool@input_schema, field_to_param_schema),
+          required = as.list(names(tool@input_schema))
         )
       )
     }
   })
 }
+
+method(has_tool_calls, list(api_claude, class_any)) <- function(.api, .response)
+  isTRUE(.response$raw$content$stop_reason == "tool_use")
+
+method(extract_tool_calls, list(api_claude, class_any)) <- function(.api, .response)
+  purrr::keep(.response$raw$content$content, ~ .x$type == "tool_use")
+
+method(append_tool_messages, list(api_claude, class_any, class_any, class_any)) <-
+  function(.api, .request_body, .response, .tool_results) {
+    .request_body$messages <- .request_body$messages |>
+      append(list(list(role = "assistant", content = .response$raw$content$content))) |>
+      append(list(.tool_results))
+    .request_body
+  }
 
 #' A method to run tool calls on Claude and create the expected response
 #'
@@ -239,50 +248,6 @@ method(handle_stream,list(api_claude,new_S3_class("httr2_response"))) <- functio
 }
 
 
-#' Handles tool use requests from Claude by executing local tools
-#' until the model stops requesting tools or max rounds are reached.
-#'
-#' @noRd
-claude_process_tools <- function(.api,
-                                 .response,
-                                 .tools_def,
-                                 .request_body,
-                                 .request,
-                                 .timeout,
-                                 .max_tries,
-                                 .max_tool_rounds = 10) {
-  round <- 0
-  
-  repeat {
-    stop_reason <- .response$raw$content$stop_reason
-    
-    # Only local tool use
-    if (stop_reason == "tool_use") {
-      round <- round + 1
-      if (round > .max_tool_rounds) {
-        stop("Maximum tool rounds reached")
-      }
-      
-      tool_calls <- .response$raw$content$content |>
-        purrr::keep(~ .x$type == "tool_use")
-      
-      tool_messages <- run_tool_calls(.api, tool_calls, .tools_def)
-      
-      .request_body$messages <- .request_body$messages |>
-        append(list(list(role = "assistant", content = .response$raw$content$content))) |>
-        append(list(tool_messages))
-      
-      .request <- httr2::req_body_json(.request, data = .request_body)
-      .response <- perform_chat_request(.request, .api, FALSE, .timeout, .max_tries)
-      next
-    }
-    
-    break
-  }
-  
-  .response
-}
-
 
 
 #' Collapse Claude content blocks into a single character string
@@ -357,7 +322,7 @@ claude_inject_files <- function(.claude_messages, .file_ids) {
 #' Interact with Claude AI models via the Anthropic API
 #'
 #' @param .llm An LLMMessage object containing the conversation history and system prompt.
-#' @param .model Character string specifying the Claude model version (default: "claude-sonnet-4-5-20250929").
+#' @param .model Character string specifying the Claude model version (default: "claude-sonnet-4-6").
 #' @param .max_tokens Integer specifying the maximum number of tokens in the response (default: 1024).
 #' @param .temperature Numeric between 0 and 1 controlling response randomness.
 #' @param .top_k Integer controlling diversity by limiting the top K tokens.
@@ -393,7 +358,7 @@ claude_inject_files <- function(.claude_messages, .file_ids) {
 #'
 #' @export
 claude_chat <- function(.llm,
-                        .model = "claude-sonnet-4-5-20250929",
+                        .model = "claude-sonnet-4-6",
                         .max_tokens = 2048,
                         .temperature = NULL,
                         .top_k = NULL,
@@ -519,7 +484,7 @@ claude_chat <- function(.llm,
   response <- perform_chat_request(request, api_obj, .stream, .timeout)
   
   if (.stream == FALSE && !is.null(tools_def)) {
-    response <- claude_process_tools(
+    response <- process_tool_loop(
       .api = api_obj,
       .response = response,
       .tools_def = tools_def,
@@ -531,7 +496,11 @@ claude_chat <- function(.llm,
     )
   }
   
-  assistant_reply <- collapse_claude_blocks(response$raw$content$content)
+  assistant_reply <- if (.stream) {
+    response$assistant_reply
+  } else {
+    collapse_claude_blocks(response$raw$content$content)
+  }
   
   track_rate_limit(api_obj, response$headers, .verbose)
   
@@ -549,7 +518,7 @@ claude_chat <- function(.llm,
 #' This function creates and submits a batch of messages to the Claude API for asynchronous processing.
 #'
 #' @param .llms A list of LLMMessage objects containing conversation histories.
-#' @param .model Character string specifying the Claude model version (default: "claude-sonnet-4-5-20250929").
+#' @param .model Character string specifying the Claude model version (default: "claude-sonnet-4-6").
 #' @param .max_tokens Integer specifying the maximum tokens per response (default: 1024).
 #' @param .temperature Numeric between 0 and 1 controlling response randomness.
 #' @param .top_k Integer for diversity by limiting the top K tokens.
@@ -571,7 +540,7 @@ claude_chat <- function(.llm,
 #' @return An updated and named list of `.llms` with identifiers that align with batch responses, including a `batch_id` attribute.
 #' @export
 send_claude_batch <- function(.llms, 
-                              .model = "claude-sonnet-4-5-20250929", 
+                              .model = "claude-sonnet-4-6", 
                               .max_tokens = 1024, 
                               .temperature = NULL, 
                               .top_k = NULL, 
