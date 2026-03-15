@@ -9,7 +9,7 @@
 #   - claude_list_files() includes uploaded file
 #   - claude_delete_file() removes the file (always called via on.exit)
 #
-# Uses local_wip/media/ test assets (PDF and image).
+# Uses local_tests/media/ test assets (PDF and image).
 
 devtools::load_all(quiet = TRUE)
 source("local_tests/test_harness.R")
@@ -18,7 +18,7 @@ llt_suite("claude_file_api")
 # ── PDF upload + chat ─────────────────────────────────────────────────────────
 
 llt_test("upload PDF returns tibble with required fields", {
-  info <- claude_upload_file("local_wip/media/ssrn-4983498.pdf")
+  info <- claude_upload_file("local_tests/media/ssrn-4983498.pdf")
   on.exit(tryCatch(claude_delete_file(info$file_id), error = function(e) NULL))
 
   llt_expect_true(tibble::is_tibble(info), "Should return a tibble")
@@ -30,7 +30,7 @@ llt_test("upload PDF returns tibble with required fields", {
 })
 
 llt_test("uploaded PDF can be used in chat via .file_ids", {
-  info <- claude_upload_file("local_wip/media/ssrn-4983498.pdf")
+  info <- claude_upload_file("local_tests/media/ssrn-4983498.pdf")
   on.exit(tryCatch(claude_delete_file(info$file_id), error = function(e) NULL))
 
   result <- llm_message("What is the title of this document? Give the title only.") |>
@@ -42,14 +42,14 @@ llt_test("uploaded PDF can be used in chat via .file_ids", {
 # ── Image upload + chat ───────────────────────────────────────────────────────
 
 llt_test("upload image returns tibble with correct mime_type", {
-  info <- claude_upload_file("local_wip/media/hotdog.jpg")
+  info <- claude_upload_file("local_tests/media/hotdog.jpg")
   on.exit(tryCatch(claude_delete_file(info$file_id), error = function(e) NULL))
 
   llt_expect_true(grepl("image", info$mime_type), "mime_type should be image/*")
 })
 
 llt_test("uploaded image chat: model identifies hotdog content", {
-  info <- claude_upload_file("local_wip/media/hotdog.jpg")
+  info <- claude_upload_file("local_tests/media/hotdog.jpg")
   on.exit(tryCatch(claude_delete_file(info$file_id), error = function(e) NULL))
 
   result <- llm_message("Describe what food is in this image in one word.") |>
@@ -64,7 +64,7 @@ llt_test("uploaded image chat: model identifies hotdog content", {
 # ── File management ───────────────────────────────────────────────────────────
 
 llt_test("claude_file_metadata returns correct info for uploaded file", {
-  info <- claude_upload_file("local_wip/media/dog.jpg")
+  info <- claude_upload_file("local_tests/media/dog.jpg")
   on.exit(tryCatch(claude_delete_file(info$file_id), error = function(e) NULL))
 
   meta <- claude_file_metadata(info$file_id)
@@ -74,7 +74,7 @@ llt_test("claude_file_metadata returns correct info for uploaded file", {
 })
 
 llt_test("claude_list_files returns tibble including uploaded file", {
-  info <- claude_upload_file("local_wip/media/dog.jpg")
+  info <- claude_upload_file("local_tests/media/dog.jpg")
   on.exit(tryCatch(claude_delete_file(info$file_id), error = function(e) NULL))
 
   files <- claude_list_files()
@@ -83,7 +83,7 @@ llt_test("claude_list_files returns tibble including uploaded file", {
 })
 
 llt_test("claude_delete_file removes file — subsequent metadata call errors", {
-  info <- claude_upload_file("local_wip/media/dog.jpg")
+  info <- claude_upload_file("local_tests/media/dog.jpg")
 
   claude_delete_file(info$file_id)
 

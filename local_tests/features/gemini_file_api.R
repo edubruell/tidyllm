@@ -9,7 +9,7 @@
 #   - gemini_list_files() includes the uploaded file
 #   - gemini_delete_file() cleans up (always runs via on.exit)
 #
-# Uses local_wip/media/ test assets (PDF and image).
+# Uses local_tests/media/ test assets (PDF and image).
 
 devtools::load_all(quiet = TRUE)
 source("local_tests/test_harness.R")
@@ -18,7 +18,7 @@ llt_suite("gemini_file_api")
 # ── PDF upload + chat ─────────────────────────────────────────────────────────
 
 llt_test("upload PDF returns tibble with required fields", {
-  info <- gemini_upload_file("local_wip/media/ssrn-4983498.pdf")
+  info <- gemini_upload_file("local_tests/media/ssrn-4983498.pdf")
   llt_expect_true(tibble::is_tibble(info), "Should return a tibble")
   llt_expect_true("name" %in% names(info), "Should have name column")
   llt_expect_true("uri" %in% names(info), "Should have uri column")
@@ -28,7 +28,7 @@ llt_test("upload PDF returns tibble with required fields", {
 })
 
 llt_test("uploaded PDF can be used in chat via .fileid", {
-  info <- gemini_upload_file("local_wip/media/ssrn-4983498.pdf")
+  info <- gemini_upload_file("local_tests/media/ssrn-4983498.pdf")
   on.exit(tryCatch(gemini_delete_file(info$name), error = function(e) NULL))
 
   result <- llm_message("What is the title of this document? Give the title only.") |>
@@ -40,14 +40,14 @@ llt_test("uploaded PDF can be used in chat via .fileid", {
 # ── Image upload + chat ───────────────────────────────────────────────────────
 
 llt_test("upload image returns tibble with uri", {
-  info <- gemini_upload_file("local_wip/media/hotdog.jpg")
+  info <- gemini_upload_file("local_tests/media/hotdog.jpg")
   on.exit(tryCatch(gemini_delete_file(info$name), error = function(e) NULL))
   llt_expect_true("uri" %in% names(info), "Should have uri")
   llt_expect_true(grepl("^https://", info$uri), "URI should be an https URL")
 })
 
 llt_test("uploaded image chat: model identifies hotdog content", {
-  info <- gemini_upload_file("local_wip/media/hotdog.jpg")
+  info <- gemini_upload_file("local_tests/media/hotdog.jpg")
   on.exit(tryCatch(gemini_delete_file(info$name), error = function(e) NULL))
 
   result <- llm_message("Describe what food is in this image in one word.") |>
@@ -62,7 +62,7 @@ llt_test("uploaded image chat: model identifies hotdog content", {
 # ── File management ───────────────────────────────────────────────────────────
 
 llt_test("gemini_file_metadata returns correct info for uploaded file", {
-  info <- gemini_upload_file("local_wip/media/dog.jpg")
+  info <- gemini_upload_file("local_tests/media/dog.jpg")
   on.exit(tryCatch(gemini_delete_file(info$name), error = function(e) NULL))
 
   meta <- gemini_file_metadata(info$name)
@@ -72,7 +72,7 @@ llt_test("gemini_file_metadata returns correct info for uploaded file", {
 })
 
 llt_test("gemini_list_files returns tibble including uploaded file", {
-  info <- gemini_upload_file("local_wip/media/dog.jpg")
+  info <- gemini_upload_file("local_tests/media/dog.jpg")
   on.exit(tryCatch(gemini_delete_file(info$name), error = function(e) NULL))
 
   files <- gemini_list_files(.page_size = 50)
@@ -81,7 +81,7 @@ llt_test("gemini_list_files returns tibble including uploaded file", {
 })
 
 llt_test("gemini_delete_file removes file from listing", {
-  info <- gemini_upload_file("local_wip/media/dog.jpg")
+  info <- gemini_upload_file("local_tests/media/dog.jpg")
 
   gemini_delete_file(info$name)
   files <- gemini_list_files(.page_size = 100)
