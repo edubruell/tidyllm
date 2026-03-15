@@ -9,6 +9,7 @@
 ^\.github$
 ^vignettes/articles$
 ^local_wip/
+^local_tests/
 ^NEWS.html$
 ^README.html$
 
