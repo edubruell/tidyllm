@@ -8,6 +8,8 @@ inst/doc
 /doc/
 /Meta/
 /local_wip/
-/local_tests/
+/local_tests/async_state/
+/local_tests/results/
+/local_tests/debug_state/
 /.sidekick/
 /vignettes/articles/aipapers
