@@ -146,7 +146,7 @@ deepseek_chat <- function(.llm,
   
   # Handle tool calls with multi-turn support
   if (.stream == FALSE && !is.null(tools_def)) {
-    response <- openai_process_tools(
+    response <- process_tool_loop(
       .api = api_obj,
       .response = response,
       .tools_def = tools_def,

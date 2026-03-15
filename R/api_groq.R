@@ -41,7 +41,7 @@ method(extract_metadata, list(api_groq,class_list))<- function(.api, .response) 
 #' @param .tool_choice A character string specifying the tool-calling behavior; valid values are "none", "auto", or "required" (optional).
 #' @param .seed An integer for deterministic sampling. If specified, attempts to return the same result for repeated requests with identical parameters (optional).
 #' @param .api_url Base URL for the Groq API (default: "https://api.groq.com/").
-#' @param .json Whether the response should be structured as JSON (default: FALSE).
+#' @param .json_schema A list or tidyllm schema created with `tidyllm_schema()` for structured JSON output (optional).
 #' @param .timeout Request timeout in seconds (default: 60).
 #' @param .stream Logical; if TRUE, streams the response piece by piece (default: FALSE).
 #' @param .verbose If TRUE, displays additional information after the API call, including rate limit details (default: FALSE).
@@ -78,7 +78,7 @@ groq_chat <- function(.llm,
                  .tools = NULL,
                  .tool_choice = NULL,
                  .api_url = "https://api.groq.com/",
-                 .json = FALSE,
+                 .json_schema = NULL,
                  .timeout = 60,
                  .verbose = FALSE,
                  .stream = FALSE,
@@ -101,7 +101,7 @@ groq_chat <- function(.llm,
     "Input .seed must be an integer if provided" = is.null(.seed) | is_integer_valued(.seed),
     "Input .tools must be NULL, a TOOL object, or a list of TOOL objects" = is.null(.tools) || S7_inherits(.tools, TOOL) || (is.list(.tools) && all(purrr::map_lgl(.tools, ~ S7_inherits(.x, TOOL)))),
     "Input .tool_choice must be NULL or a character (one of 'none', 'auto', 'required')" = is.null(.tool_choice) || (is.character(.tool_choice) && .tool_choice %in% c("none", "auto", "required")),
-    "Input .json must be logical" = is.logical(.json),
+    "Input .json_schema must be NULL or a list or an ellmer type object" = is.null(.json_schema) | is.list(.json_schema) | is_ellmer_type(.json_schema),
     "Input .verbose must be logical" = is.logical(.verbose),
     "Input .max_tries must be integer-valued numeric" = is_integer_valued(.max_tries),
     "Input .dry_run must be logical" = is.logical(.dry_run),
@@ -113,19 +113,46 @@ groq_chat <- function(.llm,
   api_obj <- api_groq(short_name = "groq",
                     long_name  = "Groq",
                     api_key_env_var = "GROQ_API_KEY")
-  
+
   # Get formatted message list for Groq models
   messages <- to_api_format(.llm,api_obj,TRUE)
-  
+
   api_key <- get_api_key(api_obj,.dry_run)
-  
-  #Put a single tool into a list if only one is provided. 
+
+  #Put a single tool into a list if only one is provided.
   tools_def <- if (!is.null(.tools)) {
     if (S7_inherits(.tools, TOOL))  list(.tools) else .tools
   } else {
     NULL
   }
-  
+
+  json <- FALSE
+  response_format <- NULL
+  if (!is.null(.json_schema)) {
+    json <- TRUE
+    schema_name <- "empty"
+    if (requireNamespace("ellmer", quietly = TRUE)) {
+      if (S7_inherits(.json_schema, ellmer::TypeObject)) {
+        .json_schema <- to_schema(.json_schema)
+        schema_name <- "ellmer_schema"
+      }
+    }
+    if (schema_name != "ellmer_schema") {
+      schema_name <- attr(.json_schema, "name") %||% "schema"
+    }
+    if (is.null(.json_schema$additionalProperties)) {
+      .json_schema$additionalProperties <- FALSE
+    }
+    response_format <- list(
+      type = "json_schema",
+      json_schema = list(
+        schema = .json_schema,
+        name = schema_name,
+        strict = TRUE
+      )
+    )
+  }
+
   # Fill the request body
   request_body <- list(
     model = .model,
@@ -141,10 +168,9 @@ groq_chat <- function(.llm,
     tools = if(!is.null(tools_def)) tools_to_api(api_obj,tools_def) else NULL,
     tool_choice = .tool_choice
   ) |> purrr::compact()
-  
-  # Handle JSON mode
-  if (.json == TRUE) {
-    request_body$response_format <- list(type = "json_object")
+
+  if (!is.null(response_format)) {
+    request_body$response_format <- response_format
   }
   
   request <- httr2::request(.api_url) |>
@@ -164,7 +190,7 @@ groq_chat <- function(.llm,
   
   # Handle tool calls with multi-turn support
   if (.stream == FALSE && !is.null(tools_def)) {
-    response <- openai_process_tools(
+    response <- process_tool_loop(
       .api = api_obj,
       .response = response,
       .tools_def = tools_def,
@@ -182,9 +208,9 @@ groq_chat <- function(.llm,
   
   # Add model's message to the history of the LLMMessage object
   add_message(.llm     = .llm,
-              .role    = "assistant", 
-              .content = assistant_reply , 
-              .json    = .json,
+              .role    = "assistant",
+              .content = assistant_reply,
+              .json    = json,
               .meta    = response$meta)
 }
 
@@ -392,7 +418,7 @@ groq_list_models <- function(.api_url = "https://api.groq.com",
 #' @param .stop One or more sequences where the API will stop generating further tokens.
 #' @param .seed An integer for deterministic sampling.
 #' @param .api_url Base URL for the Groq API (default: "https://api.groq.com/").
-#' @param .json Whether the response should be structured as JSON (default: FALSE).
+#' @param .json_schema A list or tidyllm schema created with `tidyllm_schema()` for structured JSON output (optional).
 #' @param .completion_window Character string for the batch completion window (default: "24h").
 #' @param .verbose Logical; if TRUE, prints a message with the batch ID (default: FALSE).
 #' @param .overwrite Logical; if TRUE, allows overwriting an existing batch ID (default: FALSE).
@@ -403,17 +429,17 @@ groq_list_models <- function(.api_url = "https://api.groq.com",
 #' 
 #' @return An updated and named list of `.llms` with identifiers that align with batch responses, including a `batch_id` attribute.
 #' @export
-send_groq_batch <- function(.llms, 
-                            .model = "moonshotai/kimi-k2-instruct-0905", 
-                            .max_tokens = 1024, 
-                            .temperature = NULL, 
-                            .top_p = NULL, 
+send_groq_batch <- function(.llms,
+                            .model = "moonshotai/kimi-k2-instruct-0905",
+                            .max_tokens = 1024,
+                            .temperature = NULL,
+                            .top_p = NULL,
                             .frequency_penalty = NULL,
                             .presence_penalty = NULL,
-                            .stop = NULL, 
+                            .stop = NULL,
                             .seed = NULL,
                             .api_url = "https://api.groq.com/",
-                            .json = FALSE,
+                            .json_schema = NULL,
                             .completion_window = "24h",
                             .verbose = FALSE,
                             .dry_run = FALSE,
@@ -439,9 +465,35 @@ send_groq_batch <- function(.llms,
     ".overwrite must be logical" = is.logical(.overwrite),
     ".id_prefix must be a character vector of length 1" = is.character(.id_prefix),
     ".max_tries must be integer-valued numeric" = is_integer_valued(.max_tries),
-    ".timeout must be an integer" = is_integer_valued(.timeout)
+    ".timeout must be an integer" = is_integer_valued(.timeout),
+    ".json_schema must be NULL or a list or an ellmer type object" = is.null(.json_schema) | is.list(.json_schema) | is_ellmer_type(.json_schema)
   ) |> validate_inputs()
-  
+
+  response_format <- NULL
+  if (!is.null(.json_schema)) {
+    schema_name <- "empty"
+    if (requireNamespace("ellmer", quietly = TRUE)) {
+      if (S7_inherits(.json_schema, ellmer::TypeObject)) {
+        .json_schema <- to_schema(.json_schema)
+        schema_name <- "ellmer_schema"
+      }
+    }
+    if (schema_name != "ellmer_schema") {
+      schema_name <- attr(.json_schema, "name") %||% "schema"
+    }
+    if (is.null(.json_schema$additionalProperties)) {
+      .json_schema$additionalProperties <- FALSE
+    }
+    response_format <- list(
+      type = "json_schema",
+      json_schema = list(
+        schema = .json_schema,
+        name = schema_name,
+        strict = TRUE
+      )
+    )
+  }
+
   api_obj <- api_groq(short_name = "groq",
                       long_name  = "Groq",
                       api_key_env_var = "GROQ_API_KEY")
@@ -470,12 +522,11 @@ send_groq_batch <- function(.llms,
       stop = .stop,
       seed = .seed
     ) |> purrr::compact()
-    
-    # Handle JSON mode
-    if (.json == TRUE) {
-      request_body$response_format <- list(type = "json_object")
+
+    if (!is.null(response_format)) {
+      request_body$response_format <- response_format
     }
-    
+
     # Create the batch request entry
     batch_entry <- list(
       custom_id = custom_id,
