@@ -7,6 +7,7 @@
 deepseek_chat(
   .llm,
   .model = "deepseek-chat",
+  .thinking = NULL,
   .max_tokens = 2048,
   .temperature = NULL,
   .top_p = NULL,

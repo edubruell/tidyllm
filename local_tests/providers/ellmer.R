@@ -50,9 +50,11 @@ llt_test("multi-turn conversation preserves history through ellmer", {
 llt_test("ellmer_tool converts basic ToolDef to TOOL", {
   et <- ellmer::tool(
     function(a, b) a + b,
-    description = "Add two numbers",
-    a = ellmer::type_number("First number"),
-    b = ellmer::type_number("Second number")
+    "Add two numbers",
+    arguments = list(
+      a = ellmer::type_number("First number"),
+      b = ellmer::type_number("Second number")
+    )
   )
   tt <- ellmer_tool(et)
   llt_expect_true(S7_inherits(tt, TOOL), "Should be a TOOL object")
@@ -63,8 +65,10 @@ llt_test("ellmer_tool converts basic ToolDef to TOOL", {
 llt_test("ellmer_tool preserves enum (type_enum -> field_fct)", {
   et <- ellmer::tool(
     function(unit) unit,
-    description = "Return unit",
-    unit = ellmer::type_enum("Temperature unit", values = c("celsius", "fahrenheit"))
+    "Return unit",
+    arguments = list(
+      unit = ellmer::type_enum("Temperature unit", values = c("celsius", "fahrenheit"))
+    )
   )
   tt <- ellmer_tool(et)
   llt_expect_true(length(tt@input_schema$unit@enum) == 2, "Should have 2 enum values")
@@ -74,9 +78,11 @@ llt_test("ellmer_tool preserves enum (type_enum -> field_fct)", {
 llt_test("ellmer_tool converted tool works in real chat (claude)", {
   et <- ellmer::tool(
     function(a, b) a + b,
-    description = "Add two numbers. Always use this tool for arithmetic.",
-    a = ellmer::type_number("First number"),
-    b = ellmer::type_number("Second number")
+    "Add two numbers. Always use this tool for arithmetic.",
+    arguments = list(
+      a = ellmer::type_number("First number"),
+      b = ellmer::type_number("Second number")
+    )
   )
   tt <- ellmer_tool(et)
   result <- llm_message("What is 17 + 25? Use the add tool.") |>

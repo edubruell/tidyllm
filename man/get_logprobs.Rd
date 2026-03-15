@@ -20,7 +20,7 @@ Extracts token log probabilities from assistant replies within an \code{LLMMessa
 Each row represents a token with its log probability and top alternative tokens.
 }
 \details{
-An empty tibble is output if no logprobs were requested. Currently only works with \code{openai_chat()}
+An empty tibble is output if no logprobs were requested. Works with \code{openai_chat()}, \code{llamacpp_chat()}, and other providers that support logprobs.
 
 Columns include:
 \itemize{

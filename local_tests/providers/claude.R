@@ -109,4 +109,21 @@ llt_test("max_tool_rounds limit raises error", {
   )
 })
 
+# ── Prompt caching ────────────────────────────────────────────────────────────
+
+llt_test("cache_system_prompt shows cache tokens in metadata on second call", {
+  long_system <- paste(rep("This is a long system prompt for testing prompt caching.", 50), collapse = " ")
+  msg <- llm_message("Say hello.", .system = long_system)
+  result1 <- msg |> chat(claude(.cache_system_prompt = TRUE))
+  llt_expect_reply(result1)
+  result2 <- msg |> chat(claude(.cache_system_prompt = TRUE))
+  llt_expect_reply(result2)
+  meta2 <- get_metadata(result2)
+  llt_expect_true(
+    !is.null(meta2$api_specific[[1]]$cache_read_tokens) &&
+      meta2$api_specific[[1]]$cache_read_tokens > 0,
+    "Second call should show cache_read_tokens > 0"
+  )
+})
+
 llt_report()

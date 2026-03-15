@@ -6,7 +6,8 @@
 \usage{
 voyage_embedding(
   .input,
-  .model = "voyage-3.5-lite",
+  .model = "voyage-4",
+  .output_dimension = NULL,
   .timeout = 120,
   .dry_run = FALSE,
   .max_tries = 3,

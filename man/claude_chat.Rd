@@ -6,7 +6,7 @@
 \usage{
 claude_chat(
   .llm,
-  .model = "claude-sonnet-4-5-20250929",
+  .model = "claude-sonnet-4-6",
   .max_tokens = 2048,
   .temperature = NULL,
   .top_k = NULL,
@@ -16,6 +16,7 @@ claude_chat(
   .tools = NULL,
   .json_schema = NULL,
   .file_ids = NULL,
+  .cache_system_prompt = FALSE,
   .api_url = "https://api.anthropic.com/",
   .verbose = FALSE,
   .max_tries = 3,
@@ -30,7 +31,7 @@ claude_chat(
 \arguments{
 \item{.llm}{An LLMMessage object containing the conversation history and system prompt.}
 
-\item{.model}{Character string specifying the Claude model version (default: "claude-sonnet-4-5-20250929").}
+\item{.model}{Character string specifying the Claude model version (default: "claude-sonnet-4-6").}
 
 \item{.max_tokens}{Integer specifying the maximum number of tokens in the response (default: 1024).}
 

@@ -6,7 +6,7 @@
 \usage{
 ollama_embedding(
   .input,
-  .model = "all-minilm",
+  .model = "qwen3-embedding:0.6b",
   .truncate = TRUE,
   .ollama_server = "http://localhost:11434",
   .timeout = 120,

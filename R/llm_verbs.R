@@ -482,6 +482,82 @@ fetch_batch <- function(.llms,
   return(dispatch_to_provider(provider_expr, "fetch_batch", common_args, validate = FALSE))
 }
 
+#' Run Deep Research via a Provider
+#'
+#' The `deep_research()` function sends a message to a provider's deep research endpoint.
+#' Currently supported: Perplexity (`sonar-deep-research` via async API).
+#'
+#' @param .llm An `LLMMessage` object containing the research question.
+#' @param .provider A function or function call specifying the provider (e.g., `perplexity()`).
+#' @param .background Logical; if TRUE, returns a `tidyllm_research_job` immediately (default: FALSE).
+#' @param ... Additional arguments passed to the provider's deep research function.
+#'
+#' @return If `.background = FALSE`, an `LLMMessage` with the research reply.
+#'   If `.background = TRUE`, a `tidyllm_research_job` for use with `check_job()`/`fetch_job()`.
+#' @export
+deep_research <- function(.llm, .provider, .background = FALSE, ...) {
+  if (!S7_inherits(.llm, LLMMessage)) {
+    stop("Input .llm must be an LLMMessage object.")
+  }
+  if (is.null(.provider)) {
+    stop("You need to specify a .provider function in deep_research().")
+  }
+  if (rlang::is_function(.provider)) {
+    .provider <- .provider()
+  }
+  if (!rlang::is_call(.provider)) {
+    provider_expr <- rlang::quo_get_expr(rlang::enquo(.provider))
+  } else {
+    provider_expr <- .provider
+  }
+  common_args <- list(.llm = .llm, .background = .background, ...)
+  return(dispatch_to_provider(provider_expr, "deep_research", common_args))
+}
+
+
+#' Check the Status of a Batch or Research Job
+#'
+#' `check_job()` dispatches to `check_batch()` for batch objects or
+#' `perplexity_check_research()` for `tidyllm_research_job` objects.
+#'
+#' @param .job An object with a `batch_id` attribute (from `send_batch()`) or
+#'   a `tidyllm_research_job` (from `deep_research(.background = TRUE)`).
+#' @param ... Additional arguments passed to the underlying function.
+#' @return Status information; type depends on `.job` class.
+#' @export
+check_job <- function(.job, ...) {
+  if (!is.null(attr(.job, "batch_id"))) {
+    check_batch(.job, ...)
+  } else if (inherits(.job, "tidyllm_research_job")) {
+    perplexity_check_research(.job, ...)
+  } else {
+    stop("check_job() expects an object with a 'batch_id' attribute or a tidyllm_research_job.")
+  }
+}
+
+
+#' Fetch Results from a Batch or Research Job
+#'
+#' `fetch_job()` dispatches to `fetch_batch()` for batch objects or
+#' `perplexity_fetch_research()` for `tidyllm_research_job` objects.
+#'
+#' @param .job An object with a `batch_id` attribute (from `send_batch()`) or
+#'   a `tidyllm_research_job` (from `deep_research(.background = TRUE)`).
+#' @param .provider A provider function (required for batch jobs, ignored for research jobs).
+#' @param ... Additional arguments passed to the underlying function.
+#' @return Fetched results; type depends on `.job` class.
+#' @export
+fetch_job <- function(.job, .provider = NULL, ...) {
+  if (!is.null(attr(.job, "batch_id"))) {
+    fetch_batch(.job, .provider, ...)
+  } else if (inherits(.job, "tidyllm_research_job")) {
+    perplexity_fetch_research(.job, ...)
+  } else {
+    stop("fetch_job() expects an object with a 'batch_id' attribute or a tidyllm_research_job.")
+  }
+}
+
+
 #' List Available Models for a Provider
 #'
 #' The `list_models()` function retrieves available models from the specified provider.

@@ -76,4 +76,15 @@ llt_test("deepseek-reasoner returns reply", {
   llt_expect_reply(result)
 })
 
+llt_test("thinking mode returns reasoning trace in metadata", {
+  result <- llm_message("What is 17 * 23? Show your reasoning.") |>
+    chat(deepseek(.thinking = TRUE))
+  llt_expect_reply(result)
+  meta <- get_metadata(result)
+  llt_expect_true(
+    !is.null(meta$api_specific[[1]]$thinking) && nzchar(meta$api_specific[[1]]$thinking),
+    "api_specific$thinking should be non-empty"
+  )
+})
+
 llt_report()

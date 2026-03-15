@@ -39,6 +39,7 @@
 #' @export
 voyage_embedding <- function(.input,
                              .model = "voyage-4",
+                             .output_dimension = NULL,
                              .timeout = 120,
                              .dry_run = FALSE,
                              .max_tries = 3,
@@ -57,9 +58,10 @@ voyage_embedding <- function(.input,
   
   # Validate the inputs
   c(
-    "Input .input must be an LLMMessage object, a character vector, or a list with texts and images" = 
+    "Input .input must be an LLMMessage object, a character vector, or a list with texts and images" =
       is_message | is_character | is_list,
     "Input .model must be a string" = is.character(.model),
+    "Input .output_dimension must be NULL or a positive integer" = is.null(.output_dimension) || (is_integer_valued(.output_dimension) && .output_dimension > 0),
     "Input .timeout must be an integer-valued numeric (seconds till timeout)" = is.numeric(.timeout) && .timeout > 0,
     ".dry_run must be logical" = is.logical(.dry_run)
   ) |> validate_inputs()
@@ -112,8 +114,9 @@ voyage_embedding <- function(.input,
       # Prepare multimodal request body
       request_body <- list(
         inputs = inputs_list,
-        model  = model_to_use
-      )
+        model  = model_to_use,
+        output_dimension = .output_dimension
+      ) |> purrr::compact()
       
       # Build multimodal request
       request <- httr2::request("https://api.voyageai.com/v1/multimodalembeddings") |>
@@ -161,8 +164,9 @@ voyage_embedding <- function(.input,
     # Prepare the request body
     request_body <- list(
       model = .model,
-      input = input_texts
-    )
+      input = input_texts,
+      output_dimension = .output_dimension
+    ) |> purrr::compact()
     
     # Build the request
     request <- httr2::request("https://api.voyageai.com/v1/embeddings") |>
@@ -197,6 +201,62 @@ voyage_embedding <- function(.input,
     )
   }
 }
+
+#' Rerank Documents Using Voyage AI API
+#'
+#' @param .query A single character string representing the search query.
+#' @param .documents A character vector of documents to rerank.
+#' @param .model The reranking model identifier (default: "rerank-2").
+#' @param .top_k Integer; return only the top-k results (default: NULL, returns all).
+#' @param .api_key Character; Voyage API key (default: from environment).
+#' @param .timeout Integer; request timeout in seconds (default: 60).
+#' @param .max_tries Integer; maximum retries (default: 3).
+#'
+#' @return A tibble with columns `index`, `document`, and `relevance_score`, sorted by score descending.
+#' @export
+voyage_rerank <- function(.query,
+                          .documents,
+                          .model = "rerank-2",
+                          .top_k = NULL,
+                          .api_key = Sys.getenv("VOYAGE_API_KEY"),
+                          .timeout = 60,
+                          .max_tries = 3) {
+  c(
+    "Input .query must be a non-empty string" = is.character(.query) && length(.query) == 1 && nzchar(.query),
+    "Input .documents must be a non-empty character vector" = is.character(.documents) && length(.documents) > 0,
+    "Input .model must be a non-empty string" = is.character(.model) && nzchar(.model),
+    "Input .top_k must be NULL or a positive integer" = is.null(.top_k) || (is_integer_valued(.top_k) && .top_k > 0),
+    "Input .api_key must be non-empty" = nzchar(.api_key),
+    "Input .timeout must be a positive number" = is.numeric(.timeout) && .timeout > 0
+  ) |> validate_inputs()
+
+  request_body <- list(
+    query     = .query,
+    documents = as.list(.documents),
+    model     = .model,
+    top_k     = .top_k
+  ) |> purrr::compact()
+
+  response <- httr2::request("https://api.voyageai.com/v1/rerank") |>
+    httr2::req_headers(
+      "Content-Type"  = "application/json",
+      "Authorization" = paste("Bearer", .api_key)
+    ) |>
+    httr2::req_body_json(request_body) |>
+    httr2::req_retry(max_tries = .max_tries) |>
+    httr2::req_timeout(.timeout) |>
+    httr2::req_perform() |>
+    httr2::resp_body_json()
+
+  results <- response$data
+  tibble::tibble(
+    index           = purrr::map_int(results, ~ .x$index),
+    document        = purrr::map_chr(results, ~ .documents[.x$index + 1]),
+    relevance_score = purrr::map_dbl(results, ~ .x$relevance_score)
+  ) |>
+    dplyr::arrange(dplyr::desc(relevance_score))
+}
+
 
 #' Voyage Provider Function
 #'

@@ -64,7 +64,9 @@ method(parse_chat_response, list(api_gemini,class_list)) <- function(.api,.conte
       stop()
   }
   
-  .content$candidates[[1]]$content$parts[[1]]$text
+  parts <- .content$candidates[[1]]$content$parts
+  text_parts <- purrr::keep(parts, ~ !isTRUE(.x$thought))
+  text_parts[[1]]$text
 }
 
 
@@ -114,6 +116,17 @@ method(handle_stream,list(api_gemini,new_S3_class("httr2_response"))) <- functio
 #'
 #' @noRd
 method(extract_metadata, list(api_gemini,class_list))<- function(.api,.response) {
+  parts <- .response$candidates[[1]]$content$parts
+  thinking_text <- if (!is.null(parts)) {
+    thought_parts <- purrr::keep(parts, ~ isTRUE(.x$thought))
+    if (length(thought_parts) > 0) {
+      purrr::map_chr(thought_parts, ~ .x$text %||% "") |> paste(collapse = "")
+    } else {
+      NULL
+    }
+  } else {
+    NULL
+  }
   list(
     model             = .response$modelVersion,
     timestamp         = lubridate::as_datetime(lubridate::now()),
@@ -121,10 +134,11 @@ method(extract_metadata, list(api_gemini,class_list))<- function(.api,.response)
     completion_tokens = .response$usageMetadata$candidatesTokenCount,
     total_tokens      = .response$usageMetadata$totalTokenCount,
     specific_metadata = list(
-      finishReason = .response$candidates[[1]]$finishReason,
-      avgLogprobs  = .response$candidates[[1]]$avgLogprobs,
-      groundingMetadata = .response$candidates[[1]]$groundingMetadata
-      ) 
+      finishReason      = .response$candidates[[1]]$finishReason,
+      avgLogprobs       = .response$candidates[[1]]$avgLogprobs,
+      groundingMetadata = .response$candidates[[1]]$groundingMetadata,
+      thinking          = thinking_text
+    )
   )
 }  
 
@@ -347,13 +361,14 @@ gemini_chat <- function(.llm,
                    .max_output_tokens = NULL,
                    .top_p = NULL,
                    .top_k = NULL,
-                   .grounding_threshold = NULL, 
+                   .grounding_threshold = NULL,
                    .presence_penalty = NULL,
                    .frequency_penalty = NULL,
                    .stop_sequences = NULL,
                    .safety_settings = NULL,
                    .json_schema = NULL,
                    .tools = NULL,
+                   .thinking_budget = NULL,
                    .timeout = 120,
                    .dry_run = FALSE,
                    .max_tries = 3,
@@ -383,7 +398,8 @@ gemini_chat <- function(.llm,
     "Input .stream must be logical" = is.logical(.verbose),
     "Input .tools must be NULL, a TOOL object, or a list of TOOL objects" = is.null(.tools) || S7_inherits(.tools, TOOL) || (is.list(.tools) && all(purrr::map_lgl(.tools, ~ S7_inherits(.x, TOOL)))),
     "Streaming is not supported for requests with tool calls" = is.null(.tools) || !isTRUE(.stream),
-    ".max_tool_rounds must be a positive integer" = is_integer_valued(.max_tool_rounds) && .max_tool_rounds >= 1
+    ".max_tool_rounds must be a positive integer" = is_integer_valued(.max_tool_rounds) && .max_tool_rounds >= 1,
+    ".thinking_budget must be NULL or a non-negative integer" = is.null(.thinking_budget) || (is_integer_valued(.thinking_budget) && .thinking_budget >= 0)
   ) |>
     validate_inputs()
   
@@ -462,7 +478,8 @@ gemini_chat <- function(.llm,
     topK = .top_k,
     presencePenalty = .presence_penalty,
     frequencyPenalty = .frequency_penalty,
-    stopSequences = .stop_sequences
+    stopSequences = .stop_sequences,
+    thinkingConfig = if (!is.null(.thinking_budget)) list(thinkingBudget = .thinking_budget) else NULL
   ) |>
     append(response_format) |>
     purrr::compact()

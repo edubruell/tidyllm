@@ -6,7 +6,7 @@
 \usage{
 ollama_chat(
   .llm,
-  .model = "qwen3-vl",
+  .model = "qwen3.5:4b",
   .stream = FALSE,
   .seed = NULL,
   .json_schema = NULL,

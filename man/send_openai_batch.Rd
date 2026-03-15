@@ -6,7 +6,7 @@
 \usage{
 send_openai_batch(
   .llms,
-  .model = "gpt-5.1-chat-latest",
+  .model = "gpt-5.4",
   .max_completion_tokens = NULL,
   .reasoning_effort = NULL,
   .frequency_penalty = NULL,

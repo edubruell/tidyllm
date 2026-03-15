@@ -17,8 +17,9 @@ method(extract_metadata, list(api_deepseek,class_list))<- function(.api,.respons
     total_tokens      = .response$usage$total_tokens,
     stream            = FALSE,
     specific_metadata = list(
-      id        = .response$id    
-    ) 
+      id      = .response$id,
+      thinking = .response$choices[[1]]$message$reasoning_content
+    )
   )
 }  
 
@@ -54,6 +55,7 @@ method(extract_metadata, list(api_deepseek,class_list))<- function(.api,.respons
 #' @export
 deepseek_chat <- function(.llm,
                           .model = "deepseek-chat",
+                          .thinking = NULL,
                           .max_tokens = 2048,
                           .temperature = NULL,
                           .top_p = NULL,
@@ -75,6 +77,7 @@ deepseek_chat <- function(.llm,
   # Validate inputs
   c(
     "Input .llm must be an LLMMessage object" = S7_inherits(.llm, LLMMessage),
+    "Input .thinking must be NULL or logical" = is.null(.thinking) || is.logical(.thinking),
     "Input .model must be a non-empty string" = is.character(.model) & nzchar(.model),
     "Input .max_tokens must be a positive integer" = is_integer_valued(.max_tokens) & .max_tokens > 0,
     "Input .temperature must be between 0 and 2 if provided" = is.null(.temperature) | (.temperature >= 0 & .temperature <= 2),
@@ -98,6 +101,8 @@ deepseek_chat <- function(.llm,
     ".max_tool_rounds must be a positive integer" = is_integer_valued(.max_tool_rounds) && .max_tool_rounds >= 1
   ) |> validate_inputs()
   
+  if (isTRUE(.thinking)) .model <- "deepseek-reasoner"
+
   api_obj <- api_deepseek(short_name = "deepseek",
                           long_name  = "DeepSeek",
                           api_key_env_var = "DEEPSEEK_API_KEY")

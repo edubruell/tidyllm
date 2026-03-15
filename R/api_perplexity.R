@@ -253,6 +253,170 @@ perplexity_chat <- function(
 }
 
 
+#' Submit a Deep Research Request to Perplexity
+#'
+#' @param .llm An `LLMMessage` object containing the research question.
+#' @param .background Logical; if TRUE, returns a `tidyllm_research_job` immediately without waiting (default: FALSE).
+#' @param .search_context_size Character; search context size: "low", "medium" (default), or "high".
+#' @param .reasoning_effort Character; reasoning level: "low", "medium" (default), or "high".
+#' @param .api_key Character; Perplexity API key (default: from environment variable).
+#' @param .timeout Integer; request timeout in seconds for polling (default: 300).
+#' @param .max_tries Integer; maximum retries (default: 3).
+#'
+#' @return If `.background = FALSE`, an updated `LLMMessage` with the research reply.
+#'   If `.background = TRUE`, a `tidyllm_research_job` object.
+#' @export
+perplexity_deep_research <- function(.llm,
+                                     .background = FALSE,
+                                     .search_context_size = "medium",
+                                     .reasoning_effort = "medium",
+                                     .api_key = Sys.getenv("PERPLEXITY_API_KEY"),
+                                     .timeout = 300,
+                                     .max_tries = 3) {
+  c(
+    "Input .llm must be an LLMMessage object" = S7_inherits(.llm, LLMMessage),
+    "Input .background must be logical" = is.logical(.background),
+    "Input .search_context_size must be 'low', 'medium', or 'high'" = .search_context_size %in% c("low", "medium", "high"),
+    "Input .reasoning_effort must be 'low', 'medium', or 'high'" = .reasoning_effort %in% c("low", "medium", "high"),
+    "Input .api_key must be non-empty" = nzchar(.api_key),
+    "Input .timeout must be a positive integer" = is_integer_valued(.timeout) && .timeout > 0,
+    "Input .max_tries must be a positive integer" = is_integer_valued(.max_tries) && .max_tries > 0
+  ) |> validate_inputs()
+
+  api_obj <- api_perplexity(short_name = "perplexity",
+                            long_name  = "Perplexity",
+                            api_key_env_var = "PERPLEXITY_API_KEY")
+
+  messages <- to_api_format(.llm, api_obj, TRUE)
+
+  request_body <- list(
+    model = "sonar-deep-research",
+    messages = messages,
+    reasoning_effort = .reasoning_effort,
+    web_search_options = list(search_context_size = .search_context_size)
+  )
+
+  response <- httr2::request("https://api.perplexity.ai") |>
+    httr2::req_url_path("/async/chat/completions") |>
+    httr2::req_headers(
+      `Authorization` = sprintf("Bearer %s", .api_key),
+      `Content-Type` = "application/json"
+    ) |>
+    httr2::req_body_json(data = request_body) |>
+    httr2::req_retry(max_tries = .max_tries) |>
+    httr2::req_perform() |>
+    httr2::resp_body_json()
+
+  job_id <- response$id
+  job <- structure(list(job_id = job_id, message = .llm), class = "tidyllm_research_job")
+
+  if (.background) return(job)
+
+  perplexity_fetch_research(perplexity_poll_research(job, .api_key, .timeout, .max_tries))
+}
+
+
+#' Poll a Perplexity Deep Research Job Until Completion
+#'
+#' @param .job A `tidyllm_research_job` object.
+#' @param .api_key Character; Perplexity API key.
+#' @param .timeout Integer; total seconds to wait before giving up (default: 300).
+#' @param .max_tries Integer; maximum retries per poll (default: 3).
+#' @return An updated `tidyllm_research_job` with status information.
+#' @noRd
+perplexity_poll_research <- function(.job, .api_key = Sys.getenv("PERPLEXITY_API_KEY"),
+                                     .timeout = 300, .max_tries = 3) {
+  start_time <- proc.time()[["elapsed"]]
+  repeat {
+    status_response <- httr2::request("https://api.perplexity.ai") |>
+      httr2::req_url_path(sprintf("/async/chat/completions/%s", .job$job_id)) |>
+      httr2::req_headers(`Authorization` = sprintf("Bearer %s", .api_key)) |>
+      httr2::req_retry(max_tries = .max_tries) |>
+      httr2::req_perform() |>
+      httr2::resp_body_json()
+
+    if (identical(status_response$status, "completed")) {
+      .job$response <- status_response
+      return(.job)
+    }
+
+    elapsed <- proc.time()[["elapsed"]] - start_time
+    if (elapsed > .timeout) {
+      stop(sprintf("Perplexity deep research job '%s' did not complete within %d seconds.", .job$job_id, .timeout))
+    }
+    Sys.sleep(5)
+  }
+}
+
+
+#' Check the Status of a Perplexity Deep Research Job
+#'
+#' @param .job A `tidyllm_research_job` object returned by `perplexity_deep_research(.background = TRUE)`.
+#' @param .api_key Character; Perplexity API key (default: from environment).
+#' @param .max_tries Integer; maximum retries (default: 3).
+#' @return An updated `tidyllm_research_job` with a `$status` field and `$response` if completed.
+#' @export
+perplexity_check_research <- function(.job,
+                                      .api_key = Sys.getenv("PERPLEXITY_API_KEY"),
+                                      .max_tries = 3) {
+  c(
+    "Input .job must be a tidyllm_research_job" = inherits(.job, "tidyllm_research_job"),
+    "Input .api_key must be non-empty" = nzchar(.api_key)
+  ) |> validate_inputs()
+
+  status_response <- httr2::request("https://api.perplexity.ai") |>
+    httr2::req_url_path(sprintf("/async/chat/completions/%s", .job$job_id)) |>
+    httr2::req_headers(`Authorization` = sprintf("Bearer %s", .api_key)) |>
+    httr2::req_retry(max_tries = .max_tries) |>
+    httr2::req_perform() |>
+    httr2::resp_body_json()
+
+  .job$status <- status_response$status
+  if (identical(status_response$status, "completed")) {
+    .job$response <- status_response
+  }
+  .job
+}
+
+
+#' Fetch Results from a Completed Perplexity Deep Research Job
+#'
+#' @param .job A `tidyllm_research_job` object. Must have status "completed" or will poll once.
+#' @param .api_key Character; Perplexity API key (default: from environment).
+#' @param .max_tries Integer; maximum retries (default: 3).
+#' @return An updated `LLMMessage` with the research reply appended.
+#' @export
+perplexity_fetch_research <- function(.job,
+                                      .api_key = Sys.getenv("PERPLEXITY_API_KEY"),
+                                      .max_tries = 3) {
+  c(
+    "Input .job must be a tidyllm_research_job" = inherits(.job, "tidyllm_research_job"),
+    "Input .api_key must be non-empty" = nzchar(.api_key)
+  ) |> validate_inputs()
+
+  if (is.null(.job$response)) {
+    .job <- perplexity_check_research(.job, .api_key, .max_tries)
+    if (!identical(.job$status, "completed")) {
+      stop(sprintf("Perplexity deep research job '%s' is not yet completed (status: %s).", .job$job_id, .job$status))
+    }
+  }
+
+  api_obj <- api_perplexity(short_name = "perplexity",
+                            long_name  = "Perplexity",
+                            api_key_env_var = "PERPLEXITY_API_KEY")
+
+  response_content <- .job$response
+  assistant_reply <- parse_chat_response(api_obj, response_content)
+  meta <- extract_metadata(api_obj, response_content)
+
+  add_message(.llm     = .job$message,
+              .role    = "assistant",
+              .content = assistant_reply,
+              .meta    = meta,
+              .json    = FALSE)
+}
+
+
 #' Perplexity Provider Function
 #'
 #' The `perplexity()` function acts as a provider interface for interacting with the Perplexity API 
@@ -272,5 +436,6 @@ perplexity_chat <- function(
 #' @export
 perplexity <- create_provider_function(
   .name = "perplexity",
-  chat = perplexity_chat
+  chat = perplexity_chat,
+  deep_research = perplexity_deep_research
 )

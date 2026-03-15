@@ -68,4 +68,36 @@ llt_test("dog image embedding is closer to dog text than to hotdog text", {
   )
 })
 
+# ── output_dimension ──────────────────────────────────────────────────────────
+
+llt_test("output_dimension reduces embedding size", {
+  result <- c("The dog ran in the park") |> embed(voyage(), .output_dimension = 256)
+  llt_expect_tibble(result, min_rows = 1)
+  llt_expect_true(length(result$embeddings[[1]]) == 256,
+                  sprintf("Embedding should have 256 dims, got %d", length(result$embeddings[[1]])))
+})
+
+# ── Reranking ─────────────────────────────────────────────────────────────────
+
+llt_test("voyage_rerank returns tibble sorted by relevance_score", {
+  docs <- c(
+    "The Eiffel Tower is in Paris.",
+    "Python is a programming language.",
+    "Paris is the capital of France."
+  )
+  result <- voyage_rerank("Where is the Eiffel Tower?", docs)
+  llt_expect_tibble(result, min_rows = 3)
+  llt_expect_true(all(c("index", "document", "relevance_score") %in% names(result)),
+                  "Should have index, document, relevance_score columns")
+  llt_expect_true(result$relevance_score[[1]] >= result$relevance_score[[nrow(result)]],
+                  "Should be sorted by relevance_score descending")
+})
+
+llt_test("voyage_rerank top_k limits results", {
+  docs <- c("Doc A about Paris", "Doc B about Python", "Doc C about Eiffel", "Doc D about France")
+  result <- voyage_rerank("Paris", docs, .top_k = 2)
+  llt_expect_tibble(result, min_rows = 2)
+  llt_expect_true(nrow(result) == 2, sprintf("Expected 2 rows, got %d", nrow(result)))
+})
+
 llt_report()

@@ -6,7 +6,7 @@
 \usage{
 gemini_embedding(
   .input,
-  .model = "gemini-embedding-001",
+  .model = "gemini-embedding-2-preview",
   .truncate = TRUE,
   .timeout = 120,
   .dry_run = FALSE,

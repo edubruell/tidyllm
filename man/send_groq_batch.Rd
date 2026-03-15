@@ -6,7 +6,7 @@
 \usage{
 send_groq_batch(
   .llms,
-  .model = "moonshotai/kimi-k2-instruct-0905",
+  .model = "openai/gpt-oss-120b",
   .max_tokens = 1024,
   .temperature = NULL,
   .top_p = NULL,
@@ -15,7 +15,7 @@ send_groq_batch(
   .stop = NULL,
   .seed = NULL,
   .api_url = "https://api.groq.com/",
-  .json = FALSE,
+  .json_schema = NULL,
   .completion_window = "24h",
   .verbose = FALSE,
   .dry_run = FALSE,
@@ -46,7 +46,7 @@ send_groq_batch(
 
 \item{.api_url}{Base URL for the Groq API (default: "https://api.groq.com/").}
 
-\item{.json}{Whether the response should be structured as JSON (default: FALSE).}
+\item{.json_schema}{A list or tidyllm schema created with \code{tidyllm_schema()} for structured JSON output (optional).}
 
 \item{.completion_window}{Character string for the batch completion window (default: "24h").}
 

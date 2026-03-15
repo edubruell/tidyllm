@@ -27,7 +27,8 @@ azure_openai_chat(
   .logprobs = NULL,
   .top_logprobs = NULL,
   .tools = NULL,
-  .tool_choice = NULL
+  .tool_choice = NULL,
+  .max_tool_rounds = 10
 )
 }
 \arguments{

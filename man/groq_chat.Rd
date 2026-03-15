@@ -17,7 +17,7 @@ groq_chat(
   .tools = NULL,
   .tool_choice = NULL,
   .api_url = "https://api.groq.com/",
-  .json = FALSE,
+  .json_schema = NULL,
   .timeout = 60,
   .verbose = FALSE,
   .stream = FALSE,
@@ -51,7 +51,7 @@ groq_chat(
 
 \item{.api_url}{Base URL for the Groq API (default: "https://api.groq.com/").}
 
-\item{.json}{Whether the response should be structured as JSON (default: FALSE).}
+\item{.json_schema}{A list or tidyllm schema created with \code{tidyllm_schema()} for structured JSON output (optional).}
 
 \item{.timeout}{Request timeout in seconds (default: 60).}
 

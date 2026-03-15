@@ -6,7 +6,7 @@
 \usage{
 send_ollama_batch(
   .llms,
-  .model = "qwen3-vl",
+  .model = "qwen3.5:4b",
   .stream = FALSE,
   .seed = NULL,
   .json_schema = NULL,

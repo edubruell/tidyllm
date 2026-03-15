@@ -112,4 +112,17 @@ llt_test("max_tool_rounds raises error", {
   )
 })
 
+# ── Thinking mode ─────────────────────────────────────────────────────────────
+
+llt_test("thinking mode returns reasoning in metadata", {
+  result <- llm_message("What is 17 * 23? Think step by step.") |>
+    chat(gemini(.model = "gemini-2.5-flash", .thinking_budget = 1024))
+  llt_expect_reply(result)
+  meta <- get_metadata(result)
+  llt_expect_true(
+    !is.null(meta$api_specific[[1]]$thinking) && nzchar(meta$api_specific[[1]]$thinking),
+    "api_specific$thinking should be non-empty"
+  )
+})
+
 llt_report()

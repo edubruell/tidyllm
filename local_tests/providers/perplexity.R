@@ -57,4 +57,34 @@ llt_test("search_recency_filter accepted without error", {
   llt_expect_reply(result)
 })
 
+# ── Deep research ─────────────────────────────────────────────────────────────
+
+llt_test("deep_research blocking returns LLMMessage with reply", {
+  result <- llm_message("What are the main causes of World War I?") |>
+    deep_research(perplexity(), .timeout = 600)
+  llt_expect_s7(result, LLMMessage)
+  llt_expect_reply(result)
+  meta <- get_metadata(result)
+  llt_expect_true(
+    !is.null(meta$api_specific[[1]]$citations) && length(meta$api_specific[[1]]$citations) > 0,
+    "deep_research reply should have citations"
+  )
+})
+
+llt_test("deep_research background mode returns research job, check and fetch work", {
+  job <- llm_message("Briefly explain quantum entanglement.") |>
+    deep_research(perplexity(), .background = TRUE)
+  llt_expect_true(inherits(job, "tidyllm_research_job"), "Should be a tidyllm_research_job")
+  llt_expect_true(nzchar(job$job_id), "job_id should be non-empty")
+
+  checked <- check_job(job)
+  llt_expect_true(inherits(checked, "tidyllm_research_job"), "check_job should return research job")
+
+  if (identical(checked$status, "completed")) {
+    result <- fetch_job(checked)
+    llt_expect_s7(result, LLMMessage)
+    llt_expect_reply(result)
+  }
+})
+
 llt_report()

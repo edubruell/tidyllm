@@ -19,6 +19,7 @@ gemini_chat(
   .safety_settings = NULL,
   .json_schema = NULL,
   .tools = NULL,
+  .thinking_budget = NULL,
   .timeout = 120,
   .dry_run = FALSE,
   .max_tries = 3,
