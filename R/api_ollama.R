@@ -265,7 +265,7 @@ method(append_tool_messages, list(api_ollama, class_any, class_any, class_any)) 
 #'
 #' @export
 ollama_chat <- function(.llm,
-                   .model = "qwen3.5",
+                   .model = "qwen3.5:4b",
                    .stream = FALSE,
                    .seed = NULL,
                    .json_schema = NULL,
@@ -511,7 +511,7 @@ ollama_embedding <- function(.input,
 #'
 #' @export
 send_ollama_batch <- function(.llms,
-                        .model = "qwen3.5",
+                        .model = "qwen3.5:4b",
                         .stream = FALSE,
                         .seed = NULL,
                         .json_schema = NULL,
