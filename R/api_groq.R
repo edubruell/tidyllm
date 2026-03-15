@@ -596,6 +596,7 @@ send_groq_batch <- function(.llms,
   batch_id <- batch_response$content$id
   attr(prepared_llms, "batch_id") <- batch_id
   attr(prepared_llms, "file_id") <- file_id
+  attr(prepared_llms, "json") <- !is.null(.json_schema)
   
   if (.verbose) {
     message("Batch submitted successfully. Batch ID: ", batch_id)
@@ -764,26 +765,25 @@ fetch_groq_batch <- function(.llms,
     sapply(results_list, function(x) x$custom_id)
   )
   
+  .json <- attr(.llms, "json")
+  if (is.null(.json)) .json <- FALSE
+
   # Map results back to the original .llms list using names as custom IDs
   updated_llms <- lapply(names(.llms), function(custom_id) {
     result <- results_by_custom_id[[custom_id]]
-    
+
     if (!is.null(result) && result$response$status_code == 200) {
-      # Extract response content
-      response_body <- result$response$body
-      
-      # Extract assistant message content
       assistant_reply <- result$response$body$choices$message$content
-      metadata        <- extract_metadata(api_obj,result$response$body)
-      
-      # Update LLMMessage object with response
+      metadata        <- extract_metadata(api_obj, result$response$body)
+
       llm <- add_message(
         .llm = .llms[[custom_id]],
         .role = "assistant",
         .content = assistant_reply,
+        .json = .json,
         .meta = metadata
       )
-      
+
       return(llm)
     } else {
       if (!is.null(result$error)) {
@@ -794,13 +794,14 @@ fetch_groq_batch <- function(.llms,
       return(.llms[[custom_id]])
     }
   })
-  
+
   # Restore original names
   names(updated_llms) <- original_names
-  
+
   # Remove batch attributes before returning to avoid reuse conflicts
   attr(updated_llms, "batch_id") <- NULL
   attr(updated_llms, "file_id") <- NULL
+  attr(updated_llms, "json") <- NULL
   
   return(updated_llms)
 }

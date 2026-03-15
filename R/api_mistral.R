@@ -526,10 +526,11 @@ send_mistral_batch <- function(.llms,
   # Attach batch_id as an attribute to the prepared LLMs
   batch_id <- batch_response$content$id
   attr(prepared_llms, "batch_id") <- batch_id
-  
+  attr(prepared_llms, "json") <- !is.null(.json_schema)
+
   # Optionally remove the temporary file
   unlink(temp_file)
-  
+
   return(prepared_llms)
 }
 
