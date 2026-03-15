@@ -245,6 +245,164 @@ openrouter_list_models <- function(.api_url = "https://openrouter.ai",
 }
 
 
+#' Get OpenRouter Credit Balance
+#'
+#' @description
+#' Returns the total credits purchased and total usage so far for the current
+#' API key.
+#'
+#' @param .api_url Base URL for the OpenRouter API (default: `"https://openrouter.ai"`).
+#' @param .timeout Request timeout in seconds (default: 60).
+#' @param .max_tries Maximum retries (default: 3).
+#'
+#' @return A named list with `total_credits` (USD purchased) and `total_usage`
+#'   (USD consumed so far).
+#'
+#' @export
+openrouter_credits <- function(.api_url = "https://openrouter.ai",
+                               .timeout = 60,
+                               .max_tries = 3) {
+  api_obj <- api_openrouter(short_name = "openrouter",
+                            long_name  = "OpenRouter",
+                            api_key_env_var = "OPENROUTER_API_KEY")
+  api_key <- get_api_key(api_obj, FALSE)
+
+  response <- httr2::request(.api_url) |>
+    httr2::req_url_path("/api/v1/credits") |>
+    httr2::req_headers(Authorization = sprintf("Bearer %s", api_key)) |>
+    httr2::req_timeout(.timeout) |>
+    httr2::req_retry(max_tries = .max_tries) |>
+    httr2::req_perform() |>
+    httr2::resp_body_json()
+
+  list(
+    total_credits = response$data$total_credits,
+    total_usage   = response$data$total_usage,
+    remaining     = response$data$total_credits - response$data$total_usage
+  )
+}
+
+
+#' Get Details for an OpenRouter Generation
+#'
+#' @description
+#' Fetches cost, latency, and token details for a past generation using its ID.
+#' The generation ID is available in `get_metadata(result)$api_specific$id`
+#' after a `chat()` call.
+#'
+#' @param .id The generation ID string (e.g. `"gen-..."`) returned by OpenRouter.
+#' @param .api_url Base URL for the OpenRouter API (default: `"https://openrouter.ai"`).
+#' @param .timeout Request timeout in seconds (default: 60).
+#' @param .max_tries Maximum retries (default: 3).
+#'
+#' @return A named list with generation details including `id`, `model`,
+#'   `total_cost`, `tokens_prompt`, `tokens_completion`, and `latency`.
+#'
+#' @export
+openrouter_generation <- function(.id,
+                                  .api_url = "https://openrouter.ai",
+                                  .timeout = 60,
+                                  .max_tries = 3) {
+  c(
+    "Input .id must be a non-empty string" = is.character(.id) && nzchar(.id)
+  ) |> validate_inputs()
+
+  api_obj <- api_openrouter(short_name = "openrouter",
+                            long_name  = "OpenRouter",
+                            api_key_env_var = "OPENROUTER_API_KEY")
+  api_key <- get_api_key(api_obj, FALSE)
+
+  response <- httr2::request(.api_url) |>
+    httr2::req_url_path("/api/v1/generation") |>
+    httr2::req_url_query(id = .id) |>
+    httr2::req_headers(Authorization = sprintf("Bearer %s", api_key)) |>
+    httr2::req_timeout(.timeout) |>
+    httr2::req_retry(max_tries = .max_tries) |>
+    httr2::req_perform() |>
+    httr2::resp_body_json()
+
+  d <- response$data
+  list(
+    id                = d$id,
+    model             = d$model,
+    total_cost        = d$total_cost,
+    tokens_prompt     = d$tokens_prompt,
+    tokens_completion = d$tokens_completion,
+    latency           = d$latency,
+    provider          = d$provider_name,
+    origin            = d$origin
+  )
+}
+
+
+#' Generate Embeddings Using the OpenRouter API
+#'
+#' @description
+#' Sends text to an embedding model accessible via OpenRouter and returns
+#' embedding vectors. Note that embedding models are not listed in
+#' `list_models(openrouter())` — specify the model ID directly.
+#' Known supported models include `"openai/text-embedding-3-small"`,
+#' `"openai/text-embedding-3-large"`, and `"mistralai/mistral-embed"`.
+#'
+#' @param .input An `LLMMessage` object or a character vector of texts to embed.
+#' @param .model The embedding model ID (default: `"openai/text-embedding-3-small"`).
+#' @param .timeout Request timeout in seconds (default: 120).
+#' @param .dry_run If TRUE, returns the request object without executing it (default: FALSE).
+#' @param .max_tries Maximum retries (default: 3).
+#'
+#' @return A tibble with columns `input` (text) and `embeddings` (list of numeric vectors).
+#'
+#' @export
+openrouter_embedding <- function(.input,
+                                 .model = "openai/text-embedding-3-small",
+                                 .timeout = 120,
+                                 .dry_run = FALSE,
+                                 .max_tries = 3) {
+  c(
+    "Input .input must be an LLMMessage object or a character vector" = S7_inherits(.input, LLMMessage) | is.character(.input),
+    "Input .model must be a non-empty string" = is.character(.model) && nzchar(.model),
+    "Input .timeout must be a positive number" = is.numeric(.timeout) && .timeout > 0,
+    "Input .dry_run must be logical" = is.logical(.dry_run)
+  ) |> validate_inputs()
+
+  api_obj <- api_openrouter(short_name = "openrouter",
+                            long_name  = "OpenRouter",
+                            api_key_env_var = "OPENROUTER_API_KEY")
+  api_key <- get_api_key(api_obj, .dry_run)
+
+  input_texts <- parse_embedding_input(.input)
+
+  request <- httr2::request("https://openrouter.ai") |>
+    httr2::req_url_path("/api/v1/embeddings") |>
+    httr2::req_headers(
+      Authorization  = sprintf("Bearer %s", api_key),
+      `Content-Type` = "application/json"
+    ) |>
+    httr2::req_body_json(list(model = .model, input = input_texts))
+
+  if (.dry_run) {
+    return(request)
+  }
+
+  extract_embeddings_fn <- function(response_content, error, response_headers) {
+    if (error) {
+      paste0("OpenRouter embedding error: ", response_content$error$message) |> stop()
+    }
+    response_content$data |>
+      purrr::map("embedding") |>
+      purrr::map(unlist)
+  }
+
+  perform_embedding_request(
+    .request             = request,
+    .timeout             = .timeout,
+    .max_tries           = .max_tries,
+    .input_texts         = input_texts,
+    .fn_extract_embeddings = extract_embeddings_fn
+  )
+}
+
+
 #' OpenRouter Provider Function
 #'
 #' @description
@@ -262,5 +420,6 @@ openrouter_list_models <- function(.api_url = "https://openrouter.ai",
 openrouter <- create_provider_function(
   .name = "openrouter",
   chat = openrouter_chat,
+  embed = openrouter_embedding,
   list_models = openrouter_list_models
 )

@@ -82,4 +82,38 @@ llt_test("single tool call returns reply", {
   llt_expect_reply(result)
 })
 
+# ── Credits ───────────────────────────────────────────────────────────────────
+
+llt_test("openrouter_credits returns balance info", {
+  credits <- openrouter_credits()
+  llt_expect_true(is.list(credits), "Should return a list")
+  llt_expect_true(!is.null(credits$total_credits), "Should have total_credits")
+  llt_expect_true(!is.null(credits$remaining), "Should have remaining")
+  llt_expect_true(is.numeric(credits$remaining), "remaining should be numeric")
+})
+
+# ── Generation details ────────────────────────────────────────────────────────
+
+llt_test("openrouter_generation returns cost and provider", {
+  result <- llm_message("Say hi.") |>
+    chat(openrouter(.model = "google/gemini-2.5-flash"))
+  gen_id <- get_metadata(result)$api_specific[[1]]$id
+  llt_expect_true(nzchar(gen_id), "Generation ID should be non-empty")
+  Sys.sleep(10)
+  gen <- openrouter_generation(gen_id)
+  llt_expect_true(!is.null(gen$total_cost), "Should have total_cost")
+  llt_expect_true(is.numeric(gen$total_cost), "total_cost should be numeric")
+  llt_expect_true(!is.null(gen$provider), "Should have provider")
+})
+
+# ── Embeddings ────────────────────────────────────────────────────────────────
+
+llt_test("embed returns correct dimensions", {
+  result <- embed(c("Hello world", "Goodbye world"),
+                  openrouter(.model = "openai/text-embedding-3-small"))
+  llt_expect_true(tibble::is_tibble(result), "embed() should return a tibble")
+  llt_expect_true(nrow(result) == 2, "Should have 2 rows")
+  llt_expect_true(length(result$embeddings[[1]]) == 1536, "text-embedding-3-small produces 1536-dim vectors")
+})
+
 llt_report()
