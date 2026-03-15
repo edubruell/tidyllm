@@ -430,7 +430,7 @@ groq_list_models <- function(.api_url = "https://api.groq.com",
 #' @return An updated and named list of `.llms` with identifiers that align with batch responses, including a `batch_id` attribute.
 #' @export
 send_groq_batch <- function(.llms,
-                            .model = "moonshotai/kimi-k2-instruct-0905",
+                            .model = "openai/gpt-oss-120b",
                             .max_tokens = 1024,
                             .temperature = NULL,
                             .top_p = NULL,

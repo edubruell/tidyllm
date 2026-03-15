@@ -707,7 +707,7 @@ openai_embedding <- function(.input,
 #' @return An updated and named list of `.llms` with identifiers that align with batch responses, including a `batch_id` attribute.
 #' @export
 send_openai_batch <- function(.llms,
-                              .model = "gpt-5.1-chat-latest",
+                              .model = "gpt-5.4",
                               .max_completion_tokens = NULL,
                               .reasoning_effort = NULL,
                               .frequency_penalty = NULL,

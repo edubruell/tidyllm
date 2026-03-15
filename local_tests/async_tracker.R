@@ -82,11 +82,12 @@ update_async_job_status <- function(.name, .status) {
   invisible(NULL)
 }
 
-#' Return TRUE if a job with this name exists and is not yet completed
+#' Return TRUE if a job with this name exists in the index (pending OR completed-but-not-fetched).
+#' Use this as a submit guard: only FALSE after complete_async_job() removes the entry.
 job_is_pending <- function(.name) {
   jobs <- .load_jobs_index()
   existing <- Filter(function(j) j$name == .name, jobs)
-  length(existing) > 0 && existing[[1]]$status != "completed"
+  length(existing) > 0
 }
 
 #' Check all pending batch jobs and update their status
@@ -113,9 +114,14 @@ check_all_async_jobs <- function() {
         stop(paste("Unknown provider for async check:", j$provider))
       )
       status_tbl <- check_batch(job_obj, provider_fn())
-      is_done <- !isTRUE(status_tbl$in_progress) &&
-                 status_tbl$status %in% c("completed", "ended", "succeeded")
-      new_status <- if (is_done) "completed" else "pending"
+      cols <- names(status_tbl)
+      raw_status <- if ("status" %in% cols) status_tbl$status else if ("state" %in% cols) status_tbl$state else ""
+      api_status <- tolower(raw_status)
+      is_done    <- api_status %in% c("completed", "ended", "succeeded", "success",
+                                       "batch_state_job_succeeded", "batch_state_succeeded")
+      is_failed  <- api_status %in% c("failed", "expired", "cancelled",
+                                       "batch_state_job_failed", "batch_state_failed")
+      new_status <- if (is_done) "completed" else if (is_failed) "failed" else "pending"
       update_async_job_status(j$name, new_status)
       cat(new_status, "\n")
     }, error = function(e) {
