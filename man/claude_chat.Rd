@@ -16,7 +16,6 @@ claude_chat(
   .tools = NULL,
   .json_schema = NULL,
   .file_ids = NULL,
-  .cache_system_prompt = FALSE,
   .api_url = "https://api.anthropic.com/",
   .verbose = FALSE,
   .max_tries = 3,

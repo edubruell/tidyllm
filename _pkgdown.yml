@@ -1,7 +1,11 @@
 url: https://edubruell.github.io/tidyllm/
+
+development:
+  mode: auto
+
 template:
   bootstrap: 5
-  bootswatch: litera  
+  bootswatch: litera
   assets:
     css: ["extra.scss"]
 
@@ -18,32 +22,37 @@ reference:
       - get_metadata
       - get_logprobs
       - rate_limit_info
-      
+
   - title: "Tidyllm Main Verbs"
     desc: >
-      Core verbs facilitating interactions with LLMs, including sending messages,
-      generating embeddings, and managing batch requests.
+      Core verbs for interacting with LLMs: sending messages, generating embeddings,
+      deep research, and managing batch requests.
     contents:
       - chat
       - embed
+      - deep_research
+      - check_job
+      - fetch_job
       - send_batch
       - check_batch
       - fetch_batch
       - list_batches
-      - list_models      
-      
-  - title: "Schemata, Tools, and Media Handling"
+      - list_models
+
+  - title: "Schemata, Tools, and Media"
     desc: >
-        Functions for json_schema, tools and media handling
+      Functions for JSON schemas, tool definitions, and media attachments.
     contents:
       - tidyllm_schema
-      - starts_with("field")
+      - starts_with("field_")
       - tidyllm_tool
+      - ellmer_tool
       - img
 
   - title: "API Provider Functions"
     desc: >
-      Functions interfacing with various API providers called from main verbs
+      Provider functions called from main verbs. Each provider exposes a
+      consistent interface — pass to `chat()`, `embed()`, `send_batch()`, etc.
     contents:
       - openai
       - claude
@@ -54,90 +63,58 @@ reference:
       - perplexity
       - deepseek
       - voyage
+      - openrouter
+      - llamacpp
       - azure_openai
-      - chatgpt
-      
+
   - title: "OpenAI-Specific Functions"
     desc: >
-      Functions for OpenAI services, including chat interactions, batch processing and
-      embedding generation.
+      Functions for OpenAI chat, batch processing, embeddings, and model listing.
     contents:
       - openai_chat
+      - openai_embedding
+      - openai_list_models
       - send_openai_batch
       - check_openai_batch
       - fetch_openai_batch
       - list_openai_batches
       - cancel_openai_batch
-      - openai_embedding
-      - openai_list_models
-      
+
   - title: "Claude-Specific Functions"
     desc: >
-      Functions designed for Claude services for chat interactions and
-      batch processing.
+      Functions for Anthropic Claude chat, batch processing, and file management.
     contents:
       - claude_chat
+      - claude_list_models
       - send_claude_batch
       - check_claude_batch
       - fetch_claude_batch
       - list_claude_batches
-      - claude_list_models
       - claude_upload_file
-      - claude_delete_file 
-      - claude_file_metadata 
+      - claude_delete_file
+      - claude_file_metadata
       - claude_list_files
       - claude_websearch
 
   - title: "Gemini-Specific Functions"
     desc: >
-      Functions specific to Google Gemini services, including chat, embedding,
-      and file management operations.
+      Functions for Google Gemini chat, embeddings, file management, and batch processing.
     contents:
       - gemini_chat
       - gemini_embedding
+      - gemini_list_models
       - gemini_upload_file
       - gemini_list_files
       - gemini_file_metadata
       - gemini_delete_file
       - send_gemini_batch
       - check_gemini_batch
-      - list_gemini_batches
       - fetch_gemini_batch
-      - gemini_list_models
-      
-  - title: "Ollama-Specific Functions"
-    desc: >
-      Functions for engaging with Ollama services, including chat, embedding,
-      and model management.
-    contents:
-      - ollama_chat
-      - ollama_embedding
-      - send_ollama_batch
-      - ollama_download_model
-      - ollama_delete_model
-      - ollama_list_models
-      
-  - title: "Mistral-Specific Functions"
-    desc: >
-      Functions for interacting with the Mistral API .
-    contents:
-      - mistral_chat
-      - mistral_embedding
-      - send_mistral_batch
-      - check_mistral_batch
-      - fetch_mistral_batch
-      - list_mistral_batches
-      - mistral_list_models
-      
-  - title: "Perplexity-Specific Functions"
-    desc: >
-      Functions for the Perplexity API
-    contents:
-      - perplexity_chat
+      - list_gemini_batches
 
   - title: "Groq-Specific Functions"
     desc: >
-      Functions for interacting with Groq services, such as chat and transcription.
+      Functions for Groq chat, audio transcription, and batch processing.
     contents:
       - groq_chat
       - groq_transcribe
@@ -147,47 +124,103 @@ reference:
       - fetch_groq_batch
       - list_groq_batches
 
-  - title: "Azure-Specific Functions"
+  - title: "Mistral-Specific Functions"
     desc: >
-      Functions for interacting with the Azure OpenAI API .
+      Functions for Mistral chat, embeddings, and batch processing.
+    contents:
+      - mistral_chat
+      - mistral_embedding
+      - mistral_list_models
+      - send_mistral_batch
+      - check_mistral_batch
+      - fetch_mistral_batch
+      - list_mistral_batches
+
+  - title: "Ollama-Specific Functions"
+    desc: >
+      Functions for local Ollama models: chat, embeddings, and model management.
+    contents:
+      - ollama_chat
+      - ollama_embedding
+      - ollama_list_models
+      - ollama_download_model
+      - ollama_delete_model
+      - send_ollama_batch
+
+  - title: "Perplexity-Specific Functions"
+    desc: >
+      Functions for Perplexity AI chat and asynchronous deep research.
+    contents:
+      - perplexity_chat
+      - perplexity_deep_research
+      - perplexity_check_research
+      - perplexity_fetch_research
+
+  - title: "DeepSeek-Specific Functions"
+    desc: >
+      Functions for DeepSeek chat and reasoning models.
+    contents:
+      - deepseek_chat
+
+  - title: "VoyageAI-Specific Functions"
+    desc: >
+      Functions for Voyage AI embeddings and reranking.
+    contents:
+      - voyage_embedding
+      - voyage_rerank
+
+  - title: "OpenRouter-Specific Functions"
+    desc: >
+      Functions for OpenRouter — access to 300+ models via a single API key.
+    contents:
+      - openrouter_chat
+      - openrouter_embedding
+      - openrouter_list_models
+      - openrouter_credits
+      - openrouter_generation
+
+  - title: "llama.cpp-Specific Functions"
+    desc: >
+      Functions for local llama.cpp servers: chat, embeddings, reranking,
+      model management, and server utilities.
+    contents:
+      - llamacpp_chat
+      - llamacpp_embedding
+      - llamacpp_rerank
+      - llamacpp_list_models
+      - llamacpp_health
+      - llamacpp_list_local_models
+      - llamacpp_download_model
+      - llamacpp_delete_model
+      - list_hf_gguf_files
+
+  - title: "Azure OpenAI-Specific Functions"
+    desc: >
+      Functions for Azure-hosted OpenAI deployments.
     contents:
       - azure_openai_chat
       - azure_openai_embedding
       - send_azure_openai_batch
       - check_azure_openai_batch
-      - list_azure_openai_batches
       - fetch_azure_openai_batch
+      - list_azure_openai_batches
 
-  - title: "DeepSeek-Specific Functions"
-    desc: >
-      Functions for DeepSeek.
-    contents: 
-      - deepseek_chat
-
-  - title: "VoyageAI-Specific Functions"
-    desc: >
-      Functions for VoyageAI Embeddings.
-    contents: 
-      - voyage_embedding
-      
   - title: "Ellmer Compatibility"
-    desc: >  
-        Functions to let tidyllm work with ellmer tools and chat objects
-    contents: 
+    desc: >
+      Functions for using tidyllm together with ellmer tools and chat objects.
+    contents:
       - ellmer_tool
       - chat_ellmer
       - ellmer
-      
+
   - title: "PDF Processing"
     desc: >
-      Processing PDF documents, enabling page-by-page analysis.
+      Helpers for batch processing multi-page PDF documents.
     contents:
-      - pdf_page_batch      
+      - pdf_page_batch
 
   - title: "Internals"
     desc: >
-      Main definition of the LLMMessage object at the core of most tidyllm workflows 
+      Core S7 class definitions at the heart of tidyllm.
     contents:
       - LLMMessage
-
-

@@ -96,7 +96,9 @@ tidyllm_tool <- function(.f, .description = character(0), ...) {
   obj
 }
 
-
+is_ellmer_class <- function(classes, class_name) {
+  any(classes %in% c(paste0("ellmer::", class_name), paste0("ellmer_", class_name)))
+}
 
 #' Convert an ellmer Tool to a tidyllm TOOL
 #'
@@ -147,12 +149,6 @@ tidyllm_tool <- function(.f, .description = character(0), ...) {
 #' llm_message("What are the latest AI developments?") |>
 #'   chat(claude(), .tools = web_search)
 #' }
-
-is_ellmer_class <- function(classes, class_name) {
-  any(classes %in% c(paste0("ellmer::", class_name), paste0("ellmer_", class_name)))
-}
-
-#'
 #' @export
 ellmer_tool <- function(.ellmer_tool) {
   if (!requireNamespace("ellmer", quietly = TRUE)) {

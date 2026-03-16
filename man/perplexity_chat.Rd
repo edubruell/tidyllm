@@ -2,7 +2,7 @@
 % Please edit documentation in R/api_perplexity.R
 \name{perplexity_chat}
 \alias{perplexity_chat}
-\title{Send LLM Messages to the Perplexity Chat API (All Features, No .json Option)}
+\title{Send LLM Messages to the Perplexity Chat API}
 \usage{
 perplexity_chat(
   .llm,
@@ -14,15 +14,26 @@ perplexity_chat(
   .presence_penalty = NULL,
   .stop = NULL,
   .search_domain_filter = NULL,
+  .search_language_filter = NULL,
+  .language_preference = NULL,
   .return_images = FALSE,
+  .image_domain_filter = NULL,
+  .image_format_filter = NULL,
   .search_recency_filter = NULL,
   .search_mode = "web",
-  .reasoning_effort = NULL,
-  .return_related_questions = FALSE,
   .search_after_date_filter = NULL,
   .search_before_date_filter = NULL,
   .last_updated_after_filter = NULL,
   .last_updated_before_filter = NULL,
+  .disable_search = FALSE,
+  .enable_search_classifier = FALSE,
+  .reasoning_effort = NULL,
+  .return_related_questions = FALSE,
+  .user_location = NULL,
+  .search_context_size = NULL,
+  .search_type = NULL,
+  .stream_mode = NULL,
+  .json_schema = NULL,
   .top_k = NULL,
   .web_search_options = NULL,
   .api_url = "https://api.perplexity.ai/",
@@ -50,29 +61,54 @@ perplexity_chat(
 
 \item{.stop}{Stop sequence(s), string or character vector/list.}
 
-\item{.search_domain_filter}{Domains to allowlist/denylist for search (max 10, "-domain" for denylist).}
+\item{.search_domain_filter}{Character vector of domains to allowlist/denylist (max 10; prefix with "-" to denylist).}
+
+\item{.search_language_filter}{ISO 639-1 language code to restrict search results (e.g. "en", "de", "fr").}
+
+\item{.language_preference}{ISO 639-1 code for preferred response language (e.g. "en").}
 
 \item{.return_images}{Logical; if TRUE, returns images from search.}
 
-\item{.search_recency_filter}{Restrict search to recent ("hour","day","week","month").}
+\item{.image_domain_filter}{Character vector of domains to restrict image results to.}
 
-\item{.search_mode}{"web" (default) or "academic" (prioritize scholarly sources).}
+\item{.image_format_filter}{Character vector of image formats to include (e.g. c("png", "jpg")).}
 
-\item{.reasoning_effort}{Reasoning level: "low", "medium" (default), "high" (for deep research models).}
+\item{.search_recency_filter}{Restrict search to recent results: "hour", "day", "week", "month", or "year".}
+
+\item{.search_mode}{Search index to use: "web" (default), "academic", or "sec".}
+
+\item{.search_after_date_filter}{Only include content published after this date (MM/DD/YYYY).}
+
+\item{.search_before_date_filter}{Only include content published before this date (MM/DD/YYYY).}
+
+\item{.last_updated_after_filter}{Only include content last updated after this date (MM/DD/YYYY).}
+
+\item{.last_updated_before_filter}{Only include content last updated before this date (MM/DD/YYYY).}
+
+\item{.disable_search}{Logical; if TRUE, disables web search entirely (default: FALSE).}
+
+\item{.enable_search_classifier}{Logical; if TRUE, lets the model decide whether to search (default: FALSE).}
+
+\item{.reasoning_effort}{Reasoning level: "low", "medium", or "high".}
 
 \item{.return_related_questions}{Logical; if TRUE, returns related questions.}
 
-\item{.search_after_date_filter}{Only content published after date (mm/dd/yyyy).}
+\item{.user_location}{Named list for geographic search personalisation. Accepted fields:
+\code{country} (ISO 3166-1 alpha-2), \code{city}, \code{region}, \code{latitude}, \code{longitude}.
+Example: \code{list(country = "DE", city = "Berlin")}.}
 
-\item{.search_before_date_filter}{Only content published before date (mm/dd/yyyy).}
+\item{.search_context_size}{Amount of search context to include: "low", "medium" (default), or "high".}
 
-\item{.last_updated_after_filter}{Only content updated after date (mm/dd/yyyy).}
+\item{.search_type}{Search quality preference inside \code{web_search_options}: "fast", "pro", or "auto".}
 
-\item{.last_updated_before_filter}{Only content updated before date (mm/dd/yyyy).}
+\item{.stream_mode}{Response format: "full" (default) or "concise".}
+
+\item{.json_schema}{A tidyllm schema created with \code{tidyllm_schema()} for structured JSON output (optional).}
 
 \item{.top_k}{Top-k token sampling (integer, 0 disables).}
 
-\item{.web_search_options}{Named list with search config (e.g. list(search_context_size = "high")).}
+\item{.web_search_options}{Named list with raw web_search_options overrides. Values set here take
+precedence over the dedicated parameters above.}
 
 \item{.api_url}{API endpoint (default: "https://api.perplexity.ai/").}
 
@@ -90,5 +126,5 @@ perplexity_chat(
 An updated \code{LLMMessage} object with the assistant's reply and metadata, including citations and search_results.
 }
 \description{
-Sends a chat message history to the Perplexity Chat API, supporting all documented API parameters as of July 2025.
+Sends a chat message history to the Perplexity Chat API, supporting all documented API parameters.
 }

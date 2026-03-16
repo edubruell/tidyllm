@@ -1343,8 +1343,8 @@ openai <- create_provider_function(
 #'   `chat`, `embed`, `send_batch`) in which the function is being 
 #'   invoked. This is automatically managed and should not be modified by the user.
 #'
-#' @return The result of the requested action, depending on the specific function invoked 
+#' @return The result of the requested action, depending on the specific function invoked
 #'   (e.g., an updated `LLMMessage` object for `chat()`, or a matrix for `embed()`).
-#' 
+#' @keywords internal
 #' @export
 chatgpt <- openai

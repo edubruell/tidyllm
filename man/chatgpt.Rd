@@ -24,3 +24,4 @@ It provides a convenient way to interact with the OpenAI API for tasks such
 as sending chat messages, generating embeddings, and handling batch operations
 using \code{tidyllm} verbs like \code{chat()}, \code{embed()}, and \code{send_batch()}.
 }
+\keyword{internal}

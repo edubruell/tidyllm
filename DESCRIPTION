@@ -1,6 +1,6 @@
 Package: tidyllm
 Title: Tidy Integration of Large Language Models
-Version: 0.3.6
+Version: 0.4.0.9000
 Authors@R: c(
     person("Eduard", "Brüll", NULL, "eduard.bruell@zew.de", role = c("aut", "cre")),
     person("Jia", "Zhang", NULL, NULL, role = "ctb")
@@ -63,6 +63,8 @@ Collate:
     'api_claude.R'
     'api_gemini.R'
     'api_ellmer.R'
+    'api_openrouter.R'
+    'api_llamacpp.R'
     'pdfbatch.R'
     'zzz.R'
 Depends: 
