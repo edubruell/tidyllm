@@ -132,6 +132,7 @@ method(handle_stream,list(api_perplexity,new_S3_class("httr2_response"))) <- fun
 #' @param .search_context_size Amount of search context to include: "low", "medium" (default), or "high".
 #' @param .search_type Search quality preference inside \code{web_search_options}: "fast", "pro", or "auto".
 #' @param .stream_mode Response format: "full" (default) or "concise".
+#' @param .json_schema A tidyllm schema created with `tidyllm_schema()` for structured JSON output (optional).
 #' @param .top_k Top-k token sampling (integer, 0 disables).
 #' @param .web_search_options Named list with raw web_search_options overrides. Values set here take
 #'   precedence over the dedicated parameters above.
@@ -173,6 +174,7 @@ perplexity_chat <- function(
     .search_context_size = NULL,
     .search_type = NULL,
     .stream_mode = NULL,
+    .json_schema = NULL,
     .top_k = NULL,
     .web_search_options = NULL,
     .api_url = "https://api.perplexity.ai/",
@@ -216,6 +218,7 @@ perplexity_chat <- function(
     "Input .stream_mode must be NULL or one of 'full', 'concise'" = is.null(.stream_mode) | .stream_mode %in% c("full", "concise"),
     "Input .top_k must be NULL or a single non-negative integer" = is.null(.top_k) | (is.numeric(.top_k) & length(.top_k) == 1 & .top_k >= 0),
     "Input .web_search_options must be NULL or named list" = is.null(.web_search_options) | (is.list(.web_search_options) & !is.null(names(.web_search_options))),
+    "Input .json_schema must be NULL or a list" = is.null(.json_schema) | is.list(.json_schema),
     "Input .verbose must be logical" = is.logical(.verbose),
     "Input .max_tries must be positive integer" = is_integer_valued(.max_tries) & .max_tries > 0,
     "Input .dry_run must be logical" = is.logical(.dry_run)
@@ -240,6 +243,24 @@ perplexity_chat <- function(
     .web_search_options
   ) |> purrr::compact()
   web_search_options <- if (length(web_search_options) == 0) NULL else web_search_options
+
+  json <- FALSE
+  response_format <- NULL
+  if (!is.null(.json_schema)) {
+    json <- TRUE
+    schema_name <- attr(.json_schema, "name") %||% "schema"
+    if (is.null(.json_schema$additionalProperties)) {
+      .json_schema$additionalProperties <- FALSE
+    }
+    response_format <- list(
+      type = "json_schema",
+      json_schema = list(
+        schema = .json_schema,
+        name = schema_name,
+        strict = TRUE
+      )
+    )
+  }
 
   request_body <- list(
     model = .model,
@@ -271,7 +292,11 @@ perplexity_chat <- function(
     web_search_options = web_search_options,
     stream = .stream
   ) |> purrr::compact()
-  
+
+  if (!is.null(response_format)) {
+    request_body$response_format <- response_format
+  }
+
   request <- httr2::request(.api_url) |>
     httr2::req_url_path("/chat/completions") |>
     httr2::req_headers(
@@ -294,10 +319,10 @@ perplexity_chat <- function(
   }
   
   add_message(.llm     = .llm,
-              .role    = "assistant", 
-              .content = assistant_reply, 
+              .role    = "assistant",
+              .content = assistant_reply,
               .meta    = meta,
-              .json    = FALSE)
+              .json    = json)
 }
 
 

@@ -57,4 +57,20 @@ llt_test("search_recency_filter accepted without error", {
   llt_expect_reply(result)
 })
 
+# ── Structured output ─────────────────────────────────────────────────────────
+
+llt_test("json_schema returns structured data", {
+  schema <- tidyllm_schema(
+    name = "Inventor",
+    inventor = field_chr("Name of the inventor"),
+    year      = field_dbl("Year of the invention")
+  )
+  result <- llm_message("Who invented the telephone and in what year?") |>
+    chat(perplexity(), .json_schema = schema)
+  data <- get_reply_data(result)
+  llt_expect_true(is.list(data), "get_reply_data() should return a list")
+  llt_expect_true("inventor" %in% names(data), "Should have inventor field")
+  llt_expect_true("year" %in% names(data), "Should have year field")
+})
+
 llt_report()
