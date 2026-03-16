@@ -46,4 +46,20 @@ llt_test("deep_research background mode returns research job, check and fetch wo
   }
 })
 
+# ── Structured output ─────────────────────────────────────────────────────────
+
+llt_test("deep_research with json_schema returns structured data", {
+  schema <- tidyllm_schema(
+    name = "Causes",
+    main_cause  = field_chr("The single most cited main cause"),
+    other_causes = field_chr("Two or three other key causes, comma-separated")
+  )
+  result <- llm_message("What were the main causes of World War I?") |>
+    deep_research(perplexity(), .json_schema = schema, .timeout = 600)
+  llt_expect_s7(result, LLMMessage)
+  data <- get_reply_data(result)
+  llt_expect_true(is.list(data), "get_reply_data() should return a list")
+  llt_expect_true("main_cause" %in% names(data), "Should have main_cause field")
+})
+
 llt_report()

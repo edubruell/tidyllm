@@ -342,6 +342,7 @@ perplexity_chat <- function(
 #' @param .last_updated_after_filter Only include content last updated after this date (MM/DD/YYYY).
 #' @param .last_updated_before_filter Only include content last updated before this date (MM/DD/YYYY).
 #' @param .user_location Named list for geographic search personalisation (fields: country, city, region, latitude, longitude).
+#' @param .json_schema A tidyllm schema created with `tidyllm_schema()` for structured JSON output (optional).
 #' @param .idempotency_key Optional string; unique key to prevent duplicate submissions.
 #' @param .api_key Character; Perplexity API key (default: from environment variable).
 #' @param .timeout Integer; request timeout in seconds for blocking polling (default: 300).
@@ -364,6 +365,7 @@ perplexity_deep_research <- function(.llm,
                                      .last_updated_after_filter = NULL,
                                      .last_updated_before_filter = NULL,
                                      .user_location = NULL,
+                                     .json_schema = NULL,
                                      .idempotency_key = NULL,
                                      .api_key = Sys.getenv("PERPLEXITY_API_KEY"),
                                      .timeout = 300,
@@ -384,6 +386,7 @@ perplexity_deep_research <- function(.llm,
     "Input .last_updated_after_filter must be NULL or character" = is.null(.last_updated_after_filter) | is.character(.last_updated_after_filter),
     "Input .last_updated_before_filter must be NULL or character" = is.null(.last_updated_before_filter) | is.character(.last_updated_before_filter),
     "Input .user_location must be NULL or a named list" = is.null(.user_location) | (is.list(.user_location) & !is.null(names(.user_location))),
+    "Input .json_schema must be NULL or a list" = is.null(.json_schema) | is.list(.json_schema),
     "Input .idempotency_key must be NULL or a single string" = is.null(.idempotency_key) | (is.character(.idempotency_key) & length(.idempotency_key) == 1),
     "Input .api_key must be non-empty" = nzchar(.api_key),
     "Input .timeout must be a positive integer" = is_integer_valued(.timeout) && .timeout > 0,
@@ -403,6 +406,24 @@ perplexity_deep_research <- function(.llm,
     user_location       = .user_location
   ) |> purrr::compact()
 
+  json <- FALSE
+  response_format <- NULL
+  if (!is.null(.json_schema)) {
+    json <- TRUE
+    schema_name <- attr(.json_schema, "name") %||% "schema"
+    if (is.null(.json_schema$additionalProperties)) {
+      .json_schema$additionalProperties <- FALSE
+    }
+    response_format <- list(
+      type = "json_schema",
+      json_schema = list(
+        schema = .json_schema,
+        name = schema_name,
+        strict = TRUE
+      )
+    )
+  }
+
   inner_request <- list(
     model = "sonar-deep-research",
     messages = messages,
@@ -416,7 +437,8 @@ perplexity_deep_research <- function(.llm,
     search_before_date_filter = .search_before_date_filter,
     last_updated_after_filter = .last_updated_after_filter,
     last_updated_before_filter = .last_updated_before_filter,
-    web_search_options = web_search_options
+    web_search_options = web_search_options,
+    response_format = response_format
   ) |> purrr::compact()
 
   request_body <- list(
@@ -436,7 +458,7 @@ perplexity_deep_research <- function(.llm,
     httr2::resp_body_json()
 
   job_id <- response$id
-  job <- structure(list(job_id = job_id, message = .llm), class = "tidyllm_research_job")
+  job <- structure(list(job_id = job_id, message = .llm, json = json), class = "tidyllm_research_job")
 
   if (.background) return(job)
 
@@ -541,7 +563,7 @@ perplexity_fetch_research <- function(.job,
               .role    = "assistant",
               .content = assistant_reply,
               .meta    = meta,
-              .json    = FALSE)
+              .json    = isTRUE(.job$json))
 }
 
 
