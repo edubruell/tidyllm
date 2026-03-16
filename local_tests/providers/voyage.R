@@ -71,7 +71,7 @@ llt_test("dog image embedding is closer to dog text than to hotdog text", {
 # ── output_dimension ──────────────────────────────────────────────────────────
 
 llt_test("output_dimension reduces embedding size", {
-  result <- c("The dog ran in the park") |> embed(voyage(), .output_dimension = 256)
+  result <- c("The dog ran in the park") |> embed(voyage(.output_dimension = 256))
   llt_expect_tibble(result, min_rows = 1)
   llt_expect_true(length(result$embeddings[[1]]) == 256,
                   sprintf("Embedding should have 256 dims, got %d", length(result$embeddings[[1]])))

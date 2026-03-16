@@ -92,9 +92,7 @@ method(extract_metadata, list(api_claude,class_list))<- function(.api,.response)
       id                 = .response$id,
       stop_sequence      = .response$stop_sequence,
       thinking           = if(r_has_name(.response,"thinking")) .response$content[[1]]$thinking else NULL,
-      signature          = if(r_has_name(.response,"thinking")) .response$content[[1]]$signature else NULL,
-      cache_read_tokens  = .response$usage$cache_read_input_tokens,
-      cache_write_tokens = .response$usage$cache_creation_input_tokens
+      signature          = if(r_has_name(.response,"thinking")) .response$content[[1]]$signature else NULL
     )
   )
 }  
@@ -370,7 +368,6 @@ claude_chat <- function(.llm,
                         .tools = NULL,
                         .json_schema = NULL,
                         .file_ids = NULL,
-                        .cache_system_prompt = FALSE,
                         .api_url = "https://api.anthropic.com/",
                         .verbose = FALSE,
                         .max_tries = 3,
@@ -407,7 +404,6 @@ claude_chat <- function(.llm,
     ".thinking_budget must be a positive integer larger than 1024" = is_integer_valued(.thinking_budget) && .thinking_budget >= 1024,
     ".file_ids must be a character vector" =
       is.null(.file_ids) | is.character(.file_ids),
-    ".cache_system_prompt must be logical" = is.logical(.cache_system_prompt),
     ".max_tool_rounds must be a positive integer" = is_integer_valued(.max_tool_rounds) && .max_tool_rounds >= 1
   ) |>
     validate_inputs()
@@ -445,17 +441,11 @@ claude_chat <- function(.llm,
     NULL
   }
   
-  system_prompt <- if (.cache_system_prompt && nzchar(.llm@system_prompt)) {
-    list(list(type = "text", text = .llm@system_prompt, cache_control = list(type = "ephemeral")))
-  } else {
-    .llm@system_prompt
-  }
-
   request_body <- list(
     model = .model,
     max_tokens = .max_tokens,
     messages = messages,
-    system = system_prompt,
+    system = .llm@system_prompt,
     temperature = .temperature,
     top_k = .top_k,
     top_p = .top_p,
@@ -469,9 +459,6 @@ claude_chat <- function(.llm,
 
   # Build beta headers - combine features as needed
   beta_features <- "files-api-2025-04-14"
-  if (.cache_system_prompt) {
-    beta_features <- paste(beta_features, "prompt-caching-2024-07-31", sep = ",")
-  }
   if (!is.null(output_format)) {
     beta_features <- paste(beta_features, "structured-outputs-2025-11-13", sep = ",")
   }

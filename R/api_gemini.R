@@ -64,9 +64,7 @@ method(parse_chat_response, list(api_gemini,class_list)) <- function(.api,.conte
       stop()
   }
   
-  parts <- .content$candidates[[1]]$content$parts
-  text_parts <- purrr::keep(parts, ~ !isTRUE(.x$thought))
-  text_parts[[1]]$text
+  .content$candidates[[1]]$content$parts[[1]]$text
 }
 
 
@@ -116,17 +114,6 @@ method(handle_stream,list(api_gemini,new_S3_class("httr2_response"))) <- functio
 #'
 #' @noRd
 method(extract_metadata, list(api_gemini,class_list))<- function(.api,.response) {
-  parts <- .response$candidates[[1]]$content$parts
-  thinking_text <- if (!is.null(parts)) {
-    thought_parts <- purrr::keep(parts, ~ isTRUE(.x$thought))
-    if (length(thought_parts) > 0) {
-      purrr::map_chr(thought_parts, ~ .x$text %||% "") |> paste(collapse = "")
-    } else {
-      NULL
-    }
-  } else {
-    NULL
-  }
   list(
     model             = .response$modelVersion,
     timestamp         = lubridate::as_datetime(lubridate::now()),
@@ -137,7 +124,7 @@ method(extract_metadata, list(api_gemini,class_list))<- function(.api,.response)
       finishReason      = .response$candidates[[1]]$finishReason,
       avgLogprobs       = .response$candidates[[1]]$avgLogprobs,
       groundingMetadata = .response$candidates[[1]]$groundingMetadata,
-      thinking          = thinking_text
+      thinking_tokens   = .response$usageMetadata$thoughtsTokenCount
     )
   )
 }  

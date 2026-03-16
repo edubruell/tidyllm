@@ -187,7 +187,7 @@ last_metadata <- function(.llm) {
 #' Extracts token log probabilities from assistant replies within an `LLMMessage` object. 
 #' Each row represents a token with its log probability and top alternative tokens.
 #'
-#' An empty tibble is output if no logprobs were requested. Currently only works with `openai_chat()`
+#' An empty tibble is output if no logprobs were requested. Works with `openai_chat()`, `llamacpp_chat()`, and other providers that support logprobs.
 #'
 #' Columns include:
 #' - `reply_index`: The index of the assistant reply in the message history.
