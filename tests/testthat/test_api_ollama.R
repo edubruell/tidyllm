@@ -69,7 +69,7 @@ test_that("ollama_embedding function constructs a correct request and dry runs i
   
   # Now check the body content to ensure the JSON is constructed as expected
   body_json <- request$body |> jsonlite::toJSON() |> as.character()
-  expected_json <- "{\"data\":{\"model\":[\"all-minilm\"],\"input\":[\"It is not that I am mad, it is only that my head is different from yours\",\"A man can do as he wills, but not will as he wills\",\"Whereof one cannot speak, thereof one must be silent\",\"The limits of my language mean the limits of my world\"],\"truncate\":[true]},\"type\":[\"json\"],\"content_type\":[\"application/json\"],\"params\":{\"auto_unbox\":[true],\"digits\":[22],\"null\":[\"null\"]}}"
+  expected_json <- "{\"data\":{\"model\":[\"qwen3-embedding:0.6b\"],\"input\":[\"It is not that I am mad, it is only that my head is different from yours\",\"A man can do as he wills, but not will as he wills\",\"Whereof one cannot speak, thereof one must be silent\",\"The limits of my language mean the limits of my world\"],\"truncate\":[true]},\"type\":[\"json\"],\"content_type\":[\"application/json\"],\"params\":{\"auto_unbox\":[true],\"digits\":[22],\"null\":[\"null\"]}}"
   expect_equal(body_json, expected_json)
 })
 
@@ -105,7 +105,7 @@ test_that("ollama_embedding returns expected response", {
                 "A man can do as he wills, but not will as he wills",
                 "Whereof one cannot speak, thereof one must be silent",
                 "The limits of my language mean the limits of my world") |>
-      ollama_embedding()
+      ollama_embedding(.model = "all-minilm")
     
     
     # Test that the result is a tibble

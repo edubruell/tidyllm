@@ -35,6 +35,54 @@ test_that("perplexity function constructs a correct request and dry runs it", {
   expect_equal(body_json, expected_json)
 })
 
+test_that("perplexity_chat dry run includes search_domain_filter in body", {
+  request <- llm_message("Any news?") |>
+    chat(perplexity(.search_domain_filter = c("arxiv.org", "-reddit.com")), .dry_run = TRUE)
+  body_json <- request$body |> jsonlite::toJSON() |> as.character()
+  expect_true(grepl("arxiv.org", body_json))
+  expect_true(grepl("-reddit.com", body_json))
+})
+
+test_that("perplexity_chat dry run includes search_recency_filter in body", {
+  request <- llm_message("What happened today?") |>
+    chat(perplexity(.search_recency_filter = "day"), .dry_run = TRUE)
+  body_json <- request$body |> jsonlite::toJSON() |> as.character()
+  expect_true(grepl("\"day\"", body_json))
+})
+
+test_that("check_job errors for non-job object", {
+  expect_error(check_job("not a job"), "check_job\\(\\) expects")
+  expect_error(check_job(list(x = 1)), "check_job\\(\\) expects")
+})
+
+test_that("fetch_job errors for non-job object", {
+  expect_error(fetch_job("not a job"), "fetch_job\\(\\) expects")
+  expect_error(fetch_job(42), "fetch_job\\(\\) expects")
+})
+
+test_that("perplexity_deep_research validates reasoning_effort", {
+  old_key <- Sys.getenv("PERPLEXITY_API_KEY")
+  Sys.setenv(PERPLEXITY_API_KEY = "DUMMY_KEY_FOR_TESTING")
+  on.exit(Sys.setenv(PERPLEXITY_API_KEY = old_key))
+  expect_error(
+    perplexity_deep_research(llm_message("test"), .reasoning_effort = "extreme"),
+    ".reasoning_effort must be"
+  )
+})
+
+test_that("perplexity_deep_research validates search_domain_filter max length", {
+  old_key <- Sys.getenv("PERPLEXITY_API_KEY")
+  Sys.setenv(PERPLEXITY_API_KEY = "DUMMY_KEY_FOR_TESTING")
+  on.exit(Sys.setenv(PERPLEXITY_API_KEY = old_key))
+  expect_error(
+    perplexity_deep_research(
+      llm_message("test"),
+      .search_domain_filter = paste0("domain", 1:11, ".com")
+    ),
+    "must be <= 10 domains"
+  )
+})
+
 test_that("perplexity returns expected response", {
   with_mock_dir("perplexity", expr = {
     
