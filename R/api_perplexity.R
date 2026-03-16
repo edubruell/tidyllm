@@ -290,10 +290,12 @@ perplexity_deep_research <- function(.llm,
   messages <- to_api_format(.llm, api_obj, TRUE)
 
   request_body <- list(
-    model = "sonar-deep-research",
-    messages = messages,
-    reasoning_effort = .reasoning_effort,
-    web_search_options = list(search_context_size = .search_context_size)
+    request = list(
+      model = "sonar-deep-research",
+      messages = messages,
+      reasoning_effort = .reasoning_effort,
+      web_search_options = list(search_context_size = .search_context_size)
+    )
   )
 
   response <- httr2::request("https://api.perplexity.ai") |>
@@ -335,7 +337,7 @@ perplexity_poll_research <- function(.job, .api_key = Sys.getenv("PERPLEXITY_API
       httr2::req_perform() |>
       httr2::resp_body_json()
 
-    if (identical(status_response$status, "completed")) {
+    if (identical(status_response$status, "COMPLETED")) {
       .job$response <- status_response
       return(.job)
     }
@@ -372,7 +374,7 @@ perplexity_check_research <- function(.job,
     httr2::resp_body_json()
 
   .job$status <- status_response$status
-  if (identical(status_response$status, "completed")) {
+  if (identical(status_response$status, "COMPLETED")) {
     .job$response <- status_response
   }
   .job
@@ -396,7 +398,7 @@ perplexity_fetch_research <- function(.job,
 
   if (is.null(.job$response)) {
     .job <- perplexity_check_research(.job, .api_key, .max_tries)
-    if (!identical(.job$status, "completed")) {
+    if (!identical(.job$status, "COMPLETED")) {
       stop(sprintf("Perplexity deep research job '%s' is not yet completed (status: %s).", .job$job_id, .job$status))
     }
   }
@@ -405,7 +407,7 @@ perplexity_fetch_research <- function(.job,
                             long_name  = "Perplexity",
                             api_key_env_var = "PERPLEXITY_API_KEY")
 
-  response_content <- .job$response
+  response_content <- .job$response$response
   assistant_reply <- parse_chat_response(api_obj, response_content)
   meta <- extract_metadata(api_obj, response_content)
 
