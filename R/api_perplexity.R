@@ -97,10 +97,10 @@ method(handle_stream,list(api_perplexity,new_S3_class("httr2_response"))) <- fun
 }
 
 
-#' Send LLM Messages to the Perplexity Chat API (All Features, No .json Option)
+#' Send LLM Messages to the Perplexity Chat API
 #'
 #' @description
-#' Sends a chat message history to the Perplexity Chat API, supporting all documented API parameters as of July 2025.
+#' Sends a chat message history to the Perplexity Chat API, supporting all documented API parameters.
 #'
 #' @param .llm An `LLMMessage` object containing the conversation history.
 #' @param .model Model name to use (default: "sonar").
@@ -110,18 +110,31 @@ method(handle_stream,list(api_perplexity,new_S3_class("httr2_response"))) <- fun
 #' @param .frequency_penalty Number > 0. Penalizes frequent tokens.
 #' @param .presence_penalty Numeric between -2 and 2. Penalizes present tokens.
 #' @param .stop Stop sequence(s), string or character vector/list.
-#' @param .search_domain_filter Domains to allowlist/denylist for search (max 10, "-domain" for denylist).
+#' @param .search_domain_filter Character vector of domains to allowlist/denylist (max 10; prefix with "-" to denylist).
+#' @param .search_language_filter ISO 639-1 language code to restrict search results (e.g. "en", "de", "fr").
+#' @param .language_preference ISO 639-1 code for preferred response language (e.g. "en").
 #' @param .return_images Logical; if TRUE, returns images from search.
-#' @param .search_recency_filter Restrict search to recent ("hour","day","week","month").
-#' @param .search_mode "web" (default) or "academic" (prioritize scholarly sources).
-#' @param .reasoning_effort Reasoning level: "low", "medium" (default), "high" (for deep research models).
+#' @param .image_domain_filter Character vector of domains to restrict image results to.
+#' @param .image_format_filter Character vector of image formats to include (e.g. c("png", "jpg")).
+#' @param .search_recency_filter Restrict search to recent results: "hour", "day", "week", "month", or "year".
+#' @param .search_mode Search index to use: "web" (default), "academic", or "sec".
+#' @param .search_after_date_filter Only include content published after this date (MM/DD/YYYY).
+#' @param .search_before_date_filter Only include content published before this date (MM/DD/YYYY).
+#' @param .last_updated_after_filter Only include content last updated after this date (MM/DD/YYYY).
+#' @param .last_updated_before_filter Only include content last updated before this date (MM/DD/YYYY).
+#' @param .disable_search Logical; if TRUE, disables web search entirely (default: FALSE).
+#' @param .enable_search_classifier Logical; if TRUE, lets the model decide whether to search (default: FALSE).
+#' @param .reasoning_effort Reasoning level: "low", "medium", or "high".
 #' @param .return_related_questions Logical; if TRUE, returns related questions.
-#' @param .search_after_date_filter Only content published after date (mm/dd/yyyy).
-#' @param .search_before_date_filter Only content published before date (mm/dd/yyyy).
-#' @param .last_updated_after_filter Only content updated after date (mm/dd/yyyy).
-#' @param .last_updated_before_filter Only content updated before date (mm/dd/yyyy).
+#' @param .user_location Named list for geographic search personalisation. Accepted fields:
+#'   \code{country} (ISO 3166-1 alpha-2), \code{city}, \code{region}, \code{latitude}, \code{longitude}.
+#'   Example: \code{list(country = "DE", city = "Berlin")}.
+#' @param .search_context_size Amount of search context to include: "low", "medium" (default), or "high".
+#' @param .search_type Search quality preference inside \code{web_search_options}: "fast", "pro", or "auto".
+#' @param .stream_mode Response format: "full" (default) or "concise".
 #' @param .top_k Top-k token sampling (integer, 0 disables).
-#' @param .web_search_options Named list with search config (e.g. list(search_context_size = "high")).
+#' @param .web_search_options Named list with raw web_search_options overrides. Values set here take
+#'   precedence over the dedicated parameters above.
 #' @param .api_url API endpoint (default: "https://api.perplexity.ai/").
 #' @param .timeout Timeout in seconds (default: 60).
 #' @param .stream If TRUE, streams response.
@@ -141,15 +154,25 @@ perplexity_chat <- function(
     .presence_penalty = NULL,
     .stop = NULL,
     .search_domain_filter = NULL,
+    .search_language_filter = NULL,
+    .language_preference = NULL,
     .return_images = FALSE,
+    .image_domain_filter = NULL,
+    .image_format_filter = NULL,
     .search_recency_filter = NULL,
     .search_mode = "web",
-    .reasoning_effort = NULL,
-    .return_related_questions = FALSE,
     .search_after_date_filter = NULL,
     .search_before_date_filter = NULL,
     .last_updated_after_filter = NULL,
     .last_updated_before_filter = NULL,
+    .disable_search = FALSE,
+    .enable_search_classifier = FALSE,
+    .reasoning_effort = NULL,
+    .return_related_questions = FALSE,
+    .user_location = NULL,
+    .search_context_size = NULL,
+    .search_type = NULL,
+    .stream_mode = NULL,
     .top_k = NULL,
     .web_search_options = NULL,
     .api_url = "https://api.perplexity.ai/",
@@ -172,15 +195,25 @@ perplexity_chat <- function(
     "Input .stop must be NULL, character, or list" = is.null(.stop) | is.character(.stop) | is.list(.stop),
     "Input .search_domain_filter must be NULL or character vector" = is.null(.search_domain_filter) | is.character(.search_domain_filter),
     "If .search_domain_filter provided, must be <= 10 domains" = is.null(.search_domain_filter) | (length(.search_domain_filter) <= 10),
+    "Input .search_language_filter must be NULL or a single string" = is.null(.search_language_filter) | (is.character(.search_language_filter) & length(.search_language_filter) == 1),
+    "Input .language_preference must be NULL or a single string" = is.null(.language_preference) | (is.character(.language_preference) & length(.language_preference) == 1),
     "Input .return_images must be logical" = is.logical(.return_images),
+    "Input .image_domain_filter must be NULL or character vector" = is.null(.image_domain_filter) | is.character(.image_domain_filter),
+    "Input .image_format_filter must be NULL or character vector" = is.null(.image_format_filter) | is.character(.image_format_filter),
     "Input .return_related_questions must be logical" = is.logical(.return_related_questions),
-    "Input .search_recency_filter must be NULL or character" = is.null(.search_recency_filter) | is.character(.search_recency_filter),
-    "Input .search_mode must be 'web' or 'academic'" = .search_mode %in% c("web", "academic"),
+    "Input .search_recency_filter must be NULL or one of 'hour','day','week','month','year'" = is.null(.search_recency_filter) | .search_recency_filter %in% c("hour", "day", "week", "month", "year"),
+    "Input .search_mode must be 'web', 'academic', or 'sec'" = .search_mode %in% c("web", "academic", "sec"),
+    "Input .disable_search must be logical" = is.logical(.disable_search),
+    "Input .enable_search_classifier must be logical" = is.logical(.enable_search_classifier),
     "Input .reasoning_effort must be NULL or one of 'low', 'medium', 'high'" = is.null(.reasoning_effort) | .reasoning_effort %in% c("low", "medium", "high"),
     "Input .search_after_date_filter must be NULL or character" = is.null(.search_after_date_filter) | is.character(.search_after_date_filter),
     "Input .search_before_date_filter must be NULL or character" = is.null(.search_before_date_filter) | is.character(.search_before_date_filter),
     "Input .last_updated_after_filter must be NULL or character" = is.null(.last_updated_after_filter) | is.character(.last_updated_after_filter),
     "Input .last_updated_before_filter must be NULL or character" = is.null(.last_updated_before_filter) | is.character(.last_updated_before_filter),
+    "Input .user_location must be NULL or a named list" = is.null(.user_location) | (is.list(.user_location) & !is.null(names(.user_location))),
+    "Input .search_context_size must be NULL or one of 'low', 'medium', 'high'" = is.null(.search_context_size) | .search_context_size %in% c("low", "medium", "high"),
+    "Input .search_type must be NULL or one of 'fast', 'pro', 'auto'" = is.null(.search_type) | .search_type %in% c("fast", "pro", "auto"),
+    "Input .stream_mode must be NULL or one of 'full', 'concise'" = is.null(.stream_mode) | .stream_mode %in% c("full", "concise"),
     "Input .top_k must be NULL or a single non-negative integer" = is.null(.top_k) | (is.numeric(.top_k) & length(.top_k) == 1 & .top_k >= 0),
     "Input .web_search_options must be NULL or named list" = is.null(.web_search_options) | (is.list(.web_search_options) & !is.null(names(.web_search_options))),
     "Input .verbose must be logical" = is.logical(.verbose),
@@ -188,18 +221,26 @@ perplexity_chat <- function(
     "Input .dry_run must be logical" = is.logical(.dry_run)
   ) |>
     validate_inputs()
-  
+
   api_obj <- api_perplexity(short_name = "perplexity",
                             long_name  = "Perplexity",
                             api_key_env_var = "PERPLEXITY_API_KEY")
-  
+
   messages <- to_api_format(.llm, api_obj, TRUE)
   api_key <- get_api_key(api_obj, .dry_run)
-  
-  # Convert to list for API if provided
-  search_domain_filter <- if(!is.null(.search_domain_filter)) as.list(.search_domain_filter) else NULL
-  
-  # --- Build Request Body ---
+
+  search_domain_filter  <- if (!is.null(.search_domain_filter))  as.list(.search_domain_filter)  else NULL
+  image_domain_filter   <- if (!is.null(.image_domain_filter))   as.list(.image_domain_filter)   else NULL
+  image_format_filter   <- if (!is.null(.image_format_filter))   as.list(.image_format_filter)   else NULL
+
+  web_search_options <- c(
+    list(search_context_size = .search_context_size,
+         search_type         = .search_type,
+         user_location       = .user_location),
+    .web_search_options
+  ) |> purrr::compact()
+  web_search_options <- if (length(web_search_options) == 0) NULL else web_search_options
+
   request_body <- list(
     model = .model,
     messages = messages,
@@ -210,17 +251,24 @@ perplexity_chat <- function(
     presence_penalty = .presence_penalty,
     stop = .stop,
     search_domain_filter = search_domain_filter,
+    search_language_filter = .search_language_filter,
+    language_preference = .language_preference,
     return_images = .return_images,
+    image_domain_filter = image_domain_filter,
+    image_format_filter = image_format_filter,
     search_recency_filter = .search_recency_filter,
     search_mode = .search_mode,
-    reasoning_effort = .reasoning_effort,
-    return_related_questions = .return_related_questions,
     search_after_date_filter = .search_after_date_filter,
     search_before_date_filter = .search_before_date_filter,
     last_updated_after_filter = .last_updated_after_filter,
     last_updated_before_filter = .last_updated_before_filter,
+    disable_search = if (.disable_search) TRUE else NULL,
+    enable_search_classifier = if (.enable_search_classifier) TRUE else NULL,
+    reasoning_effort = .reasoning_effort,
+    return_related_questions = .return_related_questions,
+    stream_mode = .stream_mode,
     top_k = .top_k,
-    web_search_options = .web_search_options,
+    web_search_options = web_search_options,
     stream = .stream
   ) |> purrr::compact()
   
@@ -257,10 +305,21 @@ perplexity_chat <- function(
 #'
 #' @param .llm An `LLMMessage` object containing the research question.
 #' @param .background Logical; if TRUE, returns a `tidyllm_research_job` immediately without waiting (default: FALSE).
-#' @param .search_context_size Character; search context size: "low", "medium" (default), or "high".
-#' @param .reasoning_effort Character; reasoning level: "low", "medium" (default), or "high".
+#' @param .reasoning_effort Reasoning level: "low", "medium" (default), or "high".
+#' @param .search_context_size Amount of search context: "low", "medium" (default), or "high".
+#' @param .search_domain_filter Character vector of domains to allowlist/denylist (max 10; prefix with "-" to denylist).
+#' @param .search_language_filter ISO 639-1 language code to restrict search results (e.g. "en", "de").
+#' @param .language_preference ISO 639-1 code for preferred response language.
+#' @param .search_recency_filter Restrict search to recent results: "hour", "day", "week", "month", or "year".
+#' @param .search_mode Search index to use: "web" (default), "academic", or "sec".
+#' @param .search_after_date_filter Only include content published after this date (MM/DD/YYYY).
+#' @param .search_before_date_filter Only include content published before this date (MM/DD/YYYY).
+#' @param .last_updated_after_filter Only include content last updated after this date (MM/DD/YYYY).
+#' @param .last_updated_before_filter Only include content last updated before this date (MM/DD/YYYY).
+#' @param .user_location Named list for geographic search personalisation (fields: country, city, region, latitude, longitude).
+#' @param .idempotency_key Optional string; unique key to prevent duplicate submissions.
 #' @param .api_key Character; Perplexity API key (default: from environment variable).
-#' @param .timeout Integer; request timeout in seconds for polling (default: 300).
+#' @param .timeout Integer; request timeout in seconds for blocking polling (default: 300).
 #' @param .max_tries Integer; maximum retries (default: 3).
 #'
 #' @return If `.background = FALSE`, an updated `LLMMessage` with the research reply.
@@ -268,16 +327,39 @@ perplexity_chat <- function(
 #' @export
 perplexity_deep_research <- function(.llm,
                                      .background = FALSE,
-                                     .search_context_size = "medium",
                                      .reasoning_effort = "medium",
+                                     .search_context_size = "medium",
+                                     .search_domain_filter = NULL,
+                                     .search_language_filter = NULL,
+                                     .language_preference = NULL,
+                                     .search_recency_filter = NULL,
+                                     .search_mode = NULL,
+                                     .search_after_date_filter = NULL,
+                                     .search_before_date_filter = NULL,
+                                     .last_updated_after_filter = NULL,
+                                     .last_updated_before_filter = NULL,
+                                     .user_location = NULL,
+                                     .idempotency_key = NULL,
                                      .api_key = Sys.getenv("PERPLEXITY_API_KEY"),
                                      .timeout = 300,
                                      .max_tries = 3) {
   c(
     "Input .llm must be an LLMMessage object" = S7_inherits(.llm, LLMMessage),
     "Input .background must be logical" = is.logical(.background),
-    "Input .search_context_size must be 'low', 'medium', or 'high'" = .search_context_size %in% c("low", "medium", "high"),
     "Input .reasoning_effort must be 'low', 'medium', or 'high'" = .reasoning_effort %in% c("low", "medium", "high"),
+    "Input .search_context_size must be 'low', 'medium', or 'high'" = .search_context_size %in% c("low", "medium", "high"),
+    "Input .search_domain_filter must be NULL or character vector" = is.null(.search_domain_filter) | is.character(.search_domain_filter),
+    "If .search_domain_filter provided, must be <= 10 domains" = is.null(.search_domain_filter) | (length(.search_domain_filter) <= 10),
+    "Input .search_language_filter must be NULL or a single string" = is.null(.search_language_filter) | (is.character(.search_language_filter) & length(.search_language_filter) == 1),
+    "Input .language_preference must be NULL or a single string" = is.null(.language_preference) | (is.character(.language_preference) & length(.language_preference) == 1),
+    "Input .search_recency_filter must be NULL or one of 'hour','day','week','month','year'" = is.null(.search_recency_filter) | .search_recency_filter %in% c("hour", "day", "week", "month", "year"),
+    "Input .search_mode must be NULL or one of 'web', 'academic', 'sec'" = is.null(.search_mode) | .search_mode %in% c("web", "academic", "sec"),
+    "Input .search_after_date_filter must be NULL or character" = is.null(.search_after_date_filter) | is.character(.search_after_date_filter),
+    "Input .search_before_date_filter must be NULL or character" = is.null(.search_before_date_filter) | is.character(.search_before_date_filter),
+    "Input .last_updated_after_filter must be NULL or character" = is.null(.last_updated_after_filter) | is.character(.last_updated_after_filter),
+    "Input .last_updated_before_filter must be NULL or character" = is.null(.last_updated_before_filter) | is.character(.last_updated_before_filter),
+    "Input .user_location must be NULL or a named list" = is.null(.user_location) | (is.list(.user_location) & !is.null(names(.user_location))),
+    "Input .idempotency_key must be NULL or a single string" = is.null(.idempotency_key) | (is.character(.idempotency_key) & length(.idempotency_key) == 1),
     "Input .api_key must be non-empty" = nzchar(.api_key),
     "Input .timeout must be a positive integer" = is_integer_valued(.timeout) && .timeout > 0,
     "Input .max_tries must be a positive integer" = is_integer_valued(.max_tries) && .max_tries > 0
@@ -289,14 +371,33 @@ perplexity_deep_research <- function(.llm,
 
   messages <- to_api_format(.llm, api_obj, TRUE)
 
+  search_domain_filter <- if (!is.null(.search_domain_filter)) as.list(.search_domain_filter) else NULL
+
+  web_search_options <- list(
+    search_context_size = .search_context_size,
+    user_location       = .user_location
+  ) |> purrr::compact()
+
+  inner_request <- list(
+    model = "sonar-deep-research",
+    messages = messages,
+    reasoning_effort = .reasoning_effort,
+    search_domain_filter = search_domain_filter,
+    search_language_filter = .search_language_filter,
+    language_preference = .language_preference,
+    search_recency_filter = .search_recency_filter,
+    search_mode = .search_mode,
+    search_after_date_filter = .search_after_date_filter,
+    search_before_date_filter = .search_before_date_filter,
+    last_updated_after_filter = .last_updated_after_filter,
+    last_updated_before_filter = .last_updated_before_filter,
+    web_search_options = web_search_options
+  ) |> purrr::compact()
+
   request_body <- list(
-    request = list(
-      model = "sonar-deep-research",
-      messages = messages,
-      reasoning_effort = .reasoning_effort,
-      web_search_options = list(search_context_size = .search_context_size)
-    )
-  )
+    request = inner_request,
+    idempotency_key = .idempotency_key
+  ) |> purrr::compact()
 
   response <- httr2::request("https://api.perplexity.ai") |>
     httr2::req_url_path("/async/chat/completions") |>
