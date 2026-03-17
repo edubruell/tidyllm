@@ -1,31 +1,144 @@
-# Dev-Version 0.3.6
+# tidyllm 0.4.0
 
-## Key Improvements
+## New Providers
 
-- Multiturn tool use and parallel tool use implemented for all providers. 
-- New non-tool-based structured output for `claude()`
-- Support for builtin tools in tidyllm tools. New builtin websearch tool for `claude()`.
-- `list_models()` implemented for `gemini()`
-- Tool compatibility with ellmer via `ellmer_tool()`-function. This allows using tools from the ellmer ecosystem such as in btw with tidyllm:
+### OpenRouter (`openrouter()`)
+
+Access to 300+ models from a single API key via OpenRouter. Supports chat, embeddings, model listing, and fallback routing across providers:
+
 ```r
-btw_file_tool <- ellmer_tool(btw::btw_tool_files_list_files)
-llm_message("List the riles in the R folder of my project") |>
-  chat(claude,.tools =btw_file_tool)
+# Chat with any model on OpenRouter
+llm_message("What is the capital of France?") |>
+  chat(openrouter(.model = "anthropic/claude-3.5-sonnet"))
+
+# List available models
+list_models(openrouter())
+
+# Check account credits
+openrouter_credits()
+
+# Retrieve generation metadata (tokens, cost) for a completed request
+openrouter_generation(generation_id)
 ```
-- A minimal `chat_ellmer()` function that allows you to use a ellmer chat object in tidyllm's chat verb as interface to an LLM API.
 
-## Small Changes/Housekeeping
+OpenRouter also supports **provider fallback routing** — specify a list of fallback providers to use if the primary model is unavailable.
 
-- Default Embedding models for `gemini()` updated to `gemini-embedding-001`
-- Default chat model for `ollama()` is now set to `qwen3-vl`
-- Default chat model for `openai()` is now set to `gpt-5.1-chat-latest`
-- Default chat model for `groq()` is now set to `moonshotai/kimi-k2-instruct-0905`
-- Default chat model for `claude()` is now set to `claude-sonnet-4-5-20250929`
+### llama.cpp (`llamacpp()`)
 
-## Bug-Fixes
+Full support for local [llama.cpp](https://github.com/ggerganov/llama.cpp) servers, including chat, embeddings, reranking, and model management:
 
-- `voyage()` had a **major bug in multimodal embeddings**. A single embedding request with mutliple payloads was made instead of separate embeddings for all inputs
-- `ollama()`-Error-Messages in chat-responses are now printed out right.
+```r
+# Chat with a local llama.cpp server
+llm_message("Explain R to a Python developer") |>
+  chat(llamacpp())
+
+# Generate embeddings
+c("text one", "text two") |> embed(llamacpp())
+
+# Rerank documents by relevance
+llamacpp_rerank("best R package for LLMs", c("tidyllm", "ellmer", "httr2"))
+
+# Model management
+llamacpp_list_local_models()          # list models in the model directory
+list_hf_gguf_files("Qwen/Qwen2.5-7B-Instruct-GGUF")  # browse HuggingFace GGUF files
+llamacpp_download_model("Qwen/Qwen2.5-7B-Instruct-GGUF", "qwen2.5-7b-instruct-q4_k_m.gguf")
+llamacpp_delete_model("path/to/model.gguf")
+llamacpp_health()                     # check server status
+```
+
+## New Verbs
+
+### `deep_research()`, `check_job()`, `fetch_job()`
+
+A new `deep_research()` verb for running long-horizon research tasks. Currently supported by `perplexity()` via the `sonar-deep-research` model:
+
+```r
+# Blocking — waits for completion and returns an LLMMessage
+result <- llm_message("Compare Rust and Go for systems programming") |>
+  deep_research(perplexity())
+
+get_reply(result)
+get_metadata(result)$api_specific[[1]]$citations
+
+# Background — returns immediately, poll with check_job() / fetch_job()
+job <- llm_message("Summarize the latest EU AI Act developments") |>
+  deep_research(perplexity(), .background = TRUE)
+
+check_job(job)   # poll status
+result <- fetch_job(job)  # retrieve when complete
+```
+
+`check_job()` and `fetch_job()` are type-dispatching aliases — they delegate to `check_batch()`/`fetch_batch()` for batch objects, or to `perplexity_check_research()`/`perplexity_fetch_research()` for research jobs.
+
+## Provider Enhancements
+
+### Perplexity
+
+- New `perplexity_deep_research()`, `perplexity_check_research()`, `perplexity_fetch_research()` functions for async deep research via the `sonar-deep-research` model
+- `.json_schema` structured output support for both `perplexity_chat()` and `perplexity_deep_research()`
+- New `.search_domain_filter` parameter to restrict or exclude domains (up to 10, prefix `-` to exclude)
+- New `.reasoning_effort` parameter for `perplexity_deep_research()` (`"low"`, `"medium"`, `"high"`)
+
+### Thinking modes
+
+Extended thinking is now available for two additional providers:
+
+- **Gemini**: `.thinking_budget` parameter in `gemini_chat()` sets the token budget for internal reasoning (works with `gemini-2.5-flash` and `gemini-2.5-pro`). Thinking output is stored in `get_metadata()$api_specific[[1]]$thinking`.
+- **DeepSeek**: `.thinking = TRUE` in `deepseek_chat()` switches to the `deepseek-reasoner` model and captures the reasoning trace in `get_metadata()$api_specific[[1]]$thinking`.
+
+### Tool use improvements
+
+- **Unified multi-turn tool loop** across all providers — the same logic now handles iterative tool calls for OpenAI, Claude, Gemini, Mistral, Groq, Ollama, and OpenRouter
+- **Enum and vector support in tool schemas** — `field_fct()` (enum) and vector fields are now correctly serialised in tool parameter schemas
+- Multi-turn and parallel tool use verified across all supported providers
+
+### Ellmer compatibility
+
+- `ellmer_tool()` converts ellmer `ToolDef` objects to tidyllm `TOOL` objects, enabling tools defined in ellmer (and packages like `btw`) to be used directly with tidyllm:
+  ```r
+  btw_tool <- ellmer_tool(btw::btw_tool_files_list_files)
+  llm_message("List files in the R/ folder") |>
+    chat(claude(), .tools = btw_tool)
+  ```
+- `ellmer_tool()` also supports provider-native **builtin tools** such as `ellmer::claude_tool_web_search()`:
+  ```r
+  web_search <- ellmer_tool(ellmer::claude_tool_web_search())
+  llm_message("Latest AI safety news?") |>
+    chat(claude(), .tools = web_search)
+  ```
+- `chat_ellmer()` lets you use any ellmer `Chat` object as a tidyllm provider, bridging the two ecosystems
+
+### Groq
+
+- `.json_schema` structured output support for `groq_chat()` and Groq batch requests
+- Dropped legacy `json_object` mode in favour of proper JSON schema responses
+- Fixed JSON attribute propagation from `send_groq_batch()` to `fetch_groq_batch()`
+
+### Voyage AI
+
+- `voyage_rerank()` — new reranking function using the `rerank-2` model; returns a tibble sorted by relevance score
+- `.output_dimension` parameter for `voyage_embedding()` — control output vector size (256, 512, 1024, 2048) for Voyage-4 models
+
+### OpenRouter
+
+- `openrouter_embedding()` — generate embeddings via OpenRouter
+- `openrouter_credits()` — check account balance and credit usage
+- `openrouter_generation()` — retrieve token and cost metadata for a completed generation
+
+### Azure OpenAI
+
+- Fixed `check_azure_openai_batch()` and `fetch_azure_openai_batch()` to handle `null` values for `created_at` and `expires_at` fields returned by some deployments
+
+## Small Changes / Housekeeping
+
+- Default chat model for `ollama()` changed to `qwen3.5:4b` (faster, better instruction following for local use)
+- Default embedding model for `ollama()` changed to `qwen3-embedding:0.6b`
+- Verb dispatch refactored into a shared `dispatch_to_provider()` helper, reducing duplication across all verbs
+
+## Bug Fixes
+
+- Fixed JSON attribute not being propagated from `send_mistral_batch()` and `send_groq_batch()` to their respective fetch functions, causing structured-output batch results to be returned as raw text
+- Fixed `perplexity_deep_research()` API request format for the async endpoint
 
 # Version 0.3.5
 

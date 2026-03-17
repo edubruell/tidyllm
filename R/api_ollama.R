@@ -233,6 +233,7 @@ method(append_tool_messages, list(api_ollama, class_any, class_any, class_any)) 
 #'   Set to 1 for single-round tool use, or higher for multi-turn agentic loops.
 #' @param .tfs_z Float; tail free sampling parameter (default: NULL)
 #' @param .stop Character; custom stop sequence(s) (default: NULL)
+#' @param .think Logical or character; controls thinking mode for supported models like Qwen3. Use FALSE to disable, TRUE to enable, or "high"/"medium"/"low" to set effort level (default: NULL - model default)
 #' @param .keep_alive Character; How long should the ollama model be kept in memory after request (default: NULL - 5 Minutes)
 #' @param .ollama_server String; Ollama API endpoint (default: "http://localhost:11434")
 #' @param .timeout Integer; API request timeout in seconds (default: 120)
@@ -284,6 +285,7 @@ ollama_chat <- function(.llm,
                    .max_tool_rounds = 10,
                    .tfs_z = NULL,
                    .stop = NULL,
+                   .think = NULL,
                    .ollama_server = "http://localhost:11434",
                    .timeout = 120,
                    .keep_alive = NULL,
@@ -312,12 +314,13 @@ ollama_chat <- function(.llm,
     "Input .timeout must be a positive integer (seconds)" = is_integer_valued(.timeout) && .timeout > 0,
     "Input .keep_alive must be character" =  is.null(.keep_alive) ||  is.character(.keep_alive),
     "Input .tools must be NULL, a TOOL object, or a list of TOOL objects" = is.null(.tools) || S7_inherits(.tools, TOOL) || (is.list(.tools) && all(purrr::map_lgl(.tools, ~ S7_inherits(.x, TOOL)))),
+    "Input .think must be logical or one of 'high', 'medium', 'low' if provided" = is.null(.think) || is.logical(.think) || (.think %in% c("high", "medium", "low")),
     "Input .dry_run must be logical" = is.logical(.dry_run),
     "Streaming is not supported for requests with tool calls" = is.null(.tools) || !isTRUE(.stream),
     ".max_tool_rounds must be a positive integer" = is_integer_valued(.max_tool_rounds) && .max_tool_rounds >= 1
   ) |>
     validate_inputs()
-  
+
   api_obj <- api_ollama(short_name = "ollama",long_name = "Ollama")
   # Get formatted message list for ollama models
   ollama_messages <-  to_api_format(.llm,api_obj)
@@ -363,6 +366,7 @@ ollama_chat <- function(.llm,
     messages = ollama_messages,
     options = ollama_options,
     stream = .stream,
+    think = .think,
     format = .json_schema,
     tools = if(!is.null(tools_def)) tools_to_api(api_obj,tools_def) else NULL
   )  |> purrr::compact()

@@ -25,6 +25,8 @@ voyage_embedding(
 \item{.model}{The embedding model identifier. For text-only: "voyage-3.5-lite" (default).
 For multimodal inputs: "voyage-multimodal-3" is used automatically.}
 
+\item{.output_dimension}{Optional integer to control output vector size (default: NULL, uses model default).}
+
 \item{.timeout}{Timeout for the API request in seconds (default: 120).}
 
 \item{.dry_run}{If TRUE, perform a dry run and return the request object without sending.}

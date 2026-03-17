@@ -25,6 +25,7 @@ ollama_chat(
   .max_tool_rounds = 10,
   .tfs_z = NULL,
   .stop = NULL,
+  .think = NULL,
   .ollama_server = "http://localhost:11434",
   .timeout = 120,
   .keep_alive = NULL,
@@ -72,6 +73,8 @@ Set to 1 for single-round tool use, or higher for multi-turn agentic loops.}
 \item{.tfs_z}{Float; tail free sampling parameter (default: NULL)}
 
 \item{.stop}{Character; custom stop sequence(s) (default: NULL)}
+
+\item{.think}{Logical or character; controls thinking mode for supported models like Qwen3. Use FALSE to disable, TRUE to enable, or "high"/"medium"/"low" to set effort level (default: NULL - model default)}
 
 \item{.ollama_server}{String; Ollama API endpoint (default: "http://localhost:11434")}
 

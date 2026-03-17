@@ -8,583 +8,485 @@ vignette: >
 ---
 
 # Introduction to tidyllm
-**tidyllm** is an R package providing a unified interface for interacting with various large language model APIs. This vignette will guide you through the basic setup and usage of **tidyllm**.
+
+**tidyllm** is an R package providing a unified interface for interacting with various large language model APIs. This vignette guides you through the basic setup and usage of **tidyllm**.
 
 ## Installation
 
-To install **tidyllm** from CRAN, use:
+To install **tidyllm** from CRAN:
 
-```{r, eval= FALSE, echo=TRUE}
+```{r, eval=FALSE}
 install.packages("tidyllm")
 ```
 
-Or, to install the current development version directly from GitHub using devtools:
-```{r, eval= FALSE, echo=TRUE}
-# Install devtools if not already installed
-if (!requireNamespace("devtools", quietly = TRUE)) {
-  install.packages("devtools")
-}
+Or install the development version from GitHub:
 
-# Install TidyLLM from GitHub
+```{r, eval=FALSE}
 devtools::install_github("edubruell/tidyllm")
 ```
 
-### Setting up API Keys or Ollama
+### Setting up API Keys
 
-Before using **tidyllm**, set up API keys for the services you plan to use. You can set these API keys as environment variables in your R session using `Sys.setenv()`, for example:
+Set API keys as environment variables. The easiest way is to add them to your `.Renviron` file (run `usethis::edit_r_environ()`) and restart R:
 
-```{r, eval=FALSE}
-Sys.setenv(OPENAI_API_KEY = "YOUR-OPENAI-API-KEY")
+```
+ANTHROPIC_API_KEY="your-key-here"
+OPENAI_API_KEY="your-key-here"
 ```
 
-Alternatively, for persistent storage, add your API keys to your `.Renviron` file. For this, run `usethis::edit_r_environ()`, and add a line such as:
+Or set them temporarily in your session:
 
 ```{r, eval=FALSE}
-ANTHROPIC_API_KEY="YOUR-ANTHROPIC-API-KEY"
+Sys.setenv(OPENAI_API_KEY = "your-key-here")
 ```
-**Restart your R session** for these changes to take effect.  
 
-The table below lists the environment variables for different providers and where to obtain the API keys.
-
-| Provider     | Environment Variable        | API Key Setup Link |
-|-------------|---------------------------|--------------------|
+| Provider | Environment Variable | Where to get a key |
+|----------|---------------------|--------------------|
 | **Claude** (Anthropic) | `ANTHROPIC_API_KEY` | [Anthropic Console](https://console.anthropic.com/settings/keys) |
 | **OpenAI** | `OPENAI_API_KEY` | [OpenAI API Keys](https://platform.openai.com/account/api-keys) |
 | **Google Gemini** | `GOOGLE_API_KEY` | [Google AI Studio](https://aistudio.google.com/app/apikey) |
 | **Mistral** | `MISTRAL_API_KEY` | [Mistral Console](https://console.mistral.ai/api-keys/) |
-| **Groq** (not Grok) | `GROQ_API_KEY` | [Groq Console](https://console.groq.com/playground) |
+| **Groq** | `GROQ_API_KEY` | [Groq Console](https://console.groq.com/playground) |
 | **Perplexity** | `PERPLEXITY_API_KEY` | [Perplexity API Settings](https://www.perplexity.ai/settings/api) |
 | **DeepSeek** | `DEEPSEEK_API_KEY` | [DeepSeek Platform](https://platform.deepseek.com/api_keys) |
 | **Voyage AI** | `VOYAGE_API_KEY` | [Voyage AI Dashboard](https://dashboard.voyageai.com/api-keys) |
+| **OpenRouter** | `OPENROUTER_API_KEY` | [OpenRouter Dashboard](https://openrouter.ai/keys) |
+| **Azure OpenAI** | `AZURE_OPENAI_API_KEY` | [Azure Portal](https://portal.azure.com/) |
 
+### Running Local Models
 
-### Running Local Models with Ollama
+**tidyllm** supports local inference via [Ollama](https://ollama.com/) and [llama.cpp](https://github.com/ggerganov/llama.cpp). Both run entirely on your machine; no API key required.
 
-If you prefer to work with local large language models, install **Ollama** from [the official website](https://ollama.com/). Ollama sets up a local server to run open-source models on your device. You can then download models from [Ollama's own model repository](https://ollama.com/search) with the `ollama_download_model()` function:
+For Ollama, install from [ollama.com](https://ollama.com/) and pull a model:
 
 ```{r, eval=FALSE}
-ollama_download_model("deepscaler")
+ollama_download_model("qwen3.5:4b")
 ```
 
-### Basic Usage
+For llama.cpp, see the Local Models article on the tidyllm website for a step-by-step setup guide.
 
-Let's start with a simple example using tidyllm to interact with different language models:
+## Basic Usage
 
-```{r convo1,  eval=FALSE, echo=TRUE}
+**tidyllm** is built around a **message-centric** interface. Interactions work through a message history created by `llm_message()` and passed to verbs like `chat()`:
+
+```{r convo1, eval=FALSE}
 library(tidyllm)
 
-# Start a conversation with Claude
 conversation <- llm_message("What is the capital of France?") |>
   chat(claude())
 
-#Standard way that llm_messages are printed
 conversation
 ```
-```{r convo1_out,  eval=TRUE, echo=FALSE,message=FALSE}
+```{r convo1_out, eval=TRUE, echo=FALSE, message=FALSE}
 library(tidyllm)
 
-#Easier than mocking. httptest2 caused a few issues with my vignette
 conversation <- llm_message("What is the capital of France?") |>
-  llm_message("The capital of France is Paris.",.role="assistant")
+  llm_message("The capital of France is Paris.", .role = "assistant")
 
 conversation
 ```
-```{r convo2,  eval=FALSE, echo=TRUE}
-# Continue the conversation with ChatGPT
+
+```{r convo2, eval=FALSE}
+# Continue the conversation with a different provider
 conversation <- conversation |>
   llm_message("What's a famous landmark in this city?") |>
-  chat(openai)
+  chat(openai())
 
 get_reply(conversation)
 ```
-```{r convo2_out,  eval=TRUE, echo=FALSE}
+```{r convo2_out, eval=TRUE, echo=FALSE}
 c("A famous landmark in Paris is the Eiffel Tower.")
 ```
 
-**tidyllm** is built around a **message-centric** interface design, where most interactions work with a message history, that is created by functions like `llm_message()` or modified by API-functions like `chat()`. These API-functions always work with a combination of verbs and providers:
+All API interactions follow the **verb + provider** pattern:
 
- - **Verbs** (e.g., `chat()`, `embed()`, `send_batch()`) define the type of action you want to perform.
- - **Providers** (e.g., `openai()`, `claude()`, `ollama()`) specify the API or service to handle the action.
- 
-Alternatively there are also provider-specific functions like `openai_chat()` or `claude_chat()` that do the work in the background of the main verbs that you can also call directly.  The documentation for these provider-specific functions offers a comprehensive overview of the full range of actions and input types supported for each API.
+- **Verbs** define the action: `chat()`, `embed()`, `send_batch()`, `check_batch()`, `fetch_batch()`, `list_batches()`, `list_models()`, `deep_research()`, `check_job()`, `fetch_job()`
+- **Providers** specify the API: `openai()`, `claude()`, `gemini()`, `ollama()`, `mistral()`, `groq()`, `perplexity()`, `deepseek()`, `voyage()`, `openrouter()`, `llamacpp()`, `azure_openai()`
+
+Provider-specific functions like `openai_chat()` or `claude_chat()` also work directly and expose the full range of parameters for each API.
 
 ### Sending Images to Models
 
-**tidyllm** also supports sending images to multimodal models. Let's send this picture here:
-```{r, echo=FALSE, out.width="70%", fig.alt="A photograhp showing lake Garda and the scenery near Torbole, Italy."}
+**tidyllm** supports sending images to multimodal models. Here we let a model describe a photo:
+
+```{r, echo=FALSE, out.width="70%", fig.alt="A photograph showing lake Garda and the scenery near Torbole, Italy."}
 knitr::include_graphics("picture.jpeg")
 ```
 
-Here we let ChatGPT guess where the picture was made:
-```{r images,  eval=FALSE, echo=TRUE}
-# Describe an image using a llava model on ollama
-image_description <- llm_message("Describe this picture? Can you guess where it was made?",
-                                 .imagefile = "picture.jpeg") |>
-  chat(openai(.model = "gpt-4o"))
+```{r images, eval=FALSE}
+image_description <- llm_message("Describe this picture. Can you guess where it was taken?",
+                                  .imagefile = "picture.jpeg") |>
+  chat(openai(.model = "gpt-5.4"))
 
-# Get the last reply
 get_reply(image_description)
 ```
-```{r images_out,  eval=TRUE, echo=FALSE}
-c("The picture shows a beautiful landscape with a lake, mountains, and a town nestled below. The sun is shining brightly, casting a serene glow over the water. The area appears lush and green, with agricultural fields visible. \n\nThis type of scenery is reminiscent of northern Italy, particularly around Lake Garda, which features similar large mountains, picturesque water, and charming towns.")
+```{r images_out, eval=TRUE, echo=FALSE}
+c("The picture shows a beautiful landscape with a lake, mountains, and a town nestled below. The area appears lush and green, with agricultural fields visible. This scenery is reminiscent of northern Italy, particularly around Lake Garda.")
 ```
 
-### Adding PDFs to messages
+### Adding PDFs to Messages
 
-The `llm_message()` function also supports extracting text from PDFs and including it in the message. This allows you to easily provide context from a PDF document when interacting with an AI assistant.
+Pass a PDF path to the `.pdf` argument of `llm_message()`. The package extracts the text and wraps it in `<pdf>` tags in the prompt:
 
-To use this feature, you need to have the `pdftools` package installed. If it is not already installed, you can install it with:
-
-```{r,  eval=FALSE, echo=TRUE}
-install.packages("pdftools")
+```{r pdf, eval=FALSE}
+llm_message("Summarize the key points from this document.",
+            .pdf = "die_verwandlung.pdf") |>
+  chat(openai(.model = "gpt-5.4"))
+```
+```{r pdf_out, eval=TRUE, echo=FALSE}
+llm_message("Summarize the key points from this document.",
+            .pdf = "die_verwandlung.pdf") |>
+  llm_message("The story centres on Gregor Samsa, who wakes up transformed into a giant insect. Unable to work, he becomes isolated while his family struggles. Eventually Gregor dies, and his relieved family looks ahead to a better future.",
+              .role = "assistant")
 ```
 
-To include text from a PDF in your prompt, simply pass the file path to the `.pdf` argument of the `chat` function:
+Specify page ranges with `.pdf = list(filename = "doc.pdf", start_page = 1, end_page = 5)`.
 
-```{r pdf,  eval=FALSE, echo=TRUE}
-llm_message("Please summarize the key points from the provided PDF document.", 
-     .pdf = "die_verwandlung.pdf") |>
-     chat(openai(.model = "gpt-4o-mini"))
-```
-```{r pdf_out,  eval=TRUE, echo=FALSE}
-  llm_message("Please summarize the key points from the provided PDF document.", 
-              .pdf="die_verwandlung.pdf") |>
-    llm_message("Here are the key points from the provided PDF document 'Die Verwandlung' by Franz Kafka:
+### Sending R Outputs to Models
 
-1. The story centers around Gregor Samsa, who wakes up one morning to find that he has been transformed into a giant insect-like creature.
+Use `.f` to capture console output from a function and `.capture_plot` to include the last plot:
 
-2. Gregor's transformation causes distress and disruption for his family. They struggle to come to terms with the situation and how to deal with Gregor in his new state.
-
-3. Gregor's family, especially his sister Grete, initially tries to care for him, but eventually decides they need to get rid of him. They lock him in his room and discuss finding a way to remove him.
-
-4. Gregor becomes increasingly isolated and neglected by his family. He becomes weaker and less mobile due to his injuries and lack of proper care.
-
-5. Eventually, Gregor dies, and his family is relieved. They then begin to make plans to move to a smaller, more affordable apartment and start looking for new jobs and opportunities.",.role="assistant")
-```
-The package will automatically extract the text from the PDF  and include it in the prompt sent to the an API. The text will be wrapped in `<pdf>` tags to clearly indicate the content from the PDF:
-
-```
-Please summarize the key points from the provided PDF document.
-
-<pdf filename="example_document.pdf">
-Extracted text from the PDF file...
-</pdf>
-```
-### Sending R Outputs to Language Models
-
-You can automatically include R code outputs in your prompts. 
-`llm_message()` has an optional argument `.f` in which you can specify a (anonymous) function, which 
-will be run and which console output will be captured and appended to the message when you run it.
-
-In addition you can use `.capture_plot` to send the last plot pane to a model. 
-
-```{r routputs_base,  eval=TRUE, echo=TRUE, message=FALSE}
+```{r routputs_base, eval=TRUE, echo=TRUE, message=FALSE, fig.alt="Scatter plot of car weight (x-axis) versus miles per gallon (y-axis) from the mtcars dataset, with a fitted linear regression line showing a negative relationship between weight and fuel efficiency."}
 library(tidyverse)
 
-# Create a plot for the mtcars example data
 ggplot(mtcars, aes(wt, mpg)) +
   geom_point() +
-  geom_smooth(method = "lm", formula = 'y ~ x') +
-  labs(x="Weight",y="Miles per gallon")
+  geom_smooth(method = "lm", formula = "y ~ x") +
+  labs(x = "Weight", y = "Miles per gallon")
 ```
 
-Now we can send the plot and data summary to a language model:
-```{r routputs_base_out,  eval=FALSE, echo=TRUE}
-library(tidyverse)
-llm_message("Analyze this plot and data summary:", 
-                  .capture_plot = TRUE, #Send the plot pane to a model
-                  .f = ~{summary(mtcars)}) |> #Run summary(data) and send the output
+```{r routputs_base_out, eval=FALSE}
+llm_message("Analyze this plot and data summary:",
+            .capture_plot = TRUE,
+            .f = ~{summary(mtcars)}) |>
   chat(claude())
 ```
-```{r routputs_base_rq,  eval=TRUE, echo=FALSE}
-# Create a plot for the mtcars example data
-
-llm_message("Analyze this plot and data summary:", 
-                  .imagefile = "file1568f6c1b4565.png", #Send the plot pane to a model
-                  .f = ~{summary(mtcars)}) |> #Run summary(data) and send the output
-  llm_message("Based on the plot and data summary provided, here's an analysis:\n\n1. Relationship between Weight and MPG:\n   The scatter plot shows a clear negative correlation between weight (wt) and miles per gallon (mpg). As the weight of the car increases, the fuel efficiency (mpg) decreases.\n\n2. Linear Trend:\n   The blue line in the plot represents a linear regression fit. The downward slope confirms the negative relationship between weight and mpg.\n\n3. Data Distribution:\n   - The weight of cars in the dataset ranges from 1.513 to 5.424 (likely in thousands of pounds).\n   - The mpg values range from 10.40 to 33.90.\n\n4. Variability:\n   There's some scatter around the regression line, indicating that while weight is a strong predictor of mpg, other factors also influence fuel efficiency.\n\n5. Other Variables:\n   While not shown in the plot, the summary statistics provide information on other variables:\n   - Cylinder count (cyl) ranges from 4 to 8, with a median of 6.\n   - Horsepower (hp) ranges from 52 to 335, with a mean of 146.7.\n   - Transmission type (am) is binary (0 or 1), likely indicating automatic vs. manual.\n\n6. Model Fit:\n   The grey shaded area around the regression line represents the confidence interval. It widens at the extremes of the weight range, indicating less certainty in predictions for very light or very heavy vehicles.\n\n7. Outliers:\n   There are a few potential outliers, particularly at the lower and higher ends of the weight spectrum, that deviate from the general trend.\n\nIn conclusion, this analysis strongly suggests that weight is a significant factor in determining a car's fuel efficiency, with heavier cars generally having lower mpg. However, the presence of scatter in the data indicates that other factors (possibly related to engine characteristics, transmission type, or aerodynamics) also play a role in determining fuel efficiency.",.role="assistant")
+```{r routputs_fake, eval=TRUE, echo=FALSE}
+llm_message("Analyze this plot and data summary:",
+            .imagefile = "file1568f6c1b4565.png",
+            .f = ~{summary(mtcars)}) |>
+  llm_message("The scatter plot shows a clear negative correlation between weight and fuel efficiency. Heavier cars consistently achieve lower mpg, with the linear trend confirming this relationship. Variability around the line suggests other factors, engine size and transmission, also play a role.", .role = "assistant")
 ```
 
-### Getting  replies from the API 
+## Getting Replies from the API
 
-Retrieve an assistant reply as text from a message history with `get_reply()`. Specify an index to choose which assistant message to get:
+`get_reply()` retrieves assistant text from a message history. Use an index to access a specific reply, or omit it to get the last:
 
-```{r eval=FALSE,echo=TRUE}
-conversation <- llm_message("Imagine a German adress.") |>
-     chat(groq()) |>
-     llm_message("Imagine another address") |>
-     chat(claude())
+```{r eval=FALSE}
+conversation <- llm_message("Imagine a German address.") |>
+  chat(groq()) |>
+  llm_message("Imagine another address.") |>
+  chat(claude())
 
 conversation
 ```
-```{r eval=TRUE,echo=FALSE}
-conversation <-  llm_message("Imagine a German adress.") |>
-  llm_message("Let's imagine a German address: \n\nHerr Müller\nMusterstraße 12\n53111 Bonn",
-              .role="assistant") |>
-  llm_message("Imagine another address") |>
-  llm_message("Let's imagine another German address:\n\nFrau Schmidt\nFichtenweg 78\n42103 Wuppertal",
-            .role="assistant")
+```{r eval=TRUE, echo=FALSE}
+conversation <- llm_message("Imagine a German address.") |>
+  llm_message("Herr Müller\nMusterstraße 12\n53111 Bonn", .role = "assistant") |>
+  llm_message("Imagine another address.") |>
+  llm_message("Frau Schmidt\nFichtenweg 78\n42103 Wuppertal", .role = "assistant")
 conversation
 ```
 
-By default `get_reply()` gets the last assistant message. Alternatively you can also use `last_reply()` as a shortcut for the latest response.
-
-```{r standard_last_reply,  eval=TRUE, echo=TRUE}
-#Getting the first reply
-conversation |> get_reply(1)
-#By default it gets the last reply
-conversation |> get_reply()
+```{r standard_last_reply, eval=TRUE}
+conversation |> get_reply(1)   # first reply
+conversation |> get_reply()    # last reply (default)
 ```
 
-Or you can convert the text (without attachments) to a `tibble` with `as_tibble()`:
-```{r as_tibble,  eval=TRUE, echo=TRUE}
+Convert the message history (without attachments) to a tibble with `as_tibble()`:
+
+```{r as_tibble, eval=TRUE}
 conversation |> as_tibble()
 ```
 
-You can use the `get_metadata()` function to retrieve metadata on models and token usage from assistant replies: 
-```{r get_metadata,  eval=FALSE, echo=TRUE}
+`get_metadata()` returns token counts, model names, and API-specific metadata for all assistant replies:
+
+```{r get_metadata, eval=FALSE}
 conversation |> get_metadata()
 ```
-```{r get_metadata_out,  eval=TRUE, echo=FALSE}
+```{r get_metadata_out, eval=TRUE, echo=FALSE}
 tibble::tibble(
-  model = c("groq-lamma3-11b", "claude-3-5-sonnet"),
-  timestamp = as.POSIXct(c("2024-11-08 14:25:43", "2024-11-08 14:26:02")),
-  prompt_tokens = c(20, 80),
-  completion_tokens = c(45, 40),
-  total_tokens = prompt_tokens + completion_tokens,
-  api_specific = list(list(name1 = "",name2=20,name=30))
-) |>
-  print(width=60)
+  model             = c("groq-model", "claude-sonnet-4-6-20251001"),
+  timestamp         = as.POSIXct(c("2025-11-08 14:25:43", "2025-11-08 14:26:02")),
+  prompt_tokens     = c(20L, 80L),
+  completion_tokens = c(45L, 40L),
+  total_tokens      = c(65L, 120L),
+  api_specific      = list(list(), list())
+) |> print(width = 60)
 ```
 
-By default it collects metadata for the whole message history, but you can also set an `.index` to only get metadata for a specific reply. Alternatively you can print out metadata with the standard print method with the `.meta`-argument in `print()` or via the `tidyllm_print_metadata` option. The list column `api_specific` contains special metadata that is only available to some APIs (like citations for models with search grounding on `perplexity()` or special information on model loading for local APIs).
+The `api_specific` list column holds provider-only metadata such as citations (Perplexity), thinking traces (Claude, Gemini, DeepSeek), or grounding information (Gemini).
 
-### Working with structured model outputs
+### Listing Available Models
 
-To make model responses easy to interpret and integrate into your workflow, **tidyllm** supports defining schemas to ensure that models reply with structured outputs in [JSON (JavaScript Object Notation)](https://de.wikipedia.org/wiki/JavaScript_Object_Notation) following your specifications. JSON is a standard format for organizing data in simple key-value pairs, which is both human-readable and machine-friendly.
+Use `list_models()` to query which models a provider offers:
 
-Many API provider functions in **tidyllm** support schema enforcement through the `.json_schema` argument. This ensures that replies conform to a pre-defined consistent data formatting.
+```{r list_models, eval=FALSE}
+list_models(openai())
+list_models(openrouter())   # 300+ models across providers
+list_models(ollama())       # models installed locally
+```
 
-To create schemas, you can use the `tidyllm_schema()` function, which translates your data format specifications into the  [JSON-schema format](https://json-schema.org/) the API requires. It accepts a **`name`** and `...`,named arguments for field names and their data types, which can be defined using these helper functions:
+## Working with Structured Outputs
 
-- `field_chr()`: For text fields.
-- `field_dbl()`: For numeric fields.
-- `field_lgl()`: For boolean  (TRUE/FALSE) fields.
-- `field_fct()`: For enumerations (factors), with a `.levels` argument to specify valid values.
-- `field_object()`: Defines structured objects with nested fields.
-- All functions accept `.description` (for adding descriptions) and `.vector = TRUE` (for defining lists).
-- field_object 
-- Alternatively, if you do not need a detailed description you can use shorthands like `"character"`, `"logical"` or `"numerical"`
+**tidyllm** supports JSON schema enforcement so models return structured, machine-readable data. Use `tidyllm_schema()` with field helpers to define your schema:
 
-If the **ellmer** package is installed, you can also use **ellmer type definitions** directly in `tidyllm_schema()`. For example, you can pass objects like `ellmer::type_string()` or `ellmer::type_object()` as field definitions. Moreover, you can supply an entire `ellmer::type_object()`  schema directly as the `.json_schema` argument in API calls.
+- `field_chr()`: text
+- `field_dbl()`: numeric
+- `field_lgl()`: boolean
+- `field_fct(.levels = ...)`: enumeration
+- `field_object(...)`: nested object (supports `.vector = TRUE` for arrays)
 
-Here’s an example schema defining an address format:
-
-```{r schema,  eval=FALSE, echo=TRUE}
+```{r schema, eval=FALSE}
 person_schema <- tidyllm_schema(
   first_name = field_chr("A male first name"),
-  last_name = field_chr("A common last name"),
+  last_name  = field_chr("A common last name"),
   occupation = field_chr("A quirky occupation"),
-  address = field_object(
-    "The persons home address",
-    street = field_chr("A common street name in the city"),
-    number = field_dbl("A house number"),
-    city = field_chr("A large city"),
-    zip = field_dbl("A zip code for the address"),
-    country = field_fct("Either Germany or France",.levels = c("Germany","France"))
+  address    = field_object(
+    "The person's home address",
+    street  = field_chr("Street name"),
+    number  = field_dbl("House number"),
+    city    = field_chr("A large city"),
+    zip     = field_dbl("Postal code"),
+    country = field_fct("Country", .levels = c("Germany", "France"))
   )
 )
 
-profile <- llm_message("Imagine an person profile that matches the schema.") |>
-  chat(openai(),.json_schema = person_schema)
+profile <- llm_message("Imagine a person profile matching the schema.") |>
+  chat(openai(), .json_schema = person_schema)
 
 profile
 ```
-```{r schema_out,  eval=TRUE, echo=FALSE}
-profile <- llm_message("Imagine an person profile that matches the schema.") |>
- llm_message("{\"first_name\":\"Julien\",\"last_name\":\"Martin\",\"occupation\":\"Gondola Repair Specialist\",\"address\":{\"street\":\"Rue de Rivoli\",\"number\":112,\"city\":\"Paris\",\"zip\":75001,\"country\":\"France\"}}",.role="assistant")
+```{r schema_out, eval=TRUE, echo=FALSE}
+profile <- llm_message("Imagine a person profile matching the schema.") |>
+  llm_message("{\"first_name\":\"Julien\",\"last_name\":\"Martin\",\"occupation\":\"Gondola Repair Specialist\",\"address\":{\"street\":\"Rue de Rivoli\",\"number\":112,\"city\":\"Paris\",\"zip\":75001,\"country\":\"France\"}}",
+              .role = "assistant")
 profile@message_history[[3]]$json <- TRUE
 profile
 ```
 
-The model responded in JSON format, organizing data into key-value pairs like specified. You can then convert this JSON output into an R list for easier handling with `get_reply_data()`:
+Extract the parsed result as an R list with `get_reply_data()`:
 
 ```{r get_reply_data}
 profile |> get_reply_data() |> str()
 ```
 
-`field_object()` can be used to create many types of nested schemata, but one particularly useful application is to set its `.vector` argument to get outputs that can easily be turned into a `data.frame`:
+Set `.vector = TRUE` on `field_object()` to get outputs that unpack directly into a data frame:
 
-```{r fobj, eval=FALSE, echo=TRUE}
-llm_message("Imagine five people") |>
-  chat(openai,.json_schema = 
-         tidyllm_schema(
-            person = field_object(
-              first_name = field_chr(),
-              last_name = field_chr(),
-              occupation = field_chr(),
-              .vector = TRUE
-              )
+```{r fobj, eval=FALSE}
+llm_message("Imagine five people.") |>
+  chat(openai(),
+       .json_schema = tidyllm_schema(
+         person = field_object(
+           first_name = field_chr(),
+           last_name  = field_chr(),
+           occupation = field_chr(),
+           .vector    = TRUE
          )
-       ) |>
+       )) |>
   get_reply_data() |>
   bind_rows()
 ```
 ```{r fobjout, echo=FALSE, eval=TRUE}
-data.frame(first_name = c("Alice","Robert","Maria","Liam","Sophia"),
-           last_name = c("Johnson","Anderson","Gonzalez","O'Connor","Lee"),
-           occupation = c("Software Developer","Graphic Designer","Data Scientist","Mechanical Engineer","Content Writer")
-           )
+data.frame(
+  first_name = c("Alice", "Robert", "Maria", "Liam", "Sophia"),
+  last_name  = c("Johnson", "Anderson", "Gonzalez", "O'Connor", "Lee"),
+  occupation = c("Software Developer", "Graphic Designer", "Data Scientist",
+                 "Mechanical Engineer", "Content Writer")
+)
 ```
 
-### API parameters
+If the **ellmer** package is installed, you can use ellmer type objects (`ellmer::type_string()`, `ellmer::type_object()`, etc.) directly as field definitions in `tidyllm_schema()` or as the `.json_schema` argument.
 
-Different API functions support different model parameters like, how deterministic the response should be via parameters like temperature. You can set these parameters via arguments in the verbs or provider functions. Please read API-documentation and the documentation of the model functions for specific examples. Common arguments, such as temperature, can be specified directly through the main verbs like `chat()`. For example, `chat()` supports arguments such as `.model`,`.temperature`, `.json_schema` and more (see the full list in the `chat()` documentation) directly. 
-```{r temperature,  eval=FALSE, echo=TRUE}
-  temp_example <- llm_message("Explain how temperature parameters work 
-in large language models and why temperature 0 gives you deterministic outputs 
-in one sentence.")
-  
-  #per default it is non-zero
-  temp_example |> chat(ollama,.temperature=0)
-```
-```{r temperature_out,  eval=TRUE, echo=FALSE}
-  temp_example <- llm_message("Explain how temperature parameters work 
-in large language models  and why temperature 0 gives you deterministic
-outputs in one sentence.")
+## API Parameters
 
-  temp_example |>
-    llm_message("In large language models, temperature parameters control the randomness of generated text by scaling the output probabilities, with higher temperatures introducing more uncertainty and lower temperatures favoring more likely outcomes; specifically, setting temperature to 0 effectively eliminates all randomness, resulting in deterministic outputs because it sets the probability of each token to its maximum likelihood value.",
-                .role="assistant")
+Common arguments like `.model`, `.temperature`, and `.json_schema` can be set directly in verbs like `chat()`. Provider-specific arguments go in the provider function:
+
+```{r temperature, eval=FALSE}
+# Common args in the verb
+llm_message("Write a haiku about tidyllm.") |>
+  chat(ollama(), .temperature = 0)
+
+# Provider-specific args in the provider
+llm_message("Hello") |>
+  chat(ollama(.ollama_server = "http://my-server:11434"), .temperature = 0)
 ```
 
-```{r temp2,  eval=FALSE, echo=TRUE}
-  #Retrying with .temperature=0
-  temp_example |> chat(ollama,.temperature=0)
-```
-```{r temp2_out,  eval=TRUE, echo=FALSE}
-  temp_example |>
-    llm_message("In large language models, temperature parameters control the randomness of generated text by scaling the output probabilities, with higher temperatures introducing more uncertainty and lower temperatures favoring more likely outcomes; specifically, setting temperature to 0 effectively eliminates all randomness, resulting in deterministic outputs because it sets the probability of each token to its maximum likelihood value.",
-                .role="assistant")
-```
+When an argument appears in both `chat()` and the provider function, `chat()` takes precedence. If a common argument is not supported by the chosen provider, `chat()` raises an error rather than silently ignoring it.
 
-Provider-specific arguments—such as `.ollama_server` for `ollama()` or `.fileid` for `gemini()` are set directly in the provider function:
+## Tool Use
+
+Define R functions that the model can call during a conversation. Wrap them with `tidyllm_tool()`:
+
 ```{r, eval=FALSE}
-conversation <- llm_message("Hello") |> 
-  chat(ollama(.ollama_server = "http://localhost:11434"), 
-       .temperature = 0)
-```
-When an argument is provided in both `chat()` and the provider, the value specified in `chat()` takes precedence. For instance:
-```{r, eval=FALSE}
-#This uses GPT-4o
-conversation <- llm_message("Hello") |> 
-  chat(openai(.model="gpt-4o-mini"),
-       .model="gpt-4o")
-```
-If a common argument set in chat is not supported by a provider `chat()` will raise an error. For example, sending a `.json_schema` to a provider that does not support it will raise an error:
-```{r, eval = FALSE}
-address <- llm_message("Imagine an address in JSON format that matches the schema.") |>
-        chat(groq(),.json_schema = address_schema)
-```
-
-### Tool use
-
-In **tidyllm**, you can specify R functions that are dynamically called by an assistant to enrich model context as model tools. These tools can be dynmically reuqested by the assistant, run in your R-Session and their output resent to the model. Tools can be defined using `tidyllm_tool()`, where you specify an R function, its description, and expected arguments. For example, wrapping the `get_current_time()` function in a tool allows models to retrieve the current time for their answers:
-
-```{r, eval=FALSE, echo=TRUE}
 get_current_time <- function(tz, format = "%Y-%m-%d %H:%M:%S") {
   format(Sys.time(), tz = tz, format = format, usetz = TRUE)
 }
 
 time_tool <- tidyllm_tool(
-  .f = get_current_time,
-  .description = "Returns the current time in a specified timezone. Use this to determine the current time in any location.",
-  tz = field_chr("The time zone identifier (e.g., 'Europe/Berlin', 'America/New_York', 'Asia/Tokyo', 'UTC'). Required."),
-  format = field_chr("Format string for the time output. Default is '%Y-%m-%d %H:%M:%S'.")
+  .f          = get_current_time,
+  .description = "Returns the current time in a specified timezone.",
+  tz     = field_chr("The timezone identifier, e.g. 'Europe/Berlin'."),
+  format = field_chr("strftime format string. Default: '%Y-%m-%d %H:%M:%S'.")
 )
 
-
-llm_message("What's the exact time in Stuttgart?") |>
-  chat(openai,.tools=time_tool)
+llm_message("What time is it in Stuttgart right now?") |>
+  chat(openai(), .tools = time_tool)
 ```
 ```{r, eval=TRUE, echo=FALSE}
-llm_message("What's the exact time in Stuttgart?") |>
-   llm_message('The current time in Stuttgart (Europe/Berlin timezone) is 2025-03-03 09:51:22 CET.',.role="assistant")
+llm_message("What time is it in Stuttgart right now?") |>
+  llm_message("The current time in Stuttgart (Europe/Berlin) is 2025-03-03 09:51:22 CET.",
+              .role = "assistant")
 ```
 
-### Embeddings
+When a tool is provided, the model can request its execution, tidyllm runs it in your R session, and the result is fed back automatically. Multi-turn tool loops (where the model makes several tool calls) are handled transparently.
 
-[Embedding models](https://cohere.com/llmu/text-embeddings) in **tidyllm** transform textual inputs into vector representations, capturing semantic information that can enhance similarity comparisons, clustering, and retrieval tasks. You can generate embeddings with the `embed()`-function. These functions return a semantic vector representation either for each message in a message history or, more typically for this application, for each entry in a character vector:
+If you use **ellmer**, convert existing ellmer tool definitions with `ellmer_tool()`:
 
-```{r embed, eval=FALSE, echo=TRUE}
+```{r, eval=FALSE}
+library(ellmer)
+btw_tool <- ellmer_tool(btw::btw_tool_files_list_files)
+llm_message("List files in the R/ folder.") |>
+  chat(claude(), .tools = btw_tool)
+```
+
+For a detailed guide, see the Tool Use article on the tidyllm website.
+
+## Embeddings
+
+Generate vector representations of text with `embed()`. The output is a tibble with one row per input:
+
+```{r embed, eval=FALSE}
 c("What is the meaning of life?",
   "How much wood would a woodchuck chuck?",
   "How does the brain work?") |>
-  embed(ollama)
+  embed(ollama())
 ```
 ```{r embed_output, eval=TRUE, echo=FALSE}
 tibble::tibble(
-  input = c("What is the meaning of life?",
-            "How much wood would a woodchuck chuck?",
-            "How does the brain work?") ,
-  embeddings = purrr::map(1:3,~{runif(min = -1,max=1,n=384)}))
+  input      = c("What is the meaning of life?",
+                 "How much wood would a woodchuck chuck?",
+                 "How does the brain work?"),
+  embeddings = purrr::map(1:3, ~runif(min = -1, max = 1, n = 384))
+)
 ```
-The output is a `tibble` with two columns, the text input for the embedding and a list column that contains a
-vector of semantic embeddings for each input.
 
-
-### Batch requests
-
-Anthropic, OpenAI and Mistral offer batch request options that are around 50% cheaper than standard single-interaction APIs. Batch processing allows you to submit multiple message histories at once, which are then processed together on the model providers servers, usually within a 24-hour period. In **tidyllm**, you can use the `send_batch()` function to submit these batch requests to either API.
-
-Here’s an example of how to send a batch request to Claude’s batch API:
+Voyage AI supports **multimodal embeddings**, meaning text and images share the same vector space:
 
 ```{r, eval=FALSE}
-#Create a message batch and save it to disk to fetch it later
-glue("Write a poem about {x}", x=c("cats","dogs","hamsters")) |>
+list("tidyllm logo", img("docs/logo.png")) |>
+  embed(voyage())
+```
+
+`voyage_rerank()` re-orders documents by relevance to a query:
+
+```{r, eval=FALSE}
+voyage_rerank(
+  "best R package for LLMs",
+  c("tidyllm", "ellmer", "httr2", "rvest")
+)
+```
+
+## Batch Requests
+
+Batch APIs (Claude, OpenAI, Mistral, Groq, Gemini) process large numbers of requests overnight at roughly half the cost of standard calls. Use `send_batch()` to submit, `check_batch()` to poll status, and `fetch_batch()` to retrieve results:
+
+```{r, eval=FALSE}
+# Submit a batch and save the job handle to disk
+glue::glue("Write a poem about {x}", x = c("cats", "dogs", "hamsters")) |>
   purrr::map(llm_message) |>
   send_batch(claude()) |>
   saveRDS("claude_batch.rds")
 ```
-The `send_batch()` function returns the same list of message histories that was input, but marked with an attribute that contains a batch-id from the Claude API as well as unique names for each list element that can be used to stitch together messages with replies, once they are ready.  If you provide a named list of messages, tidyllm will use these names as identifiers in the batch, if these names are unique.
 
-**Tip:** Saving batch requests to a file allows you to persist them across R sessions, making it easier to manage large jobs and access results later.
-
-After sending a batch request, you can check its status with `check_batch()`. For example:
 ```{r, eval=FALSE}
-#Check the status of the batch
+# Check status
 readRDS("claude_batch.rds") |>
-   check_batch(claude())
+  check_batch(claude())
 ```
 ```{r, echo=FALSE}
-tribble(
-  ~batch_id,                         ~status, ~created_at,           ~expires_at,           ~req_succeeded, ~req_errored, ~req_expired, ~req_canceled,
-  "msgbatch_02A1B2C3D4E5F6G7H8I9J",  "ended", as.POSIXct("2024-11-01 10:30:00"), as.POSIXct("2024-11-02 10:30:00"), 3, 0, 0, 0
+tibble::tribble(
+  ~batch_id,                          ~status, ~created_at,                      ~expires_at,                      ~req_succeeded, ~req_errored, ~req_expired, ~req_canceled,
+  "msgbatch_02A1B2C3D4E5F6G7H8I9J",   "ended", as.POSIXct("2025-11-01 10:30:00"), as.POSIXct("2025-11-02 10:30:00"), 3L,             0L,           0L,           0L
 )
 ```
-The status output shows details such as the number of successful, errored, expired, and canceled requests in the batch, as well as the current status. You can also see all your batch requests with `list_batches()` (or in the batches dashboard of the your API provider). 
-Once the processing of a batch is completed you can fetch its results with `fetch_batch()`:
 
-```{r eval=FALSE}
+```{r, eval=FALSE}
+# Fetch completed results
 conversations <- readRDS("claude_batch.rds") |>
   fetch_batch(claude())
 
-poems <- map_chr(conversations, get_reply)
+poems <- purrr::map_chr(conversations, get_reply)
 ```
-The output is a list of message histories, each now updated with new assistant replies. You can further process these responses with **tidyllm's** standard tools. Before launching a large batch operation, it’s good practice to run a few test requests and review outputs with the standard `chat()` function. This approach helps confirm that prompt settings and model configurations produce the desired responses, minimizing potential errors or resource waste.
 
-### Streaming back responses
+`check_job()` and `fetch_job()` are type-dispatching aliases; they work on both batch objects and Perplexity research jobs (see `deep_research()` below).
 
-`chat()` supports real-time streaming of reply tokens to the console while the model works with the `.stream=TRUE` argument in `chat()`, for most api providers. 
+## Deep Research
+
+For long-horizon research tasks, `deep_research()` runs an extended web search and synthesis. Perplexity's `sonar-deep-research` model is currently supported:
+
 ```{r, eval=FALSE}
-llm_message("Write a lengthy magazine advertisement for an R package called tidyllm") |>
-  chat(claude,.stream=TRUE)
+# Blocking: waits for completion, returns an LLMMessage
+result <- llm_message("Compare Rust and Go for systems programming in 2025.") |>
+  deep_research(perplexity())
+
+get_reply(result)
+get_metadata(result)$api_specific[[1]]$citations
 ```
-While this feature offers slightly better feedback on model behavior in real-time, it is not particularly useful for data-analysis workflows. Since streaming responses do not always offer the full feature set as non-streaming responses in **tidyllm**, we recommend to not use it for typical production tasks, but just for checks during programming. 
 
-### Choosing the Right Model and API
-
-tidyllm supports multiple APIs, each offering distinct large language models with varying strengths. The choice of which model or API to use often depends on the specific task, cost considerations, and data privacy concerns.
-
-
-1. **OpenAI API:** Models by [OpenAI API](https://platform.openai.com/docs/api-reference/chat), particularly the GPT-4o model, are extremely versatile and perform well across a wide range of tasks, including text generation, code completion, and multimodal analysis. In addition the o1-reasoning models offer very good performance for a set of specific task (at a relatively high price). There is also an `azure_openai()` provider function if you prefer to use the OpenAI API on Microsoft Azure. 
-
-2. **Anthropic API:** [Claude](https://docs.anthropic.com/en/docs/welcome) is known for generating thoughtful, nuanced responses, making it ideal for tasks that require more human-like reasoning, such as summarization or creative writing.  However, it can sometimes be more verbose than necessary, and it lacks direct JSON support, which requires additional prompting and validation to ensure structured output. 
-
-3. **Google Gemini API:**  Google Gemini is great for long-context tasks — it can handle up to a million tokens! In addition, you can use the `.grounding_threshold`-parameter in the `gemini_chat()` function to ground responses based on Google searches. The lower the threshold is the more Gemini relies on the search instead of its internal knowledge:
 ```{r, eval=FALSE}
-llm_message("What is tidyllm and who maintains this package?") |>
-  gemini_chat(.grounding_threshold = 0.3)
+# Background mode: returns a job handle immediately
+job <- llm_message("Summarise recent EU AI Act developments.") |>
+  deep_research(perplexity(), .background = TRUE)
+
+check_job(job)           # poll status
+result <- fetch_job(job) # retrieve when complete
 ```
-Moreover, with the Gemini API you are able to upload a wide range of media files and use them in the prompts of your models with functions like `gemini_upload_file()`. Using this, Gemini models can be used to process video and audio together with your messages. Here is an example of summarizing a speech:
+
+## Streaming
+
+Stream reply tokens to the console as they are generated with `.stream = TRUE`:
+
 ```{r, eval=FALSE}
-#Upload a file for use with gemini
-upload_info <- gemini_upload_file("example.mp3")
-
-#Make the file available during a Gemini API call
-llm_message("Summarize this speech") |>
-  chat(gemini(.fileid = upload_info$name))
-  
-#Delte the file from the Google servers after you are done
-gemini_delete_file(upload_info$name)
+llm_message("Write a short poem about R.") |>
+  chat(claude(), .stream = TRUE)
 ```
 
-4. **Mistral API (EU-based):** [Mistral](https://docs.mistral.ai/) offers lighter-weight, open-source models developed and hosted in the EU, making it particularly appealing if data protection (e.g., GDPR compliance) is a concern. While the models may not be as powerful as GPT-4o or Claude Sonnet, Mistral offers good performance for standard text generation tasks.
+Streaming is useful for monitoring long responses interactively. For production data-analysis workflows the non-streaming mode is preferred because it provides complete metadata and is more reliable.
 
-5. **Groq API (Fast):** [Groq](https://console.groq.com/docs/quickstart) offers a unique advantage with its custom AI accelerator hardware, that get you the fastest output available on any API. It delivers high performance at low costs, especially for tasks that require fast execution. It hosts many strong open-source models, like **lamma3:70b**. There is also a `groq_transcribe()` function available that allows you to transcribe audio files with the Whipser-Large model on the Groq API.
+## Choosing the Right Provider
 
-6. **Perplexity API (Search and Citations):** [Perplexity](https://docs.perplexity.ai/api-reference/chat-completions) combines current finetuned Llama models with real-time web search capabilities. This allows for up-to-date information retrieval and integration into responses. All answers contain links to citations which can be accesed via the `api_specific` column of `get_metadata()` 
+| Provider | Strengths and tidyllm-specific features |
+|----------|-----------------------------------------|
+| `openai()` | Top benchmark performance across coding, math, and reasoning; `o3`/`o4` reasoning models |
+| `claude()` | Best-in-class coding (SWE-bench leader); `.thinking = TRUE` for extended reasoning; Files API for document workflows; batch |
+| `gemini()` | 1M-token context window; video and audio via file upload API; search grounding; `.thinking_budget` for reasoning; batch |
+| `mistral()` | EU-hosted, GDPR-friendly; Magistral reasoning models; embeddings; batch |
+| `groq()` | Fastest available inference (300-1200 tokens/s); `groq_transcribe()` for Whisper audio; `.json_schema`; batch |
+| `perplexity()` | Real-time web search with citations in metadata; `deep_research()` for long-horizon research; search domain filter |
+| `deepseek()` | Top math and reasoning benchmarks at very low cost; `.thinking = TRUE` auto-switches to `deepseek-reasoner` |
+| `voyage()` | State-of-the-art retrieval embeddings; `voyage_rerank()`; multimodal embeddings (text + images); `.output_dimension` |
+| `openrouter()` | 500+ models via one API key; automatic fallback routing; `openrouter_credits()` and per-generation cost tracking |
+| `ollama()` | Local models with full data privacy; no API costs; `ollama_download_model()` for model management |
+| `llamacpp()` | Often the most performant local inference stack; BNF grammar constraints (`.grammar`); logprobs via `get_logprobs()`; `llamacpp_rerank()`; model management |
+| `azure_openai()` | Enterprise Azure deployments of OpenAI models; batch support |
 
-7. **Voyage AI (High-Performance Embeddings):** [Voyage AI](https://www.voyageai.com/) is known for its high-quality embedding models.  It has a unique **multimodal embeddings feature**, allowing you to generate embeddings in the same vector space for both text and images:
+For getting started with local models (Ollama and llama.cpp), see the Local Models article on the tidyllm website.
 
-```{r,eval=FALSE}
-list("tidyllm", img(here::here("docs", "logo.png"))) |>
-  embed(voyage)
-#> # A tibble: 2 × 2
-#>   input          embeddings   
-#>   <chr>          <list>       
-#> 1 tidyllm        <dbl [1,024]>
-#> 2 [IMG] logo.png <dbl [1,024]>
-```
+## Setting a Default Provider
 
-8. **DeepSeek API:** Deepseek provides strong open-source reasoning models that expose their thinking process. 
+Avoid specifying a provider on every call by setting options:
 
-9. **Ollama (Local Models):** If data privacy is a priority, running open-source models like **gemma2::9B** locally via [ollama](https://ollama.com/) gives you full control over model execution and data. However, the trade-off is that local models require significant computational resources, and are often not quite as powerful as the large API-providers. The [ollama blog](https://ollama.com/blog) regularly has posts about new models and their advantages that you can download via `ollama_download_model()`.
-
-10. **Other OpenAI-compatible Local Models:** Besides ollama, there are many solutions to run local models that are mostly compatible to the OpenAI API like [llama.cpp](https://github.com/ggml-org/llama.cpp/), [vllm](https://github.com/vllm-project/vllm) and [many more](https://www.reddit.com/r/LocalLLaMA/comments/16csz5n/best_openai_api_compatible_application_server/). To use such an API you can set the base url of the api with `.api_url` as well as the path to the model-endpoint with `.api_path` argument in the `openai()` provider function. Set `.compatible=TRUE` to skip api-key checks and rate-limit tracking.  Compatibility with local models solutions may vary depending on the specific API’s implementation, and full functionality cannot be guaranteed. Ideally you can save complicated configurations like these in an object:
 ```{r, eval=FALSE}
-my_provider <- openai(.model="llama3.2:90b",
-          .api_url="http://localhost:11434",
-          .compatible = TRUE,
-          .api_path = "/v1/chat/custom/"
-          )
-
-llm_message("Hi there") |>
-  chat(my_provider)
-```
-
-### Setting a Default Provider
-
-You can also specify default provider with options:
-```{r, eval=FALSE}
-# Set default providers
-#chat provider
-options(tidyllm_chat_default = openai(.model = "gpt-4o"))
-#embedding provider
-options(tidyllm_embed_default = ollama(.model = "all-minilm"))
-#send batch provider
-options(tidyllm_sbatch_default = claude(.temperature=0))
-#check batch provider
+options(tidyllm_chat_default   = openai(.model = "gpt-5.4"))
+options(tidyllm_embed_default  = ollama())
+options(tidyllm_sbatch_default = claude(.temperature = 0))
 options(tidyllm_cbatch_default = claude())
-#fetch batch provider
 options(tidyllm_fbatch_default = claude())
-#List batches provider
 options(tidyllm_lbatch_default = claude())
 
-# Now you can use chat() or embed() without explicitly specifying a provider
-conversation <- llm_message("Hello, what is the weather today?") |> 
-  chat()
+# Now the provider argument can be omitted
+llm_message("Hello!") |> chat()
 
-embeddings <- c("What is AI?", "Define machine learning.") |> 
-  embed()
-
-# Now you can use batch functions without explicitly specifying a provider
-batch_messages <- list(
-  llm_message("Write a poem about the sea."),
-  llm_message("Summarize the theory of relativity."),
-  llm_message("Invent a name for a new genre of music.")
-)
-
-# Send batch using default for send_batch()
-batch_results <- batch_messages |> send_batch()
-
-# Check batch status using default for check_batch()
-status <- check_batch(batch_results)
-
-# Fetch completed results using default for fetch_batch()
-completed_results <- fetch_batch(batch_results)
-
-# List all batches using default for list_batches()
-all_batches <- list_batches()
+c("text one", "text two") |> embed()
 ```
-

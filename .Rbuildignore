@@ -14,3 +14,5 @@
 ^README.html$
 
 ^CRAN-SUBMISSION$
+^\.sidekick$
+^claude\.md$

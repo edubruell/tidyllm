@@ -1,0 +1,350 @@
+# Package index
+
+## LLM Message Handling
+
+Functions for creating, managing, and retrieving messages and metadata.
+
+- [`llm_message()`](https://edubruell.github.io/tidyllm/reference/llm_message.md)
+  : Create or Update Large Language Model Message Object
+- [`df_llm_message()`](https://edubruell.github.io/tidyllm/reference/df_llm_message.md)
+  : Convert a Data Frame to an LLMMessage Object
+- [`get_reply()`](https://edubruell.github.io/tidyllm/reference/get_reply.md)
+  [`last_reply()`](https://edubruell.github.io/tidyllm/reference/get_reply.md)
+  : Retrieve Assistant Reply as Text
+- [`get_reply_data()`](https://edubruell.github.io/tidyllm/reference/get_reply_data.md)
+  [`last_reply_data()`](https://edubruell.github.io/tidyllm/reference/get_reply_data.md)
+  : Retrieve Assistant Reply as Structured Data
+- [`get_user_message()`](https://edubruell.github.io/tidyllm/reference/get_user_message.md)
+  [`last_user_message()`](https://edubruell.github.io/tidyllm/reference/get_user_message.md)
+  : Retrieve a User Message by Index
+- [`get_metadata()`](https://edubruell.github.io/tidyllm/reference/get_metadata.md)
+  [`last_metadata()`](https://edubruell.github.io/tidyllm/reference/get_metadata.md)
+  : Retrieve Metadata from Assistant Replies
+- [`get_logprobs()`](https://edubruell.github.io/tidyllm/reference/get_logprobs.md)
+  : Retrieve Log Probabilities from Assistant Replies
+- [`rate_limit_info()`](https://edubruell.github.io/tidyllm/reference/rate_limit_info.md)
+  : Get the current rate limit information for all or a specific API
+
+## Tidyllm Main Verbs
+
+Core verbs for interacting with LLMs: sending messages, generating
+embeddings, deep research, and managing batch requests.
+
+- [`chat()`](https://edubruell.github.io/tidyllm/reference/chat.md) :
+  Chat with a Language Model
+- [`embed()`](https://edubruell.github.io/tidyllm/reference/embed.md) :
+  Generate text embeddings
+- [`deep_research()`](https://edubruell.github.io/tidyllm/reference/deep_research.md)
+  : Run Deep Research via a Provider
+- [`check_job()`](https://edubruell.github.io/tidyllm/reference/check_job.md)
+  : Check the Status of a Batch or Research Job
+- [`fetch_job()`](https://edubruell.github.io/tidyllm/reference/fetch_job.md)
+  : Fetch Results from a Batch or Research Job
+- [`send_batch()`](https://edubruell.github.io/tidyllm/reference/send_batch.md)
+  : Send a batch of messages to a batch API
+- [`check_batch()`](https://edubruell.github.io/tidyllm/reference/check_batch.md)
+  : Check Batch Processing Status
+- [`fetch_batch()`](https://edubruell.github.io/tidyllm/reference/fetch_batch.md)
+  : Fetch Results from a Batch API
+- [`list_batches()`](https://edubruell.github.io/tidyllm/reference/list_batches.md)
+  : List all Batch Requests on a Batch API
+- [`list_models()`](https://edubruell.github.io/tidyllm/reference/list_models.md)
+  : List Available Models for a Provider
+
+## Schemata, Tools, and Media
+
+Functions for JSON schemas, tool definitions, and media attachments.
+
+- [`tidyllm_schema()`](https://edubruell.github.io/tidyllm/reference/tidyllm_schema.md)
+  : Create a JSON Schema for Structured Outputs
+- [`field_chr()`](https://edubruell.github.io/tidyllm/reference/field_chr.md)
+  [`field_fct()`](https://edubruell.github.io/tidyllm/reference/field_chr.md)
+  [`field_dbl()`](https://edubruell.github.io/tidyllm/reference/field_chr.md)
+  [`field_lgl()`](https://edubruell.github.io/tidyllm/reference/field_chr.md)
+  : Define Field Descriptors for JSON Schema
+- [`field_object()`](https://edubruell.github.io/tidyllm/reference/field_object.md)
+  : Define a nested object field
+- [`tidyllm_tool()`](https://edubruell.github.io/tidyllm/reference/tidyllm_tool.md)
+  : Create a Tool Definition for tidyllm
+- [`ellmer_tool()`](https://edubruell.github.io/tidyllm/reference/ellmer_tool.md)
+  : Convert an ellmer Tool to a tidyllm TOOL
+- [`img()`](https://edubruell.github.io/tidyllm/reference/img.md) :
+  Create an Image Object
+
+## API Provider Functions
+
+Provider functions called from main verbs. Each provider exposes a
+consistent interface — pass to
+[`chat()`](https://edubruell.github.io/tidyllm/reference/chat.md),
+[`embed()`](https://edubruell.github.io/tidyllm/reference/embed.md),
+[`send_batch()`](https://edubruell.github.io/tidyllm/reference/send_batch.md),
+etc.
+
+- [`openai()`](https://edubruell.github.io/tidyllm/reference/openai.md)
+  : OpenAI Provider Function
+- [`claude()`](https://edubruell.github.io/tidyllm/reference/claude.md)
+  : Provider Function for Claude models on the Anthropic API
+- [`gemini()`](https://edubruell.github.io/tidyllm/reference/gemini.md)
+  : Google Gemini Provider Function
+- [`groq()`](https://edubruell.github.io/tidyllm/reference/groq.md) :
+  Groq API Provider Function
+- [`mistral()`](https://edubruell.github.io/tidyllm/reference/mistral.md)
+  : Mistral Provider Function
+- [`ollama()`](https://edubruell.github.io/tidyllm/reference/ollama.md)
+  : Ollama API Provider Function
+- [`perplexity()`](https://edubruell.github.io/tidyllm/reference/perplexity.md)
+  : Perplexity Provider Function
+- [`deepseek()`](https://edubruell.github.io/tidyllm/reference/deepseek.md)
+  : Deepseek Provider Function
+- [`voyage()`](https://edubruell.github.io/tidyllm/reference/voyage.md)
+  : Voyage Provider Function
+- [`openrouter()`](https://edubruell.github.io/tidyllm/reference/openrouter.md)
+  : OpenRouter Provider Function
+- [`llamacpp()`](https://edubruell.github.io/tidyllm/reference/llamacpp.md)
+  : llama.cpp Provider Function
+- [`azure_openai()`](https://edubruell.github.io/tidyllm/reference/azure_openai.md)
+  : Azure OpenAI Endpoint Provider Function
+
+## OpenAI-Specific Functions
+
+Functions for OpenAI chat, batch processing, embeddings, and model
+listing.
+
+- [`openai_chat()`](https://edubruell.github.io/tidyllm/reference/openai_chat.md)
+  : Send LLM Messages to the OpenAI Chat Completions API
+- [`openai_embedding()`](https://edubruell.github.io/tidyllm/reference/openai_embedding.md)
+  : Generate Embeddings Using OpenAI API
+- [`openai_list_models()`](https://edubruell.github.io/tidyllm/reference/openai_list_models.md)
+  : List Available Models from the OpenAI API
+- [`send_openai_batch()`](https://edubruell.github.io/tidyllm/reference/send_openai_batch.md)
+  : Send a Batch of Messages to OpenAI Batch API
+- [`check_openai_batch()`](https://edubruell.github.io/tidyllm/reference/check_openai_batch.md)
+  : Check Batch Processing Status for OpenAI Batch API
+- [`fetch_openai_batch()`](https://edubruell.github.io/tidyllm/reference/fetch_openai_batch.md)
+  : Fetch Results for an OpenAI Batch
+- [`list_openai_batches()`](https://edubruell.github.io/tidyllm/reference/list_openai_batches.md)
+  : List OpenAI Batch Requests
+- [`cancel_openai_batch()`](https://edubruell.github.io/tidyllm/reference/cancel_openai_batch.md)
+  : Cancel an In-Progress OpenAI Batch
+
+## Claude-Specific Functions
+
+Functions for Anthropic Claude chat, batch processing, and file
+management.
+
+- [`claude_chat()`](https://edubruell.github.io/tidyllm/reference/claude_chat.md)
+  : Interact with Claude AI models via the Anthropic API
+- [`claude_list_models()`](https://edubruell.github.io/tidyllm/reference/claude_list_models.md)
+  : List Available Models from the Anthropic Claude API
+- [`send_claude_batch()`](https://edubruell.github.io/tidyllm/reference/send_claude_batch.md)
+  : Send a Batch of Messages to Claude API
+- [`check_claude_batch()`](https://edubruell.github.io/tidyllm/reference/check_claude_batch.md)
+  : Check Batch Processing Status for Claude API
+- [`fetch_claude_batch()`](https://edubruell.github.io/tidyllm/reference/fetch_claude_batch.md)
+  : Fetch Results for a Claude Batch
+- [`list_claude_batches()`](https://edubruell.github.io/tidyllm/reference/list_claude_batches.md)
+  : List Claude Batch Requests
+- [`claude_upload_file()`](https://edubruell.github.io/tidyllm/reference/claude_upload_file.md)
+  : Upload a File to Claude API
+- [`claude_delete_file()`](https://edubruell.github.io/tidyllm/reference/claude_delete_file.md)
+  : Delete a File from Claude API
+- [`claude_file_metadata()`](https://edubruell.github.io/tidyllm/reference/claude_file_metadata.md)
+  : Retrieve Metadata for a File from Claude API
+- [`claude_list_files()`](https://edubruell.github.io/tidyllm/reference/claude_list_files.md)
+  : List Files in Claude API
+- [`claude_websearch()`](https://edubruell.github.io/tidyllm/reference/claude_websearch.md)
+  : Builtin Claude Web Search Tool
+
+## Gemini-Specific Functions
+
+Functions for Google Gemini chat, embeddings, file management, and batch
+processing.
+
+- [`gemini_chat()`](https://edubruell.github.io/tidyllm/reference/gemini_chat.md)
+  : Send LLMMessage to Gemini API
+- [`gemini_embedding()`](https://edubruell.github.io/tidyllm/reference/gemini_embedding.md)
+  : Generate Embeddings Using the Google Gemini API
+- [`gemini_list_models()`](https://edubruell.github.io/tidyllm/reference/gemini_list_models.md)
+  : List Available Models from the Google Gemini API
+- [`gemini_upload_file()`](https://edubruell.github.io/tidyllm/reference/gemini_upload_file.md)
+  : Upload a File to Gemini API
+- [`gemini_list_files()`](https://edubruell.github.io/tidyllm/reference/gemini_list_files.md)
+  : List Files in Gemini API
+- [`gemini_file_metadata()`](https://edubruell.github.io/tidyllm/reference/gemini_file_metadata.md)
+  : Retrieve Metadata for a File from Gemini API
+- [`gemini_delete_file()`](https://edubruell.github.io/tidyllm/reference/gemini_delete_file.md)
+  : Delete a File from Gemini API
+- [`send_gemini_batch()`](https://edubruell.github.io/tidyllm/reference/send_gemini_batch.md)
+  : Submit a list of LLMMessage objects to Gemini's batch API
+- [`check_gemini_batch()`](https://edubruell.github.io/tidyllm/reference/check_gemini_batch.md)
+  : Check the Status of a Gemini Batch Operation
+- [`fetch_gemini_batch()`](https://edubruell.github.io/tidyllm/reference/fetch_gemini_batch.md)
+  : Fetch Results for a Gemini Batch
+- [`list_gemini_batches()`](https://edubruell.github.io/tidyllm/reference/list_gemini_batches.md)
+  : List Recent Gemini Batch Operations
+
+## Groq-Specific Functions
+
+Functions for Groq chat, audio transcription, and batch processing.
+
+- [`groq_chat()`](https://edubruell.github.io/tidyllm/reference/groq_chat.md)
+  : Send LLM Messages to the Groq Chat API
+- [`groq_transcribe()`](https://edubruell.github.io/tidyllm/reference/groq_transcribe.md)
+  : Transcribe an Audio File Using Groq transcription API
+- [`groq_list_models()`](https://edubruell.github.io/tidyllm/reference/groq_list_models.md)
+  : List Available Models from the Groq API
+- [`send_groq_batch()`](https://edubruell.github.io/tidyllm/reference/send_groq_batch.md)
+  : Send a Batch of Messages to the Groq API
+- [`check_groq_batch()`](https://edubruell.github.io/tidyllm/reference/check_groq_batch.md)
+  : Check Batch Processing Status for Groq API
+- [`fetch_groq_batch()`](https://edubruell.github.io/tidyllm/reference/fetch_groq_batch.md)
+  : Fetch Results for a Groq Batch
+- [`list_groq_batches()`](https://edubruell.github.io/tidyllm/reference/list_groq_batches.md)
+  : List Groq Batch Requests
+
+## Mistral-Specific Functions
+
+Functions for Mistral chat, embeddings, and batch processing.
+
+- [`mistral_chat()`](https://edubruell.github.io/tidyllm/reference/mistral_chat.md)
+  : Send LLMMessage to Mistral API
+- [`mistral_embedding()`](https://edubruell.github.io/tidyllm/reference/mistral_embedding.md)
+  : Generate Embeddings Using Mistral API
+- [`mistral_list_models()`](https://edubruell.github.io/tidyllm/reference/mistral_list_models.md)
+  : List Available Models from the Mistral API
+- [`send_mistral_batch()`](https://edubruell.github.io/tidyllm/reference/send_mistral_batch.md)
+  : Send a Batch of Requests to the Mistral API
+- [`check_mistral_batch()`](https://edubruell.github.io/tidyllm/reference/check_mistral_batch.md)
+  : Check Batch Processing Status for Mistral Batch API
+- [`fetch_mistral_batch()`](https://edubruell.github.io/tidyllm/reference/fetch_mistral_batch.md)
+  : Fetch Results for an Mistral Batch
+- [`list_mistral_batches()`](https://edubruell.github.io/tidyllm/reference/list_mistral_batches.md)
+  : List Mistral Batch Requests
+
+## Ollama-Specific Functions
+
+Functions for local Ollama models: chat, embeddings, and model
+management.
+
+- [`ollama_chat()`](https://edubruell.github.io/tidyllm/reference/ollama_chat.md)
+  : Interact with local AI models via the Ollama API
+- [`ollama_embedding()`](https://edubruell.github.io/tidyllm/reference/ollama_embedding.md)
+  : Generate Embeddings Using Ollama API
+- [`ollama_list_models()`](https://edubruell.github.io/tidyllm/reference/ollama_list_models.md)
+  : Retrieve and return model information from the Ollama API
+- [`ollama_download_model()`](https://edubruell.github.io/tidyllm/reference/ollama_download_model.md)
+  : Download a model from the Ollama API
+- [`ollama_delete_model()`](https://edubruell.github.io/tidyllm/reference/ollama_delete_model.md)
+  : Delete a model from the Ollama API
+- [`send_ollama_batch()`](https://edubruell.github.io/tidyllm/reference/send_ollama_batch.md)
+  : Send a Batch of Messages to Ollama API
+
+## Perplexity-Specific Functions
+
+Functions for Perplexity AI chat and asynchronous deep research.
+
+- [`perplexity_chat()`](https://edubruell.github.io/tidyllm/reference/perplexity_chat.md)
+  : Send LLM Messages to the Perplexity Chat API
+- [`perplexity_deep_research()`](https://edubruell.github.io/tidyllm/reference/perplexity_deep_research.md)
+  : Submit a Deep Research Request to Perplexity
+- [`perplexity_check_research()`](https://edubruell.github.io/tidyllm/reference/perplexity_check_research.md)
+  : Check the Status of a Perplexity Deep Research Job
+- [`perplexity_fetch_research()`](https://edubruell.github.io/tidyllm/reference/perplexity_fetch_research.md)
+  : Fetch Results from a Completed Perplexity Deep Research Job
+
+## DeepSeek-Specific Functions
+
+Functions for DeepSeek chat and reasoning models.
+
+- [`deepseek_chat()`](https://edubruell.github.io/tidyllm/reference/deepseek_chat.md)
+  : Send LLM Messages to the DeepSeek Chat API
+
+## VoyageAI-Specific Functions
+
+Functions for Voyage AI embeddings and reranking.
+
+- [`voyage_embedding()`](https://edubruell.github.io/tidyllm/reference/voyage_embedding.md)
+  : Generate Embeddings Using Voyage AI API
+- [`voyage_rerank()`](https://edubruell.github.io/tidyllm/reference/voyage_rerank.md)
+  : Rerank Documents Using Voyage AI API
+
+## OpenRouter-Specific Functions
+
+Functions for OpenRouter — access to 300+ models via a single API key.
+
+- [`openrouter_chat()`](https://edubruell.github.io/tidyllm/reference/openrouter_chat.md)
+  : Send LLM Messages to the OpenRouter Chat API
+- [`openrouter_embedding()`](https://edubruell.github.io/tidyllm/reference/openrouter_embedding.md)
+  : Generate Embeddings Using the OpenRouter API
+- [`openrouter_list_models()`](https://edubruell.github.io/tidyllm/reference/openrouter_list_models.md)
+  : List Available Models on OpenRouter
+- [`openrouter_credits()`](https://edubruell.github.io/tidyllm/reference/openrouter_credits.md)
+  : Get OpenRouter Credit Balance
+- [`openrouter_generation()`](https://edubruell.github.io/tidyllm/reference/openrouter_generation.md)
+  : Get Details for an OpenRouter Generation
+
+## llama.cpp-Specific Functions
+
+Functions for local llama.cpp servers: chat, embeddings, reranking,
+model management, and server utilities.
+
+- [`llamacpp_chat()`](https://edubruell.github.io/tidyllm/reference/llamacpp_chat.md)
+  : Send LLM Messages to a llama.cpp Server
+- [`llamacpp_embedding()`](https://edubruell.github.io/tidyllm/reference/llamacpp_embedding.md)
+  : Generate Embeddings Using a llama.cpp Server
+- [`llamacpp_rerank()`](https://edubruell.github.io/tidyllm/reference/llamacpp_rerank.md)
+  : Rerank Documents Using a llama.cpp Server
+- [`llamacpp_list_models()`](https://edubruell.github.io/tidyllm/reference/llamacpp_list_models.md)
+  : List Models Loaded in the llama.cpp Server
+- [`llamacpp_health()`](https://edubruell.github.io/tidyllm/reference/llamacpp_health.md)
+  : Check Health of the llama.cpp Server
+- [`llamacpp_list_local_models()`](https://edubruell.github.io/tidyllm/reference/llamacpp_list_local_models.md)
+  : List Local GGUF Model Files
+- [`llamacpp_download_model()`](https://edubruell.github.io/tidyllm/reference/llamacpp_download_model.md)
+  : Download a GGUF Model from Hugging Face
+- [`llamacpp_delete_model()`](https://edubruell.github.io/tidyllm/reference/llamacpp_delete_model.md)
+  : Delete a Local GGUF Model File
+- [`list_hf_gguf_files()`](https://edubruell.github.io/tidyllm/reference/list_hf_gguf_files.md)
+  : List GGUF Files Available in a Hugging Face Repository
+
+## Azure OpenAI-Specific Functions
+
+Functions for Azure-hosted OpenAI deployments.
+
+- [`azure_openai_chat()`](https://edubruell.github.io/tidyllm/reference/azure_openai_chat.md)
+  : Send LLM Messages to an Azure OpenAI Chat Completions endpoint
+- [`azure_openai_embedding()`](https://edubruell.github.io/tidyllm/reference/azure_openai_embedding.md)
+  : Generate Embeddings Using OpenAI API on Azure
+- [`send_azure_openai_batch()`](https://edubruell.github.io/tidyllm/reference/send_azure_openai_batch.md)
+  : Send a Batch of Messages to Azure OpenAI Batch API
+- [`check_azure_openai_batch()`](https://edubruell.github.io/tidyllm/reference/check_azure_openai_batch.md)
+  : Check Batch Processing Status for Azure OpenAI Batch API
+- [`fetch_azure_openai_batch()`](https://edubruell.github.io/tidyllm/reference/fetch_azure_openai_batch.md)
+  : Fetch Results for an Azure OpenAI Batch
+- [`list_azure_openai_batches()`](https://edubruell.github.io/tidyllm/reference/list_azure_openai_batches.md)
+  : List Azure OpenAI Batch Requests
+
+## Ellmer Compatibility
+
+Functions for using tidyllm together with ellmer tools and chat objects.
+
+- [`ellmer_tool()`](https://edubruell.github.io/tidyllm/reference/ellmer_tool.md)
+  : Convert an ellmer Tool to a tidyllm TOOL
+- [`chat_ellmer()`](https://edubruell.github.io/tidyllm/reference/chat_ellmer.md)
+  : Send LLM Messages to Ellmer Chat Object
+- [`ellmer()`](https://edubruell.github.io/tidyllm/reference/ellmer.md)
+  : Alias for the Ellmer Provider Function
+
+## PDF Processing
+
+Helpers for batch processing multi-page PDF documents.
+
+- [`pdf_page_batch()`](https://edubruell.github.io/tidyllm/reference/pdf_page_batch.md)
+  : Batch Process PDF into LLM Messages
+
+## Internals
+
+Core S7 class definitions at the heart of tidyllm.
+
+- [`LLMMessage()`](https://edubruell.github.io/tidyllm/reference/LLMMessage.md)
+  : Large Language Model Message Class

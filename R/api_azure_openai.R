@@ -87,6 +87,7 @@ method(parse_chat_response, list(api_azure_openai,class_list)) <- function(.api,
 #' @param .top_logprobs If specified, get the top N log probabilities of each output token (0-5, default: NULL).
 #' @param .tools Either a single TOOL object or a list of TOOL objects representing the available functions for tool calls.
 #' @param .tool_choice A character string specifying the tool-calling behavior; valid values are "none", "auto", or "required".
+#' @param .max_tool_rounds Integer specifying the maximum number of tool use iterations (default: 10).
 #'
 #' @return A new `LLMMessage` object containing the original messages plus the assistant's response.
 #' @export

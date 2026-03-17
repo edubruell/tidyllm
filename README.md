@@ -76,11 +76,12 @@ For detailed instructions and advanced features, see:
 - [Get Started with tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm.html)
 - [Changelog](https://edubruell.github.io/tidyllm/news/)
 - [Documentation](https://edubruell.github.io/tidyllm/)
-- Use-case oriented articles: 
+- Use-case oriented articles:
   - [Classifying Texts with tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_classifiers.html)
   - [Structured Question Answering from PDFs](https://edubruell.github.io/tidyllm/articles/tidyllm-pdfquestions.html)
-  - [Using Embedding Models for Semantic Search](https://edubruell.github.io/tidyllm/articles/tidyllm_embed.html)
+  - [Embedding Models in tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_embed.html)
   - [Video and Audio Data with the Gemini API](https://edubruell.github.io/tidyllm/articles/tidyllm_video.html)
+  - [Local Models with tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_local_models.html)
   
 ## Similar packages
 The are some similar R packages for working with LLMs:

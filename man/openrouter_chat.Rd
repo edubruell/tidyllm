@@ -14,6 +14,7 @@ openrouter_chat(
   .presence_penalty = NULL,
   .stop = NULL,
   .stream = FALSE,
+  .json_schema = NULL,
   .tools = NULL,
   .tool_choice = NULL,
   .provider = NULL,
@@ -46,6 +47,8 @@ Any model available on OpenRouter can be used.}
 \item{.stop}{One or more stop sequences (optional).}
 
 \item{.stream}{Logical; if TRUE, streams the response (default: FALSE).}
+
+\item{.json_schema}{A JSON schema object for structured output (default: NULL).}
 
 \item{.tools}{Either a single TOOL object or a list of TOOL objects for tool calls.}
 

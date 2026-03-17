@@ -47,8 +47,9 @@ method(extract_metadata, list(api_deepseek,class_list))<- function(.api,.respons
 #' @param .verbose If TRUE, displays additional information after the API call (default: FALSE).
 #' @param .dry_run If TRUE, returns the constructed request object without executing it (default: FALSE).
 #' @param .max_tries Maximum retries to perform the request (default: 3).
-#' @param .max_tool_rounds Integer specifying the maximum number of tool use iterations (default: 10). 
+#' @param .max_tool_rounds Integer specifying the maximum number of tool use iterations (default: 10).
 #'   Set to 1 for single-round tool use, or higher for multi-turn agentic loops.
+#' @param .thinking If TRUE, switches to the `deepseek-reasoner` model and captures the reasoning trace (default: NULL).
 #'
 #' @return A new `LLMMessage` object containing the original messages plus the assistant's response.
 #'

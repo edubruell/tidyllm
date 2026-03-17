@@ -150,9 +150,8 @@ chat_ellmer <- function(.llm,
 #' backend for tidyllm. The ellmer object is cloned for each interaction to
 #' maintain tidyllm's stateless approach. 
 #'
-#' @param .ellmer_chat An ellmer chat object to use as the backend.
 #' @param ... Additional parameters to pass through (for consistency with other providers).
-#' @param .called_from An internal argument specifying which action (e.g., 
+#' @param .called_from An internal argument specifying which action (e.g.,
 #'   `chat`) the function is invoked from.
 #'
 #' @return A provider function that can be used with `tidyllm::chat()`.

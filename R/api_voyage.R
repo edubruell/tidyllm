@@ -22,6 +22,7 @@
 #' @param .dry_run If TRUE, perform a dry run and return the request object without sending.
 #' @param .max_tries Maximum retry attempts for requests (default: 3).
 #' @param .verbose Should information about current rate limits be printed? (default: FALSE).
+#' @param .output_dimension Optional integer to control output vector size (default: NULL, uses model default).
 #'
 #' @return A tibble with two columns: `input` and `embeddings`.
 #'   - The `input` column contains the input texts or image labels
@@ -254,7 +255,7 @@ voyage_rerank <- function(.query,
     document        = purrr::map_chr(results, ~ .documents[.x$index + 1]),
     relevance_score = purrr::map_dbl(results, ~ .x$relevance_score)
   ) |>
-    dplyr::arrange(dplyr::desc(relevance_score))
+    (\(x) x[order(-x$relevance_score), ])()
 }
 
 

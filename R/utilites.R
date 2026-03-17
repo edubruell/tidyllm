@@ -146,6 +146,10 @@ add_no_extra_fields <- function(node) {
   if (!is.null(node$properties)) {
     node$properties <- lapply(node$properties, add_no_extra_fields)
   }
-  
+
+  if (!is.null(node$items)) {
+    node$items <- add_no_extra_fields(node$items)
+  }
+
   node
 }

@@ -10,156 +10,178 @@ knitr::opts_chunk$set(
 
 Navigating through a large collection of academic papers can be time-consuming, especially when you're trying to extract specific insights or determine the relevance of each document to your research. With **tidyllm**, you can streamline this process by automating the extraction of structured answers directly from PDF documents using large language models.
 
-Imagine you have a folder of papers on the economic effects of generative AI, and you need to assess how each paper is related to your own research interests. This article will guide you through setting up a workflow that processes the first few pages of each paper, asks an AI model targeted questions, and returns the answers in a structured format — perfect for converting into a table for easy review and analysis.
+Imagine you have a folder of papers on the economic effects of generative AI, and you need to assess how each paper is related to your own research interests. This article guides you through setting up a workflow that processes the first few pages of each paper, asks an AI model targeted questions, and returns the answers in a structured format, perfect for converting into a table for easy review and analysis.
 
 ## Example Workflow
 
-Imagine your folder looks something like this—many downloaded papers, but no structure yet:
+Imagine your folder looks something like this, many downloaded papers but no structure yet:
 
-```{r setup, message=FALSE}
+```{r setup, message = FALSE}
 library(tidyverse)
 library(tidyllm)
 dir("aipapers")
 ```
 
-Our goal is to get a first overview of these papers and what they are about and to give them good file names.
+Our goal is to get a first overview of these papers and to give them good file names.
 
-### Step 1:  Generating Messages for Each Document
+### Step 1: Generating Messages for Each Document
 
-First, we need to prepare a list of messages for all PDFs in the folder by applying `llm_message()` with a prompt to the first five pages of each document. This step sets up a list of messages, where each entry specifies a task to retrieve structured answers on one file. Even though the `gpt-4o-mini model` we will use in this example can process up to 128,000 tokens -approximately 80-90 pages of English text- we limit the input to five pages for demonstration purposes and to maintain focus on the introduction that is usually enough to get a first overview of a paper. 
+First, we prepare a list of messages for all PDFs in the folder by applying `llm_message()` with a prompt to the first five pages of each document. Even though `gpt-5.4` can process up to 128,000 tokens (roughly 80-90 pages of English text), we limit the input to five pages for demonstration purposes; the introduction is usually enough to get a first overview of a paper.
 
-```{r document_tasks, eval=FALSE}
-document_tasks <- files |> 
-  map(~llm_message("Below are the first 5 pages of a document. 
-                     Summarise the document based on the provided schema.", 
-            .pdf = list(
-              filename = .x,
-              start_page = 1,
-              end_page = 5)) #Maximally 5 pages since we are not sure how long each document is
-) 
+```{r document_tasks, eval = FALSE}
+files <- list.files("aipapers", full.names = TRUE, pattern = "\\.pdf$")
+
+document_tasks <- files |>
+  map(\(f) llm_message(
+    "Below are the first 5 pages of a document.
+     Summarise the document based on the provided schema.",
+    .pdf = list(
+      filename   = f,
+      start_page = 1,
+      end_page   = 5
+    )
+  ))
 ```
 
 ### Step 2: Defining the Schema for Structured Output
 
-In this step, we define a schema that outlines the expected data types for each field in the model's responses. This schema enables the large language model to return answers in a structured, consistent format that can later be converted into a table, making it easy to analyze and compare results across documents.
+We define a schema that outlines the expected data types for each field in the model's responses. This enables the model to return answers in a consistent, structured format that converts directly into a tibble.
 
 ```{r document_schema}
 document_schema <- tidyllm_schema(
-  name = "DocumentAnalysisSchema",
-  Title = field_chr("The full title of the provided document"),
-  Authors = field_chr("A semicolon-seperated list of Authors"),
+  name             = "DocumentAnalysisSchema",
+  Title            = field_chr("The full title of the provided document"),
+  Authors          = field_chr("A semicolon-separated list of authors"),
   SuggestedFilename = field_chr("Suggest a filename in the format \"ReleaseYear_Author_etal_ShortTitle.pdf\". Use the publication year if available; otherwise, use XXXX."),
-  Type = field_fct("Is the document a Policy Report or a Research Paper based on  it’s style, structure, and purpose?",.levels =c("Policy", "Research")),
-  Empirics =  field_chr("A 100 word description of empirical methods used, including data collection, statistical techniques, or analysis methods mentioned."),
-  Theory = field_chr("A 100 word outline the primary theoretical framework or models discussed if any."),
-  MainPoint = field_chr("A one sentence summary ot the main point raised"),
-  Contribution = field_chr("A short explanation of the main contributions claimed in the document"),
-  KeyCitations = field_chr("The four most frequently cited or critical references in the first 5 pages")
+  Type             = field_fct("Is the document a Policy Report or a Research Paper based on its style, structure, and purpose?",
+                               .levels = c("Policy", "Research")),
+  Empirics         = field_chr("A 100 word description of empirical methods used, including data collection, statistical techniques, or analysis methods mentioned."),
+  Theory           = field_chr("A 100 word outline of the primary theoretical framework or models discussed, if any."),
+  MainPoint        = field_chr("A one-sentence summary of the main point raised"),
+  Contribution     = field_chr("A short explanation of the main contributions claimed in the document"),
+  KeyCitations     = field_chr("The four most frequently cited or critical references in the first 5 pages")
 )
 ```
 
-In `tidyllm_schema()`, we specify each field field with a description. The seperate field functions indicate what kind of type we expect for the answer (i.e. `field_chr()` for text or `field_dbl()` for numbers). For fields where categorical responses are needed, we can use `field_fct()` to define specific allowed options with the `.levels` argument. For instance `field_fct()`, in the schema above creates a categorical field with the choices "Policy" and "Research." To indicate that a field should return a list of values, you can set `.vector=TRUE` in the field functions. He, we intentionally avoid lists  to maintain a flat structure. This ensures that the output can be easily converted to a single-row `tibble`. `name` is a special field, which creates an identifier for a schema. By default it is `"tidyllm_schema"`
+`field_chr()` returns text, `field_dbl()` returns numbers, and `field_fct()` restricts to allowed categories via the `.levels` argument. Setting `.vector = TRUE` on any field returns a list of values; here we keep a flat structure so each document maps to a single-row tibble. `name` is a special field providing an identifier for the schema.
 
 ### Step 3: Running the Analysis on a Sample Document
-To test the setup, we run the analysis on a single document with the standard `chat()` function, using the schema to ensure structured output.
 
-```{r example_task, eval=FALSE}
-example_task <- document_tasks[[1]] |> 
+To test the setup, we run the analysis on a single document with `chat()` and the schema:
+
+```{r example_task, eval = FALSE}
+example_task <- document_tasks[[1]] |>
   chat(openai(.json_schema = document_schema,
-              .model       = "gpt-4o-mini"))
+              .model       = "gpt-5.4"))
 ```
-```{r example_task_hidden, echo=FALSE}
+
+```{r example_task_hidden, echo = FALSE}
 example_task <- read_rds("example_task.rds")
 ```
-### Step 4: Extracting and Formatting the Results for our example task
-We use `get_reply_data()` to extract the model’s structured responses from the model reply.
+
+### Step 4: Extracting and Formatting the Results
+
+`get_reply_data()` extracts the model's structured response:
+
 ```{r example_task_get_reply}
 get_reply_data(example_task)
 ```
-The model seems to have reasonably answered our questions in the structured format we provided for our first example task. Here we can also look at the token usage of the example task:
-```{r example_task_get_metadata, eval=FALSE}
+
+The model returns a named list matching our schema, which `as_tibble()` converts to a single row. We can also inspect token usage:
+
+```{r example_task_get_metadata, eval = FALSE}
 get_metadata(example_task)
 ```
-```{r, echo=FALSE}
+
+```{r, echo = FALSE}
 tibble(
-  model = "gpt-4o-mini-2024-07-18",
-  timestamp = as.POSIXct("2025-03-22 22:07:53"),
-  prompt_tokens = 4265L,
+  model             = "gpt-5.4",
+  timestamp         = as.POSIXct("2026-03-16 10:00:00"),
+  prompt_tokens     = 4265L,
   completion_tokens = 337L,
-  total_tokens = 4602L,
-  stream = FALSE
+  total_tokens      = 4602L,
+  stream            = FALSE
 ) |>
-  mutate(api_specific=list(list(system_fingerprint = "", 
-                           completion_tokens_details = list(),
-                           prompt_tokens_details = list())))
+  mutate(api_specific = list(list(
+    system_fingerprint        = "",
+    completion_tokens_details = list(),
+    prompt_tokens_details     = list()
+  )))
 ```
-At a price for `gpt-4o-mini` of  \$0.15 / million input tokens and \$0.60 / million output tokens the cost of our example task is less than a cent.
 
-### Step 5: Scaling up to a whole batch of papers
+At current `gpt-5.4` batch pricing the per-document cost is a few cents; processing a folder of 50 papers costs well under a dollar.
 
-After confirming that our single-document analysis is working well, we can extend this workflow to process a larger batch of documents. Batch processing is particularly valuable when handling a large collection of files, as it allows us to submit multiple messages at once, which are then processed together on the model provider’s servers. 
+### Step 5: Scaling Up to a Whole Batch of Papers
 
-Batch APIs, like those from Anthropic and OpenAI, often offer up to 50% savings compared to single-interaction requests. In **tidyllm**, we can use `send_batch()` to submit batch requests. The OpenAI Batch API, supports up to 50,000 requests in a single batch with a maximum file size of 100 MB. Additionally, batch API rate limits are separate from the standard per-model limits, meaning batch usage doesn’t impact your regular API rate allocations.
-```{r batch, eval=FALSE}
-document_tasks |> 
+After confirming the single-document analysis works, we extend the workflow to process a full batch. Batch APIs from Anthropic and OpenAI offer up to 50% savings compared to single requests, and batch rate limits are separate from standard per-model limits so they don't affect your regular quota.
+
+```{r batch, eval = FALSE}
+document_tasks |>
   send_batch(openai(.json_schema = document_schema,
-                     .model       = "gpt-4o-mini")) |>
+                    .model       = "gpt-5.4")) |>
   write_rds("document_batch.rds")
 ```
-After the batch is sent, the output of  `send_batch()` contains the input list of message histories along with batch metadata, such as the `batchID` as an attribute as well as unique names for each list element that can be used to stitch together messages with replies, once they are ready. If you provide a named list of messages, **tidyllm** will use these names as identifiers in the batch (provided that these names are unique for each list element). Batches are processed within 24 hours, usually much faster. The batch request for this example was processed within 10 minutes. 
 
-> ⚠️ **Note:** We save the RDS file to disk to preserve the state of our batch request, including all messages and their unique identifiers. This file acts as a checkpoint, allowing us to easily reload and check the batch status or retrieve results across R sessions without needing to resend the entire batch if we close the session in the mean time.
+The output of `send_batch()` contains the input message list plus batch metadata (a `batch_id` attribute and unique per-message identifiers). Batches are processed within 24 hours; the example here completed in about 10 minutes.
 
-To check whether a batch was compeleted you can load the output file into `check_openai_batch()`:
-```{r, eval=FALSE}
-read_rds("document_batch.rds")|>
-  check_batch(openai)
+> ⚠️ **Note:** Save the RDS file to disk. It acts as a checkpoint, letting you reload and check batch status or retrieve results across R sessions without resubmitting the batch.
+
+Check whether a batch has completed:
+
+```{r, eval = FALSE}
+read_rds("document_batch.rds") |>
+  check_job(openai())
 ```
-Alternatively you can list all OpenAI batches with `list_openai_batches()`or `list_batchers(openai())`. Of course, you can also look into the [batches dashboard of the OpenAI platform](https://platform.openai.com/batches/) for the same overview. Since OpenAI batches are sent as `.jsonl` and saved on the OpenAI server, you can also look into the file tab of the dashboard to delete old files from time to time. 
 
-### Step 6: Getting data from the entire batch
+You can also list all OpenAI batches with `list_batches(openai())` or view them in the [OpenAI batches dashboard](https://platform.openai.com/batches/).
 
-Once the batch is complete, we fetch all responses with `fetch_batch()`:
-```{r, eval=FALSE}
-results <- read_rds("document_batch.rds")|>
-  fetch_batch(openai)
+### Step 6: Getting Data from the Entire Batch
+
+Once the batch is complete, fetch all responses with `fetch_batch()`:
+
+```{r, eval = FALSE}
+results <- read_rds("document_batch.rds") |>
+  fetch_batch(openai())
 ```
-```{r results_hidden, echo=FALSE}
+
+```{r results_hidden, echo = FALSE}
 results <- read_rds("document_results.rds")
 ```
-We can then process the results into a table by mapping `get_reply_data()` and `as_tibble()` over the batch output:
+
+Map `get_reply_data()` and `as_tibble()` over the batch output to produce a tidy table:
+
 ```{r}
-docuemnt_table <- results |>
+document_table <- results |>
   map(get_reply_data) |>
   map_dfr(as_tibble)
-  
-docuemnt_table
+
+document_table
 ```
-This table can be exported to Excel with `writexl::write_xlsx()` for further review. Additionally, we could programmatically rename the PDFs using the model’s suggested filenames, helping maintain an organized document structure for future analysis.
 
+This table can be exported to Excel with `writexl::write_xlsx()` for further review, or used to programmatically rename the PDFs using the model's suggested filenames.
 
-## Further notes on working with large documents
+## Further Notes on Working with Large Documents
 
-### Context length
+### Context Length
 
-When working with long documents like research papers, reports, or books, one common challenge is context length—the maximum amount of text the model can process in a single query. If a document exceeds this limit, the model will only see a portion of it, which may lead to missing important sections or incomplete answers.
+When working with long documents, context length limits how much text the model can process in a single query. If a document exceeds this limit, the model only sees a portion of it and may miss important sections.
 
-In most models, context length is measured in **tokens**, the basic units of text. For example, many small local models have a maximum context length of around 8,192 tokens, roughly covering 30–35 pages. This means that for a long academic paper, the model may only see the beginning of the document, potentially omitting later sections like bibliographies or appendices, where key references or results might appear. Moreover, appending a whole document to a prompt might leave your actual prompt out of the context.
+Focusing on the first five pages, as in this workflow, typically captures the abstract, introduction, and methodology; enough for a first overview. For documents where later sections matter, split them into smaller chunks and process each separately. The overlap between chunks helps preserve continuity.
 
-To manage this, a common approach is to limit the number of pages sent to the model. In this workflow, we focus on the first five pages for an initial overview. This typically includes the abstract, introduction, methodology, results, and discussion—enough to capture the essence of the paper. While this approach ensures that the model can process core content, it may omit information found in later sections.
+### Gemini and Claude for Image-Heavy PDFs
 
-Alternatively, for very large documents, you could split them into smaller sections and process each separately, covering more content without exceeding the model’s context window. However, splitting can disrupt the document’s flow, which may affect how well the model retains context across sections.
+For `gemini()` there is an alternative to embedding PDF text in the prompt. You can upload a PDF directly to Google's servers with `gemini_upload_file()` and reference it in your messages. The key advantage is that Gemini handles image-heavy PDFs and scanned documents that cannot be extracted as text. See the [Video and Audio Data with the Gemini API](https://edubruell.github.io/tidyllm/articles/tidyllm_video.html) article for an example of the file upload workflow.
 
-### Gemini for image-heavy PDFs
-
-For `gemini()` there is an alternative to adding the text from a PDF with `llm_message()`. You can directly upload a PDF to Google's servers with `gemini_upload_file()` and use it in the context of your messages. The advantage of this approach is that Gemini can handle images in PDFs or are even image-only PDFs (such as scanned documents). See the article on [Video and Audio Data with the Gemini API](https://edubruell.github.io/tidyllm/articles/tidyllm_video.html) for an example how to use the `gemini_upload_file()` feature.
+Claude offers a parallel option via the Claude Files API (`claude_upload_file()`), which is well suited for text-heavy PDFs where citation accuracy and long-context coherence matter most. The two providers complement each other: Gemini for image-only or scan-heavy documents, Claude for dense academic text.
 
 ### Local Models
- 
-Using open-source local models for PDF processing is also possible, though remote models like `gpt-4o-mini` tend to handle longer documents more effectively. Smaller local models in `ollama()`, may struggle with large content and complex, structured queries, even if they support extended context lengths. For more demanding tasks, larger local models may perform better with complex queries, but they require substantial hardware resources to run smoothly. Since Ollama has a default context length of just 2,048 tokens, you will likely also need to adjust the context length with the `.num_ctx` option in `ollama()`. Sending a message that is longer than the context length might lead to strange errors, since the input will be truncated by Ollama, which might lead to cases where only parts of the document are processed without your instructions.  Note that increasing context length will likely slow down processing due to higher memory usage. In these cases, reducing the number of pages may help.
 
-> ⚠️ **Note:** When using paid remote models, it's important to consider data privacy and security, especially if you're processing sensitive documents, as uploading data to external servers may introduce risks — local models provide more control in such cases. 
+Local models via `ollama()` or `llamacpp()` are a strong choice for privacy-sensitive documents, as no data leaves your machine. Modern models like `qwen3.5` support a context window of up to 262,144 tokens in principle; the practical limit on a typical laptop is RAM. On a 16 GB machine a 9B model at Q4 quantisation already uses roughly 6 GB for weights, leaving limited headroom for long contexts before inference slows to a crawl or the system starts swapping.
+
+For most academic papers the first five pages fit comfortably within what laptop hardware can handle. For longer documents, limit the page range or reduce the context window explicitly via the `.num_ctx` parameter in `ollama()`.
+
+> ⚠️ **Note:** When using paid remote APIs, consider data privacy, especially for sensitive documents. Local models via `ollama()` or `llamacpp()` keep all processing on-device.
 
 ## Outlook
 
-This structured question-answering workflow not only streamlines the extraction of key insights from academic papers, but can also be adapted for other document-heavy tasks. Whether you're working with reports, policy documents, or news articles this approach can quickly help you summarize and categorize information for further analysis. 
+This structured question-answering workflow streamlines extraction of key insights from academic papers and adapts directly to other document-heavy tasks; reports, policy documents, contracts, or news archives can all be processed with the same pattern of schema definition, single-document testing, and batch scale-up.

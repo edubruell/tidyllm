@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -21,6 +21,8 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/tidyllm_classifiers.html">Classifying Texts with tidyllm</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm_embed.html">Embedding Models in tidyllm</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_local_models.html">Local Models with tidyllm</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_tools.html">Using Tools with tidyllm</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm_video.html">Video and Audio Data with the Gemini API</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm-pdfquestions.html">Structured Question Answering from PDFs</a></li>
   </ul></li>
@@ -106,7 +108,7 @@
       </dl></div><div class="section level2">
       <h2 id="tidyllm-main-verbs">Tidyllm Main Verbs<a class="anchor" aria-label="anchor" href="#tidyllm-main-verbs"></a></h2>
 
-      <div class="section-desc"><p>Core verbs facilitating interactions with LLMs, including sending messages, generating embeddings, and managing batch requests.</p></div>
+      <div class="section-desc"><p>Core verbs for interacting with LLMs: sending messages, generating embeddings, deep research, and managing batch requests.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -126,6 +128,27 @@
 
         </dt>
         <dd>Generate text embeddings</dd>
+
+        <dt>
+
+          <code><a href="deep_research.html">deep_research()</a></code>
+
+        </dt>
+        <dd>Run Deep Research via a Provider</dd>
+
+        <dt>
+
+          <code><a href="check_job.html">check_job()</a></code>
+
+        </dt>
+        <dd>Check the Status of a Batch or Research Job</dd>
+
+        <dt>
+
+          <code><a href="fetch_job.html">fetch_job()</a></code>
+
+        </dt>
+        <dd>Fetch Results from a Batch or Research Job</dd>
 
         <dt>
 
@@ -162,9 +185,9 @@
         </dt>
         <dd>List Available Models for a Provider</dd>
       </dl></div><div class="section level2">
-      <h2 id="schemata-tools-and-media-handling">Schemata, Tools, and Media Handling<a class="anchor" aria-label="anchor" href="#schemata-tools-and-media-handling"></a></h2>
+      <h2 id="schemata-tools-and-media">Schemata, Tools, and Media<a class="anchor" aria-label="anchor" href="#schemata-tools-and-media"></a></h2>
 
-      <div class="section-desc"><p>Functions for json_schema, tools and media handling</p></div>
+      <div class="section-desc"><p>Functions for JSON schemas, tool definitions, and media attachments.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -201,6 +224,13 @@
 
         <dt>
 
+          <code><a href="ellmer_tool.html">ellmer_tool()</a></code>
+
+        </dt>
+        <dd>Convert an ellmer Tool to a tidyllm TOOL</dd>
+
+        <dt>
+
           <code><a href="img.html">img()</a></code>
 
         </dt>
@@ -208,7 +238,7 @@
       </dl></div><div class="section level2">
       <h2 id="api-provider-functions">API Provider Functions<a class="anchor" aria-label="anchor" href="#api-provider-functions"></a></h2>
 
-      <div class="section-desc"><p>Functions interfacing with various API providers called from main verbs</p></div>
+      <div class="section-desc"><p>Provider functions called from main verbs. Each provider exposes a consistent interface — pass to <code><a href="../reference/chat.html">chat()</a></code>, <code><a href="../reference/embed.html">embed()</a></code>, <code><a href="../reference/send_batch.html">send_batch()</a></code>, etc.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -280,21 +310,28 @@
 
         <dt>
 
+          <code><a href="openrouter.html">openrouter()</a></code>
+
+        </dt>
+        <dd>OpenRouter Provider Function</dd>
+
+        <dt>
+
+          <code><a href="llamacpp.html">llamacpp()</a></code>
+
+        </dt>
+        <dd>llama.cpp Provider Function</dd>
+
+        <dt>
+
           <code><a href="azure_openai.html">azure_openai()</a></code>
 
         </dt>
         <dd>Azure OpenAI Endpoint Provider Function</dd>
-
-        <dt>
-
-          <code><a href="chatgpt.html">chatgpt()</a></code>
-
-        </dt>
-        <dd>Alias for the OpenAI Provider Function</dd>
       </dl></div><div class="section level2">
       <h2 id="openai-specific-functions">OpenAI-Specific Functions<a class="anchor" aria-label="anchor" href="#openai-specific-functions"></a></h2>
 
-      <div class="section-desc"><p>Functions for OpenAI services, including chat interactions, batch processing and embedding generation.</p></div>
+      <div class="section-desc"><p>Functions for OpenAI chat, batch processing, embeddings, and model listing.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -307,6 +344,20 @@
 
         </dt>
         <dd>Send LLM Messages to the OpenAI Chat Completions API</dd>
+
+        <dt>
+
+          <code><a href="openai_embedding.html">openai_embedding()</a></code>
+
+        </dt>
+        <dd>Generate Embeddings Using OpenAI API</dd>
+
+        <dt>
+
+          <code><a href="openai_list_models.html">openai_list_models()</a></code>
+
+        </dt>
+        <dd>List Available Models from the OpenAI API</dd>
 
         <dt>
 
@@ -342,24 +393,10 @@
 
         </dt>
         <dd>Cancel an In-Progress OpenAI Batch</dd>
-
-        <dt>
-
-          <code><a href="openai_embedding.html">openai_embedding()</a></code>
-
-        </dt>
-        <dd>Generate Embeddings Using OpenAI API</dd>
-
-        <dt>
-
-          <code><a href="openai_list_models.html">openai_list_models()</a></code>
-
-        </dt>
-        <dd>List Available Models from the OpenAI API</dd>
       </dl></div><div class="section level2">
       <h2 id="claude-specific-functions">Claude-Specific Functions<a class="anchor" aria-label="anchor" href="#claude-specific-functions"></a></h2>
 
-      <div class="section-desc"><p>Functions designed for Claude services for chat interactions and batch processing.</p></div>
+      <div class="section-desc"><p>Functions for Anthropic Claude chat, batch processing, and file management.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -372,6 +409,13 @@
 
         </dt>
         <dd>Interact with Claude AI models via the Anthropic API</dd>
+
+        <dt>
+
+          <code><a href="claude_list_models.html">claude_list_models()</a></code>
+
+        </dt>
+        <dd>List Available Models from the Anthropic Claude API</dd>
 
         <dt>
 
@@ -400,13 +444,6 @@
 
         </dt>
         <dd>List Claude Batch Requests</dd>
-
-        <dt>
-
-          <code><a href="claude_list_models.html">claude_list_models()</a></code>
-
-        </dt>
-        <dd>List Available Models from the Anthropic Claude API</dd>
 
         <dt>
 
@@ -445,7 +482,7 @@
       </dl></div><div class="section level2">
       <h2 id="gemini-specific-functions">Gemini-Specific Functions<a class="anchor" aria-label="anchor" href="#gemini-specific-functions"></a></h2>
 
-      <div class="section-desc"><p>Functions specific to Google Gemini services, including chat, embedding, and file management operations.</p></div>
+      <div class="section-desc"><p>Functions for Google Gemini chat, embeddings, file management, and batch processing.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -465,6 +502,13 @@
 
         </dt>
         <dd>Generate Embeddings Using the Google Gemini API</dd>
+
+        <dt>
+
+          <code><a href="gemini_list_models.html">gemini_list_models()</a></code>
+
+        </dt>
+        <dd>List Available Models from the Google Gemini API</dd>
 
         <dt>
 
@@ -510,13 +554,6 @@
 
         <dt>
 
-          <code><a href="list_gemini_batches.html">list_gemini_batches()</a></code>
-
-        </dt>
-        <dd>List Recent Gemini Batch Operations</dd>
-
-        <dt>
-
           <code><a href="fetch_gemini_batch.html">fetch_gemini_batch()</a></code>
 
         </dt>
@@ -524,139 +561,14 @@
 
         <dt>
 
-          <code><a href="gemini_list_models.html">gemini_list_models()</a></code>
+          <code><a href="list_gemini_batches.html">list_gemini_batches()</a></code>
 
         </dt>
-        <dd>List Available Models from the Google Gemini API</dd>
-      </dl></div><div class="section level2">
-      <h2 id="ollama-specific-functions">Ollama-Specific Functions<a class="anchor" aria-label="anchor" href="#ollama-specific-functions"></a></h2>
-
-      <div class="section-desc"><p>Functions for engaging with Ollama services, including chat, embedding, and model management.</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="ollama_chat.html">ollama_chat()</a></code>
-
-        </dt>
-        <dd>Interact with local AI models via the Ollama API</dd>
-
-        <dt>
-
-          <code><a href="ollama_embedding.html">ollama_embedding()</a></code>
-
-        </dt>
-        <dd>Generate Embeddings Using Ollama API</dd>
-
-        <dt>
-
-          <code><a href="send_ollama_batch.html">send_ollama_batch()</a></code>
-
-        </dt>
-        <dd>Send a Batch of Messages to Ollama API</dd>
-
-        <dt>
-
-          <code><a href="ollama_download_model.html">ollama_download_model()</a></code>
-
-        </dt>
-        <dd>Download a model from the Ollama API</dd>
-
-        <dt>
-
-          <code><a href="ollama_delete_model.html">ollama_delete_model()</a></code>
-
-        </dt>
-        <dd>Delete a model from the Ollama API</dd>
-
-        <dt>
-
-          <code><a href="ollama_list_models.html">ollama_list_models()</a></code>
-
-        </dt>
-        <dd>Retrieve and return model information from the Ollama API</dd>
-      </dl></div><div class="section level2">
-      <h2 id="mistral-specific-functions">Mistral-Specific Functions<a class="anchor" aria-label="anchor" href="#mistral-specific-functions"></a></h2>
-
-      <div class="section-desc"><p>Functions for interacting with the Mistral API .</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="mistral_chat.html">mistral_chat()</a></code>
-
-        </dt>
-        <dd>Send LLMMessage to Mistral API</dd>
-
-        <dt>
-
-          <code><a href="mistral_embedding.html">mistral_embedding()</a></code>
-
-        </dt>
-        <dd>Generate Embeddings Using Mistral API</dd>
-
-        <dt>
-
-          <code><a href="send_mistral_batch.html">send_mistral_batch()</a></code>
-
-        </dt>
-        <dd>Send a Batch of Requests to the Mistral API</dd>
-
-        <dt>
-
-          <code><a href="check_mistral_batch.html">check_mistral_batch()</a></code>
-
-        </dt>
-        <dd>Check Batch Processing Status for Mistral Batch API</dd>
-
-        <dt>
-
-          <code><a href="fetch_mistral_batch.html">fetch_mistral_batch()</a></code>
-
-        </dt>
-        <dd>Fetch Results for an Mistral Batch</dd>
-
-        <dt>
-
-          <code><a href="list_mistral_batches.html">list_mistral_batches()</a></code>
-
-        </dt>
-        <dd>List Mistral Batch Requests</dd>
-
-        <dt>
-
-          <code><a href="mistral_list_models.html">mistral_list_models()</a></code>
-
-        </dt>
-        <dd>List Available Models from the Mistral API</dd>
-      </dl></div><div class="section level2">
-      <h2 id="perplexity-specific-functions">Perplexity-Specific Functions<a class="anchor" aria-label="anchor" href="#perplexity-specific-functions"></a></h2>
-
-      <div class="section-desc"><p>Functions for the Perplexity API</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="perplexity_chat.html">perplexity_chat()</a></code>
-
-        </dt>
-        <dd>Send LLM Messages to the Perplexity Chat API (All Features, No .json Option)</dd>
+        <dd>List Recent Gemini Batch Operations</dd>
       </dl></div><div class="section level2">
       <h2 id="groq-specific-functions">Groq-Specific Functions<a class="anchor" aria-label="anchor" href="#groq-specific-functions"></a></h2>
 
-      <div class="section-desc"><p>Functions for interacting with Groq services, such as chat and transcription.</p></div>
+      <div class="section-desc"><p>Functions for Groq chat, audio transcription, and batch processing.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -712,9 +624,310 @@
         </dt>
         <dd>List Groq Batch Requests</dd>
       </dl></div><div class="section level2">
-      <h2 id="azure-specific-functions">Azure-Specific Functions<a class="anchor" aria-label="anchor" href="#azure-specific-functions"></a></h2>
+      <h2 id="mistral-specific-functions">Mistral-Specific Functions<a class="anchor" aria-label="anchor" href="#mistral-specific-functions"></a></h2>
 
-      <div class="section-desc"><p>Functions for interacting with the Azure OpenAI API .</p></div>
+      <div class="section-desc"><p>Functions for Mistral chat, embeddings, and batch processing.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="mistral_chat.html">mistral_chat()</a></code>
+
+        </dt>
+        <dd>Send LLMMessage to Mistral API</dd>
+
+        <dt>
+
+          <code><a href="mistral_embedding.html">mistral_embedding()</a></code>
+
+        </dt>
+        <dd>Generate Embeddings Using Mistral API</dd>
+
+        <dt>
+
+          <code><a href="mistral_list_models.html">mistral_list_models()</a></code>
+
+        </dt>
+        <dd>List Available Models from the Mistral API</dd>
+
+        <dt>
+
+          <code><a href="send_mistral_batch.html">send_mistral_batch()</a></code>
+
+        </dt>
+        <dd>Send a Batch of Requests to the Mistral API</dd>
+
+        <dt>
+
+          <code><a href="check_mistral_batch.html">check_mistral_batch()</a></code>
+
+        </dt>
+        <dd>Check Batch Processing Status for Mistral Batch API</dd>
+
+        <dt>
+
+          <code><a href="fetch_mistral_batch.html">fetch_mistral_batch()</a></code>
+
+        </dt>
+        <dd>Fetch Results for an Mistral Batch</dd>
+
+        <dt>
+
+          <code><a href="list_mistral_batches.html">list_mistral_batches()</a></code>
+
+        </dt>
+        <dd>List Mistral Batch Requests</dd>
+      </dl></div><div class="section level2">
+      <h2 id="ollama-specific-functions">Ollama-Specific Functions<a class="anchor" aria-label="anchor" href="#ollama-specific-functions"></a></h2>
+
+      <div class="section-desc"><p>Functions for local Ollama models: chat, embeddings, and model management.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="ollama_chat.html">ollama_chat()</a></code>
+
+        </dt>
+        <dd>Interact with local AI models via the Ollama API</dd>
+
+        <dt>
+
+          <code><a href="ollama_embedding.html">ollama_embedding()</a></code>
+
+        </dt>
+        <dd>Generate Embeddings Using Ollama API</dd>
+
+        <dt>
+
+          <code><a href="ollama_list_models.html">ollama_list_models()</a></code>
+
+        </dt>
+        <dd>Retrieve and return model information from the Ollama API</dd>
+
+        <dt>
+
+          <code><a href="ollama_download_model.html">ollama_download_model()</a></code>
+
+        </dt>
+        <dd>Download a model from the Ollama API</dd>
+
+        <dt>
+
+          <code><a href="ollama_delete_model.html">ollama_delete_model()</a></code>
+
+        </dt>
+        <dd>Delete a model from the Ollama API</dd>
+
+        <dt>
+
+          <code><a href="send_ollama_batch.html">send_ollama_batch()</a></code>
+
+        </dt>
+        <dd>Send a Batch of Messages to Ollama API</dd>
+      </dl></div><div class="section level2">
+      <h2 id="perplexity-specific-functions">Perplexity-Specific Functions<a class="anchor" aria-label="anchor" href="#perplexity-specific-functions"></a></h2>
+
+      <div class="section-desc"><p>Functions for Perplexity AI chat and asynchronous deep research.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="perplexity_chat.html">perplexity_chat()</a></code>
+
+        </dt>
+        <dd>Send LLM Messages to the Perplexity Chat API</dd>
+
+        <dt>
+
+          <code><a href="perplexity_deep_research.html">perplexity_deep_research()</a></code>
+
+        </dt>
+        <dd>Submit a Deep Research Request to Perplexity</dd>
+
+        <dt>
+
+          <code><a href="perplexity_check_research.html">perplexity_check_research()</a></code>
+
+        </dt>
+        <dd>Check the Status of a Perplexity Deep Research Job</dd>
+
+        <dt>
+
+          <code><a href="perplexity_fetch_research.html">perplexity_fetch_research()</a></code>
+
+        </dt>
+        <dd>Fetch Results from a Completed Perplexity Deep Research Job</dd>
+      </dl></div><div class="section level2">
+      <h2 id="deepseek-specific-functions">DeepSeek-Specific Functions<a class="anchor" aria-label="anchor" href="#deepseek-specific-functions"></a></h2>
+
+      <div class="section-desc"><p>Functions for DeepSeek chat and reasoning models.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="deepseek_chat.html">deepseek_chat()</a></code>
+
+        </dt>
+        <dd>Send LLM Messages to the DeepSeek Chat API</dd>
+      </dl></div><div class="section level2">
+      <h2 id="voyageai-specific-functions">VoyageAI-Specific Functions<a class="anchor" aria-label="anchor" href="#voyageai-specific-functions"></a></h2>
+
+      <div class="section-desc"><p>Functions for Voyage AI embeddings and reranking.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="voyage_embedding.html">voyage_embedding()</a></code>
+
+        </dt>
+        <dd>Generate Embeddings Using Voyage AI API</dd>
+
+        <dt>
+
+          <code><a href="voyage_rerank.html">voyage_rerank()</a></code>
+
+        </dt>
+        <dd>Rerank Documents Using Voyage AI API</dd>
+      </dl></div><div class="section level2">
+      <h2 id="openrouter-specific-functions">OpenRouter-Specific Functions<a class="anchor" aria-label="anchor" href="#openrouter-specific-functions"></a></h2>
+
+      <div class="section-desc"><p>Functions for OpenRouter — access to 300+ models via a single API key.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="openrouter_chat.html">openrouter_chat()</a></code>
+
+        </dt>
+        <dd>Send LLM Messages to the OpenRouter Chat API</dd>
+
+        <dt>
+
+          <code><a href="openrouter_embedding.html">openrouter_embedding()</a></code>
+
+        </dt>
+        <dd>Generate Embeddings Using the OpenRouter API</dd>
+
+        <dt>
+
+          <code><a href="openrouter_list_models.html">openrouter_list_models()</a></code>
+
+        </dt>
+        <dd>List Available Models on OpenRouter</dd>
+
+        <dt>
+
+          <code><a href="openrouter_credits.html">openrouter_credits()</a></code>
+
+        </dt>
+        <dd>Get OpenRouter Credit Balance</dd>
+
+        <dt>
+
+          <code><a href="openrouter_generation.html">openrouter_generation()</a></code>
+
+        </dt>
+        <dd>Get Details for an OpenRouter Generation</dd>
+      </dl></div><div class="section level2">
+      <h2 id="llama-cpp-specific-functions">llama.cpp-Specific Functions<a class="anchor" aria-label="anchor" href="#llama-cpp-specific-functions"></a></h2>
+
+      <div class="section-desc"><p>Functions for local llama.cpp servers: chat, embeddings, reranking, model management, and server utilities.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="llamacpp_chat.html">llamacpp_chat()</a></code>
+
+        </dt>
+        <dd>Send LLM Messages to a llama.cpp Server</dd>
+
+        <dt>
+
+          <code><a href="llamacpp_embedding.html">llamacpp_embedding()</a></code>
+
+        </dt>
+        <dd>Generate Embeddings Using a llama.cpp Server</dd>
+
+        <dt>
+
+          <code><a href="llamacpp_rerank.html">llamacpp_rerank()</a></code>
+
+        </dt>
+        <dd>Rerank Documents Using a llama.cpp Server</dd>
+
+        <dt>
+
+          <code><a href="llamacpp_list_models.html">llamacpp_list_models()</a></code>
+
+        </dt>
+        <dd>List Models Loaded in the llama.cpp Server</dd>
+
+        <dt>
+
+          <code><a href="llamacpp_health.html">llamacpp_health()</a></code>
+
+        </dt>
+        <dd>Check Health of the llama.cpp Server</dd>
+
+        <dt>
+
+          <code><a href="llamacpp_list_local_models.html">llamacpp_list_local_models()</a></code>
+
+        </dt>
+        <dd>List Local GGUF Model Files</dd>
+
+        <dt>
+
+          <code><a href="llamacpp_download_model.html">llamacpp_download_model()</a></code>
+
+        </dt>
+        <dd>Download a GGUF Model from Hugging Face</dd>
+
+        <dt>
+
+          <code><a href="llamacpp_delete_model.html">llamacpp_delete_model()</a></code>
+
+        </dt>
+        <dd>Delete a Local GGUF Model File</dd>
+
+        <dt>
+
+          <code><a href="list_hf_gguf_files.html">list_hf_gguf_files()</a></code>
+
+        </dt>
+        <dd>List GGUF Files Available in a Hugging Face Repository</dd>
+      </dl></div><div class="section level2">
+      <h2 id="azure-openai-specific-functions">Azure OpenAI-Specific Functions<a class="anchor" aria-label="anchor" href="#azure-openai-specific-functions"></a></h2>
+
+      <div class="section-desc"><p>Functions for Azure-hosted OpenAI deployments.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -751,53 +964,21 @@
 
         <dt>
 
-          <code><a href="list_azure_openai_batches.html">list_azure_openai_batches()</a></code>
-
-        </dt>
-        <dd>List Azure OpenAI Batch Requests</dd>
-
-        <dt>
-
           <code><a href="fetch_azure_openai_batch.html">fetch_azure_openai_batch()</a></code>
 
         </dt>
         <dd>Fetch Results for an Azure OpenAI Batch</dd>
-      </dl></div><div class="section level2">
-      <h2 id="deepseek-specific-functions">DeepSeek-Specific Functions<a class="anchor" aria-label="anchor" href="#deepseek-specific-functions"></a></h2>
 
-      <div class="section-desc"><p>Functions for DeepSeek.</p></div>
+        <dt>
 
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="deepseek_chat.html">deepseek_chat()</a></code>
+          <code><a href="list_azure_openai_batches.html">list_azure_openai_batches()</a></code>
 
         </dt>
-        <dd>Send LLM Messages to the DeepSeek Chat API</dd>
-      </dl></div><div class="section level2">
-      <h2 id="voyageai-specific-functions">VoyageAI-Specific Functions<a class="anchor" aria-label="anchor" href="#voyageai-specific-functions"></a></h2>
-
-      <div class="section-desc"><p>Functions for VoyageAI Embeddings.</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="voyage_embedding.html">voyage_embedding()</a></code>
-
-        </dt>
-        <dd>Generate Embeddings Using Voyage AI API</dd>
+        <dd>List Azure OpenAI Batch Requests</dd>
       </dl></div><div class="section level2">
       <h2 id="ellmer-compatibility">Ellmer Compatibility<a class="anchor" aria-label="anchor" href="#ellmer-compatibility"></a></h2>
 
-      <div class="section-desc"><p>Functions to let tidyllm work with ellmer tools and chat objects</p></div>
+      <div class="section-desc"><p>Functions for using tidyllm together with ellmer tools and chat objects.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -827,7 +1008,7 @@
       </dl></div><div class="section level2">
       <h2 id="pdf-processing">PDF Processing<a class="anchor" aria-label="anchor" href="#pdf-processing"></a></h2>
 
-      <div class="section-desc"><p>Processing PDF documents, enabling page-by-page analysis.</p></div>
+      <div class="section-desc"><p>Helpers for batch processing multi-page PDF documents.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -843,7 +1024,7 @@
       </dl></div><div class="section level2">
       <h2 id="internals">Internals<a class="anchor" aria-label="anchor" href="#internals"></a></h2>
 
-      <div class="section-desc"><p>Main definition of the LLMMessage object at the core of most tidyllm workflows</p></div>
+      <div class="section-desc"><p>Core S7 class definitions at the heart of tidyllm.</p></div>
 
       <dl></dl></div><div class="section level2">
 

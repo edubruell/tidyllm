@@ -335,8 +335,9 @@ gemini_inject_files <- function(.gemini_contents,
 #' @param .max_tries Maximum retries to perform request (default: 3).
 #' @param .verbose Should additional information be shown after the API call.
 #' @param .stream Should the response be streamed (default: FALSE).
-#' @param .max_tool_rounds Integer specifying the maximum number of tool use iterations (default: 10). 
+#' @param .max_tool_rounds Integer specifying the maximum number of tool use iterations (default: 10).
 #'   Set to 1 for single-round tool use, or higher for multi-turn agentic loops.
+#' @param .thinking_budget Token budget for internal reasoning (default: NULL). Works with `gemini-2.5-flash` and `gemini-2.5-pro`.
 #'
 #' @return A new `LLMMessage` object containing the original messages plus the assistant's response.
 #'

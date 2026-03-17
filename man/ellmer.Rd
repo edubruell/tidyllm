@@ -11,8 +11,6 @@ ellmer(..., .called_from = NULL)
 
 \item{.called_from}{An internal argument specifying which action (e.g.,
 \code{chat}) the function is invoked from.}
-
-\item{.ellmer_chat}{An ellmer chat object to use as the backend.}
 }
 \value{
 A provider function that can be used with \code{tidyllm::chat()}.

@@ -18,8 +18,8 @@ openrouter_credits(
 \item{.max_tries}{Maximum retries (default: 3).}
 }
 \value{
-A named list with \code{total_credits} (USD purchased) and \code{total_usage}
-(USD consumed so far).
+A tibble with columns \code{total_credits} (USD purchased), \code{total_usage}
+(USD consumed so far), and \code{remaining} (USD remaining).
 }
 \description{
 Returns the total credits purchased and total usage so far for the current

@@ -32,6 +32,8 @@ deepseek_chat(
 
 \item{.model}{The identifier of the model to use (default: "deepseek-chat").}
 
+\item{.thinking}{If TRUE, switches to the \code{deepseek-reasoner} model and captures the reasoning trace (default: NULL).}
+
 \item{.max_tokens}{The maximum number of tokens that can be generated in the response (default: 2048).}
 
 \item{.temperature}{Controls the randomness in the model's response. Values between 0 and 2 are allowed (optional).}

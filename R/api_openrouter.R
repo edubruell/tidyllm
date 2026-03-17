@@ -56,6 +56,7 @@ method(extract_metadata, list(api_openrouter, class_list)) <- function(.api, .re
 #' @param .dry_run If TRUE, returns the request object without executing it (default: FALSE).
 #' @param .max_tries Maximum retries (default: 3).
 #' @param .max_tool_rounds Maximum number of tool use iterations (default: 10).
+#' @param .json_schema A JSON schema object for structured output (default: NULL).
 #'
 #' @return A new `LLMMessage` object containing the original messages plus the assistant's response.
 #'
@@ -69,6 +70,7 @@ openrouter_chat <- function(.llm,
                             .presence_penalty = NULL,
                             .stop = NULL,
                             .stream = FALSE,
+                            .json_schema = NULL,
                             .tools = NULL,
                             .tool_choice = NULL,
                             .provider = NULL,
@@ -91,6 +93,8 @@ openrouter_chat <- function(.llm,
     "Input .presence_penalty must be between -2 and 2 if provided" = is.null(.presence_penalty) | (.presence_penalty >= -2 & .presence_penalty <= 2),
     "Input .stop must be NULL, a string, or a list of strings" = is.null(.stop) | is.character(.stop) | is.list(.stop),
     "Input .stream must be logical" = is.logical(.stream),
+    "Input .json_schema must be NULL or a list or an ellmer type object" = is.null(.json_schema) | is.list(.json_schema) | is_ellmer_type(.json_schema),
+    "Streaming is not supported for requests with structured outputs" = is.null(.json_schema) || !isTRUE(.stream),
     "Input .tools must be NULL, a TOOL object, or a list of TOOL objects" = is.null(.tools) || S7_inherits(.tools, TOOL) || (is.list(.tools) && all(purrr::map_lgl(.tools, ~ S7_inherits(.x, TOOL)))),
     "Input .tool_choice must be NULL or one of 'none', 'auto', 'required'" = is.null(.tool_choice) | (.tool_choice %in% c("none", "auto", "required")),
     "Streaming is not supported for requests with tool calls" = is.null(.tools) || !isTRUE(.stream),
@@ -119,6 +123,20 @@ openrouter_chat <- function(.llm,
     NULL
   }
 
+  json <- FALSE
+  response_format <- NULL
+  if (!is.null(.json_schema)) {
+    json <- TRUE
+    if (requireNamespace("ellmer", quietly = TRUE) && S7_inherits(.json_schema, ellmer::TypeObject)) {
+      .json_schema <- to_schema(.json_schema)
+    }
+    schema_name <- attr(.json_schema, "name") %||% "tidyllm_schema"
+    response_format <- list(
+      type = "json_schema",
+      json_schema = list(name = schema_name, schema = .json_schema)
+    )
+  }
+
   request_body <- list(
     model = .model,
     messages = messages,
@@ -129,6 +147,7 @@ openrouter_chat <- function(.llm,
     presence_penalty = .presence_penalty,
     stop = .stop,
     stream = .stream,
+    response_format = response_format,
     tools = if (!is.null(tools_def)) tools_to_api(api_obj, tools_def) else NULL,
     tool_choice = .tool_choice,
     provider = .provider,
@@ -166,7 +185,7 @@ openrouter_chat <- function(.llm,
   add_message(.llm     = .llm,
               .role    = "assistant",
               .content = response$assistant_reply,
-              .json    = FALSE,
+              .json    = json,
               .meta    = response$meta)
 }
 
@@ -255,8 +274,8 @@ openrouter_list_models <- function(.api_url = "https://openrouter.ai",
 #' @param .timeout Request timeout in seconds (default: 60).
 #' @param .max_tries Maximum retries (default: 3).
 #'
-#' @return A named list with `total_credits` (USD purchased) and `total_usage`
-#'   (USD consumed so far).
+#' @return A tibble with columns `total_credits` (USD purchased), `total_usage`
+#'   (USD consumed so far), and `remaining` (USD remaining).
 #'
 #' @export
 openrouter_credits <- function(.api_url = "https://openrouter.ai",
@@ -275,7 +294,7 @@ openrouter_credits <- function(.api_url = "https://openrouter.ai",
     httr2::req_perform() |>
     httr2::resp_body_json()
 
-  list(
+  tibble::tibble(
     total_credits = response$data$total_credits,
     total_usage   = response$data$total_usage,
     remaining     = response$data$total_credits - response$data$total_usage
