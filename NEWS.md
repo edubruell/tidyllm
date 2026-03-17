@@ -25,7 +25,7 @@ OpenRouter also supports **provider fallback routing** — specify a list of fal
 
 ### llama.cpp (`llamacpp()`)
 
-Full support for local [llama.cpp](https://github.com/ggerganov/llama.cpp) servers, including chat, embeddings, reranking, and model management:
+Full support for local [llama.cpp](https://github.com/ggml-org/llama.cpp) servers, including chat, embeddings, reranking, and model management:
 
 ```r
 # Chat with a local llama.cpp server

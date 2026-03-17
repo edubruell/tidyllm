@@ -300,12 +300,35 @@
 </div>
 <div class="section level2">
 <h2 id="known-limitations">Known Limitations<a class="anchor" aria-label="anchor" href="#known-limitations"></a></h2>
-<ul><li><p><strong>Single image per message</strong>: <code>format_message()</code> supports only one image. Multi-image support not implemented.</p></li>
-<li><p><strong>No async/await</strong>: Intentional — batch APIs are tidyllm’s preferred async pattern.</p></li>
-<li><p><strong>Ollama default models require pull</strong>: Default chat (<code>qwen3.5:4b</code>) and embed (<code>qwen3-embedding:0.6b</code>) require <code>ollama pull qwen3.5:4b &amp;&amp; ollama pull qwen3-embedding:0.6b</code>. ## Planned Architecture Changes (0.5.0)</p></li>
-<li><p><strong><code>chat_completions()</code> provider</strong>: Rename current <code>api_openai.R</code> Chat Completions code to <code>api_chat_completions.R</code>; expose as a generic <code>chat_completions(.api_url, ...)</code> provider for any OAI-compatible endpoint. Becomes the shared base class for Mistral, Groq, DeepSeek, Perplexity, Azure, Ollama, etc.</p></li>
-<li><p><strong>New <code>api_openai.R</code></strong>: Rewrite <code><a href="reference/openai.html">openai()</a></code> to use the OpenAI Responses API (<code>POST /v1/responses</code>). External interface (<code><a href="reference/openai.html">openai()</a></code>) stays identical.</p></li>
-<li><p><strong>OpenAI deep_research()</strong>: After Responses API rewrite — <code>o3-deep-research</code> / <code>o4-mini-deep-research</code> with <code>background=true</code>; <code>tidyllm_research_job</code> + <code><a href="reference/check_job.html">check_job()</a></code>/<code><a href="reference/fetch_job.html">fetch_job()</a></code> already in place.</p></li>
+<ul><li>
+<strong>Single image per message</strong>: <code>format_message()</code> supports only one image. Multi-image support not implemented.</li>
+<li>
+<strong>No async/await</strong>: Intentional — batch APIs are tidyllm’s preferred async pattern.</li>
+<li>
+<strong>Ollama default models require pull</strong>: Default chat (<code>qwen3.5:4b</code>) and embed (<code>qwen3-embedding:0.6b</code>) require <code>ollama pull qwen3.5:4b &amp;&amp; ollama pull qwen3-embedding:0.6b</code>. ## Release Status</li>
+</ul><p><strong>Current release: 0.4.0</strong> (submitted to CRAN 2026-03-17)</p>
+<p>0.4.0 is complete. All workplan phases shipped: new providers (OpenRouter, llama.cpp), unified tool loop, verb dispatch refactor, deep research (Perplexity), thinking modes (Claude, Gemini, DeepSeek), full test infrastructure, and all documentation vignettes.</p>
+</div>
+<div class="section level2">
+<h2 id="planned-architecture-changes-050">Planned Architecture Changes (0.5.0)<a class="anchor" aria-label="anchor" href="#planned-architecture-changes-050"></a></h2>
+<ul><li>
+<strong><code>chat_completions()</code> provider</strong>: Rename current <code>api_openai.R</code> Chat Completions code to <code>api_chat_completions.R</code>; expose as a generic <code>chat_completions(.api_url, ...)</code> provider for any OAI-compatible endpoint. Becomes the shared base class for Mistral, Groq, DeepSeek, Perplexity, Azure, Ollama, etc.</li>
+<li>
+<strong>New <code>api_openai.R</code></strong>: Rewrite <code><a href="reference/openai.html">openai()</a></code> to use the OpenAI Responses API (<code>POST /v1/responses</code>). External interface (<code><a href="reference/openai.html">openai()</a></code>) stays identical.</li>
+<li>
+<strong>OpenAI deep_research()</strong>: After Responses API rewrite — <code>o3-deep-research</code> / <code>o4-mini-deep-research</code> with <code>background=true</code>; <code>tidyllm_research_job</code> + <code><a href="reference/check_job.html">check_job()</a></code>/<code><a href="reference/fetch_job.html">fetch_job()</a></code> already in place.</li>
+<li>
+<strong>Mixedbread provider</strong>: embedding + quantization, Wholembed v3 omnimodal.</li>
+<li>
+<strong>Mistral thinking</strong> (<code>.thinking</code> → <code>magistral-medium-latest</code>), <strong>Mistral OCR</strong> (<code>mistral_ocr()</code>).</li>
+<li>
+<strong>Ollama native structured output</strong>: override <code>to_api_format()</code> to use <code>format</code> field directly.</li>
+<li>
+<strong>Claude Citations API</strong>: <code>citations: {enabled: true}</code> on document content blocks.</li>
+<li>
+<strong>Multi-image per message</strong> support.</li>
+<li>
+<strong><code>provider_capabilities()</code> discovery function</strong>.</li>
 </ul></div>
 <div class="section level2">
 <h2 id="key-environment-variables">Key Environment Variables<a class="anchor" aria-label="anchor" href="#key-environment-variables"></a></h2>
@@ -347,7 +370,7 @@
 <div class="section level2">
 <h2 id="reference">Reference<a class="anchor" aria-label="anchor" href="#reference"></a></h2>
 <ul><li>
-<code>local_wip/notes/workplan_0.4.0.md</code> — Prioritised 0.4.0 workplan (6 phases: model defaults → testing infra → core quality → new providers → provider features → docs)</li>
+<code>local_wip/notes/workplan_0.4.0.md</code> — Completed 0.4.0 workplan (all phases done; see for full history)</li>
 <li>
 <code>local_wip/notes/TODOs.md</code> — Active feature TODOs and planned work</li>
 <li>
