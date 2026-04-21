@@ -82,6 +82,52 @@ llt_test("single tool call returns reply", {
   llt_expect_reply(result)
 })
 
+# ── Reasoning ─────────────────────────────────────────────────────────────────
+
+llt_test("reasoning with effort level returns reply and reasoning in metadata", {
+  result <- llm_message("Is 9.11 or 9.9 larger? Think carefully.") |>
+    chat(openrouter(
+      .model     = "anthropic/claude-sonnet-4-6",
+      .reasoning = list(effort = "low")
+    ))
+  llt_expect_s7(result, LLMMessage)
+  llt_expect_reply(result)
+  meta <- get_metadata(result)
+  llt_expect_true(!is.null(meta$api_specific[[1]]$reasoning_tokens) ||
+                  !is.null(meta$api_specific[[1]]$reasoning),
+                  "Should have reasoning tokens or text in metadata")
+})
+
+llt_test("reasoning with exclude=TRUE still returns answer without reasoning text", {
+  result <- llm_message("Is 9.11 or 9.9 larger?") |>
+    chat(openrouter(
+      .model     = "anthropic/claude-sonnet-4-6",
+      .reasoning = list(effort = "low", exclude = TRUE)
+    ))
+  llt_expect_s7(result, LLMMessage)
+  llt_expect_reply(result)
+  meta <- get_metadata(result)
+  llt_expect_true(is.null(meta$api_specific[[1]]$reasoning),
+                  "Reasoning text should be absent when exclude=TRUE")
+})
+
+llt_test("multi-turn with reasoning passes reasoning back correctly", {
+  first <- llm_message("My favourite colour is blue. Just say 'got it'.") |>
+    chat(openrouter(
+      .model     = "anthropic/claude-sonnet-4-6",
+      .reasoning = list(effort = "low")
+    ))
+  result <- first |>
+    llm_message("What is my favourite colour?") |>
+    chat(openrouter(
+      .model     = "anthropic/claude-sonnet-4-6",
+      .reasoning = list(effort = "low")
+    ))
+  llt_expect_reply(result)
+  reply <- get_reply(result)
+  llt_expect_true(grepl("blue", reply, ignore.case = TRUE), "Should remember favourite colour across reasoning turns")
+})
+
 # ── Credits ───────────────────────────────────────────────────────────────────
 
 llt_test("openrouter_credits returns balance info", {

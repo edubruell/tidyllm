@@ -1357,12 +1357,14 @@ chatgpt <- openai
 #' Chat Completions wire format (vLLM, LiteLLM, Together, Anyscale, etc.).
 #' Supports the `chat()` verb only.
 #'
+#' @param .llm An `LLMMessage` object containing the conversation history.
 #' @param .api_url Base URL for the API endpoint (required).
-#' @param .api_key_env_var Name of the environment variable holding the API key (required).
+#' @param .api_key_env_var Name of the environment variable holding the API key.
+#' @param .model The model identifier to use (default: `"default"`).
 #' @param ... Additional parameters passed to the underlying chat function.
 #' @param .called_from Internal routing argument; do not set manually.
 #'
-#' @return Result of the requested action.
+#' @return An updated `LLMMessage` object with the assistant's response appended.
 #' @export
 chat_completions_chat <- function(.llm,
                                   .api_url,

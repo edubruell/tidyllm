@@ -6,7 +6,7 @@
 \usage{
 groq_chat(
   .llm,
-  .model = "moonshotai/kimi-k2-instruct-0905",
+  .model = "openai/gpt-oss-120b",
   .max_tokens = 1024,
   .temperature = NULL,
   .top_p = NULL,

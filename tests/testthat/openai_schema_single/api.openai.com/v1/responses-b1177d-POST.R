@@ -1,0 +1,11 @@
+structure(list(method = "POST", url = "https://api.openai.com/v1/responses",
+    status_code = 200L, headers = structure(list(date = "Sun, 16 Nov 2025 13:05:38 GMT",
+        `content-type` = "application/json",
+        `openai-version` = "2020-10-01",
+        `x-request-id` = "req_mock_schema_single",
+        `cf-cache-status` = "DYNAMIC",
+        `strict-transport-security` = "max-age=31536000; includeSubDomains; preload",
+        `x-content-type-options` = "nosniff",
+        server = "cloudflare"), redact = character(0), class = "httr2_headers"),
+    body = charToRaw("{\n  \"id\": \"resp_mock_schema_single\",\n  \"object\": \"response\",\n  \"created_at\": 1763298337,\n  \"model\": \"gpt-5.4\",\n  \"output\": [\n    {\n      \"type\": \"message\",\n      \"role\": \"assistant\",\n      \"content\": [\n        {\n          \"type\": \"output_text\",\n          \"text\": \"{\\\"area\\\":42}\"\n        }\n      ]\n    }\n  ],\n  \"usage\": {\n    \"input_tokens\": 53,\n    \"output_tokens\": 18,\n    \"output_tokens_details\": {\n      \"reasoning_tokens\": 0\n    }\n  }\n}\n"),
+    cache = new.env(parent = emptyenv())), class = "httr2_response")

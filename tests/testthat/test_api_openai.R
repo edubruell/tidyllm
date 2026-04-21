@@ -15,25 +15,25 @@ test_that("openai function constructs a correct request and dry runs it", {
   # Check that the method is POST
   expect_equal(dry_run$method, "POST")
   
-  # Check that the URL path is correct
-  expect_true(grepl("/v1/chat/completions", dry_run$path))
-  
+  # Check that the URL path is correct (Responses API)
+  expect_true(grepl("/v1/responses", dry_run$path))
+
   # Inspect headers
   headers <- dry_run$headers
   expect_type(headers, "list")
-  
+
   # Check that the required headers are present
   expect_true("authorization" %in% names(headers))
   expect_true("content-type" %in% names(headers))
-  
+
   # Check that the content-type is JSON
   expect_equal(headers$`content-type`, "application/json")
-  
-  # Now check the body content to ensure the JSON is constructed as expected
+
+  # Now check the body content to ensure the Responses API JSON is constructed as expected:
+  # system message → top-level "instructions", user message → "input" array
   body_json <- request$body |> jsonlite::toJSON() |> as.character()
-  
-  expected_json <- "{\"data\":{\"model\":[\"gpt-5.1-chat-latest\"],\"messages\":[{\"role\":[\"system\"],\"content\":[\"You are a helpful assistant \"]},{\"role\":[\"user\"],\"content\":[\"Write a poem about a (stochastic) parrot \"]}]},\"type\":[\"json\"],\"content_type\":[\"application/json\"],\"params\":{\"auto_unbox\":[true],\"digits\":[22],\"null\":[\"null\"]}}"
-  # Check if the JSON matches the expected JSON
+
+  expected_json <- "{\"data\":{\"model\":[\"gpt-5.4\"],\"input\":[{\"role\":[\"user\"],\"content\":[\"Write a poem about a (stochastic) parrot \"]}],\"instructions\":[\"You are a helpful assistant \"]},\"type\":[\"json\"],\"content_type\":[\"application/json\"],\"params\":{\"auto_unbox\":[true],\"digits\":[22],\"null\":[\"null\"]}}"
   expect_equal(body_json, expected_json)
   
 })

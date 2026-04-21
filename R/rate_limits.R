@@ -26,7 +26,8 @@ track_rate_limit <- function(.api,.headers,.verbose) {
   api_long_name  <- .api@long_name
   tryCatch({
     rl <- ratelimit_from_header(.api, .headers)
-    
+    if (is.null(rl)) return(invisible(NULL))
+
     initialize_api_env(api)
     .tidyllm_rate_limit_env[[api]]$last_request        <- rl$this_request_time
     .tidyllm_rate_limit_env[[api]]$requests_remaining  <- rl$ratelimit_requests_remaining

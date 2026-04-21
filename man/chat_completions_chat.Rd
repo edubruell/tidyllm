@@ -16,16 +16,20 @@ chat_completions_chat(
 chat_completions(..., .called_from = NULL)
 }
 \arguments{
+\item{.llm}{An \code{LLMMessage} object containing the conversation history.}
+
 \item{.api_url}{Base URL for the API endpoint (required).}
 
-\item{.api_key_env_var}{Name of the environment variable holding the API key (required).}
+\item{.api_key_env_var}{Name of the environment variable holding the API key.}
+
+\item{.model}{The model identifier to use (default: \code{"default"}).}
 
 \item{...}{Additional parameters passed to the underlying chat function.}
 
 \item{.called_from}{Internal routing argument; do not set manually.}
 }
 \value{
-Result of the requested action.
+An updated \code{LLMMessage} object with the assistant's response appended.
 }
 \description{
 Provider function for interacting with any server that implements the OpenAI
