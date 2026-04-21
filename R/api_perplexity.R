@@ -2,7 +2,7 @@
 #' The Perplexity API provider class (inherits from OpenAI)
 #'
 #' @noRd
-api_perplexity <- new_class("Perplexity", api_openai)
+api_perplexity <- new_class("Perplexity", api_chat_completions)
 
 
 #' A function to get metadata from Perplexity responses

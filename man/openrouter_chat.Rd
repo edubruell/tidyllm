@@ -17,6 +17,7 @@ openrouter_chat(
   .json_schema = NULL,
   .tools = NULL,
   .tool_choice = NULL,
+  .reasoning = NULL,
   .provider = NULL,
   .route = NULL,
   .models = NULL,
@@ -53,6 +54,17 @@ Any model available on OpenRouter can be used.}
 \item{.tools}{Either a single TOOL object or a list of TOOL objects for tool calls.}
 
 \item{.tool_choice}{Tool-calling behavior: \code{"none"}, \code{"auto"}, or \code{"required"} (optional).}
+
+\item{.reasoning}{A named list controlling reasoning token behavior (optional). Supported
+fields vary by model family:
+\itemize{
+\item \code{effort}: one of \code{"xhigh"}, \code{"high"}, \code{"medium"}, \code{"low"}, \code{"minimal"}, \code{"none"} (OpenAI/Grok)
+\item \code{max_tokens}: integer specifying the reasoning token budget (Anthropic/Gemini/Alibaba)
+\item \code{exclude}: logical; if \code{TRUE}, reasoning is used internally but not returned in the response
+\item \code{enabled}: logical; if \code{TRUE}, activates reasoning at default settings
+}
+
+Example: \code{list(effort = "high")} or \code{list(max_tokens = 4000, exclude = FALSE)}.}
 
 \item{.provider}{A named list of OpenRouter provider preferences, e.g.
 \code{list(order = c("Anthropic", "AWS Bedrock"), allow_fallbacks = TRUE)} (optional).}

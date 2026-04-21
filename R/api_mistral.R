@@ -3,7 +3,7 @@
 #'Inherit most of the functionality from vanilla OpenAI API
 #'
 #' @noRd
-api_mistral <- new_class("Mistral", api_openai)
+api_mistral <- new_class("Mistral", api_chat_completions)
 
 
 #' Extract rate limit info from  Mistral API-Headers
@@ -213,7 +213,7 @@ mistral_chat <- function(.llm,
   # Get API key
   api_key <- get_api_key(api_obj, .dry_run)
   
-  # Use the prepare_openai_request helper to set up common parameters
+  # Use the prepare_mistral_request helper to set up common parameters
   request_data <- prepare_mistral_request(
     .llm = .llm,
     .api = api_obj,

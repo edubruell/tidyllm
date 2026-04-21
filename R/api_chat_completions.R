@@ -2,7 +2,7 @@
 #' The OpenAI API provider class
 #'
 #' @noRd
-api_openai <- new_class("OpenAI", APIProvider)
+api_chat_completions <- new_class("ChatCompletions", APIProvider)
 
 #' Convert LLMMessage to OpenAI API-Compatible Format
 #'
@@ -10,7 +10,7 @@ api_openai <- new_class("OpenAI", APIProvider)
 #' for the OpenAI's Chat Completions API.
 #'
 #' @noRd
-method(to_api_format, list(LLMMessage, api_openai)) <- function(.llm, 
+method(to_api_format, list(LLMMessage, api_chat_completions)) <- function(.llm, 
                                                                 .api,
                                                                 .no_system=FALSE) {
   openai_history <- if (.no_system) filter_roles(.llm@message_history, c("user", "assistant")) else .llm@message_history
@@ -35,7 +35,7 @@ method(to_api_format, list(LLMMessage, api_openai)) <- function(.llm,
 #' Extract rate limit info from  Openai API-Headers
 #'
 #' @noRd
-method(ratelimit_from_header, list(api_openai, new_S3_class("httr2_headers"))) <- function(.api, .headers) {
+method(ratelimit_from_header, list(api_chat_completions, new_S3_class("httr2_headers"))) <- function(.api, .headers) {
   request_time <- strptime(.headers["date"]$date, format="%a, %d %b %Y %H:%M:%S", tz="GMT")
   
   ratelimit_requests_reset_dt <- parse_duration_to_seconds(
@@ -61,7 +61,7 @@ method(ratelimit_from_header, list(api_openai, new_S3_class("httr2_headers"))) <
 #' A chat parsing method for Openai to extract the assitant response 
 #'
 #' @noRd
-method(parse_chat_response, list(api_openai,class_list)) <- function(.api,.content) {
+method(parse_chat_response, list(api_chat_completions,class_list)) <- function(.api,.content) {
     api_label <- .api@long_name 
       if("error" %in% names(.content)){
         sprintf("%s returned an Error:\nType: %s\nMessage: %s",
@@ -82,7 +82,7 @@ method(parse_chat_response, list(api_openai,class_list)) <- function(.api,.conte
 #' A function to get metadata from Openai chat responses
 #'
 #' @noRd
-method(extract_metadata, list(api_openai, class_list)) <- function(.api, .response) {
+method(extract_metadata, list(api_chat_completions, class_list)) <- function(.api, .response) {
   list(
     model             = .response$model,
     timestamp         = lubridate::as_datetime(.response$created),
@@ -101,7 +101,7 @@ method(extract_metadata, list(api_openai, class_list)) <- function(.api, .respon
 #' A function to get metadata from Openai streaming responses
 #'
 #' @noRd
-method(extract_metadata_stream, list(api_openai,class_list))<- function(.api,.stream_raw_data) {
+method(extract_metadata_stream, list(api_chat_completions,class_list))<- function(.api,.stream_raw_data) {
   final_stream_chunk <- .stream_raw_data |> 
     purrr::keep(~!is.null(.x$usage))|>
     unlist(recursive = FALSE)
@@ -124,7 +124,7 @@ method(extract_metadata_stream, list(api_openai,class_list))<- function(.api,.st
 #' A function to get loprobs from Openai responses
 #'
 #' @noRd
-method(parse_logprobs, list(api_openai, class_list)) <- function(.api, .input) {
+method(parse_logprobs, list(api_chat_completions, class_list)) <- function(.api, .input) {
 
   # Helper to parse each token's logprobs
   parse_token <- function(.token_data) {
@@ -169,7 +169,7 @@ method(parse_logprobs, list(api_openai, class_list)) <- function(.api, .input) {
 #' A method to run tool calls on OpenAI and create the expected response
 #'
 #' @noRd
-method(run_tool_calls, list(api_openai, class_list, class_list)) <- function(.api, .tool_calls, .tools) {
+method(run_tool_calls, list(api_chat_completions, class_list, class_list)) <- function(.api, .tool_calls, .tools) {
   # Helper function to parse JSON arguments safely
   parse_json_args <- function(.json_str) {
     tryCatch(jsonlite::fromJSON(.json_str, simplifyVector = TRUE), error = function(e) NULL)
@@ -220,13 +220,13 @@ method(run_tool_calls, list(api_openai, class_list, class_list)) <- function(.ap
 }
 
 
-method(has_tool_calls, list(api_openai, class_any)) <- function(.api, .response)
+method(has_tool_calls, list(api_chat_completions, class_any)) <- function(.api, .response)
   !is.null(.response$raw$content$choices[[1]]$message$tool_calls)
 
-method(extract_tool_calls, list(api_openai, class_any)) <- function(.api, .response)
+method(extract_tool_calls, list(api_chat_completions, class_any)) <- function(.api, .response)
   .response$raw$content$choices[[1]]$message$tool_calls
 
-method(append_tool_messages, list(api_openai, class_any, class_any, class_any)) <-
+method(append_tool_messages, list(api_chat_completions, class_any, class_any, class_any)) <-
   function(.api, .request_body, .response, .tool_results) {
     .request_body$messages <- .request_body$messages |> append(.tool_results)
     .request_body
@@ -237,7 +237,7 @@ method(append_tool_messages, list(api_openai, class_any, class_any, class_any)) 
 #' request
 #'
 #' @noRd
-method(handle_stream,list(api_openai,new_S3_class("httr2_response"))) <- function(.api,.stream_response) {
+method(handle_stream,list(api_chat_completions,new_S3_class("httr2_response"))) <- function(.api,.stream_response) {
   stream_text <- ""
   stream_data <- list()
   repeat {
@@ -308,7 +308,7 @@ method(handle_stream,list(api_openai,new_S3_class("httr2_response"))) <- functio
 #'
 #' @return A list containing prepared request parameters
 #' @noRd
-prepare_openai_request <- function(
+prepare_chat_completions_request <- function(
     .llm,
     .api,
     .model = "gpt-4.1",
@@ -422,8 +422,8 @@ prepare_openai_request <- function(
 #'
 #' @return A new `LLMMessage` object containing the original messages plus the assistant's response.
 #'
-#' @export
-openai_chat <- function(
+#' @noRd
+cc_chat <- function(
     .llm,
     .model = "gpt-5.1-chat-latest",
     .max_completion_tokens = NULL,
@@ -444,7 +444,8 @@ openai_chat <- function(
     .dry_run = FALSE,
     .compatible = FALSE,
     .api_path = "/v1/chat/completions",
-    .logprobs = NULL,       
+    .api_key_env_var = "OPENAI_API_KEY",
+    .logprobs = NULL,
     .top_logprobs = NULL,
     .tools = NULL,
     .tool_choice = NULL,
@@ -481,10 +482,10 @@ openai_chat <- function(
   ) |> validate_inputs()
   
   # Create API object
-  api_obj <- api_openai(
+  api_obj <- api_chat_completions(
     short_name = "openai",
     long_name = "OpenAI",
-    api_key_env_var = "OPENAI_API_KEY"
+    api_key_env_var = .api_key_env_var
   )
   
   # Get API key if not using a compatible API
@@ -495,7 +496,7 @@ openai_chat <- function(
   }
   
   # Use the helper function to prepare request components
-  request_data <- prepare_openai_request(
+  request_data <- prepare_chat_completions_request(
     .llm = .llm,
     .api = api_obj,
     .model = .model,
@@ -662,7 +663,7 @@ openai_embedding <- function(.input,
     }
     
     # Parse and update rate limit info from headers
-    track_rate_limit(api_openai(short_name = "openai",
+    track_rate_limit(api_chat_completions(short_name = "openai",
                                 long_name ="OpenAI"),
                      response_headers,.verbose)
     
@@ -750,7 +751,7 @@ send_openai_batch <- function(.llms,
     ".timeout must be integer-valued numeric" = is_integer_valued(.timeout)
   ) |> validate_inputs()
   
-  api_obj <- api_openai(short_name = "openai",
+  api_obj <- api_chat_completions(short_name = "openai",
                         long_name  = "OpenAI",
                         api_key_env_var = "OPENAI_API_KEY")
   
@@ -765,8 +766,8 @@ send_openai_batch <- function(.llms,
   request_lines <- lapply(seq_along(prepared_llms), function(i) { 
     custom_id <- names(prepared_llms)[i]
     
-    # Use prepare_openai_request to set up common request parameters
-    request_data <- prepare_openai_request(
+    # Use prepare_chat_completions_request to set up common request parameters
+    request_data <- prepare_chat_completions_request(
       .llm = prepared_llms[[i]],
       .api = api_obj,
       .model = .model,
@@ -1049,7 +1050,7 @@ fetch_openai_batch <- function(.llms,
   .json <- attr(.llms, "json")
   if (is.null(.json)) {.json <- FALSE}
   
-  api_obj <- api_openai(short_name = "openai",
+  api_obj <- api_chat_completions(short_name = "openai",
                         long_name  = "OpenAI",
                         api_key_env_var = "OPENAI_API_KEY")
   
@@ -1248,7 +1249,7 @@ openai_list_models <- function(.api_url = "https://api.openai.com",
                                .dry_run = FALSE,
                                .verbose = FALSE) {
   # Create an API object for OpenAI using the tidyllm helper
-  api_obj <- api_openai(short_name = "openai",
+  api_obj <- api_chat_completions(short_name = "openai",
                         long_name  = "OpenAI",
                         api_key_env_var = "OPENAI_API_KEY")
   
@@ -1321,7 +1322,7 @@ openai_list_models <- function(.api_url = "https://api.openai.com",
 #' @export
 openai <- create_provider_function(
   .name = "openai",
-  chat = openai_chat,
+  chat = cc_chat,
   embed = openai_embedding,
   send_batch = send_openai_batch,
   check_batch = check_openai_batch,
@@ -1348,3 +1349,40 @@ openai <- create_provider_function(
 #' @keywords internal
 #' @export
 chatgpt <- openai
+
+#' Chat with any OpenAI-Compatible API Endpoint
+#'
+#' @description
+#' Provider function for interacting with any server that implements the OpenAI
+#' Chat Completions wire format (vLLM, LiteLLM, Together, Anyscale, etc.).
+#' Supports the `chat()` verb only.
+#'
+#' @param .api_url Base URL for the API endpoint (required).
+#' @param .api_key_env_var Name of the environment variable holding the API key (required).
+#' @param ... Additional parameters passed to the underlying chat function.
+#' @param .called_from Internal routing argument; do not set manually.
+#'
+#' @return Result of the requested action.
+#' @export
+chat_completions_chat <- function(.llm,
+                                  .api_url,
+                                  .api_key_env_var = NULL,
+                                  .model = "default",
+                                  ...) {
+  use_auth <- !is.null(.api_key_env_var)
+  cc_chat(
+    .llm = .llm,
+    .model = .model,
+    .api_url = .api_url,
+    .api_key_env_var = .api_key_env_var %||% "OPENAI_API_KEY",
+    .compatible = !use_auth,
+    ...
+  )
+}
+
+#' @rdname chat_completions_chat
+#' @export
+chat_completions <- create_provider_function(
+  .name = "chat_completions",
+  chat = chat_completions_chat
+)

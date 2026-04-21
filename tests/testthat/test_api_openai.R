@@ -54,7 +54,7 @@ test_that("openai returns expected response", {
     
     llm <- llm_message("Hello, world")
     
-    result <- openai_chat(
+    result <- tidyllm:::cc_chat(
       .llm = llm,
       .stream = FALSE
     )

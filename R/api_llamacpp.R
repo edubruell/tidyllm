@@ -2,7 +2,7 @@
 #' The llama.cpp API provider class (inherits from OpenAI)
 #'
 #' @noRd
-api_llamacpp <- new_class("LlamaCpp", api_openai)
+api_llamacpp <- new_class("LlamaCpp", api_chat_completions)
 
 
 #' Extract metadata from llama.cpp chat responses

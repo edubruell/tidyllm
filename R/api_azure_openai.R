@@ -3,7 +3,7 @@
 #'Inherit most of the functionality from vanilla OpenAI API
 #'
 #' @noRd
-api_azure_openai <- new_class("Azure OpenAI", api_openai)
+api_azure_openai <- new_class("Azure OpenAI", api_chat_completions)
 
 
 #' Extract rate limit info from  Azure Openai API-Headers
@@ -160,7 +160,7 @@ azure_openai_chat <- function(
   
   # Use the helper function to prepare request components
   # We'll use .model parameter internally to pass the .deployment value
-  request_data <- prepare_openai_request(
+  request_data <- prepare_chat_completions_request(
     .llm = .llm,
     .api = api_obj,
     .model = .deployment,  # Use deployment as model internally
@@ -436,8 +436,8 @@ send_azure_openai_batch <- function(.llms,
   request_lines <- lapply(seq_along(prepared_llms), function(i) { 
     custom_id <- names(prepared_llms)[i]
     
-    # Use prepare_openai_request to set up common request parameters
-    request_data <- prepare_openai_request(
+    # Use prepare_chat_completions_request to set up common request parameters
+    request_data <- prepare_chat_completions_request(
       .llm = prepared_llms[[i]],
       .api = api_obj,
       .model = .deployment,  # Use deployment as model internally

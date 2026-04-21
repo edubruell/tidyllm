@@ -2,13 +2,14 @@
 #' The OpenRouter API provider class (inherits from OpenAI)
 #'
 #' @noRd
-api_openrouter <- new_class("OpenRouter", api_openai)
+api_openrouter <- new_class("OpenRouter", api_chat_completions)
 
 
 #' Extract metadata from OpenRouter chat responses
 #'
 #' @noRd
 method(extract_metadata, list(api_openrouter, class_list)) <- function(.api, .response) {
+  msg <- .response$choices[[1]]$message
   list(
     model             = .response$model,
     timestamp         = lubridate::as_datetime(.response$created),
@@ -17,12 +18,51 @@ method(extract_metadata, list(api_openrouter, class_list)) <- function(.api, .re
     total_tokens      = .response$usage$total_tokens,
     stream            = FALSE,
     specific_metadata = list(
-      id               = .response$id,
+      id                       = .response$id,
       native_tokens_prompt     = .response$usage$native_tokens_prompt,
       native_tokens_completion = .response$usage$native_tokens_completion,
-      cost             = .response$usage$cost
-    )
+      reasoning_tokens         = .response$usage$reasoning_tokens,
+      cost                     = .response$usage$cost,
+      reasoning                = msg$reasoning,
+      reasoning_details        = msg$reasoning_details
+    ) |> purrr::compact()
   )
+}
+
+
+#' Convert LLMMessage to OpenRouter API format (with reasoning pass-through)
+#'
+#' @noRd
+method(to_api_format, list(LLMMessage, api_openrouter)) <- function(.llm,
+                                                                    .api,
+                                                                    .no_system = FALSE) {
+  history <- if (.no_system) filter_roles(.llm@message_history, c("user", "assistant")) else .llm@message_history
+  lapply(history, function(m) {
+    formatted_message <- format_message(m)
+    msg <- if (!is.null(formatted_message$image)) {
+      list(
+        role = m$role,
+        content = list(
+          list(type = "text", text = formatted_message$content),
+          list(type = "image_url", image_url = list(
+            url = glue::glue("data:{formatted_message$image$media_type};base64,{formatted_message$image$data}")
+          ))
+        )
+      )
+    } else {
+      list(role = m$role, content = formatted_message$content)
+    }
+    if (m$role == "assistant") {
+      reasoning         <- m$meta$specific_metadata$reasoning
+      reasoning_details <- m$meta$specific_metadata$reasoning_details
+      if (!is.null(reasoning_details)) {
+        msg$reasoning_details <- reasoning_details
+      } else if (!is.null(reasoning)) {
+        msg$reasoning <- reasoning
+      }
+    }
+    msg
+  })
 }
 
 
@@ -44,6 +84,14 @@ method(extract_metadata, list(api_openrouter, class_list)) <- function(.api, .re
 #' @param .stream Logical; if TRUE, streams the response (default: FALSE).
 #' @param .tools Either a single TOOL object or a list of TOOL objects for tool calls.
 #' @param .tool_choice Tool-calling behavior: `"none"`, `"auto"`, or `"required"` (optional).
+#' @param .reasoning A named list controlling reasoning token behavior (optional). Supported
+#'   fields vary by model family:
+#'   - `effort`: one of `"xhigh"`, `"high"`, `"medium"`, `"low"`, `"minimal"`, `"none"` (OpenAI/Grok)
+#'   - `max_tokens`: integer specifying the reasoning token budget (Anthropic/Gemini/Alibaba)
+#'   - `exclude`: logical; if `TRUE`, reasoning is used internally but not returned in the response
+#'   - `enabled`: logical; if `TRUE`, activates reasoning at default settings
+#'
+#'   Example: `list(effort = "high")` or `list(max_tokens = 4000, exclude = FALSE)`.
 #' @param .provider A named list of OpenRouter provider preferences, e.g.
 #'   `list(order = c("Anthropic", "AWS Bedrock"), allow_fallbacks = TRUE)` (optional).
 #' @param .route OpenRouter routing strategy; `"fallback"` routes to the next model if
@@ -73,6 +121,7 @@ openrouter_chat <- function(.llm,
                             .json_schema = NULL,
                             .tools = NULL,
                             .tool_choice = NULL,
+                            .reasoning = NULL,
                             .provider = NULL,
                             .route = NULL,
                             .models = NULL,
@@ -98,6 +147,7 @@ openrouter_chat <- function(.llm,
     "Input .tools must be NULL, a TOOL object, or a list of TOOL objects" = is.null(.tools) || S7_inherits(.tools, TOOL) || (is.list(.tools) && all(purrr::map_lgl(.tools, ~ S7_inherits(.x, TOOL)))),
     "Input .tool_choice must be NULL or one of 'none', 'auto', 'required'" = is.null(.tool_choice) | (.tool_choice %in% c("none", "auto", "required")),
     "Streaming is not supported for requests with tool calls" = is.null(.tools) || !isTRUE(.stream),
+    "Input .reasoning must be NULL or a named list" = is.null(.reasoning) | is.list(.reasoning),
     "Input .provider must be NULL or a named list" = is.null(.provider) | is.list(.provider),
     "Input .route must be NULL or a character string" = is.null(.route) | is.character(.route),
     "Input .models must be NULL or a character vector" = is.null(.models) | is.character(.models),
@@ -150,6 +200,7 @@ openrouter_chat <- function(.llm,
     response_format = response_format,
     tools = if (!is.null(tools_def)) tools_to_api(api_obj, tools_def) else NULL,
     tool_choice = .tool_choice,
+    reasoning = .reasoning,
     provider = .provider,
     route = .route,
     models = if (!is.null(.models)) as.list(.models) else NULL

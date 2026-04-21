@@ -2,7 +2,7 @@
 #' The Deepseek API provider class (inherits from OpenAI)
 #'
 #' @noRd
-api_deepseek <- new_class("Deepseek", api_openai)
+api_deepseek <- new_class("Deepseek", api_chat_completions)
 
 
 #' A function to get metadata from Perplexity responses

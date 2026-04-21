@@ -2,7 +2,7 @@
 #' The Grow API provider class (inherits from OpenAI)
 #'
 #' @noRd
-api_groq <- new_class("Groq", api_openai)
+api_groq <- new_class("Groq", api_chat_completions)
 
 #' A function to get metadata from Openai responses
 #'
@@ -67,7 +67,7 @@ method(extract_metadata, list(api_groq,class_list))<- function(.api, .response) 
 #'
 #' @export
 groq_chat <- function(.llm,
-                 .model = "moonshotai/kimi-k2-instruct-0905",
+                 .model = "openai/gpt-oss-120b",
                  .max_tokens = 1024,
                  .temperature = NULL,
                  .top_p = NULL,
@@ -350,9 +350,9 @@ groq_list_models <- function(.api_url = "https://api.groq.com",
                              .dry_run = FALSE,
                              .verbose = FALSE) {
   # Create an API object for Groq using the tidyllm helper
-  api_obj <- api_openai(short_name = "groq",
-                        long_name  = "Groq",
-                        api_key_env_var = "GROQ_API_KEY")
+  api_obj <- api_chat_completions(short_name = "groq",
+                                  long_name  = "Groq",
+                                  api_key_env_var = "GROQ_API_KEY")
   
   # Retrieve the API key (will error if not set, unless in dry run mode)
   api_key <- get_api_key(api_obj, .dry_run)
