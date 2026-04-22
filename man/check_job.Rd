@@ -17,5 +17,5 @@ Status information; type depends on \code{.job} class.
 }
 \description{
 \code{check_job()} dispatches to \code{check_batch()} for batch objects or
-\code{perplexity_check_research()} for \code{tidyllm_research_job} objects.
+\code{perplexity_check_research()} / \code{openai_check_research()} for \code{tidyllm_research_job} objects.
 }

@@ -19,5 +19,5 @@ Fetched results; type depends on \code{.job} class.
 }
 \description{
 \code{fetch_job()} dispatches to \code{fetch_batch()} for batch objects or
-\code{perplexity_fetch_research()} for \code{tidyllm_research_job} objects.
+\code{perplexity_fetch_research()} / \code{openai_fetch_research()} for \code{tidyllm_research_job} objects.
 }

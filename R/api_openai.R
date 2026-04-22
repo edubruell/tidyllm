@@ -513,6 +513,191 @@ openai_file_search <- function(.vector_store_ids) {
   )
 }
 
+#' Submit a Deep Research Request to OpenAI
+#'
+#' Sends a research request to OpenAI using the deep research models
+#' (`o3-deep-research` or `o4-mini-deep-research`) via the Responses API with
+#' `background: true`. The model autonomously searches the web and synthesises
+#' a long-form answer, which can take 5-30 minutes.
+#'
+#' @param .llm An `LLMMessage` object containing the research question.
+#' @param .model The deep research model to use (default: `"o4-mini-deep-research"`).
+#' @param .background Logical; if `TRUE`, returns a `tidyllm_research_job` immediately
+#'   without waiting for completion (default: `FALSE`).
+#' @param .reasoning_effort Reasoning level for the model: `"low"`, `"medium"` (default),
+#'   or `"high"`.
+#' @param .json_schema A tidyllm schema for structured JSON output (optional).
+#' @param .max_output_tokens Maximum tokens to generate (default: `NULL` for model default).
+#' @param .timeout Seconds to wait in blocking mode before giving up (default: `1800`).
+#' @param .max_tries Maximum retries per HTTP request (default: `3`).
+#'
+#' @return If `.background = FALSE`, an updated `LLMMessage` with the research reply.
+#'   If `.background = TRUE`, a `tidyllm_research_job` for use with `check_job()`/`fetch_job()`.
+#' @export
+openai_deep_research <- function(.llm,
+                                 .model              = "o4-mini-deep-research",
+                                 .background         = FALSE,
+                                 .reasoning_effort   = "medium",
+                                 .json_schema        = NULL,
+                                 .max_output_tokens  = NULL,
+                                 .timeout            = 1800,
+                                 .max_tries          = 3) {
+  c(
+    "Input .llm must be an LLMMessage object"                    = S7_inherits(.llm, LLMMessage),
+    "Input .background must be logical"                          = is.logical(.background),
+    "Input .reasoning_effort must be 'low', 'medium', or 'high'" = .reasoning_effort %in% c("low", "medium", "high"),
+    "Input .json_schema must be NULL or a list"                  = is.null(.json_schema) | is.list(.json_schema),
+    "Input .timeout must be a positive number"                   = is.numeric(.timeout) && .timeout > 0,
+    "Input .max_tries must be a positive integer"                = is_integer_valued(.max_tries) && .max_tries > 0
+  ) |> validate_inputs()
+
+  api_key <- Sys.getenv("OPENAI_API_KEY")
+  c("OPENAI_API_KEY environment variable is not set" = nzchar(api_key)) |> validate_inputs()
+
+  api_obj <- api_openai(short_name = "openai", long_name = "OpenAI", api_key_env_var = "OPENAI_API_KEY")
+
+  request_data <- prepare_responses_request(
+    .llm               = .llm,
+    .api               = api_obj,
+    .model             = .model,
+    .max_output_tokens = .max_output_tokens,
+    .reasoning_effort  = .reasoning_effort,
+    .json_schema       = .json_schema
+  )
+
+  request_body <- request_data$request_body
+  request_body$background <- TRUE
+  request_body$tools <- list(list(type = "web_search_preview"))
+
+  response <- httr2::request("https://api.openai.com/v1/responses") |>
+    httr2::req_headers(
+      Authorization  = sprintf("Bearer %s", api_key),
+      `Content-Type` = "application/json"
+    ) |>
+    httr2::req_body_json(data = request_body) |>
+    httr2::req_retry(max_tries = .max_tries) |>
+    httr2::req_perform() |>
+    httr2::resp_body_json()
+
+  job_id <- response$id
+  job <- structure(
+    list(job_id = job_id, message = .llm, json = isTRUE(request_data$json), provider = "openai"),
+    class = "tidyllm_research_job"
+  )
+
+  if (.background) return(job)
+
+  openai_fetch_research(openai_poll_research(job, api_key, .timeout, .max_tries))
+}
+
+
+#' Poll an OpenAI Background Response Until Completion
+#'
+#' @noRd
+openai_poll_research <- function(.job, .api_key, .timeout = 1800, .max_tries = 3) {
+  start_time <- proc.time()[["elapsed"]]
+  repeat {
+    status_response <- httr2::request(
+      sprintf("https://api.openai.com/v1/responses/%s", .job$job_id)) |>
+      httr2::req_headers(Authorization = sprintf("Bearer %s", .api_key)) |>
+      httr2::req_retry(max_tries = .max_tries) |>
+      httr2::req_perform() |>
+      httr2::resp_body_json()
+
+    if (identical(status_response$status, "completed")) {
+      .job$response <- status_response
+      return(.job)
+    }
+
+    if (status_response$status %in% c("failed", "cancelled", "incomplete")) {
+      stop(sprintf("OpenAI deep research job '%s' ended with status: %s",
+                   .job$job_id, status_response$status))
+    }
+
+    elapsed <- proc.time()[["elapsed"]] - start_time
+    if (elapsed > .timeout) {
+      stop(sprintf("OpenAI deep research job '%s' did not complete within %d seconds.",
+                   .job$job_id, .timeout))
+    }
+    Sys.sleep(10)
+  }
+}
+
+
+#' Check the Status of an OpenAI Background Research Job
+#'
+#' Polls the status of an OpenAI background response created by
+#' `openai_deep_research(.background = TRUE)`.
+#'
+#' @param .job A `tidyllm_research_job` object returned by `openai_deep_research(.background = TRUE)`.
+#' @param .max_tries Maximum retries per HTTP request (default: `3`).
+#'
+#' @return An updated `tidyllm_research_job` with `$status` set. If completed, `$response`
+#'   is also populated and ready for `fetch_job()`.
+#' @export
+openai_check_research <- function(.job, .max_tries = 3) {
+  c(
+    "Input .job must be a tidyllm_research_job" = inherits(.job, "tidyllm_research_job"),
+    "Input .job must be an OpenAI research job"  = identical(.job$provider, "openai")
+  ) |> validate_inputs()
+
+  api_key <- Sys.getenv("OPENAI_API_KEY")
+  c("OPENAI_API_KEY environment variable is not set" = nzchar(api_key)) |> validate_inputs()
+
+  status_response <- httr2::request(
+    sprintf("https://api.openai.com/v1/responses/%s", .job$job_id)) |>
+    httr2::req_headers(Authorization = sprintf("Bearer %s", api_key)) |>
+    httr2::req_retry(max_tries = .max_tries) |>
+    httr2::req_perform() |>
+    httr2::resp_body_json()
+
+  .job$status <- status_response$status
+  if (identical(status_response$status, "completed")) {
+    .job$response <- status_response
+  }
+  .job
+}
+
+
+#' Fetch Results from a Completed OpenAI Deep Research Job
+#'
+#' Extracts the assistant reply from a completed `tidyllm_research_job` returned
+#' by `openai_deep_research(.background = TRUE)`.
+#'
+#' @param .job A `tidyllm_research_job` object. If not yet completed, polls once via
+#'   `openai_check_research()` and errors if still incomplete.
+#' @param .max_tries Maximum retries per HTTP request (default: `3`).
+#'
+#' @return An updated `LLMMessage` with the research reply appended.
+#' @export
+openai_fetch_research <- function(.job, .max_tries = 3) {
+  c(
+    "Input .job must be a tidyllm_research_job" = inherits(.job, "tidyllm_research_job"),
+    "Input .job must be an OpenAI research job"  = identical(.job$provider, "openai")
+  ) |> validate_inputs()
+
+  if (is.null(.job$response)) {
+    .job <- openai_check_research(.job, .max_tries)
+    if (!identical(.job$status, "completed")) {
+      stop(sprintf("OpenAI research job '%s' is not yet completed (status: %s).",
+                   .job$job_id, .job$status))
+    }
+  }
+
+  api_obj <- api_openai(short_name = "openai", long_name = "OpenAI", api_key_env_var = "OPENAI_API_KEY")
+  assistant_reply <- parse_chat_response(api_obj, .job$response)
+  meta            <- extract_metadata(api_obj, .job$response)
+
+  add_message(
+    .llm     = .job$message,
+    .role    = "assistant",
+    .content = assistant_reply,
+    .meta    = meta,
+    .json    = isTRUE(.job$json)
+  )
+}
+
+
 #' OpenAI Provider Function
 #'
 #' The `openai()` function acts as an interface for interacting with the OpenAI API
@@ -526,14 +711,15 @@ openai_file_search <- function(.vector_store_ids) {
 #' @return Result of the requested action.
 #' @export
 openai <- create_provider_function(
-  .name        = "openai",
-  chat         = openai_chat,
-  embed        = openai_embedding,
-  send_batch   = send_openai_batch,
-  check_batch  = check_openai_batch,
-  list_batches = list_openai_batches,
-  fetch_batch  = fetch_openai_batch,
-  list_models  = openai_list_models
+  .name          = "openai",
+  chat           = openai_chat,
+  embed          = openai_embedding,
+  send_batch     = send_openai_batch,
+  check_batch    = check_openai_batch,
+  list_batches   = list_openai_batches,
+  fetch_batch    = fetch_openai_batch,
+  list_models    = openai_list_models,
+  deep_research  = openai_deep_research
 )
 
 #' Alias for the OpenAI Provider Function

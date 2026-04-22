@@ -518,7 +518,7 @@ deep_research <- function(.llm, .provider, .background = FALSE, ...) {
 #' Check the Status of a Batch or Research Job
 #'
 #' `check_job()` dispatches to `check_batch()` for batch objects or
-#' `perplexity_check_research()` for `tidyllm_research_job` objects.
+#' `perplexity_check_research()` / `openai_check_research()` for `tidyllm_research_job` objects.
 #'
 #' @param .job An object with a `batch_id` attribute (from `send_batch()`) or
 #'   a `tidyllm_research_job` (from `deep_research(.background = TRUE)`).
@@ -529,7 +529,12 @@ check_job <- function(.job, ...) {
   if (!is.null(attr(.job, "batch_id"))) {
     check_batch(.job, ...)
   } else if (inherits(.job, "tidyllm_research_job")) {
-    perplexity_check_research(.job, ...)
+    provider <- .job$provider %||% "perplexity"
+    if (provider == "openai") {
+      openai_check_research(.job, ...)
+    } else {
+      perplexity_check_research(.job, ...)
+    }
   } else {
     stop("check_job() expects an object with a 'batch_id' attribute or a tidyllm_research_job.")
   }
@@ -539,7 +544,7 @@ check_job <- function(.job, ...) {
 #' Fetch Results from a Batch or Research Job
 #'
 #' `fetch_job()` dispatches to `fetch_batch()` for batch objects or
-#' `perplexity_fetch_research()` for `tidyllm_research_job` objects.
+#' `perplexity_fetch_research()` / `openai_fetch_research()` for `tidyllm_research_job` objects.
 #'
 #' @param .job An object with a `batch_id` attribute (from `send_batch()`) or
 #'   a `tidyllm_research_job` (from `deep_research(.background = TRUE)`).
@@ -551,7 +556,12 @@ fetch_job <- function(.job, .provider = NULL, ...) {
   if (!is.null(attr(.job, "batch_id"))) {
     fetch_batch(.job, .provider, ...)
   } else if (inherits(.job, "tidyllm_research_job")) {
-    perplexity_fetch_research(.job, ...)
+    provider <- .job$provider %||% "perplexity"
+    if (provider == "openai") {
+      openai_fetch_research(.job, ...)
+    } else {
+      perplexity_fetch_research(.job, ...)
+    }
   } else {
     stop("fetch_job() expects an object with a 'batch_id' attribute or a tidyllm_research_job.")
   }
