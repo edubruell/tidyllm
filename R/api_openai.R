@@ -29,9 +29,10 @@ method(to_api_format, list(LLMMessage, api_openai)) <- function(.llm, .api, .no_
         role = m$role,
         content = list(
           list(type = "input_text", text = formatted$content),
-          list(type = "input_image", image_url = list(
-            url = glue::glue("data:{formatted$image$media_type};base64,{formatted$image$data}")
-          ))
+          list(
+            type      = "input_image",
+            image_url = glue::glue("data:{formatted$image$media_type};base64,{formatted$image$data}")
+          )
         )
       )
     } else {

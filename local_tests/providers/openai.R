@@ -89,6 +89,28 @@ llt_test("parallel tool calls work", {
   llt_expect_reply(result)
 })
 
+# ── Vision ────────────────────────────────────────────────────────────────────
+
+llt_test("image input returns correct description", {
+  result <- llm_message("What breed is this dog? Answer in one word.",
+                        .imagefile = "local_tests/media/dog.jpg") |>
+    chat(openai(.model = "gpt-4o"))
+  reply <- get_reply(result)
+  llt_expect_reply(result)
+  llt_expect_true(grepl("labrador|retriever|golden", reply, ignore.case = TRUE),
+                  "Should identify dog breed")
+})
+
+llt_test("image in multi-turn conversation", {
+  r1 <- llm_message("What is in this image? One sentence.",
+                    .imagefile = "local_tests/media/hotdog.jpg") |>
+    chat(openai(.model = "gpt-4o"))
+  r2 <- r1 |>
+    llm_message("Would a dog enjoy eating what you described?") |>
+    chat(openai(.model = "gpt-4o"))
+  llt_expect_reply(r2)
+})
+
 # ── Built-in tools ────────────────────────────────────────────────────────────
 
 llt_test("openai_websearch() built-in tool returns reply with web content", {
