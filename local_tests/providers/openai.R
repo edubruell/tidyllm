@@ -130,6 +130,18 @@ llt_test(".reasoning_effort works with o4-mini", {
                   "Should have reasoning_tokens metadata")
 })
 
+# ── Stateful multi-turn ───────────────────────────────────────────────────────
+
+llt_test("stateful mode recalls context across turns", {
+  oai <- openai(.stateful = TRUE)
+  r1 <- llm_message("My secret code is ZEPHYR. Remember it.") |> chat(oai)
+  llt_expect_true(!is.null(get_metadata(r1)$api_specific[[1]]$response_id),
+                  "Should store response_id after first turn")
+  r2 <- r1 |> llm_message("Repeat my secret code exactly, nothing else.") |> chat(oai)
+  llt_expect_true(grepl("ZEPHYR", get_reply(r2), ignore.case = TRUE),
+                  "Should recall secret code via stateful context")
+})
+
 # ── Multi-turn ────────────────────────────────────────────────────────────────
 
 llt_test("multi-turn conversation works", {

@@ -104,6 +104,7 @@ method(extract_metadata, list(api_openai, class_list)) <- function(.api, .respon
     total_tokens      = (usage$input_tokens %||% 0L) + (usage$output_tokens %||% 0L),
     stream            = FALSE,
     specific_metadata = list(
+      response_id      = .response$id,
       reasoning_tokens = usage$output_tokens_details$reasoning_tokens
     )
   )
@@ -131,6 +132,7 @@ method(extract_metadata_stream, list(api_openai, class_list)) <- function(.api, 
     total_tokens      = (usage$input_tokens %||% 0L) + (usage$output_tokens %||% 0L),
     stream            = TRUE,
     specific_metadata = list(
+      response_id      = resp$id,
       reasoning_tokens = usage$output_tokens_details$reasoning_tokens
     )
   )
@@ -285,6 +287,12 @@ add_no_additional_properties <- function(schema) {
   schema
 }
 
+last_openai_response_id <- function(.llm) {
+  assistant_msgs <- Filter(function(m) m$role == "assistant", .llm@message_history)
+  if (length(assistant_msgs) == 0) return(NULL)
+  utils::tail(assistant_msgs, 1)[[1]]$meta$specific_metadata$response_id
+}
+
 prepare_responses_request <- function(.llm,
                                       .api,
                                       .model         = "gpt-5.4",
@@ -356,6 +364,11 @@ prepare_responses_request <- function(.llm,
 #' @param .tools A TOOL object or list of TOOL objects for function calling.
 #' @param .tool_choice Tool selection behavior: `"none"`, `"auto"`, or `"required"`.
 #' @param .max_tool_rounds Maximum tool-loop iterations (default: 10).
+#' @param .stateful If `TRUE`, use `previous_response_id` to pass conversation context
+#'   server-side instead of re-sending full message history. Falls back to full-history
+#'   mode silently when no previous response ID is available (first turn or prior turn
+#'   used a different provider), and with a warning if the server rejects the stored ID
+#'   (e.g., expired context). Default: `FALSE`.
 #'
 #' @return A new `LLMMessage` object with the assistant's response appended.
 #' @export
@@ -374,7 +387,8 @@ openai_chat <- function(
     .reasoning_effort    = NULL,
     .tools               = NULL,
     .tool_choice         = NULL,
-    .max_tool_rounds     = 10
+    .max_tool_rounds     = 10,
+    .stateful            = FALSE
 ) {
   c(
     "Input .llm must be an LLMMessage object"                                             = S7_inherits(.llm, LLMMessage),
@@ -392,6 +406,7 @@ openai_chat <- function(
     "Input .tools must be NULL, a TOOL object, or a list of TOOL objects"                 = is.null(.tools) || S7_inherits(.tools, TOOL) || (is.list(.tools) && all(purrr::map_lgl(.tools, ~ S7_inherits(.x, TOOL)))),
     "Input .tool_choice must be NULL or one of 'none', 'auto', 'required'"                = is.null(.tool_choice) || (.tool_choice %in% c("none", "auto", "required")),
     ".max_tool_rounds must be a positive integer"                                         = is_integer_valued(.max_tool_rounds) && .max_tool_rounds >= 1,
+    "Input .stateful must be logical"                                                     = is.logical(.stateful),
     "Streaming is not supported for requests with tool calls"                             = is.null(.tools) || !isTRUE(.stream)
   ) |> validate_inputs()
 
@@ -416,6 +431,36 @@ openai_chat <- function(
 
   request_body <- request_data$request_body
   json         <- request_data$json
+
+  # Stateful mode: replace full input[] with only the last user message
+  stateful_active <- FALSE
+  if (isTRUE(.stateful)) {
+    prev_id <- last_openai_response_id(.llm)
+    if (!is.null(prev_id)) {
+      user_msgs <- Filter(function(m) m$role == "user", .llm@message_history)
+      if (length(user_msgs) > 0) {
+        last_user <- utils::tail(user_msgs, 1)[[1]]
+        formatted <- format_message(last_user)
+        last_input <- if (!is.null(formatted$image)) {
+          list(list(
+            role    = "user",
+            content = list(
+              list(type = "input_text", text = formatted$content),
+              list(type = "input_image",
+                   image_url = glue::glue(
+                     "data:{formatted$image$media_type};base64,{formatted$image$data}"))
+            )
+          ))
+        } else {
+          list(list(role = "user", content = formatted$content))
+        }
+        request_body$input                <- last_input
+        request_body$instructions         <- NULL
+        request_body$previous_response_id <- prev_id
+        stateful_active <- TRUE
+      }
+    }
+  }
 
   # Tools
   tools_def <- if (!is.null(.tools)) {
@@ -442,7 +487,33 @@ openai_chat <- function(
 
   if (.dry_run) return(request)
 
-  response <- perform_chat_request(request, api_obj, .stream, .timeout, .max_tries)
+  response <- if (stateful_active) {
+    tryCatch(
+      perform_chat_request(request, api_obj, .stream, .timeout, .max_tries),
+      error = function(e) {
+        warning(
+          "OpenAI stateful mode failed (stored context may have expired); ",
+          "retrying with full message history. Original error: ", conditionMessage(e),
+          call. = FALSE
+        )
+        full_body <- request_data$request_body
+        if (!is.null(tools_def)) {
+          full_body$tools       <- tools_to_api(api_obj, tools_def)
+          full_body$tool_choice <- .tool_choice
+        }
+        if (isTRUE(.stream)) full_body$stream <- TRUE
+        fallback_req <- httr2::request("https://api.openai.com/v1/responses") |>
+          httr2::req_headers(
+            Authorization  = sprintf("Bearer %s", api_key),
+            `Content-Type` = "application/json"
+          ) |>
+          httr2::req_body_json(data = full_body)
+        perform_chat_request(fallback_req, api_obj, .stream, .timeout, .max_tries)
+      }
+    )
+  } else {
+    perform_chat_request(request, api_obj, .stream, .timeout, .max_tries)
+  }
 
   if (!isTRUE(.stream) && !is.null(tools_def)) {
     response <- process_tool_loop(

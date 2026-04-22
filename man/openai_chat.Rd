@@ -19,7 +19,8 @@ openai_chat(
   .reasoning_effort = NULL,
   .tools = NULL,
   .tool_choice = NULL,
-  .max_tool_rounds = 10
+  .max_tool_rounds = 10,
+  .stateful = FALSE
 )
 }
 \arguments{
@@ -52,6 +53,12 @@ openai_chat(
 \item{.tool_choice}{Tool selection behavior: \code{"none"}, \code{"auto"}, or \code{"required"}.}
 
 \item{.max_tool_rounds}{Maximum tool-loop iterations (default: 10).}
+
+\item{.stateful}{If \code{TRUE}, use \code{previous_response_id} to pass conversation context
+server-side instead of re-sending full message history. Falls back to full-history
+mode silently when no previous response ID is available (first turn or prior turn
+used a different provider), and with a warning if the server rejects the stored ID
+(e.g., expired context). Default: \code{FALSE}.}
 }
 \value{
 A new \code{LLMMessage} object with the assistant's response appended.
