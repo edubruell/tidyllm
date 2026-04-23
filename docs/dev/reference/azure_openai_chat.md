@@ -142,6 +142,11 @@ azure_openai_chat(
   A character string specifying the tool-calling behavior; valid values
   are "none", "auto", or "required".
 
+- .max_tool_rounds:
+
+  Integer specifying the maximum number of tool use iterations (default:
+  10).
+
 ## Value
 
 A new `LLMMessage` object containing the original messages plus the

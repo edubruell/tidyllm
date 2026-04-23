@@ -41,6 +41,11 @@ deepseek_chat(
 
   The identifier of the model to use (default: "deepseek-chat").
 
+- .thinking:
+
+  If TRUE, switches to the `deepseek-reasoner` model and captures the
+  reasoning trace (default: NULL).
+
 - .max_tokens:
 
   The maximum number of tokens that can be generated in the response

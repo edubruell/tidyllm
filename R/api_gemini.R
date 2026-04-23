@@ -13,35 +13,67 @@ api_gemini <- new_class("Google Gemini", APIProvider)
 #' one needed for the Google Gemini API.
 #'
 #' @noRd
-method(to_api_format, list(LLMMessage, api_gemini)) <- function(.llm, 
+method(to_api_format, list(LLMMessage, api_gemini)) <- function(.llm,
                                                                 .api) {
-  
-  # Filter to only include user and assistant messages
   gemini_history <- filter_roles(.llm@message_history, c("user", "assistant"))
-  
-  # Map each message to the expected Gemini format
+
   lapply(gemini_history, function(m) {
-    
     formatted_message <- format_message(m)
-    if (!is.null(formatted_message$image)) {
-      list(
-        role = ifelse(m$role == "user", "user", "model"), 
-        parts = list(
-          list(text = formatted_message$content),
-          list(
-            inline_data = list(
-              mime_type = formatted_message$image$media_type,
-              data      = formatted_message$image$data
-            )
-          )
-        )
-      )
-    } else {
-      list(
-        role = ifelse(m$role == "user", "user", "model"), 
-        parts = list(text = formatted_message$content)
-      )
+    parts <- list()
+
+    # Text part first
+    parts <- c(parts, list(list(text = formatted_message$content)))
+
+    # Inline images
+    for (img_struct in formatted_message$images) {
+      parts <- c(parts, list(list(
+        inline_data = list(mime_type = img_struct$media_type, data = img_struct$data)
+      )))
     }
+
+    # Inline audio (lazy-encode at format time)
+    if (!is.null(m$media)) {
+      for (med in m$media) {
+        if (S7_inherits(med, tidyllm_audio)) {
+          raw_bytes <- readBin(med@audiopath, what = "raw", n = file.size(med@audiopath))
+          b64 <- base64enc::base64encode(raw_bytes)
+          parts <- c(parts, list(list(
+            inline_data = list(mime_type = med@audiomime, data = b64)
+          )))
+        }
+        if (S7_inherits(med, tidyllm_video)) {
+          raw_bytes <- readBin(med@videopath, what = "raw", n = file.size(med@videopath))
+          b64 <- base64enc::base64encode(raw_bytes)
+          parts <- c(parts, list(list(
+            inline_data = list(mime_type = med@videomime, data = b64)
+          )))
+        }
+        if (S7_inherits(med, tidyllm_pdf) && !med@text_extract) {
+          raw_bytes <- readBin(med@pdfpath, what = "raw", n = file.size(med@pdfpath))
+          b64 <- base64enc::base64encode(raw_bytes)
+          parts <- c(parts, list(list(
+            inline_data = list(mime_type = "application/pdf", data = b64)
+          )))
+        } else if (S7_inherits(med, tidyllm_pdf) && med@text_extract) {
+          parts[[1]]$text <- paste0(parts[[1]]$text, " <pdf filename=\"", med@pdfname, "\">", med@pdftext, "</pdf>")
+        }
+      }
+    }
+
+    # Remote file references (tidyllm_file, provider == "gemini")
+    if (!is.null(m$files)) {
+      for (f in m$files) {
+        if (f@provider != "gemini") next
+        parts <- c(parts, list(list(
+          fileData = list(mimeType = f@mime_type, fileUri = f@uri)
+        )))
+      }
+    }
+
+    list(
+      role  = ifelse(m$role == "user", "user", "model"),
+      parts = parts
+    )
   })
 }
 
@@ -397,9 +429,23 @@ gemini_chat <- function(.llm,
   
   api_key <- get_api_key(api_obj,.dry_run)
   
-  # Prepare message contents (inject files if available)
-  gemini_contents <- to_api_format(.llm,api_obj) |>
-    gemini_inject_files(.fileid)
+  # Deprecated .fileid: convert to tidyllm_file objects and inject into last message
+  if (!is.null(.fileid)) {
+    lifecycle::deprecate_warn(
+      "0.5.0", "gemini(.fileid=)",
+      details = "Pass tidyllm_file objects via .files on llm_message() instead."
+    )
+    file_objs <- lapply(.fileid, function(id) {
+      meta <- tryCatch(gemini_file_metadata(id), error = function(e) NULL)
+      uri  <- if (!is.null(meta)) meta$uri[1] else ""
+      mime <- if (!is.null(meta)) meta$mime_type[1] else ""
+      tidyllm_file(id = id, provider = "gemini", mime_type = mime,
+                   filename = basename(id), uri = uri)
+    })
+    .llm <- inject_files_into_last_message(.llm, file_objs)
+  }
+
+  gemini_contents <- to_api_format(.llm, api_obj)
   
   # Handle JSON schema
   response_format <- NULL
@@ -530,6 +576,8 @@ gemini_chat <- function(.llm,
 #' @return A tibble containing metadata about the uploaded file, including its name, URI, and MIME type.
 #' @export
 gemini_upload_file <- function(.file_path) {
+  lifecycle::deprecate_warn("0.5.0", "gemini_upload_file()", "upload_file()",
+    details = "Use upload_file(gemini(), .path = ...) instead.")
   mime_type <- guess_mime_type(.file_path)
   num_bytes <- file.info(.file_path)$size
   display_name <- basename(.file_path)
@@ -590,7 +638,8 @@ gemini_upload_file <- function(.file_path) {
 #' @return A tibble containing metadata fields such as name, display name, MIME type, size, and URI.
 #' @export
 gemini_file_metadata <- function(.file_name) {
-  # Retrieve API key
+  lifecycle::deprecate_warn("0.5.0", "gemini_file_metadata()", "file_info()",
+    details = "Use file_info(gemini(), .file_id = ...) instead.")
   api_key <- Sys.getenv("GOOGLE_API_KEY")
   if (api_key == "") {
     stop("API key is not set. Please set it with: Sys.setenv(GOOGLE_API_KEY = 'YOUR-KEY-GOES-HERE')")
@@ -626,9 +675,10 @@ gemini_file_metadata <- function(.file_name) {
 #' @param .page_token A token for fetching the next page of results (default: NULL).
 #' @return A tibble containing metadata for each file, including fields such as name, display name, MIME type, and URI.
 #' @export
-gemini_list_files <- function(.page_size = 10, 
+gemini_list_files <- function(.page_size = 10,
                               .page_token = NULL) {
-  # Retrieve API key
+  lifecycle::deprecate_warn("0.5.0", "gemini_list_files()", "list_files()",
+    details = "Use list_files(gemini()) instead.")
   api_key <- Sys.getenv("GOOGLE_API_KEY")
   if (api_key == "") {
     stop("API key is not set. Please set it with: Sys.setenv(GOOGLE_API_KEY = 'YOUR-KEY-GOES-HERE')")
@@ -663,7 +713,8 @@ gemini_list_files <- function(.page_size = 10,
 #' @return Invisibly returns `NULL`. Prints a confirmation message upon successful deletion.
 #' @export
 gemini_delete_file <- function(.file_name) {
-  # Retrieve API key
+  lifecycle::deprecate_warn("0.5.0", "gemini_delete_file()", "delete_file()",
+    details = "Use delete_file(gemini(), .file_id = ...) instead.")
   api_key <- Sys.getenv("GOOGLE_API_KEY")
   if (api_key == "") {
     stop("API key is not set. Please set it with: Sys.setenv(GOOGLE_API_KEY = 'YOUR-KEY-GOES-HERE')")
@@ -1210,6 +1261,107 @@ gemini_list_models <- function(.timeout = 60,
 
 
 
+#' Upload a file to Gemini's Files API (verb dispatch wrapper, normalized columns)
+#' @noRd
+gemini_upload_file_verb <- function(.path, .called_from = NULL, ...) {
+  api_key <- Sys.getenv("GOOGLE_API_KEY")
+  if (api_key == "") stop("GOOGLE_API_KEY is not set.")
+  mime_type    <- guess_mime_type(.path)
+  num_bytes    <- file.info(.path)$size
+  display_name <- basename(.path)
+
+  init_response <- httr2::request("https://generativelanguage.googleapis.com/upload/v1beta/files") |>
+    httr2::req_url_query(key = api_key) |>
+    httr2::req_headers(
+      `X-Goog-Upload-Protocol` = "resumable",
+      `X-Goog-Upload-Command` = "start",
+      `X-Goog-Upload-Header-Content-Length` = as.character(num_bytes),
+      `X-Goog-Upload-Header-Content-Type` = mime_type,
+      `Content-Type` = "application/json"
+    ) |>
+    httr2::req_body_json(list(file = list(display_name = display_name))) |>
+    httr2::req_perform()
+
+  upload_url <- httr2::resp_header(init_response, "x-goog-upload-url")
+  if (is.null(upload_url)) stop("Failed to get Gemini upload URL.")
+
+  resp <- httr2::request(upload_url) |>
+    httr2::req_headers(
+      `Content-Length` = as.character(num_bytes),
+      `X-Goog-Upload-Offset` = "0",
+      `X-Goog-Upload-Command` = "upload, finalize"
+    ) |>
+    httr2::req_body_raw(readBin(.path, "raw", num_bytes)) |>
+    httr2::req_perform() |>
+    httr2::resp_body_json()
+
+  f <- resp$file
+  tidyllm_file(
+    id        = f$name,
+    provider  = "gemini",
+    mime_type = f$mimeType,
+    filename  = f$displayName,
+    uri       = f$uri
+  )
+}
+
+#' List files on Gemini's Files API (verb dispatch wrapper, normalized columns)
+#' @noRd
+gemini_list_files_verb <- function(.called_from = NULL, .page_size = 10, .page_token = NULL, ...) {
+  api_key <- Sys.getenv("GOOGLE_API_KEY")
+  if (api_key == "") stop("GOOGLE_API_KEY is not set.")
+  req <- httr2::request("https://generativelanguage.googleapis.com/v1beta/files") |>
+    httr2::req_url_query(key = api_key, pageSize = .page_size)
+  if (!is.null(.page_token)) req <- httr2::req_url_query(req, pageToken = .page_token)
+  resp <- req |> httr2::req_perform() |> httr2::resp_body_json()
+  if (is.null(resp$files)) return(tibble::tibble(file_id=character(), filename=character(),
+                                                  mime_type=character(), size_bytes=numeric(),
+                                                  created_at=character(), expires_at=character(), uri=character()))
+  purrr::map_dfr(resp$files, function(f) tibble::tibble(
+    file_id    = f$name %||% NA_character_,
+    filename   = f$displayName %||% NA_character_,
+    mime_type  = f$mimeType %||% NA_character_,
+    size_bytes = as.numeric(f$sizeBytes %||% NA),
+    created_at = f$createTime %||% NA_character_,
+    expires_at = f$expirationTime %||% NA_character_,
+    uri        = f$uri %||% NA_character_
+  ))
+}
+
+#' Get metadata for a Gemini file (verb dispatch wrapper, normalized columns)
+#' @noRd
+gemini_file_info_verb <- function(.file_id, .called_from = NULL, ...) {
+  api_key <- Sys.getenv("GOOGLE_API_KEY")
+  if (api_key == "") stop("GOOGLE_API_KEY is not set.")
+  resp <- httr2::request(paste0("https://generativelanguage.googleapis.com/v1beta/", .file_id)) |>
+    httr2::req_url_query(key = api_key) |>
+    httr2::req_perform() |>
+    httr2::resp_body_json()
+  tibble::tibble(
+    file_id    = resp$name %||% NA_character_,
+    filename   = resp$displayName %||% NA_character_,
+    mime_type  = resp$mimeType %||% NA_character_,
+    size_bytes = as.numeric(resp$sizeBytes %||% NA),
+    created_at = resp$createTime %||% NA_character_,
+    expires_at = resp$expirationTime %||% NA_character_,
+    uri        = resp$uri %||% NA_character_
+  )
+}
+
+#' Delete a file from Gemini's Files API (verb dispatch wrapper)
+#' @noRd
+gemini_delete_file_verb <- function(.file_id, .called_from = NULL, ...) {
+  api_key <- Sys.getenv("GOOGLE_API_KEY")
+  if (api_key == "") stop("GOOGLE_API_KEY is not set.")
+  httr2::request(paste0("https://generativelanguage.googleapis.com/v1beta/", .file_id)) |>
+    httr2::req_url_query(key = api_key) |>
+    httr2::req_method("DELETE") |>
+    httr2::req_perform()
+  message("File ", .file_id, " has been successfully deleted.")
+  invisible(NULL)
+}
+
+
 #' Google Gemini Provider Function
 #'
 #' The `gemini()` function acts as a provider interface for interacting with the Google Gemini API 
@@ -1238,5 +1390,9 @@ gemini <- create_provider_function(
   check_batch = check_gemini_batch,
   list_batches = list_gemini_batches,
   fetch_batch = fetch_gemini_batch,
-  list_models = gemini_list_models
+  list_models = gemini_list_models,
+  upload_file = gemini_upload_file_verb,
+  list_files  = gemini_list_files_verb,
+  file_info   = gemini_file_info_verb,
+  delete_file = gemini_delete_file_verb
 )

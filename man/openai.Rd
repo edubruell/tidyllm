@@ -24,9 +24,4 @@ The \code{openai()} function acts as an interface for interacting with the OpenA
 through main \code{tidyllm} verbs such as \code{chat()}, \code{embed()}, and
 \code{send_batch()}. It dynamically routes requests to OpenAI-specific functions
 like \code{openai_chat()} and \code{openai_embedding()} based on the context of the call.
-
-The \code{openai()} function acts as an interface for interacting with the OpenAI API
-through main \code{tidyllm} verbs such as \code{chat()}, \code{embed()}, and \code{send_batch()}.
-Chat uses the Responses API (\code{POST /v1/responses}); embeddings and batch operations
-use the Chat Completions / Embeddings endpoints unchanged.
 }

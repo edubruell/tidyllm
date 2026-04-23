@@ -29,7 +29,7 @@ test_that("mistral function constructs a correct request and dry runs it", {
   # Now check the body content to ensure the JSON is constructed as expected
   body_json <- request$body |> jsonlite::toJSON() |> as.character()
   
-  expected_json <- "{\"data\":{\"model\":[\"mistral-large-latest\"],\"messages\":[{\"role\":[\"user\"],\"content\":[\"Write a poem about the Gallic Rooster \"]}],\"safe_prompt\":[false],\"temperature\":[0.7],\"top_p\":[1]},\"type\":[\"json\"],\"content_type\":[\"application/json\"],\"params\":{\"auto_unbox\":[true],\"digits\":[22],\"null\":[\"null\"]}}"
+  expected_json <- "{\"data\":{\"model\":[\"mistral-large-latest\"],\"messages\":[{\"role\":[\"user\"],\"content\":[\"Write a poem about the Gallic Rooster\"]}],\"safe_prompt\":[false],\"temperature\":[0.7],\"top_p\":[1]},\"type\":[\"json\"],\"content_type\":[\"application/json\"],\"params\":{\"auto_unbox\":[true],\"digits\":[22],\"null\":[\"null\"]}}"
   # Check if the JSON matches the expected JSON
   expect_equal(body_json, expected_json)
 })

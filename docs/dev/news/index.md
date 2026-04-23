@@ -2,6 +2,8 @@
 
 ## tidyllm 0.4.0
 
+CRAN release: 2026-03-17
+
 ### New Providers
 
 #### OpenRouter (`openrouter()`)
@@ -31,7 +33,7 @@ of fallback providers to use if the primary model is unavailable.
 #### llama.cpp (`llamacpp()`)
 
 Full support for local
-[llama.cpp](https://github.com/ggerganov/llama.cpp) servers, including
+[llama.cpp](https://github.com/ggml-org/llama.cpp) servers, including
 chat, embeddings, reranking, and model management:
 
 ``` r

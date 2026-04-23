@@ -29,5 +29,5 @@ openrouter_credits(
 
 ## Value
 
-A named list with `total_credits` (USD purchased) and `total_usage` (USD
-consumed so far).
+A tibble with columns `total_credits` (USD purchased), `total_usage`
+(USD consumed so far), and `remaining` (USD remaining).

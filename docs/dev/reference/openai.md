@@ -16,21 +16,19 @@ based on the context of the call.
 
 ``` r
 openai(..., .called_from = NULL)
+
+openai(..., .called_from = NULL)
 ```
 
 ## Arguments
 
 - ...:
 
-  Parameters to be passed to the appropriate OpenAI-specific function,
-  such as model configuration, input text, or API-specific options.
+  Parameters passed to the appropriate OpenAI-specific function.
 
 - .called_from:
 
-  An internal argument that specifies which action (e.g., `chat`,
-  `embed`, `send_batch`) the function is being invoked from. This
-  argument is automatically managed and should not be modified by the
-  user.
+  Internal routing argument; do not set manually.
 
 ## Value
 
@@ -39,3 +37,5 @@ invoked (e.g., an updated `LLMMessage` object for
 [`chat()`](https://edubruell.github.io/tidyllm/dev/reference/chat.md),
 or a matrix for
 [`embed()`](https://edubruell.github.io/tidyllm/dev/reference/embed.md)).
+
+Result of the requested action.

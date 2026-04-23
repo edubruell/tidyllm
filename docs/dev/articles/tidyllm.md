@@ -55,7 +55,7 @@ Sys.setenv(OPENAI_API_KEY = "your-key-here")
 #### Running Local Models
 
 **tidyllm** supports local inference via [Ollama](https://ollama.com/)
-and [llama.cpp](https://github.com/ggerganov/llama.cpp). Both run
+and [llama.cpp](https://github.com/ggml-org/llama.cpp). Both run
 entirely on your machine; no API key required.
 
 For Ollama, install from [ollama.com](https://ollama.com/) and pull a
@@ -122,7 +122,11 @@ All API interactions follow the **verb + provider** pattern:
   [`list_models()`](https://edubruell.github.io/tidyllm/dev/reference/list_models.md),
   [`deep_research()`](https://edubruell.github.io/tidyllm/dev/reference/deep_research.md),
   [`check_job()`](https://edubruell.github.io/tidyllm/dev/reference/check_job.md),
-  [`fetch_job()`](https://edubruell.github.io/tidyllm/dev/reference/fetch_job.md)
+  [`fetch_job()`](https://edubruell.github.io/tidyllm/dev/reference/fetch_job.md),
+  [`upload_file()`](https://edubruell.github.io/tidyllm/dev/reference/upload_file.md),
+  [`list_files()`](https://edubruell.github.io/tidyllm/dev/reference/list_files.md),
+  [`file_info()`](https://edubruell.github.io/tidyllm/dev/reference/file_info.md),
+  [`delete_file()`](https://edubruell.github.io/tidyllm/dev/reference/delete_file.md)
 - **Providers** specify the API:
   [`openai()`](https://edubruell.github.io/tidyllm/dev/reference/openai.md),
   [`claude()`](https://edubruell.github.io/tidyllm/dev/reference/claude.md),
@@ -143,18 +147,21 @@ or
 [`claude_chat()`](https://edubruell.github.io/tidyllm/dev/reference/claude_chat.md)
 also work directly and expose the full range of parameters for each API.
 
-#### Sending Images to Models
+#### Sending Images and Media
 
-**tidyllm** supports sending images to multimodal models. Here we let a
-model describe a photo:
+Attach images, PDFs, audio, or video to a message using the `.media`
+argument of
+[`llm_message()`](https://edubruell.github.io/tidyllm/dev/reference/llm_message.md).
+Pass a single media object or a list of them:
 
 ![A photograph showing lake Garda and the scenery near Torbole,
 Italy.](picture.jpeg)
 
 ``` r
 
+# Single image
 image_description <- llm_message("Describe this picture. Can you guess where it was taken?",
-                                  .imagefile = "picture.jpeg") |>
+                                  .media = img("picture.jpeg")) |>
   chat(openai(.model = "gpt-5.4"))
 
 get_reply(image_description)
@@ -162,18 +169,57 @@ get_reply(image_description)
 
     ## [1] "The picture shows a beautiful landscape with a lake, mountains, and a town nestled below. The area appears lush and green, with agricultural fields visible. This scenery is reminiscent of northern Italy, particularly around Lake Garda."
 
+Send multiple images in one message by passing a list. The list can also
+mix different media types; for example, an image alongside a PDF or an
+audio file alongside a chart. Gemini handles mixed-type lists most
+flexibly:
+
+``` r
+
+llm_message("Compare these two charts.",
+            .media = list(img("chart_a.png"), img("chart_b.png"))) |>
+  chat(claude())
+
+# Mixed types in one message
+llm_message("Does this figure match the results described in the paper?",
+            .media = list(img("figure.png"), pdf_file("paper.pdf", pages = 1:5))) |>
+  chat(gemini())
+```
+
+For audio and video, use
+[`audio_file()`](https://edubruell.github.io/tidyllm/dev/reference/audio_file.md)
+and
+[`video_file()`](https://edubruell.github.io/tidyllm/dev/reference/video_file.md).
+Gemini supports both natively; llama.cpp supports audio with compatible
+models (Ultravox, Qwen2.5-Omni, Qwen3-Omni); OpenRouter routes audio and
+video to underlying models that accept them:
+
+``` r
+
+# Audio transcription or analysis
+llm_message("Transcribe and summarise this recording.",
+            .media = audio_file("interview.mp3")) |>
+  chat(gemini())
+
+# Video understanding
+llm_message("Describe what happens in this clip.",
+            .media = video_file("demo.mp4")) |>
+  chat(gemini())
+```
+
 #### Adding PDFs to Messages
 
-Pass a PDF path to the `.pdf` argument of
-[`llm_message()`](https://edubruell.github.io/tidyllm/dev/reference/llm_message.md).
-The package extracts the text and wraps it in `<pdf>` tags in the
-prompt:
+Pass a PDF to
+[`pdf_file()`](https://edubruell.github.io/tidyllm/dev/reference/pdf_file.md)
+and attach it with `.media`. By default the file is sent as binary to
+providers that support native PDF rendering (Claude, Gemini), and the
+text is automatically extracted as a fallback for others:
 
 ``` r
 
 llm_message("Summarize the key points from this document.",
-            .pdf = "die_verwandlung.pdf") |>
-  chat(openai(.model = "gpt-5.4"))
+            .media = pdf_file("die_verwandlung.pdf")) |>
+  chat(claude())
 ```
 
     ## Message History:
@@ -182,7 +228,7 @@ llm_message("Summarize the key points from this document.",
     ## --------------------------------------------------------------
     ## user:
     ## Summarize the key points from this document.
-    ##  -> Attached Media Files:  die_verwandlung.pdf 
+    ##  -> [pdf: die_verwandlung.pdf] 
     ## --------------------------------------------------------------
     ## assistant:
     ## The story centres on Gregor Samsa, who wakes up transformed
@@ -191,8 +237,38 @@ llm_message("Summarize the key points from this document.",
     ## relieved family looks ahead to a better future.
     ## --------------------------------------------------------------
 
-Specify page ranges with
-`.pdf = list(filename = "doc.pdf", start_page = 1, end_page = 5)`.
+Restrict to specific pages with the `pages` argument:
+
+``` r
+
+pdf_file("report.pdf", pages = 1:5)
+```
+
+For large or frequently reused documents, upload them once to the
+provider’s Files API and reference the handle in any message:
+
+``` r
+
+report <- upload_file(claude(), .path = "annual_report.pdf")
+
+llm_message("What are the key risks mentioned?", .files = report) |>
+  chat(claude())
+
+# Manage uploaded files
+list_files(claude())
+file_info(claude(), report)
+delete_file(claude(), report)
+```
+
+File management verbs are currently only supported by Claude, Gemini,
+and OpenAI. Files are uploaded to and stored on the specific provider’s
+servers; a file uploaded to Claude cannot be used with Gemini or OpenAI.
+Supported file types vary by provider: Gemini accepts a wide range
+including video, audio, images, PDFs, and various document formats.
+OpenAI accepts 80+ formats including Office documents (PPTX, DOCX,
+XLSX), source code, ZIP archives, and more. Claude focuses on PDFs and
+images. Always check the provider’s current documentation for the full
+list.
 
 #### Sending R Outputs to Models
 
@@ -202,17 +278,6 @@ to include the last plot:
 ``` r
 
 library(tidyverse)
-```
-
-    ## Warning: package 'ggplot2' was built under R version 4.4.3
-
-    ## Warning: package 'tibble' was built under R version 4.4.3
-
-    ## Warning: package 'purrr' was built under R version 4.4.3
-
-    ## Warning: package 'lubridate' was built under R version 4.4.3
-
-``` r
 
 ggplot(mtcars, aes(wt, mpg)) +
   geom_point() +
@@ -233,13 +298,20 @@ llm_message("Analyze this plot and data summary:",
   chat(claude())
 ```
 
+    ## Warning: The `.imagefile` argument of `llm_message()` is deprecated as of tidyllm 0.5.0.
+    ## ℹ Please use the `.media` argument instead.
+    ## ℹ Replace with .media = img(path).
+    ## This warning is displayed once per session.
+    ## Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
+    ## generated.
+
     ## Message History:
     ## system:
     ## You are a helpful assistant
     ## --------------------------------------------------------------
     ## user:
     ## Analyze this plot and data summary:
-    ##  -> Attached Media Files:  file1568f6c1b4565.png, RConsole.txt 
+    ##  -> [image: file1568f6c1b4565.png] [rconsole: RConsole.txt] 
     ## --------------------------------------------------------------
     ## assistant:
     ## The scatter plot shows a clear negative correlation between
@@ -673,17 +745,17 @@ because it provides complete metadata and is more reliable.
 
 | Provider | Strengths and tidyllm-specific features |
 |----|----|
-| [`openai()`](https://edubruell.github.io/tidyllm/dev/reference/openai.md) | Top benchmark performance across coding, math, and reasoning; `o3`/`o4` reasoning models |
+| [`openai()`](https://edubruell.github.io/tidyllm/dev/reference/openai.md) | Top benchmark performance across coding, math, and reasoning; `o3`/`o4` reasoning models; built-in web search via [`openai_websearch()`](https://edubruell.github.io/tidyllm/dev/reference/openai_websearch.md); Files API |
 | [`claude()`](https://edubruell.github.io/tidyllm/dev/reference/claude.md) | Best-in-class coding (SWE-bench leader); `.thinking = TRUE` for extended reasoning; Files API for document workflows; batch |
-| [`gemini()`](https://edubruell.github.io/tidyllm/dev/reference/gemini.md) | 1M-token context window; video and audio via file upload API; search grounding; `.thinking_budget` for reasoning; batch |
-| [`mistral()`](https://edubruell.github.io/tidyllm/dev/reference/mistral.md) | EU-hosted, GDPR-friendly; Magistral reasoning models; embeddings; batch |
+| [`gemini()`](https://edubruell.github.io/tidyllm/dev/reference/gemini.md) | 1M-token context window; native image, audio, and video via `.media`; search grounding; `.thinking_budget` for reasoning; Files API; batch |
+| [`mistral()`](https://edubruell.github.io/tidyllm/dev/reference/mistral.md) | EU-hosted, GDPR-friendly; Magistral reasoning models; Voxtral audio models (`.media = audio_file()`); embeddings; batch |
 | [`groq()`](https://edubruell.github.io/tidyllm/dev/reference/groq.md) | Fastest available inference (300-1200 tokens/s); [`groq_transcribe()`](https://edubruell.github.io/tidyllm/dev/reference/groq_transcribe.md) for Whisper audio; `.json_schema`; batch |
 | [`perplexity()`](https://edubruell.github.io/tidyllm/dev/reference/perplexity.md) | Real-time web search with citations in metadata; [`deep_research()`](https://edubruell.github.io/tidyllm/dev/reference/deep_research.md) for long-horizon research; search domain filter |
 | [`deepseek()`](https://edubruell.github.io/tidyllm/dev/reference/deepseek.md) | Top math and reasoning benchmarks at very low cost; `.thinking = TRUE` auto-switches to `deepseek-reasoner` |
 | [`voyage()`](https://edubruell.github.io/tidyllm/dev/reference/voyage.md) | State-of-the-art retrieval embeddings; [`voyage_rerank()`](https://edubruell.github.io/tidyllm/dev/reference/voyage_rerank.md); multimodal embeddings (text + images); `.output_dimension` |
-| [`openrouter()`](https://edubruell.github.io/tidyllm/dev/reference/openrouter.md) | 500+ models via one API key; automatic fallback routing; [`openrouter_credits()`](https://edubruell.github.io/tidyllm/dev/reference/openrouter_credits.md) and per-generation cost tracking |
+| [`openrouter()`](https://edubruell.github.io/tidyllm/dev/reference/openrouter.md) | 500+ models via one API key; audio and video support on Gemini, Qwen 3.6, and other multimodal routes; automatic fallback routing |
 | [`ollama()`](https://edubruell.github.io/tidyllm/dev/reference/ollama.md) | Local models with full data privacy; no API costs; [`ollama_download_model()`](https://edubruell.github.io/tidyllm/dev/reference/ollama_download_model.md) for model management |
-| [`llamacpp()`](https://edubruell.github.io/tidyllm/dev/reference/llamacpp.md) | Often the most performant local inference stack; BNF grammar constraints (`.grammar`); logprobs via [`get_logprobs()`](https://edubruell.github.io/tidyllm/dev/reference/get_logprobs.md); [`llamacpp_rerank()`](https://edubruell.github.io/tidyllm/dev/reference/llamacpp_rerank.md); model management |
+| [`llamacpp()`](https://edubruell.github.io/tidyllm/dev/reference/llamacpp.md) | Often the most performant local inference stack; audio input with Ultravox, Qwen2.5-Omni, Qwen3-Omni, and Gemma 4 models; BNF grammar constraints; logprobs; [`llamacpp_rerank()`](https://edubruell.github.io/tidyllm/dev/reference/llamacpp_rerank.md) |
 | [`azure_openai()`](https://edubruell.github.io/tidyllm/dev/reference/azure_openai.md) | Enterprise Azure deployments of OpenAI models; batch support |
 
 For getting started with local models (Ollama and llama.cpp), see the

@@ -39,16 +39,37 @@ method(to_api_format, list(LLMMessage, api_openrouter)) <- function(.llm,
   history <- if (.no_system) filter_roles(.llm@message_history, c("user", "assistant")) else .llm@message_history
   lapply(history, function(m) {
     formatted_message <- format_message(m)
-    msg <- if (!is.null(formatted_message$image)) {
-      list(
-        role = m$role,
-        content = list(
-          list(type = "text", text = formatted_message$content),
-          list(type = "image_url", image_url = list(
-            url = glue::glue("data:{formatted_message$image$media_type};base64,{formatted_message$image$data}")
-          ))
-        )
-      )
+    audio_media <- extract_media(m$media, "audio")
+    video_media <- extract_media(m$media, "video")
+    has_images        <- length(formatted_message$images) > 0
+    has_audio_or_video <- length(audio_media) > 0 || length(video_media) > 0
+    msg <- if (has_images || has_audio_or_video) {
+      content_parts <- list(list(type = "text", text = formatted_message$content))
+      for (img_struct in formatted_message$images) {
+        content_parts <- c(content_parts, list(list(
+          type = "image_url",
+          image_url = list(url = glue::glue("data:{img_struct$media_type};base64,{img_struct$data}"))
+        )))
+      }
+      for (med in audio_media) {
+        raw_bytes  <- readBin(med@audiopath, what = "raw", n = file.size(med@audiopath))
+        b64        <- base64enc::base64encode(raw_bytes)
+        audio_fmt  <- sub("audio/", "", med@audiomime)
+        if (audio_fmt == "mpeg") audio_fmt <- "mp3"
+        content_parts <- c(content_parts, list(list(
+          type = "input_audio",
+          input_audio = list(data = b64, format = audio_fmt)
+        )))
+      }
+      for (med in video_media) {
+        raw_bytes <- readBin(med@videopath, what = "raw", n = file.size(med@videopath))
+        b64       <- base64enc::base64encode(raw_bytes)
+        content_parts <- c(content_parts, list(list(
+          type = "video_url",
+          video_url = list(url = glue::glue("data:{med@videomime};base64,{b64}"))
+        )))
+      }
+      list(role = m$role, content = content_parts)
     } else {
       list(role = m$role, content = formatted_message$content)
     }

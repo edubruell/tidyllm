@@ -27,7 +27,7 @@ reference:
   - title: "Tidyllm Main Verbs"
     desc: >
       Core verbs for interacting with LLMs: sending messages, generating embeddings,
-      deep research, and managing batch requests.
+      deep research, managing batch requests, and working with provider-hosted files.
     contents:
       - chat
       - embed
@@ -39,6 +39,10 @@ reference:
       - fetch_batch
       - list_batches
       - list_models
+      - upload_file
+      - list_files
+      - file_info
+      - delete_file
 
   - title: "Schemata, Tools, and Media"
     desc: >
@@ -49,6 +53,9 @@ reference:
       - tidyllm_tool
       - ellmer_tool
       - img
+      - audio_file
+      - video_file
+      - pdf_file
 
   - title: "API Provider Functions"
     desc: >
@@ -67,14 +74,27 @@ reference:
       - openrouter
       - llamacpp
       - azure_openai
+      - chat_completions
+
+  - title: "ChatCompletions-Specific Functions"
+    desc: >
+      Functions for any OpenAI-compatible chat completions endpoint.
+    contents:
+      - chat_completions_chat
 
   - title: "OpenAI-Specific Functions"
     desc: >
-      Functions for OpenAI chat, batch processing, embeddings, and model listing.
+      Functions for OpenAI chat, batch processing, embeddings, model listing,
+      deep research, and built-in tools.
     contents:
       - openai_chat
       - openai_embedding
       - openai_list_models
+      - openai_deep_research
+      - openai_check_research
+      - openai_fetch_research
+      - openai_websearch
+      - openai_code_interpreter
       - send_openai_batch
       - check_openai_batch
       - fetch_openai_batch

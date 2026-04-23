@@ -6,6 +6,45 @@
 api_mistral <- new_class("Mistral", api_chat_completions)
 
 
+#' Convert LLMMessage to Mistral API format
+#'
+#' Mistral uses plain strings for image_url and input_audio (not nested objects).
+#'
+#' @noRd
+method(to_api_format, list(LLMMessage, api_mistral)) <- function(.llm,
+                                                                  .api,
+                                                                  .no_system = FALSE) {
+  history <- if (.no_system) filter_roles(.llm@message_history, c("user", "assistant")) else .llm@message_history
+  lapply(history, function(m) {
+    formatted_message <- format_message(m)
+    audio_media <- extract_media(m$media, "audio")
+    has_images  <- length(formatted_message$images) > 0
+    has_audio   <- length(audio_media) > 0
+
+    if (has_images || has_audio) {
+      content_parts <- list(list(type = "text", text = formatted_message$content))
+      for (img_struct in formatted_message$images) {
+        content_parts <- c(content_parts, list(list(
+          type      = "image_url",
+          image_url = glue::glue("data:{img_struct$media_type};base64,{img_struct$data}")
+        )))
+      }
+      for (med in audio_media) {
+        raw_bytes <- readBin(med@audiopath, what = "raw", n = file.size(med@audiopath))
+        b64       <- base64enc::base64encode(raw_bytes)
+        content_parts <- c(content_parts, list(list(
+          type        = "input_audio",
+          input_audio = b64
+        )))
+      }
+      list(role = m$role, content = content_parts)
+    } else {
+      list(role = m$role, content = formatted_message$content)
+    }
+  })
+}
+
+
 #' Extract rate limit info from  Mistral API-Headers
 #'
 #' @noRd
@@ -146,11 +185,12 @@ prepare_mistral_request <- function(
 #' @param .tool_choice A character string specifying the tool-calling behavior; valid values are "none", "auto", or "required".
 #' @param .json_schema A JSON schema object provided by tidyllm schema or ellmer schemata.
 #' @param .safe_prompt Whether to inject a safety prompt before all conversations (default: `FALSE`).
+#' @param .reasoning_effort Controls the reasoning effort for Magistral thinking models; one of `"low"`, `"medium"`, or `"high"` (default: `NULL`, meaning the API default).
 #' @param .timeout When should our connection time out in seconds (default: `120`).
 #' @param .verbose Should additional information be shown after the API call? (default: `FALSE`)
 #' @param .dry_run If `TRUE`, perform a dry run and return the request object (default: `FALSE`).
 #' @param .max_tries Maximum retries to peform request
-#' @param .max_tool_rounds Integer specifying the maximum number of tool use iterations (default: 10). 
+#' @param .max_tool_rounds Integer specifying the maximum number of tool use iterations (default: 10).
 #'   Set to 1 for single-round tool use, or higher for multi-turn agentic loops.
 #' @return Returns an updated `LLMMessage` object.
 #' @export
@@ -168,6 +208,7 @@ mistral_chat <- function(.llm,
                          .max_tokens = NULL,
                          .json_schema = NULL,
                          .safe_prompt = FALSE,
+                         .reasoning_effort = NULL,
                          .timeout = 120,
                          .max_tries = 3,
                          .dry_run = FALSE,
@@ -191,6 +232,7 @@ mistral_chat <- function(.llm,
     "Input .logit_bias must be a list or NULL" = is.null(.logit_bias) || is.list(.logit_bias),
     "Input .presence_penalty must be numeric or NULL" = is.null(.presence_penalty) || is.numeric(.presence_penalty),
     "Input .safe_prompt must be logical" = is.logical(.safe_prompt) && length(.safe_prompt) == 1,
+    "Input .reasoning_effort must be NULL or one of 'low', 'medium', 'high'" = is.null(.reasoning_effort) || (is.character(.reasoning_effort) && .reasoning_effort %in% c("low", "medium", "high")),
     "Input .max_tries must be integer-valued numeric" = is_integer_valued(.max_tries),
     "Input .timeout must be integer-valued numeric (seconds till timeout)" = is_integer_valued(.timeout),
     "Input .json_schema must be NULL or a list or an ellmer type object" = is.null(.json_schema) || is.list(.json_schema) || is_ellmer_type(.json_schema),
@@ -234,7 +276,11 @@ mistral_chat <- function(.llm,
   # Get components from the request data
   request_body <- request_data$request_body
   json <- request_data$json
-  
+
+  if (!is.null(.reasoning_effort)) {
+    request_body$reasoning_effort <- .reasoning_effort
+  }
+
   # Add streaming if requested
   if (.stream) {
     request_body$stream <- TRUE

@@ -23,7 +23,7 @@ voyage_embedding(
 }}
 
 \item{.model}{The embedding model identifier. For text-only: "voyage-3.5-lite" (default).
-For multimodal inputs: "voyage-multimodal-3" is used automatically.}
+For multimodal inputs: "voyage-multimodal-3.5" is used automatically.}
 
 \item{.output_dimension}{Optional integer to control output vector size (default: NULL, uses model default).}
 

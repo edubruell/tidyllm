@@ -4,6 +4,8 @@
 [`check_batch()`](https://edubruell.github.io/tidyllm/dev/reference/check_batch.md)
 for batch objects or
 [`perplexity_check_research()`](https://edubruell.github.io/tidyllm/dev/reference/perplexity_check_research.md)
+/
+[`openai_check_research()`](https://edubruell.github.io/tidyllm/dev/reference/openai_check_research.md)
 for `tidyllm_research_job` objects.
 
 ## Usage

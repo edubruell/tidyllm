@@ -17,7 +17,7 @@
 #'   - An `LLMMessage` object (all textual components will be embedded)
 #'   - A list containing a mix of character strings and `tidyllm_image` objects created with `img()`
 #' @param .model The embedding model identifier. For text-only: "voyage-3.5-lite" (default).
-#'               For multimodal inputs: "voyage-multimodal-3" is used automatically.
+#'               For multimodal inputs: "voyage-multimodal-3.5" is used automatically.
 #' @param .timeout Timeout for the API request in seconds (default: 120).
 #' @param .dry_run If TRUE, perform a dry run and return the request object without sending.
 #' @param .max_tries Maximum retry attempts for requests (default: 3).
@@ -74,7 +74,7 @@ voyage_embedding <- function(.input,
     
     if (has_images) {
       # Multimodal API
-      model_to_use <- if (grepl("multimodal", .model)) .model else "voyage-multimodal-3"
+      model_to_use <- if (grepl("multimodal", .model)) .model else "voyage-multimodal-3.5"
       
       # Prepare the multimodal content: ONE content wrapper per item
       inputs_list <- purrr::map(.input, function(item) {

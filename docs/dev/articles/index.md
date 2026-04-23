@@ -10,8 +10,8 @@
   tidyllm](https://edubruell.github.io/tidyllm/dev/articles/tidyllm_local_models.md):
 - [Using Tools with
   tidyllm](https://edubruell.github.io/tidyllm/dev/articles/tidyllm_tools.md):
-- [Video and Audio Data with the Gemini
-  API](https://edubruell.github.io/tidyllm/dev/articles/tidyllm_video.md):
+- [Working with Files and
+  Media](https://edubruell.github.io/tidyllm/dev/articles/tidyllm_video.md):
 - [Structured Question Answering from
   PDFs](https://edubruell.github.io/tidyllm/dev/articles/tidyllm-pdfquestions.md):
 - [Get

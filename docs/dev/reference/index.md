@@ -28,7 +28,8 @@ Functions for creating, managing, and retrieving messages and metadata.
 ## Tidyllm Main Verbs
 
 Core verbs for interacting with LLMs: sending messages, generating
-embeddings, deep research, and managing batch requests.
+embeddings, deep research, managing batch requests, and working with
+provider-hosted files.
 
 - [`chat()`](https://edubruell.github.io/tidyllm/dev/reference/chat.md)
   : Chat with a Language Model
@@ -50,6 +51,14 @@ embeddings, deep research, and managing batch requests.
   : List all Batch Requests on a Batch API
 - [`list_models()`](https://edubruell.github.io/tidyllm/dev/reference/list_models.md)
   : List Available Models for a Provider
+- [`upload_file()`](https://edubruell.github.io/tidyllm/dev/reference/upload_file.md)
+  : Upload a File to a Provider's File Store
+- [`list_files()`](https://edubruell.github.io/tidyllm/dev/reference/list_files.md)
+  : List Files Stored on a Provider
+- [`file_info()`](https://edubruell.github.io/tidyllm/dev/reference/file_info.md)
+  : Get Metadata for a File Stored on a Provider
+- [`delete_file()`](https://edubruell.github.io/tidyllm/dev/reference/delete_file.md)
+  : Delete a File from a Provider's File Store
 
 ## Schemata, Tools, and Media
 
@@ -70,6 +79,12 @@ Functions for JSON schemas, tool definitions, and media attachments.
   : Convert an ellmer Tool to a tidyllm TOOL
 - [`img()`](https://edubruell.github.io/tidyllm/dev/reference/img.md) :
   Create an Image Object
+- [`audio_file()`](https://edubruell.github.io/tidyllm/dev/reference/audio_file.md)
+  : Create an Audio Object
+- [`video_file()`](https://edubruell.github.io/tidyllm/dev/reference/video_file.md)
+  : Create a Video Object
+- [`pdf_file()`](https://edubruell.github.io/tidyllm/dev/reference/pdf_file.md)
+  : Create a PDF Object
 
 ## API Provider Functions
 
@@ -104,18 +119,39 @@ etc.
   : llama.cpp Provider Function
 - [`azure_openai()`](https://edubruell.github.io/tidyllm/dev/reference/azure_openai.md)
   : Azure OpenAI Endpoint Provider Function
+- [`chat_completions_chat()`](https://edubruell.github.io/tidyllm/dev/reference/chat_completions_chat.md)
+  [`chat_completions()`](https://edubruell.github.io/tidyllm/dev/reference/chat_completions_chat.md)
+  : Chat with any OpenAI-Compatible API Endpoint
+
+## ChatCompletions-Specific Functions
+
+Functions for any OpenAI-compatible chat completions endpoint.
+
+- [`chat_completions_chat()`](https://edubruell.github.io/tidyllm/dev/reference/chat_completions_chat.md)
+  [`chat_completions()`](https://edubruell.github.io/tidyllm/dev/reference/chat_completions_chat.md)
+  : Chat with any OpenAI-Compatible API Endpoint
 
 ## OpenAI-Specific Functions
 
-Functions for OpenAI chat, batch processing, embeddings, and model
-listing.
+Functions for OpenAI chat, batch processing, embeddings, model listing,
+deep research, and built-in tools.
 
 - [`openai_chat()`](https://edubruell.github.io/tidyllm/dev/reference/openai_chat.md)
-  : Send LLM Messages to the OpenAI Chat Completions API
+  : Send LLM Messages to the OpenAI Responses API
 - [`openai_embedding()`](https://edubruell.github.io/tidyllm/dev/reference/openai_embedding.md)
   : Generate Embeddings Using OpenAI API
 - [`openai_list_models()`](https://edubruell.github.io/tidyllm/dev/reference/openai_list_models.md)
   : List Available Models from the OpenAI API
+- [`openai_deep_research()`](https://edubruell.github.io/tidyllm/dev/reference/openai_deep_research.md)
+  : Submit a Deep Research Request to OpenAI
+- [`openai_check_research()`](https://edubruell.github.io/tidyllm/dev/reference/openai_check_research.md)
+  : Check the Status of an OpenAI Background Research Job
+- [`openai_fetch_research()`](https://edubruell.github.io/tidyllm/dev/reference/openai_fetch_research.md)
+  : Fetch Results from a Completed OpenAI Deep Research Job
+- [`openai_websearch()`](https://edubruell.github.io/tidyllm/dev/reference/openai_websearch.md)
+  : OpenAI built-in web search tool (server-executed)
+- [`openai_code_interpreter()`](https://edubruell.github.io/tidyllm/dev/reference/openai_code_interpreter.md)
+  : OpenAI built-in code interpreter tool (server-executed)
 - [`send_openai_batch()`](https://edubruell.github.io/tidyllm/dev/reference/send_openai_batch.md)
   : Send a Batch of Messages to OpenAI Batch API
 - [`check_openai_batch()`](https://edubruell.github.io/tidyllm/dev/reference/check_openai_batch.md)

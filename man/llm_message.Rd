@@ -9,6 +9,8 @@ llm_message(
   .prompt = NULL,
   .role = "user",
   .system_prompt = "You are a helpful assistant",
+  .media = NULL,
+  .files = NULL,
   .imagefile = NULL,
   .pdf = NULL,
   .textfile = NULL,
@@ -25,9 +27,13 @@ llm_message(
 
 \item{.system_prompt}{Default system prompt if a new LLMMessage needs to be created.}
 
-\item{.imagefile}{Path to an image file to be attached (optional).}
+\item{.media}{An inline media object or a list of them. Accepted types: \code{img()}, \code{audio_file()}, \code{video_file()}, \code{pdf_file()}.}
 
-\item{.pdf}{Path to a PDF file to be attached (optional). Can be a character vector of length one (file path), or a list with \code{filename}, \code{start_page}, and \code{end_page}.}
+\item{.files}{A \code{tidyllm_file} object or list of them returned by \code{upload_file()}. These are remote file references stored on a provider's server.}
+
+\item{.imagefile}{Path to an image file to be attached (optional). Deprecated; use \code{.media = img(path)} instead.}
+
+\item{.pdf}{Path to a PDF file to be attached (optional). Deprecated; use \code{.media = pdf_file(path)} instead.}
 
 \item{.textfile}{Path to a text file to be read and attached (optional).}
 

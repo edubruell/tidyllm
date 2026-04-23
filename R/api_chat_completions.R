@@ -10,22 +10,35 @@ api_chat_completions <- new_class("ChatCompletions", APIProvider)
 #' for the OpenAI's Chat Completions API.
 #'
 #' @noRd
-method(to_api_format, list(LLMMessage, api_chat_completions)) <- function(.llm, 
+method(to_api_format, list(LLMMessage, api_chat_completions)) <- function(.llm,
                                                                 .api,
                                                                 .no_system=FALSE) {
   openai_history <- if (.no_system) filter_roles(.llm@message_history, c("user", "assistant")) else .llm@message_history
   lapply(openai_history, function(m) {
     formatted_message <- format_message(m)
-    if (!is.null(formatted_message$image)) {
-      list(
-        role = m$role,
-        content = list(
-          list(type = "text", text = formatted_message$content),
-          list(type = "image_url", image_url = list(
-            url = glue::glue("data:{formatted_message$image$media_type};base64,{formatted_message$image$data}")
-          ))
-        )
-      )
+    audio_media <- extract_media(m$media, "audio")
+    has_images  <- length(formatted_message$images) > 0
+    has_audio   <- length(audio_media) > 0
+
+    if (has_images || has_audio) {
+      content_parts <- list(list(type = "text", text = formatted_message$content))
+      for (img_struct in formatted_message$images) {
+        content_parts <- c(content_parts, list(list(
+          type = "image_url",
+          image_url = list(url = glue::glue("data:{img_struct$media_type};base64,{img_struct$data}"))
+        )))
+      }
+      for (med in audio_media) {
+        raw_bytes  <- readBin(med@audiopath, what = "raw", n = file.size(med@audiopath))
+        b64        <- base64enc::base64encode(raw_bytes)
+        audio_fmt  <- sub("audio/", "", med@audiomime)
+        if (audio_fmt == "mpeg") audio_fmt <- "mp3"
+        content_parts <- c(content_parts, list(list(
+          type = "input_audio",
+          input_audio = list(data = b64, format = audio_fmt)
+        )))
+      }
+      list(role = m$role, content = content_parts)
     } else {
       list(role = m$role, content = formatted_message$content)
     }

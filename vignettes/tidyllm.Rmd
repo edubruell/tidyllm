@@ -100,22 +100,23 @@ c("A famous landmark in Paris is the Eiffel Tower.")
 
 All API interactions follow the **verb + provider** pattern:
 
-- **Verbs** define the action: `chat()`, `embed()`, `send_batch()`, `check_batch()`, `fetch_batch()`, `list_batches()`, `list_models()`, `deep_research()`, `check_job()`, `fetch_job()`
+- **Verbs** define the action: `chat()`, `embed()`, `send_batch()`, `check_batch()`, `fetch_batch()`, `list_batches()`, `list_models()`, `deep_research()`, `check_job()`, `fetch_job()`, `upload_file()`, `list_files()`, `file_info()`, `delete_file()`
 - **Providers** specify the API: `openai()`, `claude()`, `gemini()`, `ollama()`, `mistral()`, `groq()`, `perplexity()`, `deepseek()`, `voyage()`, `openrouter()`, `llamacpp()`, `azure_openai()`
 
 Provider-specific functions like `openai_chat()` or `claude_chat()` also work directly and expose the full range of parameters for each API.
 
-### Sending Images to Models
+### Sending Images and Media
 
-**tidyllm** supports sending images to multimodal models. Here we let a model describe a photo:
+Attach images, PDFs, audio, or video to a message using the `.media` argument of `llm_message()`. Pass a single media object or a list of them:
 
 ```{r, echo=FALSE, out.width="70%", fig.alt="A photograph showing lake Garda and the scenery near Torbole, Italy."}
 knitr::include_graphics("picture.jpeg")
 ```
 
 ```{r images, eval=FALSE}
+# Single image
 image_description <- llm_message("Describe this picture. Can you guess where it was taken?",
-                                  .imagefile = "picture.jpeg") |>
+                                  .media = img("picture.jpeg")) |>
   chat(openai(.model = "gpt-5.4"))
 
 get_reply(image_description)
@@ -124,23 +125,70 @@ get_reply(image_description)
 c("The picture shows a beautiful landscape with a lake, mountains, and a town nestled below. The area appears lush and green, with agricultural fields visible. This scenery is reminiscent of northern Italy, particularly around Lake Garda.")
 ```
 
+Send multiple images in one message by passing a list. The list can also mix different media types; for example, an image alongside a PDF or an audio file alongside a chart. Gemini handles mixed-type lists most flexibly:
+
+```{r, eval=FALSE}
+llm_message("Compare these two charts.",
+            .media = list(img("chart_a.png"), img("chart_b.png"))) |>
+  chat(claude())
+
+# Mixed types in one message
+llm_message("Does this figure match the results described in the paper?",
+            .media = list(img("figure.png"), pdf_file("paper.pdf", pages = 1:5))) |>
+  chat(gemini())
+```
+
+For audio and video, use `audio_file()` and `video_file()`. Gemini supports both natively; llama.cpp supports audio with compatible models (Ultravox, Qwen2.5-Omni, Qwen3-Omni); OpenRouter routes audio and video to underlying models that accept them:
+
+```{r, eval=FALSE}
+# Audio transcription or analysis
+llm_message("Transcribe and summarise this recording.",
+            .media = audio_file("interview.mp3")) |>
+  chat(gemini())
+
+# Video understanding
+llm_message("Describe what happens in this clip.",
+            .media = video_file("demo.mp4")) |>
+  chat(gemini())
+```
+
 ### Adding PDFs to Messages
 
-Pass a PDF path to the `.pdf` argument of `llm_message()`. The package extracts the text and wraps it in `<pdf>` tags in the prompt:
+Pass a PDF to `pdf_file()` and attach it with `.media`. By default the file is sent as binary to providers that support native PDF rendering (Claude, Gemini), and the text is automatically extracted as a fallback for others:
 
 ```{r pdf, eval=FALSE}
 llm_message("Summarize the key points from this document.",
-            .pdf = "die_verwandlung.pdf") |>
-  chat(openai(.model = "gpt-5.4"))
+            .media = pdf_file("die_verwandlung.pdf")) |>
+  chat(claude())
 ```
 ```{r pdf_out, eval=TRUE, echo=FALSE}
 llm_message("Summarize the key points from this document.",
-            .pdf = "die_verwandlung.pdf") |>
+            .media = pdf_file("die_verwandlung.pdf")) |>
   llm_message("The story centres on Gregor Samsa, who wakes up transformed into a giant insect. Unable to work, he becomes isolated while his family struggles. Eventually Gregor dies, and his relieved family looks ahead to a better future.",
               .role = "assistant")
 ```
 
-Specify page ranges with `.pdf = list(filename = "doc.pdf", start_page = 1, end_page = 5)`.
+Restrict to specific pages with the `pages` argument:
+
+```{r, eval=FALSE}
+pdf_file("report.pdf", pages = 1:5)
+```
+
+For large or frequently reused documents, upload them once to the provider's Files API and reference the handle in any message:
+
+```{r, eval=FALSE}
+report <- upload_file(claude(), .path = "annual_report.pdf")
+
+llm_message("What are the key risks mentioned?", .files = report) |>
+  chat(claude())
+
+# Manage uploaded files
+list_files(claude())
+file_info(claude(), report)
+delete_file(claude(), report)
+```
+
+File management verbs are currently only supported by Claude, Gemini, and OpenAI. Files are uploaded to and stored on the specific provider's servers; a file uploaded to Claude cannot be used with Gemini or OpenAI. Supported file types vary by provider: Gemini accepts a wide range including video, audio, images, PDFs, and various document formats. OpenAI accepts 80+ formats including Office documents (PPTX, DOCX, XLSX), source code, ZIP archives, and more. Claude focuses on PDFs and images. Always check the provider's current documentation for the full list.
 
 ### Sending R Outputs to Models
 
@@ -458,17 +506,17 @@ Streaming is useful for monitoring long responses interactively. For production 
 
 | Provider | Strengths and tidyllm-specific features |
 |----------|-----------------------------------------|
-| `openai()` | Top benchmark performance across coding, math, and reasoning; `o3`/`o4` reasoning models |
+| `openai()` | Top benchmark performance across coding, math, and reasoning; `o3`/`o4` reasoning models; built-in web search via `openai_websearch()`; Files API |
 | `claude()` | Best-in-class coding (SWE-bench leader); `.thinking = TRUE` for extended reasoning; Files API for document workflows; batch |
-| `gemini()` | 1M-token context window; video and audio via file upload API; search grounding; `.thinking_budget` for reasoning; batch |
-| `mistral()` | EU-hosted, GDPR-friendly; Magistral reasoning models; embeddings; batch |
+| `gemini()` | 1M-token context window; native image, audio, and video via `.media`; search grounding; `.thinking_budget` for reasoning; Files API; batch |
+| `mistral()` | EU-hosted, GDPR-friendly; Magistral reasoning models; Voxtral audio models (`.media = audio_file()`); embeddings; batch |
 | `groq()` | Fastest available inference (300-1200 tokens/s); `groq_transcribe()` for Whisper audio; `.json_schema`; batch |
 | `perplexity()` | Real-time web search with citations in metadata; `deep_research()` for long-horizon research; search domain filter |
 | `deepseek()` | Top math and reasoning benchmarks at very low cost; `.thinking = TRUE` auto-switches to `deepseek-reasoner` |
 | `voyage()` | State-of-the-art retrieval embeddings; `voyage_rerank()`; multimodal embeddings (text + images); `.output_dimension` |
-| `openrouter()` | 500+ models via one API key; automatic fallback routing; `openrouter_credits()` and per-generation cost tracking |
+| `openrouter()` | 500+ models via one API key; audio and video support on Gemini, Qwen 3.6, and other multimodal routes; automatic fallback routing |
 | `ollama()` | Local models with full data privacy; no API costs; `ollama_download_model()` for model management |
-| `llamacpp()` | Often the most performant local inference stack; BNF grammar constraints (`.grammar`); logprobs via `get_logprobs()`; `llamacpp_rerank()`; model management |
+| `llamacpp()` | Often the most performant local inference stack; audio input with Ultravox, Qwen2.5-Omni, Qwen3-Omni, and Gemma 4 models; BNF grammar constraints; logprobs; `llamacpp_rerank()` |
 | `azure_openai()` | Enterprise Azure deployments of OpenAI models; batch support |
 
 For getting started with local models (Ollama and llama.cpp), see the Local Models article on the tidyllm website.

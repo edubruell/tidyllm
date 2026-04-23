@@ -14,21 +14,19 @@ and
 
 ``` r
 chatgpt(..., .called_from = NULL)
+
+chatgpt(..., .called_from = NULL)
 ```
 
 ## Arguments
 
 - ...:
 
-  Parameters to be passed to the appropriate OpenAI-specific function,
-  such as model configuration, input text, or other API-specific
-  options.
+  Parameters passed to the appropriate OpenAI-specific function.
 
 - .called_from:
 
-  An internal argument that specifies the context (e.g., `chat`,
-  `embed`, `send_batch`) in which the function is being invoked. This is
-  automatically managed and should not be modified by the user.
+  Internal routing argument; do not set manually.
 
 ## Value
 

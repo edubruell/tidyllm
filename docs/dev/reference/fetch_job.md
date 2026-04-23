@@ -4,6 +4,8 @@
 [`fetch_batch()`](https://edubruell.github.io/tidyllm/dev/reference/fetch_batch.md)
 for batch objects or
 [`perplexity_fetch_research()`](https://edubruell.github.io/tidyllm/dev/reference/perplexity_fetch_research.md)
+/
+[`openai_fetch_research()`](https://edubruell.github.io/tidyllm/dev/reference/openai_fetch_research.md)
 for `tidyllm_research_job` objects.
 
 ## Usage

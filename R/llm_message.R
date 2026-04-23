@@ -7,8 +7,10 @@
 #' @param .prompt Text prompt to add to the message history.
 #' @param .role The role of the message sender, typically "user" or "assistant".
 #' @param .system_prompt Default system prompt if a new LLMMessage needs to be created.
-#' @param .imagefile Path to an image file to be attached (optional).
-#' @param .pdf Path to a PDF file to be attached (optional). Can be a character vector of length one (file path), or a list with `filename`, `start_page`, and `end_page`.
+#' @param .media An inline media object or a list of them. Accepted types: `img()`, `audio_file()`, `video_file()`, `pdf_file()`.
+#' @param .files A `tidyllm_file` object or list of them returned by `upload_file()`. These are remote file references stored on a provider's server.
+#' @param .imagefile Path to an image file to be attached (optional). Deprecated; use `.media = img(path)` instead.
+#' @param .pdf Path to a PDF file to be attached (optional). Deprecated; use `.media = pdf_file(path)` instead.
 #' @param .textfile Path to a text file to be read and attached (optional).
 #' @param .capture_plot Boolean to indicate whether a plot should be captured and attached as an image (optional).
 #' @param .f An R function or an object coercible to a function via `rlang::as_function`, whose output should be captured and attached (optional).
@@ -18,20 +20,21 @@
 #' @family Message Creation Utilities
 #' @seealso [df_llm_message()]
 #' @export
-llm_message <- function(.llm = NULL, 
-                        .prompt = NULL, 
-                        .role = "user", 
+llm_message <- function(.llm = NULL,
+                        .prompt = NULL,
+                        .role = "user",
                         .system_prompt = "You are a helpful assistant",
-                        .imagefile = NULL, 
-                        .pdf = NULL, 
-                        .textfile = NULL, 
+                        .media = NULL,
+                        .files = NULL,
+                        .imagefile = NULL,
+                        .pdf = NULL,
+                        .textfile = NULL,
                         .capture_plot = FALSE,
                         .f = NULL) {
-  
-  # Handle media attached to messages
-  media_list = list()
-  
-  # Validate inputs using the existing validate_inputs function
+
+  media_list <- list()
+  files_list <- NULL
+
   validate_inputs(c(
     ".llm must be NULL, a character vector, or an LLMMessage object" = is.null(.llm) || is.character(.llm) || S7_inherits(.llm, LLMMessage),
     ".prompt must be a non-empty string if provided" = is.null(.prompt) || (is.character(.prompt) && length(.prompt) == 1 && nchar(.prompt) > 0),
@@ -47,111 +50,91 @@ llm_message <- function(.llm = NULL,
     ".capture_plot must be logical" = is.logical(.capture_plot) && length(.capture_plot) == 1,
     ".f must be NULL or coercible to a function via rlang::as_function" = is.null(.f) || (tryCatch({rlang::as_function(.f); TRUE}, error = function(e) FALSE))
   ))
-  
-  # Early check whether an llm object existed before
+
   pre_existing_object <- S7_inherits(.llm, LLMMessage)
-  
-  # Handle images or captured plots
+
+  # Handle .media — accept a single S7 media object or a list
+  if (!is.null(.media)) {
+    media_items <- if (is.list(.media) && !S7_inherits(.media, tidyllm_image) &&
+                       !S7_inherits(.media, tidyllm_audio) && !S7_inherits(.media, tidyllm_video) &&
+                       !S7_inherits(.media, tidyllm_pdf)) {
+      .media
+    } else {
+      list(.media)
+    }
+    media_list <- c(media_list, media_items)
+  }
+
+  # Handle .files — accept a tidyllm_file or list of tidyllm_file
+  if (!is.null(.files)) {
+    files_list <- if (S7_inherits(.files, tidyllm_file)) list(.files) else .files
+  }
+
+  # Handle .imagefile (deprecated)
   if (!is.null(.imagefile) || .capture_plot) {
     if (.capture_plot) {
-      # Capturing plot logic to temporary file
       plot_file <- tempfile(fileext = ".png")
       dev.copy(png, filename = plot_file)
       dev.off()
       .imagefile <- plot_file
     }
-    # Validate and encode the image file
-    valid_types <- c("jpeg", "jpg", "png")
-    file_type <- tools::file_ext(.imagefile)
-    if (!(file_type %in% valid_types)) {
-      stop("Unsupported file type. Only JPEG and PNG are allowed.")
-    }
-    image_base64 <- base64enc::base64encode(.imagefile)
-    media_list <- c(media_list, list(list(type = "Image", content = image_base64, filename = basename(.imagefile))))
+    lifecycle::deprecate_warn("0.5.0", "llm_message(.imagefile=)", "llm_message(.media=)",
+      details = "Replace with .media = img(path).")
+    media_list <- c(media_list, list(img(.imagefile)))
   }
-  
-  # Handle PDFs
+
+  # Handle .pdf (deprecated)
   if (!is.null(.pdf)) {
+    lifecycle::deprecate_warn("0.5.0", "llm_message(.pdf=)", "llm_message(.media=)",
+      details = "Replace with .media = pdf_file(path, .text_extract = TRUE) to preserve identical behaviour.")
     if (!requireNamespace("pdftools", quietly = TRUE)) {
       stop("The 'pdftools' package is required to read PDF files. Please install it.")
     }
     if (is.character(.pdf) && length(.pdf) == 1) {
-      # .pdf is a path to a PDF file
-      pdf_file <- .pdf
-      start_page <- 1
-      pdf_info <- pdftools::pdf_info(pdf_file)
-      total_pages <- pdf_info$pages
-      end_page <- total_pages
+      media_list <- c(media_list, list(pdf_file(.pdf, .text_extract = TRUE)))
     } else if (is.list(.pdf)) {
-      # .pdf is a list with filename, start_page, end_page
-      pdf_file <- .pdf$filename
+      pdf_path   <- .pdf$filename
       start_page <- .pdf$start_page
-      end_page <- .pdf$end_page
-      if (start_page < 1) {
-        warning("start_page is less than 1. Setting start_page to 1.")
-        start_page <- 1
-      }
-      pdf_info <- pdftools::pdf_info(pdf_file)
-      total_pages <- pdf_info$pages
-      if (end_page > total_pages) {
-        warning("end_page is greater than total pages. Setting end_page to total pages.")
-        end_page <- total_pages
-      }
+      end_page   <- .pdf$end_page
+      pages      <- seq(start_page, end_page)
+      media_list <- c(media_list, list(pdf_file(pdf_path, pages = pages, .text_extract = TRUE)))
     } else {
-      stop(".pdf must be either a file path (character vector of length 1) or a list with filename, start_page, and end_page.")
+      stop(".pdf must be either a file path or a list with filename, start_page, and end_page.")
     }
-    # Read the specified pages
-    pdf_text <- pdftools::pdf_text(pdf_file)[start_page:end_page] |> 
-      stringr::str_c(collapse = "\n")
-    media_list <- c(media_list, list(list(type = "PDF", content = pdf_text, filename = basename(pdf_file))))
   }
-  
-  # Handle text files
+
+  # Handle .textfile
   if (!is.null(.textfile)) {
-    text_content <- readLines(.textfile) |> 
+    text_content <- readLines(.textfile) |>
       stringr::str_c(collapse = "\n")
     media_list <- c(media_list, list(list(type = "TextFile", content = text_content, filename = basename(.textfile))))
   }
-  
-  # Handle function text outputs
+
+  # Handle .f
   if (!is.null(.f)) {
-    output <- utils::capture.output(rlang::as_function(.f)(), file = NULL) |> 
+    output <- utils::capture.output(rlang::as_function(.f)(), file = NULL) |>
       stringr::str_c(collapse = "\n")
     media_list <- c(media_list, list(list(type = "RConsole", content = output, filename = "RConsole.txt")))
   }
-  
-  # If a character vector is supplied instead of an llm, use it as an initial prompt
+
+  media_arg <- if (length(media_list) > 0) media_list else NULL
+
   if (is.character(.llm)) {
     initial_prompt <- .llm
     .llm <- LLMMessage(system_prompt = .system_prompt,
-                       message_history = list(
-                         list(role="system", content = .system_prompt)
-                       )
-    )
+                       message_history = list(list(role = "system", content = .system_prompt)))
     if (is.null(.prompt)) {
-      llm <- add_message(.llm,.role, initial_prompt, media_list)
-      return(llm)
+      return(add_message(.llm, .role, initial_prompt, .media = media_arg, .files = files_list))
     }
   }
-  
-  # Set up a new llm if it is null with the system prompt
+
   if (is.null(.llm)) {
     .llm <- LLMMessage(system_prompt = .system_prompt,
-                       message_history = list(
-                         list(role="system", content = .system_prompt)
-                       )
-    )
+                       message_history = list(list(role = "system", content = .system_prompt)))
   }
-  
-  # Explicit prompts have precedence over ones supplied via .llm
-  if (!is.null(.prompt) && !pre_existing_object) {
-    llm <- add_message(.llm,.role, .prompt, media_list)
-    return(llm)
-  }
-  
-  if (!is.null(.prompt) && pre_existing_object) {
-    llm <- add_message(.llm,.role, .prompt, media_list)
-    return(llm)
+
+  if (!is.null(.prompt)) {
+    return(add_message(.llm, .role, .prompt, .media = media_arg, .files = files_list))
   }
 }
 

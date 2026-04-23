@@ -191,6 +191,10 @@ chat <- function(
   )
   common_args <- common_args[!sapply(common_args, is.null)]
 
+  # Validate attachments in the last user message before dispatch
+  provider_meta <- rlang::call_modify(provider_expr, .called_from = "metadata") |> rlang::eval_tidy()
+  validate_message_attachments(.llm, provider_meta$provider_name)
+
   return(dispatch_to_provider(provider_expr, "chat", common_args))
 }
 
@@ -597,6 +601,148 @@ list_models <- function(.provider = getOption("tidyllm_lmodels_default"), ...) {
   
   extra_args <- list(...)
   return(dispatch_to_provider(provider_expr, "list_models", extra_args, validate = FALSE))
+}
+
+
+#' Upload a File to a Provider's File Store
+#'
+#' @param .provider A provider function call (e.g. `claude()`, `gemini()`, `openai()`).
+#' @param .path Path to the local file to upload.
+#' @param ... Additional provider-specific arguments.
+#' @return A `tidyllm_file` object.
+#' @export
+upload_file <- function(.provider, .path, ...) {
+  if (is.null(.provider)) stop("You need to specify a .provider function in upload_file().")
+  if (rlang::is_function(.provider)) .provider <- .provider()
+  if (!rlang::is_call(.provider)) {
+    provider_expr <- rlang::quo_get_expr(rlang::enquo(.provider))
+  } else {
+    provider_expr <- .provider
+  }
+  extra_args <- c(list(.path = .path), list(...))
+  dispatch_to_provider(provider_expr, "upload_file", extra_args, validate = FALSE)
+}
+
+
+#' List Files Stored on a Provider
+#'
+#' @param .provider A provider function call.
+#' @param ... Additional provider-specific arguments.
+#' @return A tibble of file metadata.
+#' @export
+list_files <- function(.provider, ...) {
+  if (is.null(.provider)) stop("You need to specify a .provider function in list_files().")
+  if (rlang::is_function(.provider)) .provider <- .provider()
+  if (!rlang::is_call(.provider)) {
+    provider_expr <- rlang::quo_get_expr(rlang::enquo(.provider))
+  } else {
+    provider_expr <- .provider
+  }
+  dispatch_to_provider(provider_expr, "list_files", list(...), validate = FALSE)
+}
+
+
+#' Get Metadata for a File Stored on a Provider
+#'
+#' @param .provider A provider function call.
+#' @param .file_id The file ID string to look up, or a `tidyllm_file` object returned by `upload_file()`.
+#' @param ... Additional provider-specific arguments.
+#' @return A single-row tibble of file metadata.
+#' @export
+file_info <- function(.provider, .file_id, ...) {
+  if (is.null(.provider)) stop("You need to specify a .provider function in file_info().")
+  if (S7::S7_inherits(.file_id, tidyllm_file)) .file_id <- .file_id@id
+  if (rlang::is_function(.provider)) .provider <- .provider()
+  if (!rlang::is_call(.provider)) {
+    provider_expr <- rlang::quo_get_expr(rlang::enquo(.provider))
+  } else {
+    provider_expr <- .provider
+  }
+  extra_args <- c(list(.file_id = .file_id), list(...))
+  dispatch_to_provider(provider_expr, "file_info", extra_args, validate = FALSE)
+}
+
+
+#' Delete a File from a Provider's File Store
+#'
+#' @param .provider A provider function call.
+#' @param .file_id The file ID string to delete, or a `tidyllm_file` object returned by `upload_file()`.
+#' @param ... Additional provider-specific arguments.
+#' @return Invisibly NULL; prints a confirmation message.
+#' @export
+delete_file <- function(.provider, .file_id, ...) {
+  if (is.null(.provider)) stop("You need to specify a .provider function in delete_file().")
+  if (S7::S7_inherits(.file_id, tidyllm_file)) .file_id <- .file_id@id
+  if (rlang::is_function(.provider)) .provider <- .provider()
+  if (!rlang::is_call(.provider)) {
+    provider_expr <- rlang::quo_get_expr(rlang::enquo(.provider))
+  } else {
+    provider_expr <- .provider
+  }
+  extra_args <- c(list(.file_id = .file_id), list(...))
+  dispatch_to_provider(provider_expr, "delete_file", extra_args, validate = FALSE)
+}
+
+
+#' Validate Attachments in the Last User Message
+#'
+#' Called by chat() before dispatch. Raises errors for provider mismatches or
+#' unsupported media types in the current (last) user message only.
+#' Historical messages are not validated here; to_api_format() silently skips them.
+#'
+#' @noRd
+validate_message_attachments <- function(.llm, provider_name) {
+  history <- .llm@message_history
+  user_msgs <- which(vapply(history, function(m) identical(m$role, "user"), logical(1)))
+  if (length(user_msgs) == 0) return(invisible(NULL))
+
+  last_user_idx <- user_msgs[length(user_msgs)]
+  last_msg <- history[[last_user_idx]]
+
+  # Validate remote file references
+  if (!is.null(last_msg$files) && length(last_msg$files) > 0) {
+    providers_with_files <- c("claude", "gemini", "openai")
+    if (!provider_name %in% providers_with_files) {
+      stop(glue::glue(
+        "The '{provider_name}' provider does not support file references in messages.\n",
+        "Use pdf_file() / audio_file() for inline binary instead."
+      ))
+    }
+    for (f in last_msg$files) {
+      if (f@provider != provider_name) {
+        stop(glue::glue(
+          "File '{f@filename}' (id={f@id}) was uploaded to '{f@provider}' but this conversation ",
+          "is using '{provider_name}'. Files are stored on the provider's servers and cannot be ",
+          "shared across providers. Re-upload with upload_file({provider_name}(), .path = ...)."
+        ))
+      }
+    }
+  }
+
+  # Validate inline media types
+  providers_supporting_audio  <- c("gemini", "openrouter", "llamacpp", "mistral")
+  providers_supporting_video  <- c("gemini", "openrouter")
+  providers_supporting_binary_pdf <- c("gemini", "openrouter")
+
+  if (!is.null(last_msg$media) && length(last_msg$media) > 0) {
+    for (m in last_msg$media) {
+      if (S7_inherits(m, tidyllm_audio) && !provider_name %in% providers_supporting_audio) {
+        stop(glue::glue(
+          "The '{provider_name}' provider does not support inline audio.\n",
+          "Use gemini() or openrouter() for audio transcription."
+        ))
+      }
+      if (S7_inherits(m, tidyllm_video) && !provider_name %in% providers_supporting_video) {
+        stop(glue::glue(
+          "The '{provider_name}' provider does not support inline video.\n",
+          "Use gemini() or openrouter() for video analysis."
+        ))
+      }
+      # pdf_file() is exempt: it carries a text fallback used automatically
+    }
+  }
+
+  invisible(NULL)
 }
 
 

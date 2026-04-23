@@ -19,11 +19,11 @@ method(to_api_format, list(LLMMessage, api_ollama)) <- function(.llm,
   ollama_history <- filter_roles(.llm@message_history, c("user", "assistant"))
   lapply(ollama_history, function(m) {
     formatted_message <- format_message(m)
-    if (!is.null(formatted_message$image)) {
+    if (length(formatted_message$images) > 0) {
       list(
         role = m$role,
         content = formatted_message$content,
-        images = list(glue::glue("{formatted_message$image$data}"))
+        images = lapply(formatted_message$images, function(i) i$data)
       )
     } else {
       list(role = m$role, content = formatted_message$content)

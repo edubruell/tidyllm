@@ -95,6 +95,11 @@ gemini_chat(
   Either a single TOOL object or a list of TOOL objects representing the
   available functions for tool calls.
 
+- .thinking_budget:
+
+  Token budget for internal reasoning (default: NULL). Works with
+  `gemini-2.5-flash` and `gemini-2.5-pro`.
+
 - .timeout:
 
   When should our connection time out (default: 120 seconds).

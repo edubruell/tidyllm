@@ -1,5 +1,5 @@
 ---
-title: "Video and Audio Data with the Gemini API"
+title: "Working with Files and Media"
 ---
 
 ```{r, include = FALSE}
@@ -8,11 +8,120 @@ knitr::opts_chunk$set(
 )
 ```
 
-The **tidyllm** package implements some API-specific functionality beyond the core features available across all providers. With the Google Gemini API, you can upload files directly, supporting a range of formats including video and audio. Uploaded files can be referenced in messages via the `.fileid` argument in `chat(gemini())`, opening up multimodal workflows that go well beyond standard text and image support.
+```{r setup, eval = TRUE, echo = FALSE, message = FALSE}
+library(tidyllm)
+```
 
-### Sending an Example Video to Gemini
+**tidyllm** makes it straightforward to send images, audio, video, and documents to any supported model. There are two ways to attach non-text content to a message: the `.media` argument for content you want to send directly, and the `.files` argument for content you have previously uploaded to a provider's servers. This article covers both.
 
-We explore this functionality by uploading **The Thinking Machine**, a 1960s TV segment on AI, and interacting with Gemini using the file as context:
+## Inline Images
+
+The simplest way to send an image is with `img()`. Pass the path to a local image file, attach it to a message with `.media`, and tidyllm takes care of the rest:
+
+```{r, eval = FALSE}
+library(tidyllm)
+
+llm_message("What food is in this image?",
+            .media = img("hotdog.jpg")) |>
+  chat(claude())
+```
+
+Images work with all major providers that support vision: Claude, Gemini, OpenAI, Mistral, Groq, Ollama (with a vision-capable model), and OpenRouter.
+
+To send multiple images in a single message, pass them as a list:
+
+```{r, eval = FALSE}
+llm_message("Describe the difference between these two images.",
+            .media = list(img("photo_a.jpg"), img("photo_b.jpg"))) |>
+  chat(openai())
+```
+
+### Mixing media types
+
+The `.media` list can contain any combination of types. Gemini handles mixed content most flexibly — you can send images, PDFs, audio, and video together in a single message. Here we ask a model to cross-reference a figure against the paper it came from:
+
+```{r, eval = FALSE}
+llm_message("The figure is from this paper. Does it accurately represent the results in Table 2?",
+            .media = list(
+              img("figure_3.png"),
+              pdf_file("paper.pdf", pages = 1:8)
+            )) |>
+  chat(gemini())
+```
+
+Or combine a chart with an audio commentary on it:
+
+```{r, eval = FALSE}
+llm_message("The audio is my verbal annotation of this chart. Summarise both together.",
+            .media = list(
+              img("quarterly_results.png"),
+              audio_file("my_notes.mp3")
+            )) |>
+  chat(gemini())
+```
+
+Each item in the list is processed in order and all items end up in the same message. The provider sees them as one multi-part input alongside the text prompt.
+
+## PDFs
+
+Use `pdf_file()` to attach a PDF. On providers that support native PDF rendering (Claude and Gemini), the file is sent as-is, so the model can see tables, figures, and formatting just as a human reader would. On other providers, tidyllm automatically extracts the text and passes it to the model instead. Either way, you write the same code:
+
+```{r, eval = FALSE}
+llm_message("Summarise the key findings from this report.",
+            .media = pdf_file("annual_report.pdf")) |>
+  chat(claude())
+```
+
+To always use the text extraction path regardless of the provider, pass `.text_extract = TRUE`. This is useful when you want consistent behaviour across providers or when a document is text-heavy and layout does not matter:
+
+```{r, eval = FALSE}
+llm_message("Summarise the key findings.",
+            .media = pdf_file("annual_report.pdf", .text_extract = TRUE)) |>
+  chat(openai())
+```
+
+Limit the pages sent to the model with the `pages` argument:
+
+```{r, eval = FALSE}
+llm_message("What does the introduction argue?",
+            .media = pdf_file("paper.pdf", pages = 1:5)) |>
+  chat(claude())
+```
+
+### Scanned documents
+
+A particularly compelling use case is working with scanned PDFs that contain no machine-readable text at all. Text extraction would return nothing useful, but sending the binary file to Claude or Gemini lets the model read the actual page images. This makes it possible to process old journal scans, archival documents, or any PDF that was created from photographs rather than typeset text.
+
+Here we use a scanned copy of a 1995 economics paper and ask Claude to extract all references in APA format:
+
+```{r, eval = FALSE}
+ref_schema <- tidyllm_schema(
+  apa_references = field_chr("All references in APA format, one entry",
+                             .vector = TRUE)
+)
+
+result <- llm_message("Extract all the references from this paper.",
+                      .media = pdf_file("1995_Neal_Industry_Specific.pdf")) |>
+  chat(claude(), .json_schema = ref_schema)
+
+get_reply_data(result)$apa_references[1:3]
+```
+
+```{r, eval = TRUE, echo = FALSE}
+c(
+  'Addison, J., & Portugal, P. (1989). Job displacement, relative wage changes, and duration of unemployment. Journal of Labor Economics, 7(3), 281-302.',
+  'Altonji, J., & Shakotko, R. (1987). Do wages rise with seniority? Review of Economic Studies, 54(3), 437-459.',
+  'Becker, G. (1975). Human capital. Columbia University Press.'
+)
+```
+
+The same approach works for handwritten notes, printed forms, historical records, or any document where the visual layout carries meaning that text extraction would lose.
+
+## Audio and Video
+
+For audio and video, use `audio_file()` and `video_file()`. Gemini has the broadest native support and handles most common formats (MP3, WAV, MP4, MOV, and more). OpenRouter routes audio and video to underlying models that accept them; you can filter by audio or video modality at [openrouter.ai/models](https://openrouter.ai/models). Local models via llama.cpp support audio with compatible model files (Ultravox, Qwen2.5-Omni, Qwen3-Omni, and Gemma 4 variants).
+
+The examples in this section use two pieces of archival material: an MP3 recording of an interview with Robert Bosch describing the early history of his company, and a 1960s TV documentary segment on artificial intelligence called **The Thinking Machine**, featuring Claude Shannon and other early AI researchers.
 
 <div style="text-align: center;">
 <iframe width="560" height="315"
@@ -23,165 +132,162 @@ We explore this functionality by uploading **The Thinking Machine**, a 1960s TV 
 </iframe>
 </div>
 
-We have this segment as an **mp4** file and upload it with `gemini_upload_file()`:
-
-```{r, eval = FALSE, message = FALSE}
-library(tidyverse)
-library(tidyllm)
-upload_info <- gemini_upload_file("the_thinking_machine_1960s.mp4")
-upload_info
-str(upload_info)
+```{r, eval = FALSE}
+# Describe or transcribe an audio recording
+llm_message("Summarise what is discussed in this recording.",
+            .media = audio_file("bosch_interview.mp3")) |>
+  chat(gemini())
 ```
 
-```{r, echo = FALSE, message = FALSE}
-library(tidyverse)
-library(tidyllm)
-upload_info <- tibble(
-  name         = "files/wutpmcv9jve9",
-  display_name = "the_thinking_machine_1960s.mp4",
-  mime_type    = "video/mp4",
-  size_bytes   = 6520447,
-  create_time  = "2024-11-18T09:40:29.603980Z",
-  uri          = "https://generativelanguage.googleapis.com/v1beta/files/wutpmcv9jve9",
-  state        = "PROCESSING"
+```{r, eval = TRUE, echo = FALSE}
+llm_message("Summarise what is discussed in this recording.") |>
+  llm_message("This is an audio recording of an interview with Robert Bosch. He discusses his early life, his path from apprentice to founder of his renowned company, and his philosophy on business. Bosch recounts his decision to become a precision mechanic, his travels to America and England, and the development of his famous magneto ignition system. He emphasises principles of high-quality work, fair treatment of employees, and the importance of trust and reliability in business dealings.",
+              .role = "assistant")
+```
+
+```{r, eval = FALSE}
+# Route to a Gemini model via OpenRouter
+llm_message("Summarise this recording.",
+            .media = audio_file("bosch_interview.mp3")) |>
+  chat(openrouter(.model = "google/gemini-2.5-flash"))
+```
+
+Video works the same way:
+
+```{r, eval = FALSE}
+llm_message("Give a two-sentence summary of what happens in this video.",
+            .media = video_file("documentary.mp4")) |>
+  chat(gemini())
+```
+
+### Structured output from video
+
+You can combine video with a JSON schema to extract specific fields from a clip, just as you would with text. This is useful for cataloguing video archives or extracting metadata at scale. Here we define a schema for a short documentary clip and ask Gemini to populate it:
+
+```{r video_schema, eval = FALSE}
+video_schema <- tidyllm_schema(
+  title       = field_chr("The title or subject of the clip, as best you can tell"),
+  era         = field_chr("The approximate decade or period depicted"),
+  format      = field_fct("What type of content is this?",
+                           .levels = c("Documentary", "Interview", "Lecture", "News", "Other")),
+  key_people  = field_chr("Names of people who appear or are mentioned, semicolon-separated"),
+  main_topics = field_chr("The two or three main topics covered, semicolon-separated")
 )
-print(upload_info, width = 60)
-str(upload_info)
+
+result <- llm_message("Analyse this video clip and fill in the schema.",
+                      .media = video_file("the_thinking_machine.mp4")) |>
+  chat(gemini(), .json_schema = video_schema)
+
+get_reply_data(result)
 ```
 
-`gemini_upload_file()` returns a tibble with metadata about the uploaded file: `name` (a unique server-side identifier), `display_name` (the original filename), `mime_type`, `size_bytes`, `create_time`, `uri` (the file's location on Google's servers), and `state` (current processing status).
-
-The field you primarily need is `name`, which you pass to the `.fileid` argument:
-
-```{r, eval = FALSE}
-llm_message("Give me a detailed summary of this video") |>
-  chat(gemini(.fileid = upload_info$name))
-```
-
-```{r, echo = FALSE}
-llm_message("Give me a 200 word summary of this video") |>
-  llm_message("Here is a summary of the video.\n\nThis 1961 black and white Paramount News clip explores the burgeoning field of artificial intelligence. The host interviews Professor Jerome B. Wiesner, director of MIT's Research Laboratory of Electronics. Wiesner discusses the capabilities of computers, noting that while their abilities were previously limited, he suspects they'll be able to \"think\" within a few years.  The segment shows a computer playing checkers against a human opponent.  Other experts, including Oliver Selfridge and Claude Shannon, offer their perspectives on whether machines can truly think and the potential implications for the future, particularly in language translation.  One expert predicts that within 10-15 years, machines will be performing tasks previously considered the realm of human intelligence.  The film ends by showing a computer that translates Russian to English.  Despite this success, one expert notes that computers will not replace translators of poetry and novels.", .role = "assistant")
-```
-
-Once a file is uploaded you can reuse it for different requests. Gemini also supports `tidyllm_schema()` for structured output across all file types:
-
-```{r, eval = FALSE}
-structured_request <- llm_message("Extract some details about this video") |>
-  chat(gemini(.fileid = upload_info$name),
-       .json_schema = tidyllm_schema(
-         name            = "videoschema",
-         Persons         = field_chr("Names of persons appearing or mentioned", .vector = TRUE),
-         ScientistQuotes = field_chr("Direct quotes from scientists in the video", .vector = TRUE),
-         Topics          = field_chr("Main topics covered", .vector = TRUE),
-         runtime         = field_dbl("Runtime of the video in seconds")
-       ))
-
-structured_request |>
-  get_reply_data()
-```
-
-```{r, echo = FALSE}
+```{r video_schema_out, eval = TRUE, echo = FALSE}
 list(
-  Persons = c("Professor Jerome B. Wiesner", "Oliver G. Selfridge", "Claude Shannon"),
-  ScientistQuotes = c(
-    "Well, that's a very hard question to answer. If you'd asked me that question just a few years ago I'd have said it was very far fetched. And today I just have to admit I don't really know. I suspect that if you'd come back in four or five years I'll say sure they really do think.",
-    "I'm convinced that machines can and will think. I don't mean that machines will behave like men. I don't think for a very long time we're going to have a difficult problem distinguishing a man from a robot. And I don't think my daughter will ever marry a computer. But I think the computers will be doing the things that men do when we say they're thinking. I am convinced that machines can and will think in our lifetime.",
-    "I confidently expect that within a matter of 10 or 15 years, something will emerge from the laboratories which is not too far from the robot of science fiction fame"
-  ),
-  Topics  = c("Artificial Intelligence", "Computer", "Thinking Machine", "Machine Translation", "Russian to English Translation", "Cold War"),
-  runtime = 172
+  title       = "The Thinking Machine",
+  era         = "1960s",
+  format      = "Documentary",
+  key_people  = "Claude Shannon; unnamed narrator",
+  main_topics = "Artificial intelligence; machine learning; early computers"
 )
 ```
 
-`gemini_list_files()` returns a tibble with an overview of all files you have uploaded to Gemini:
+`get_reply_data()` returns a named list matching your schema. Wrap it in `as_tibble()` to get a single-row data frame, or use `purrr::map_dfr()` to process a whole folder of clips into a tidy table in one go.
+
+For files up to around 20 MB for audio and 100 MB for video, sending inline is fine. For larger files, use the Files API described in the next section.
+
+## Provider Files API
+
+When you want to send the same document to a model several times, or when a file is large enough that repeatedly attaching it inline would be slow, you can upload it once to the provider's servers and keep a reference to it. That reference can then be included in any number of messages without re-sending the file.
 
 ```{r, eval = FALSE}
-gemini_files <- gemini_list_files()
-gemini_files
+# Upload a file; returns a handle you can reuse
+report <- upload_file(gemini(), .path = "quarterly_report.pdf")
+report
 ```
 
-```{r, echo = FALSE}
-gemini_files <- tibble(
-  name            = c("files/nzq2zw9u30y8", "files/wutpmcv9jve9", "files/9sq5auo45h0r"),
-  display_name    = c("example.mp3", "the_thinking_machine_1960s.mp4", "example_aktivrente.pdf"),
-  mime_type       = c("audio/mp3", "video/mp4", "application/pdf"),
-  size_bytes      = c(2458836, 6520447, 193680),
-  create_time     = c("2024-11-15T15:02:11.917279Z", "2024-11-18T09:40:29.603980Z", "2024-11-17T13:06:10.706085Z"),
-  update_time     = c("2024-11-15T18:02:12.817279Z", "2024-11-18T09:40:35.614029Z", "2024-11-17T13:06:10.706085Z"),
-  expiration_time = c("2024-11-20T18:02:11.894030469Z", "2024-11-20T09:40:29.592398554Z", "2024-11-19T13:06:10.689448949Z"),
-  sha256_hash     = c(
-    "NTM1MWVjM2Q0ODg0NzFlMDA3ZTQxNjQ1OGRiOWRhYjliZDc2YzM4MzZjYTdjOTNiMWZjYTUyODVjYWQ1NzM3Nw==",
-    "YWFjMWE2NWI0Y2IyZmZkNjFkMzFlOTQ1NWU1M2UwNGJiOGE1Y2M3NjY3ZWMwYzZhMTQ0NDZkMmJhZDMwZGM3Zg==",
-    "NWE5MzBlZDFjZWMwNzkwMzkxOThiM2JlMTZlMTAwNjEyYWEwNjFjNDBiZTM5NmZmYWI1MTE0ZDExNGM1YzhkNg=="
-  ),
-  uri = c(
-    "https://generativelanguage.googleapis.com/v1beta/files/nzq2zw9u30y8",
-    "https://generativelanguage.googleapis.com/v1beta/files/wutpmcv9jve9",
-    "https://generativelanguage.googleapis.com/v1beta/files/9sq5auo45h0r"
-  ),
-  state = c("ACTIVE", "ACTIVE", "ACTIVE")
+```{r, eval = TRUE, echo = FALSE}
+cat("<tidyllm_file [gemini] id=files/abc123 mime=application/pdf file=quarterly_report.pdf>\n")
+```
+
+Attach the handle to messages with the `.files` argument:
+
+```{r, eval = FALSE}
+llm_message("What were the key financial results this quarter?",
+            .files = report) |>
+  chat(gemini())
+
+llm_message("List the top three risks mentioned in the document.",
+            .files = report) |>
+  chat(gemini())
+```
+
+Providers also expose file management functions. `list_files()` returns a tibble of all uploaded files, `file_info()` retrieves details for a single file, and `delete_file()` removes it:
+
+```{r, eval = FALSE}
+list_files(gemini())
+file_info(gemini(), report)
+delete_file(gemini(), report)
+```
+
+```{r, eval = TRUE, echo = FALSE}
+tibble::tibble(
+  file_id    = "files/abc123",
+  filename   = "quarterly_report.pdf",
+  size_bytes = 1243500L,
+  mime_type  = "application/pdf",
+  created_at = as.POSIXct("2026-04-20 10:15:00"),
+  expires_at = as.POSIXct("2026-04-22 10:15:00"),
+  uri        = "https://generativelanguage.googleapis.com/v1beta/files/abc123"
 )
-print(gemini_files, width = 65)
 ```
 
-We can now ask Gemini what the uploaded audio file is about:
+The same pattern works with Claude and OpenAI:
 
 ```{r, eval = FALSE}
-llm_message("What's in this audio file. Describe it in 100 words.") |>
-  chat(gemini(.fileid = gemini_files$name[1]))
+# Claude: well suited for dense academic or legal text
+doc <- upload_file(claude(), .path = "paper.pdf")
+llm_message("What is the main contribution of this paper?",
+            .files = doc) |>
+  chat(claude())
+delete_file(claude(), doc)
+
+# OpenAI: accepts a wide range of formats beyond PDFs
+slides <- upload_file(openai(), .path = "presentation.pptx")
+llm_message("Summarise these slides in five bullet points.",
+            .files = slides) |>
+  chat(openai())
+delete_file(openai(), slides)
 ```
 
-```{r, echo = FALSE}
-llm_message("What's in this audio file. Describe it in 100 words.") |>
-  llm_message("This is an audio recording of an interview with Robert Bosch.  He discusses his early life, his career path from apprentice to founder of his renowned company, and his philosophy on business.  Bosch recounts his decision to become a precision mechanic, his travels to America and England, and the development of his famous magneto ignition system.  He emphasizes his principles of high-quality work, fair treatment of employees, and the importance of trust and reliability in business dealings.  The interview concludes with well wishes.", .role = "assistant")
-```
+### What each provider supports
 
-Once you have finished working with a file, delete it with `gemini_delete_file()`:
+Provider file APIs differ in which file types they accept and how long files are kept:
 
-```{r, eval = FALSE}
-gemini_files$name[1] |>
-  gemini_delete_file()
-```
+- **Gemini**: video, audio, images, PDFs, and a range of document formats; uploaded files expire after 48 hours
+- **Claude**: PDFs and images; no automatic expiry; works well for long, text-heavy documents where precision matters
+- **OpenAI**: 80+ formats including Office documents (DOCX, PPTX, XLSX), source code, ZIP archives, images, and PDFs; note that images uploaded via the Files API cannot be used for vision tasks in chat, so use inline `img()` for that instead
 
-```{r, echo = FALSE}
-message("File files/nzq2zw9u30y8 has been successfully deleted.")
-```
+### Files are provider-specific
 
-### Supported File Types
+A file uploaded to Claude cannot be used in a message sent to Gemini or OpenAI. Each uploaded file belongs to the provider it was uploaded to, and tidyllm will catch any mismatch before sending the request.
 
-The Google Gemini API supports a wide range of formats. For documents: **PDF**, **plain text**, **HTML**, **CSS**, **Markdown**, **CSV**, **XML**, and **RTF**. Uploading PDFs with `gemini_upload_file()` is particularly useful because the standard `.pdf` argument in `llm_message()` extracts only textual content, while the Gemini file API also handles image-heavy or image-only PDFs such as scanned documents.
+## Supported formats
 
-For example, we can upload a scanned paper with no extractable text and ask Gemini to extract all references:
+**Inline media** (`.media` argument):
 
-```{r, eval = FALSE}
-neal1995 <- gemini_upload_file("1995_Neal_Industry_Specific.pdf")
+| Type | Constructor | Providers | Common formats |
+|------|-------------|-----------|----------------|
+| Images | `img()` | Claude, Gemini, OpenAI, Mistral, Groq, Ollama, OpenRouter | PNG, JPEG, WEBP, HEIC, GIF |
+| PDFs | `pdf_file()` | Claude, Gemini (binary); all others (text extraction) | PDF |
+| Audio | `audio_file()` | Gemini, OpenRouter, llama.cpp, Mistral (Voxtral) | MP3, WAV, AIFF, AAC, OGG, FLAC |
+| Video | `video_file()` | Gemini, OpenRouter | MP4, MPEG, MOV, AVI, WEBM, WMV |
 
-bib <- llm_message("Extract all the references from this paper in the specified format") |>
-  chat(gemini(.fileid = neal1995$name),
-       .json_schema = tidyllm_schema(
-         name         = "references",
-         APAreferences = field_chr("References in APA format", .vector = TRUE)
-       ))
+**Provider Files API** (`upload_file()`):
 
-references <- bib |> get_reply_data()
-references$APAreferences[1:5]
-```
+- **Gemini**: PDFs, images, audio, video, plain text, HTML, CSV, XML, Markdown, code files; files expire after 48 hours
+- **Claude**: PDFs and images; no automatic expiry
+- **OpenAI**: 80+ formats including PDFs, images, Office documents (DOCX, PPTX, XLSX), source code, ZIP archives, and more
 
-```{r, echo = FALSE}
-references <- list(APAreferences = c(
-  "Addison, John, and Portugal, Pedro. \"Job Displacement, Relative Wage Changes, and Duration of Unemployment.\" *Journal of Labor Economics* 7 (July 1989): 281-302.",
-  "Altonji, Joseph, and Shakotko, Robert. \"Do Wages Rise with Seniority?\" *Review of Economic Studies* 54 (July 1987): 437-59.",
-  "Becker, Gary. *Human Capital*. New York: Columbia University Press, 1975.",
-  "Carrington, William. \"Wage Losses for Displaced Workers: Is It Really the Firm That Matters?\" *Journal of Human Resources* 28 (Summer 1993): 435-62.",
-  "Carrington, William, and Zaman, Asad. \"Interindustry Variation in the Costs of Job Displacement.\" *Journal of Labor Economics* 12 (April 1994): 243-76."
-))
-references$APAreferences[1:5]
-```
+## What this makes possible
 
-Image formats include **PNG**, **JPEG**, **WEBP**, **HEIC**, and **HEIF**. Video formats cover **MP4**, **MPEG**, **MOV**, **AVI**, **FLV**, **MPG**, **WEBM**, **WMV**, and **3GPP**. Audio formats include **WAV**, **MP3**, **AIFF**, **AAC**, **OGG Vorbis**, and **FLAC**. Code files for **JavaScript** and **Python** are also supported.
-
-### Conclusion
-
-The Gemini file API enables multimodal workflows across a wide range of scientific disciplines. In linguistics and humanities research, audio and video can be used for speech analysis or the study of historical footage. Social scientists can process interview recordings and observational video. By integrating text, audio, video, images, and code into a unified pipeline, `chat(gemini())` covers use cases well beyond what `llm_message()` alone supports.
-
-For PDFs and images, Claude offers a parallel option via the Claude Files API (`claude_upload_file()`). The two providers complement each other: Gemini for video, audio, and image-only scans; Claude for dense academic text where long-context coherence matters most. See the [Structured Question Answering from PDFs](https://edubruell.github.io/tidyllm/articles/tidyllm-pdfquestions.html) article for the PDF workflow in more detail.
+Working with audio, video, and scanned documents opens up research workflows that are simply not available with text-only models. Oral history recordings can be transcribed and analysed without manual transcription. Video interviews and documentary footage become queryable data sources. Scanned archival documents, handwritten records, and image-heavy reports that would have required specialist OCR software can now be read and structured with a single API call. Survey recordings, lecture recordings, and qualitative interview data can be processed at scale using the same batch infrastructure that tidyllm provides for text. The common thread across all of these is that you write the same tidy pipeline you would for any other LLM task; the only change is what you attach to the message.

@@ -26,6 +26,7 @@ ollama_chat(
   .max_tool_rounds = 10,
   .tfs_z = NULL,
   .stop = NULL,
+  .think = NULL,
   .ollama_server = "http://localhost:11434",
   .timeout = 120,
   .keep_alive = NULL,
@@ -121,6 +122,12 @@ ollama_chat(
 - .stop:
 
   Character; custom stop sequence(s) (default: NULL)
+
+- .think:
+
+  Logical or character; controls thinking mode for supported models like
+  Qwen3. Use FALSE to disable, TRUE to enable, or "high"/"medium"/"low"
+  to set effort level (default: NULL - model default)
 
 - .ollama_server:
 

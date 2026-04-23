@@ -2,7 +2,7 @@
 % Please edit documentation in R/media.R
 \name{img}
 \alias{img}
-\title{Create an  Image Object}
+\title{Create an Image Object}
 \usage{
 img(.path)
 }
@@ -10,15 +10,10 @@ img(.path)
 \item{.path}{The path to the image file on disk.}
 }
 \value{
-An \code{tidyllm_image}, containing:
-\itemize{
-\item \code{imagepath}: The original file path
-\item \code{imagename}: The basename of the image
-\item \code{imagebase64}: a "data:image/...;base64,..." string
-}
+A \code{tidyllm_image} object.
 }
 \description{
 This function reads an image file from disk, encodes it in base64,
 and returns a \code{tidyllm_image} object that can be used in multimodal
-embedding requests.
+embedding requests or attached to messages via \code{.media}.
 }

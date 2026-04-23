@@ -15,10 +15,10 @@ method(to_api_format, list(LLMMessage, api_ellmer)) <- function(.llm,
     } else if (m$role == "user") {
       contents <- list(ellmer::ContentText(formatted_message$content))
       
-      if (!is.null(formatted_message$image)) {
+      for (img_struct in formatted_message$images) {
         image_content <- ellmer::ContentImageInline(
-          type = formatted_message$image$media_type,
-          data = formatted_message$image$data
+          type = img_struct$media_type,
+          data = img_struct$data
         )
         contents <- c(contents, list(image_content))
       }

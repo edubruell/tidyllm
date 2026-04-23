@@ -24,19 +24,31 @@ method(to_api_format, list(LLMMessage, api_openai)) <- function(.llm, .api, .no_
 
   input <- lapply(non_system, function(m) {
     formatted <- format_message(m)
-    if (!is.null(formatted$image)) {
-      list(
-        role = m$role,
-        content = list(
-          list(type = "input_text", text = formatted$content),
-          list(
-            type      = "input_image",
-            image_url = glue::glue("data:{formatted$image$media_type};base64,{formatted$image$data}")
-          )
-        )
-      )
+    content_parts <- list()
+
+    # Text part
+    content_parts <- c(content_parts, list(list(type = "input_text", text = formatted$content)))
+
+    # Inline images (multi-image)
+    for (img_struct in formatted$images) {
+      content_parts <- c(content_parts, list(list(
+        type      = "input_image",
+        image_url = glue::glue("data:{img_struct$media_type};base64,{img_struct$data}")
+      )))
+    }
+
+    # Remote file references (tidyllm_file, provider == "openai")
+    if (!is.null(m$files)) {
+      for (f in m$files) {
+        if (f@provider != "openai") next
+        content_parts <- c(content_parts, list(list(type = "input_file", file_id = f@id)))
+      }
+    }
+
+    if (length(content_parts) == 1 && content_parts[[1]]$type == "input_text") {
+      list(role = m$role, content = content_parts[[1]]$text)
     } else {
-      list(role = m$role, content = formatted$content)
+      list(role = m$role, content = content_parts)
     }
   })
 
@@ -567,22 +579,13 @@ openai_code_interpreter <- function() {
   )
 }
 
-#' OpenAI built-in file search tool (server-executed)
-#'
-#' @param .vector_store_ids Character vector of vector store IDs to search.
-#' @return A TOOL object declaring the file_search built-in.
-#' @export
-openai_file_search <- function(.vector_store_ids) {
-  c(".vector_store_ids must be a character vector" = is.character(.vector_store_ids)) |>
-    validate_inputs()
-  TOOL(
-    name         = "file_search",
-    description  = "Builtin: file_search",
-    input_schema = list(),
-    func         = function() NULL,
-    builtin      = list(list(type = "file_search", vector_store_ids = as.list(.vector_store_ids)))
-  )
-}
+# openai_file_search() is intentionally not implemented.
+#
+# The file_search built-in tool queries OpenAI vector stores, but tidyllm has no
+# vector store management: no way to create a store, add files to one, or list them.
+# Without that, file_search would be a dangling feature requiring out-of-tidyllm setup.
+# It will be added alongside vector store verbs (create_vector_store, add_to_vector_store,
+# etc.) in a future release so the full workflow is self-contained.
 
 #' Submit a Deep Research Request to OpenAI
 #'
@@ -771,6 +774,92 @@ openai_fetch_research <- function(.job, .max_tries = 3) {
 
 #' OpenAI Provider Function
 #'
+#' Upload a file to OpenAI's Files API
+#' @noRd
+openai_upload_file <- function(.path, .purpose = "assistants", .called_from = NULL, ...) {
+  api_obj <- api_openai(short_name = "openai", long_name = "OpenAI", api_key_env_var = "OPENAI_API_KEY")
+  api_key <- get_api_key(api_obj)
+
+  resp <- httr2::request("https://api.openai.com/v1/files") |>
+    httr2::req_auth_bearer_token(api_key) |>
+    httr2::req_body_multipart(
+      purpose = .purpose,
+      file = curl::form_file(.path)
+    ) |>
+    httr2::req_perform() |>
+    httr2::resp_body_json()
+
+  tidyllm_file(
+    id        = resp$id,
+    provider  = "openai",
+    mime_type = guess_mime_type(.path),
+    filename  = resp$filename %||% basename(.path),
+    uri       = ""
+  )
+}
+
+#' List files on OpenAI's Files API
+#' @noRd
+openai_list_files <- function(.called_from = NULL, ...) {
+  api_obj <- api_openai(short_name = "openai", long_name = "OpenAI", api_key_env_var = "OPENAI_API_KEY")
+  api_key <- get_api_key(api_obj)
+
+  resp <- httr2::request("https://api.openai.com/v1/files") |>
+    httr2::req_auth_bearer_token(api_key) |>
+    httr2::req_perform() |>
+    httr2::resp_body_json()
+
+  if (is.null(resp$data) || length(resp$data) == 0) {
+    return(tibble::tibble(file_id=character(), filename=character(), mime_type=character(),
+                          size_bytes=numeric(), created_at=character(), expires_at=character()))
+  }
+  purrr::map_dfr(resp$data, function(f) tibble::tibble(
+    file_id    = f$id %||% NA_character_,
+    filename   = f$filename %||% NA_character_,
+    mime_type  = guess_mime_type(f$filename %||% ""),
+    size_bytes = as.numeric(f$bytes %||% NA),
+    created_at = as.character(as.POSIXct(f$created_at %||% NA, origin = "1970-01-01", tz = "UTC")),
+    expires_at = NA_character_
+  ))
+}
+
+#' Get metadata for an OpenAI file
+#' @noRd
+openai_file_info <- function(.file_id, .called_from = NULL, ...) {
+  api_obj <- api_openai(short_name = "openai", long_name = "OpenAI", api_key_env_var = "OPENAI_API_KEY")
+  api_key <- get_api_key(api_obj)
+
+  f <- httr2::request(paste0("https://api.openai.com/v1/files/", .file_id)) |>
+    httr2::req_auth_bearer_token(api_key) |>
+    httr2::req_perform() |>
+    httr2::resp_body_json()
+
+  tibble::tibble(
+    file_id    = f$id %||% NA_character_,
+    filename   = f$filename %||% NA_character_,
+    mime_type  = guess_mime_type(f$filename %||% ""),
+    size_bytes = as.numeric(f$bytes %||% NA),
+    created_at = as.character(as.POSIXct(f$created_at %||% NA, origin = "1970-01-01", tz = "UTC")),
+    expires_at = NA_character_
+  )
+}
+
+#' Delete a file from OpenAI's Files API
+#' @noRd
+openai_delete_file <- function(.file_id, .called_from = NULL, ...) {
+  api_obj <- api_openai(short_name = "openai", long_name = "OpenAI", api_key_env_var = "OPENAI_API_KEY")
+  api_key <- get_api_key(api_obj)
+
+  httr2::request(paste0("https://api.openai.com/v1/files/", .file_id)) |>
+    httr2::req_auth_bearer_token(api_key) |>
+    httr2::req_method("DELETE") |>
+    httr2::req_perform()
+
+  message("File ", .file_id, " has been successfully deleted.")
+  invisible(NULL)
+}
+
+
 #' The `openai()` function acts as an interface for interacting with the OpenAI API
 #' through main `tidyllm` verbs such as `chat()`, `embed()`, and `send_batch()`.
 #' Chat uses the Responses API (`POST /v1/responses`); embeddings and batch operations
@@ -790,7 +879,11 @@ openai <- create_provider_function(
   list_batches   = list_openai_batches,
   fetch_batch    = fetch_openai_batch,
   list_models    = openai_list_models,
-  deep_research  = openai_deep_research
+  deep_research  = openai_deep_research,
+  upload_file    = openai_upload_file,
+  list_files     = openai_list_files,
+  file_info      = openai_file_info,
+  delete_file    = openai_delete_file
 )
 
 #' Alias for the OpenAI Provider Function

@@ -21,58 +21,63 @@ test_that("llm_message handles image files", {
   png(temp_img)
   plot(1:10)
   dev.off()
-  
-  llm <- llm_message("Please analyze the attached image.", .imagefile = temp_img)
+
+  llm <- suppressWarnings(
+    llm_message("Please analyze the attached image.", .imagefile = temp_img)
+  )
   expect_equal(length(llm@message_history), 2)
   media <- llm@message_history[[2]]$media
   expect_equal(length(media), 1)
-  expect_equal(media[[1]]$type, "Image")
-  expect_equal(media[[1]]$filename, basename(temp_img))
-  
+  expect_true(S7_inherits(media[[1]], tidyllm_image))
+  expect_equal(media[[1]]@imagename, basename(temp_img))
+
   # Clean up
   unlink(temp_img)
 })
 
 test_that("llm_message handles PDFs with file path", {
-  pdf_file <- test_path("pdf-sample_150kB.pdf")
-  
-  llm <- llm_message("Please summarize the attached PDF.", .pdf = pdf_file)
+  pdf_path <- test_path("pdf-sample_150kB.pdf")
+
+  llm <- suppressWarnings(
+    llm_message("Please summarize the attached PDF.", .pdf = pdf_path)
+  )
   expect_equal(length(llm@message_history), 2)
   media <- llm@message_history[[2]]$media
   expect_equal(length(media), 1)
-  expect_equal(media[[1]]$type, "PDF")
-  expect_equal(media[[1]]$filename, basename(pdf_file))
+  expect_true(S7_inherits(media[[1]], tidyllm_pdf))
+  expect_equal(media[[1]]@pdfname, basename(pdf_path))
 })
 
 test_that("llm_message handles PDFs with specified pages", {
-  pdf_file <- test_path("pdf-sample_150kB.pdf")
-  
-  llm <- llm_message("Please summarize pages 2 to 3.",
-    .pdf = list(filename = pdf_file, start_page = 2, end_page = 3)
+  pdf_path <- test_path("pdf-sample_150kB.pdf")
+
+  llm <- suppressWarnings(
+    llm_message("Please summarize pages 2 to 3.",
+      .pdf = list(filename = pdf_path, start_page = 2, end_page = 3)
+    )
   )
   expect_equal(length(llm@message_history), 2)
   media <- llm@message_history[[2]]$media
   expect_equal(length(media), 1)
-  expect_equal(media[[1]]$type, "PDF")
-  expect_equal(media[[1]]$filename, basename(pdf_file))
-  
+  expect_true(S7_inherits(media[[1]], tidyllm_pdf))
+  expect_equal(media[[1]]@pdfname, basename(pdf_path))
+
   # Check that the content corresponds to pages 2 and 3
-  pdf_text <- pdftools::pdf_text(pdf_file)[2:3] |> stringr::str_c(collapse = "\n")
-  expect_equal(media[[1]]$content, pdf_text)
+  pdf_text <- pdftools::pdf_text(pdf_path)[2:3] |> stringr::str_c(collapse = "\n")
+  expect_equal(media[[1]]@pdftext, pdf_text)
 })
 
-test_that("llm_message adjusts end_page if it exceeds total pages", {
-  # Create a sample PDF with 2 pages
-  pdf_file <- test_path("pdf-sample_150kB.pdf")
-  
-  # Expect a warning about end_page adjustment
-  expect_warning(
+test_that("llm_message clips pages silently when end_page exceeds total", {
+  pdf_path <- test_path("pdf-sample_150kB.pdf")
+
+  llm <- suppressWarnings(
     llm_message("Please summarize pages 1 to 5.",
-      .pdf = list(filename = pdf_file, start_page = 1, end_page = 100)
-    ),
-    "end_page is greater than total pages. Setting end_page to total pages."
+      .pdf = list(filename = pdf_path, start_page = 1, end_page = 100)
+    )
   )
-  
+  media <- llm@message_history[[2]]$media
+  expect_equal(length(media), 1)
+  expect_true(S7_inherits(media[[1]], tidyllm_pdf))
 })
 
 test_that("llm_message handles text files", {

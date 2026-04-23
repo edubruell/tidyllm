@@ -10,22 +10,53 @@ api_claude <- new_class("Claude", APIProvider)
 #' one needed for the Anthropic Claude API.
 #'
 #' @noRd
-method(to_api_format, list(LLMMessage, api_claude)) <- function(.llm, 
+method(to_api_format, list(LLMMessage, api_claude)) <- function(.llm,
                                                                 .api) {
-  
   claude_history <- filter_roles(.llm@message_history, c("user", "assistant"))
   lapply(claude_history, function(m) {
     formatted_message <- format_message(m)
-    if (!is.null(formatted_message$image)) {
-      list(role = m$role, content = list(
-        list(type = "image", source = formatted_message$image),
-        list(type = "text", text = formatted_message$content)
-      ))
-    } else {
-      list(role = m$role, content = list(
-        list(type = "text", text = formatted_message$content)
+    content_blocks <- list()
+
+    # Inline images (multi-image support)
+    for (img_struct in formatted_message$images) {
+      content_blocks <- c(content_blocks, list(
+        list(type = "image", source = img_struct)
       ))
     }
+
+    # Inline PDF: text_extract=TRUE or text fallback (Claude does not support binary PDF)
+    if (!is.null(m$media)) {
+      for (med in m$media) {
+        if (S7_inherits(med, tidyllm_pdf)) {
+          content_blocks <- c(content_blocks, list(
+            list(type = "text", text = paste0("<pdf filename=\"", med@pdfname, "\">", med@pdftext, "</pdf>"))
+          ))
+        }
+      }
+    }
+
+    # Remote file references (tidyllm_file, provider == "claude")
+    if (!is.null(m$files)) {
+      for (f in m$files) {
+        if (f@provider != "claude") next  # silently skip historical foreign files
+        if (grepl("^image/", f@mime_type)) {
+          content_blocks <- c(content_blocks, list(
+            list(type = "image", source = list(type = "file", file_id = f@id))
+          ))
+        } else {
+          content_blocks <- c(content_blocks, list(
+            list(type = "document", source = list(type = "file", file_id = f@id))
+          ))
+        }
+      }
+    }
+
+    # Text block (always last)
+    content_blocks <- c(content_blocks, list(
+      list(type = "text", text = formatted_message$content)
+    ))
+
+    list(role = m$role, content = content_blocks)
   })
 }
 
@@ -430,9 +461,18 @@ claude_chat <- function(.llm,
   
   api_key <- get_api_key(api_obj,.dry_run)
   
-  # Format message list for Claude model
-  messages <- to_api_format(.llm,api_obj)
-  messages <- claude_inject_files(messages, .file_ids)
+  # Deprecated .file_ids: convert to tidyllm_file objects and inject into last message
+  if (!is.null(.file_ids)) {
+    lifecycle::deprecate_warn(
+      "0.5.0", "claude(.file_ids=)",
+      details = "Pass tidyllm_file objects via .files on llm_message() instead."
+    )
+    file_objs <- lapply(.file_ids, function(id)
+      tidyllm_file(id = id, provider = "claude", mime_type = "", filename = id, uri = ""))
+    .llm <- inject_files_into_last_message(.llm, file_objs)
+  }
+
+  messages <- to_api_format(.llm, api_obj)
   
   #Put a single tool into a list if only one is provided. 
   tools_def <- if (!is.null(.tools)) {
@@ -1022,13 +1062,13 @@ claude_list_models <- function(.api_url = "https://api.anthropic.com",
 #' @param .dry_run Logical; if TRUE, returns the prepared request object without executing it.
 #' @return A tibble containing metadata about the uploaded file, including its file_id, name, and size.
 #' @export
-claude_upload_file <- function(.file_path, 
+claude_upload_file <- function(.file_path,
                                .api_url = "https://api.anthropic.com/",
                                .timeout = 60,
                                .max_tries = 3,
                                .dry_run = FALSE) {
-  
-  # Validate inputs
+  lifecycle::deprecate_warn("0.5.0", "claude_upload_file()", "upload_file()",
+    details = "Use upload_file(claude(), .path = ...) instead.")
   c(
     ".file_path must be a character string" = is.character(.file_path) && length(.file_path) == 1,
     "File must exist" = file.exists(.file_path),
@@ -1099,8 +1139,8 @@ claude_file_metadata <- function(.file_id,
                                  .timeout = 60,
                                  .max_tries = 3,
                                  .dry_run = FALSE) {
-  
-  # Validate inputs
+  lifecycle::deprecate_warn("0.5.0", "claude_file_metadata()", "file_info()",
+    details = "Use file_info(claude(), .file_id = ...) instead.")
   c(
     ".file_id must be a character string" = is.character(.file_id) && length(.file_id) == 1,
     ".api_url must be a character string" = is.character(.api_url),
@@ -1169,8 +1209,8 @@ claude_list_files <- function(.limit = 20,
                               .timeout = 60,
                               .max_tries = 3,
                               .dry_run = FALSE) {
-
-  # Validate inputs
+  lifecycle::deprecate_warn("0.5.0", "claude_list_files()", "list_files()",
+    details = "Use list_files(claude()) instead.")
   c(
     ".limit must be a positive integer" = is_integer_valued(.limit) && .limit > 0,
     ".order must be 'asc' or 'desc'" = .order %in% c("asc", "desc"),
@@ -1253,8 +1293,8 @@ claude_delete_file <- function(.file_id,
                                .timeout = 60,
                                .max_tries = 3,
                                .dry_run = FALSE) {
-  
-  # Validate inputs
+  lifecycle::deprecate_warn("0.5.0", "claude_delete_file()", "delete_file()",
+    details = "Use delete_file(claude(), .file_id = ...) instead.")
   c(
     ".file_id must be a character string" = is.character(.file_id) && length(.file_id) == 1,
     ".api_url must be a character string" = is.character(.api_url),
@@ -1298,6 +1338,72 @@ claude_delete_file <- function(.file_id,
   
   message("File ", .file_id, " has been successfully deleted.")
   invisible(NULL)
+}
+
+
+#' Inject tidyllm_file objects into the last user message
+#'
+#' Used by the deprecated .file_ids / .fileid paths to move bare file IDs
+#' into message$files so to_api_format() can handle them uniformly.
+#'
+#' @noRd
+inject_files_into_last_message <- function(.llm, file_objs) {
+  history <- .llm@message_history
+  user_idxs <- which(vapply(history, function(m) identical(m$role, "user"), logical(1)))
+  if (length(user_idxs) == 0) return(.llm)
+  last_idx <- user_idxs[length(user_idxs)]
+  existing <- history[[last_idx]]$files %||% list()
+  history[[last_idx]]$files <- c(existing, file_objs)
+  .llm@message_history <- history
+  .llm
+}
+
+
+#' Upload a file to Claude's Files API (verb dispatch wrapper)
+#' @noRd
+claude_upload_file_verb <- function(.path, .called_from = NULL, ...) {
+  api_obj <- api_claude(short_name = "claude", long_name = "Anthropic Claude",
+                        api_key_env_var = "ANTHROPIC_API_KEY")
+  api_key <- get_api_key(api_obj)
+  response <- httr2::request("https://api.anthropic.com/") |>
+    httr2::req_url_path("/v1/files") |>
+    httr2::req_headers(
+      `x-api-key` = api_key,
+      `anthropic-version` = "2023-06-01",
+      `anthropic-beta` = "files-api-2025-04-14",
+      .redact = "x-api-key"
+    ) |>
+    httr2::req_body_multipart(file = curl::form_file(.path)) |>
+    perform_generic_request()
+  if ("error" %in% names(response$content)) {
+    sprintf("Claude API returned an Error:\nType: %s\nMessage: %s",
+            response$content$error$type, response$content$error$message) |> stop()
+  }
+  tidyllm_file(
+    id        = response$content$id,
+    provider  = "claude",
+    mime_type = response$content$mime_type %||% guess_mime_type(.path),
+    filename  = response$content$filename %||% basename(.path),
+    uri       = ""
+  )
+}
+
+#' List files on Claude's Files API (verb dispatch wrapper)
+#' @noRd
+claude_list_files_verb <- function(.called_from = NULL, ...) {
+  claude_list_files(...)
+}
+
+#' Get metadata for a Claude file (verb dispatch wrapper)
+#' @noRd
+claude_file_info_verb <- function(.file_id, .called_from = NULL, ...) {
+  claude_file_metadata(.file_id = .file_id, ...)
+}
+
+#' Delete a file from Claude's Files API (verb dispatch wrapper)
+#' @noRd
+claude_delete_file_verb <- function(.file_id, .called_from = NULL, ...) {
+  claude_delete_file(.file_id = .file_id, ...)
 }
 
 
@@ -1345,5 +1451,9 @@ claude <- create_provider_function(
   check_batch = check_claude_batch,
   list_batches = list_claude_batches,
   fetch_batch = fetch_claude_batch,
-  list_models = claude_list_models
+  list_models = claude_list_models,
+  upload_file = claude_upload_file_verb,
+  list_files  = claude_list_files_verb,
+  file_info   = claude_file_info_verb,
+  delete_file = claude_delete_file_verb
 )

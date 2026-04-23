@@ -20,6 +20,7 @@ mistral_chat(
   .max_tokens = NULL,
   .json_schema = NULL,
   .safe_prompt = FALSE,
+  .reasoning_effort = NULL,
   .timeout = 120,
   .max_tries = 3,
   .dry_run = FALSE,
@@ -96,6 +97,12 @@ mistral_chat(
 
   Whether to inject a safety prompt before all conversations (default:
   `FALSE`).
+
+- .reasoning_effort:
+
+  Controls the reasoning effort for Magistral thinking models; one of
+  `"low"`, `"medium"`, or `"high"` (default: `NULL`, meaning the API
+  default).
 
 - .timeout:
 

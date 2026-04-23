@@ -48,18 +48,28 @@ method(add_message, LLMMessage) <- function(.llm,
                                             .role,
                                             .content,
                                             .media = NULL,
+                                            .files = NULL,
                                             .json = FALSE,
                                             .meta = NULL,
                                             .logprobs = NULL) {
-  
+  if (!is.null(.files)) {
+    files_list <- if (S7_inherits(.files, tidyllm_file)) list(.files) else .files
+    bad <- !all(vapply(files_list, function(f) S7_inherits(f, tidyllm_file), logical(1)))
+    if (bad) stop(".files must be a tidyllm_file object or a list of tidyllm_file objects.")
+    .files <- files_list
+  }
+
   message_details <- list(role = .role, content = .content, json = .json)
   if (!is.null(.media)) {
     message_details$media <- .media
   }
+  if (!is.null(.files)) {
+    message_details$files <- .files
+  }
   if (!is.null(.meta)) {
     message_details$meta <- .meta
   }
-  if (!is.null(.logprobs)) {  
+  if (!is.null(.logprobs)) {
     message_details$logprobs <- .logprobs
   }
   .llm@message_history <- c(.llm@message_history, list(message_details))
@@ -106,11 +116,24 @@ method(print.LLMMessage,LLMMessage) <- function(x,...,.meta = getOption("tidyllm
     cat(sprintf("%s:\n%s\n", message$role, wrapped_content))
     
     # Print media details if available
-    if (!is.null(message$media)) {
-      media_files <- sapply(message$media, function(media) media$filename)
-      if (length(media_files) != 0) {
-        cat(" -> Attached Media Files: ", paste(media_files, collapse = ", "), "\n")
-      }
+    if (!is.null(message$media) && length(message$media) > 0) {
+      media_labels <- vapply(message$media, function(m) {
+        if (S7_inherits(m, tidyllm_image)) return(paste0("[image: ", m@imagename, "]"))
+        if (S7_inherits(m, tidyllm_audio)) return(paste0("[audio: ", m@audioname, "]"))
+        if (S7_inherits(m, tidyllm_video)) return(paste0("[video: ", m@videoname, "]"))
+        if (S7_inherits(m, tidyllm_pdf))   return(paste0("[pdf: ", m@pdfname, "]"))
+        if (is.list(m) && !is.null(m$filename)) return(paste0("[", tolower(m$type %||% "media"), ": ", m$filename, "]"))
+        "[media]"
+      }, character(1))
+      cat(" ->", paste(media_labels, collapse = " "), "\n")
+    }
+
+    # Print remote file references if available
+    if (!is.null(message$files) && length(message$files) > 0) {
+      file_labels <- vapply(message$files, function(f) {
+        sprintf("[file: %s (%s, %s)]", f@filename, f@provider, f@id)
+      }, character(1))
+      cat(" ->", paste(file_labels, collapse = " "), "\n")
     }
     
     # Print metadata if .meta is TRUE and metadata is available
@@ -193,23 +216,25 @@ method(as_tibble.LLMMessage, LLMMessage) <- function(x, ..., .rows = NULL, .name
 #' @noRd
 format_message <- function(message) {
   base_content <- message$content
-  media_list <- message$media
-  text_media <- extract_media(media_list, "text")
-  image_media <- extract_media(media_list, "image")
-  
-  combined_text <- paste(base_content, text_media, sep = " ")
-  
-  if (length(image_media) > 0) {
-    image_file_type <- guess_mime_type(image_media[[1]]$filename)
-    base64_image <- image_media[[1]]$content
-    
-    list(
-      content = combined_text,
-      image = list(type = "base64", media_type = image_file_type, data = base64_image)
-    )
-  } else {
-    list(content = combined_text)
-  }
+  media_list   <- message$media
+  text_media   <- extract_media(media_list, "text")
+  image_media  <- extract_media(media_list, "image")
+
+  combined_text <- paste(c(base_content, unlist(text_media)), collapse = " ")
+
+  images <- lapply(image_media, function(img_item) {
+    if (S7_inherits(img_item, tidyllm_image)) {
+      mime <- guess_mime_type(img_item@imagename)
+      # imagebase64 is stored as "data:{mime};base64,{data}" — strip the header
+      b64 <- sub("^data:[^;]+;base64,", "", img_item@imagebase64)
+      list(type = "base64", media_type = mime, data = b64)
+    } else {
+      # Legacy plain-list format: list(type="Image", content=base64, filename=...)
+      list(type = "base64", media_type = guess_mime_type(img_item$filename), data = img_item$content)
+    }
+  })
+
+  list(content = combined_text, images = images)
 }
 
   

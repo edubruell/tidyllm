@@ -114,5 +114,34 @@ method(prepare_llms_for_batch, APIProvider) <- function(.api, .llms, .id_prefix,
 }
 
 
+# Default error stubs for file verbs — overridden per provider that supports the Files API
+
+upload_file_default <- function(.path, .called_from, ...) {
+  api_obj <- rlang::env_get(parent.frame(), "api_obj", default = NULL)
+  name <- if (!is.null(api_obj)) api_obj@short_name else "this"
+  stop(glue::glue(
+    "The '{name}' provider does not support file upload.\n",
+    "Only claude(), gemini(), and openai() have a Files API."
+  ))
+}
+
+list_files_default <- function(.called_from, ...) {
+  api_obj <- rlang::env_get(parent.frame(), "api_obj", default = NULL)
+  name <- if (!is.null(api_obj)) api_obj@short_name else "this"
+  stop(glue::glue("The '{name}' provider does not support list_files()."))
+}
+
+file_info_default <- function(.file_id, .called_from, ...) {
+  api_obj <- rlang::env_get(parent.frame(), "api_obj", default = NULL)
+  name <- if (!is.null(api_obj)) api_obj@short_name else "this"
+  stop(glue::glue("The '{name}' provider does not support file_info()."))
+}
+
+delete_file_default <- function(.file_id, .called_from, ...) {
+  api_obj <- rlang::env_get(parent.frame(), "api_obj", default = NULL)
+  name <- if (!is.null(api_obj)) api_obj@short_name else "this"
+  stop(glue::glue("The '{name}' provider does not support delete_file()."))
+}
+
 #api_fart <- APIProvider(short_name = "Fart",long_name = "fart.ai",api_key_env_var = "FOPENAI_API_KEY" )
 #get_api_key(api_fart,TRUE)

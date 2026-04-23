@@ -23,10 +23,6 @@ ellmer(..., .called_from = NULL)
   An internal argument specifying which action (e.g., `chat`) the
   function is invoked from.
 
-- .ellmer_chat:
-
-  An ellmer chat object to use as the backend.
-
 ## Value
 
 A provider function that can be used with

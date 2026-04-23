@@ -17,10 +17,6 @@ codes from the Bureau of Labor Statistics SOC classification system.
 
 library(tidyllm)
 library(tidyverse)
-## Warning: package 'ggplot2' was built under R version 4.4.3
-## Warning: package 'tibble' was built under R version 4.4.3
-## Warning: package 'purrr' was built under R version 4.4.3
-## Warning: package 'lubridate' was built under R version 4.4.3
 library(glue)
 
 occ_data <- read_rds("occupation_data.rds")

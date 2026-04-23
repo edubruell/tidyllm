@@ -26,7 +26,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.4.0.9000</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.5.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -44,7 +44,7 @@
     <li><a class="dropdown-item" href="../articles/tidyllm_embed.html">Embedding Models in tidyllm</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm_local_models.html">Local Models with tidyllm</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm_tools.html">Using Tools with tidyllm</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm_video.html">Video and Audio Data with the Gemini API</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_video.html">Working with Files and Media</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm-pdfquestions.html">Structured Question Answering from PDFs</a></li>
   </ul>
 </li>
@@ -91,7 +91,7 @@ vignette guides you through the basic setup and usage of
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"tidyllm"</span><span class="op">)</span></span></code></pre></div>
 <p>Or install the development version from GitHub:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"edubruell/tidyllm"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/install-deprecated.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"edubruell/tidyllm"</span><span class="op">)</span></span></code></pre></div>
 <div class="section level4">
 <h4 id="setting-up-api-keys">Setting up API Keys<a class="anchor" aria-label="anchor" href="#setting-up-api-keys"></a>
 </h4>
@@ -179,7 +179,7 @@ Dashboard</a></td>
 <div class="section level4">
 <h4 id="running-local-models">Running Local Models<a class="anchor" aria-label="anchor" href="#running-local-models"></a>
 </h4>
-<p><strong>tidyllm</strong> supports local inference via <a href="https://ollama.com/" class="external-link">Ollama</a> and <a href="https://github.com/ggerganov/llama.cpp" class="external-link">llama.cpp</a>. Both run
+<p><strong>tidyllm</strong> supports local inference via <a href="https://ollama.com/" class="external-link">Ollama</a> and <a href="https://github.com/ggml-org/llama.cpp" class="external-link">llama.cpp</a>. Both run
 entirely on your machine; no API key required.</p>
 <p>For Ollama, install from <a href="https://ollama.com/" class="external-link">ollama.com</a>
 and pull a model:</p>
@@ -230,7 +230,9 @@ pattern:</p>
 <code><a href="../reference/check_batch.html">check_batch()</a></code>, <code><a href="../reference/fetch_batch.html">fetch_batch()</a></code>,
 <code><a href="../reference/list_batches.html">list_batches()</a></code>, <code><a href="../reference/list_models.html">list_models()</a></code>,
 <code><a href="../reference/deep_research.html">deep_research()</a></code>, <code><a href="../reference/check_job.html">check_job()</a></code>,
-<code><a href="../reference/fetch_job.html">fetch_job()</a></code>
+<code><a href="../reference/fetch_job.html">fetch_job()</a></code>, <code><a href="../reference/upload_file.html">upload_file()</a></code>,
+<code><a href="../reference/list_files.html">list_files()</a></code>, <code><a href="../reference/file_info.html">file_info()</a></code>,
+<code><a href="../reference/delete_file.html">delete_file()</a></code>
 </li>
 <li>
 <strong>Providers</strong> specify the API: <code><a href="../reference/openai.html">openai()</a></code>,
@@ -245,36 +247,67 @@ pattern:</p>
 <code><a href="../reference/claude_chat.html">claude_chat()</a></code> also work directly and expose the full range
 of parameters for each API.</p>
 <div class="section level4">
-<h4 id="sending-images-to-models">Sending Images to Models<a class="anchor" aria-label="anchor" href="#sending-images-to-models"></a>
+<h4 id="sending-images-and-media">Sending Images and Media<a class="anchor" aria-label="anchor" href="#sending-images-and-media"></a>
 </h4>
-<p><strong>tidyllm</strong> supports sending images to multimodal
-models. Here we let a model describe a photo:</p>
+<p>Attach images, PDFs, audio, or video to a message using the
+<code>.media</code> argument of <code><a href="../reference/llm_message.html">llm_message()</a></code>. Pass a
+single media object or a list of them:</p>
 <p><img src="picture.jpeg" class="r-plt" alt="A photograph showing lake Garda and the scenery near Torbole, Italy." width="70%"></p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">image_description</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Describe this picture. Can you guess where it was taken?"</span>,</span>
-<span>                                  .imagefile <span class="op">=</span> <span class="st">"picture.jpeg"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<code class="sourceCode R"><span><span class="co"># Single image</span></span>
+<span><span class="va">image_description</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Describe this picture. Can you guess where it was taken?"</span>,</span>
+<span>                                  .media <span class="op">=</span> <span class="fu"><a href="../reference/img.html">img</a></span><span class="op">(</span><span class="st">"picture.jpeg"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-5.4"</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/get_reply.html">get_reply</a></span><span class="op">(</span><span class="va">image_description</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## [1] "The picture shows a beautiful landscape with a lake, mountains, and a town nestled below. The area appears lush and green, with agricultural fields visible. This scenery is reminiscent of northern Italy, particularly around Lake Garda."</span></span></code></pre>
+<p>Send multiple images in one message by passing a list. The list can
+also mix different media types; for example, an image alongside a PDF or
+an audio file alongside a chart. Gemini handles mixed-type lists most
+flexibly:</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Compare these two charts."</span>,</span>
+<span>            .media <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="../reference/img.html">img</a></span><span class="op">(</span><span class="st">"chart_a.png"</span><span class="op">)</span>, <span class="fu"><a href="../reference/img.html">img</a></span><span class="op">(</span><span class="st">"chart_b.png"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Mixed types in one message</span></span>
+<span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Does this figure match the results described in the paper?"</span>,</span>
+<span>            .media <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="../reference/img.html">img</a></span><span class="op">(</span><span class="st">"figure.png"</span><span class="op">)</span>, <span class="fu"><a href="../reference/pdf_file.html">pdf_file</a></span><span class="op">(</span><span class="st">"paper.pdf"</span>, pages <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/gemini.html">gemini</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>For audio and video, use <code><a href="../reference/audio_file.html">audio_file()</a></code> and
+<code><a href="../reference/video_file.html">video_file()</a></code>. Gemini supports both natively; llama.cpp
+supports audio with compatible models (Ultravox, Qwen2.5-Omni,
+Qwen3-Omni); OpenRouter routes audio and video to underlying models that
+accept them:</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Audio transcription or analysis</span></span>
+<span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Transcribe and summarise this recording."</span>,</span>
+<span>            .media <span class="op">=</span> <span class="fu"><a href="../reference/audio_file.html">audio_file</a></span><span class="op">(</span><span class="st">"interview.mp3"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/gemini.html">gemini</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Video understanding</span></span>
+<span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Describe what happens in this clip."</span>,</span>
+<span>            .media <span class="op">=</span> <span class="fu"><a href="../reference/video_file.html">video_file</a></span><span class="op">(</span><span class="st">"demo.mp4"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/gemini.html">gemini</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="adding-pdfs-to-messages">Adding PDFs to Messages<a class="anchor" aria-label="anchor" href="#adding-pdfs-to-messages"></a>
 </h4>
-<p>Pass a PDF path to the <code>.pdf</code> argument of
-<code><a href="../reference/llm_message.html">llm_message()</a></code>. The package extracts the text and wraps it
-in <code>&lt;pdf&gt;</code> tags in the prompt:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<p>Pass a PDF to <code><a href="../reference/pdf_file.html">pdf_file()</a></code> and attach it with
+<code>.media</code>. By default the file is sent as binary to providers
+that support native PDF rendering (Claude, Gemini), and the text is
+automatically extracted as a fallback for others:</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Summarize the key points from this document."</span>,</span>
-<span>            .pdf <span class="op">=</span> <span class="st">"die_verwandlung.pdf"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-5.4"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span>            .media <span class="op">=</span> <span class="fu"><a href="../reference/pdf_file.html">pdf_file</a></span><span class="op">(</span><span class="st">"die_verwandlung.pdf"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Message History:</span></span>
 <span><span class="co">## system:</span></span>
 <span><span class="co">## You are a helpful assistant</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span>
 <span><span class="co">## user:</span></span>
 <span><span class="co">## Summarize the key points from this document.</span></span>
-<span><span class="co">##  -&gt; Attached Media Files:  die_verwandlung.pdf </span></span>
+<span><span class="co">##  -&gt; [pdf: die_verwandlung.pdf] </span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span>
 <span><span class="co">## assistant:</span></span>
 <span><span class="co">## The story centres on Gregor Samsa, who wakes up transformed</span></span>
@@ -282,38 +315,62 @@ in <code>&lt;pdf&gt;</code> tags in the prompt:</p>
 <span><span class="co">## while his family struggles. Eventually Gregor dies, and his</span></span>
 <span><span class="co">## relieved family looks ahead to a better future.</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span></code></pre>
-<p>Specify page ranges with
-<code>.pdf = list(filename = "doc.pdf", start_page = 1, end_page = 5)</code>.</p>
+<p>Restrict to specific pages with the <code>pages</code> argument:</p>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/pdf_file.html">pdf_file</a></span><span class="op">(</span><span class="st">"report.pdf"</span>, pages <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">)</span></span></code></pre></div>
+<p>For large or frequently reused documents, upload them once to the
+provider’s Files API and reference the handle in any message:</p>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">report</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/upload_file.html">upload_file</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span>, .path <span class="op">=</span> <span class="st">"annual_report.pdf"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"What are the key risks mentioned?"</span>, .files <span class="op">=</span> <span class="va">report</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Manage uploaded files</span></span>
+<span><span class="fu"><a href="../reference/list_files.html">list_files</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/file_info.html">file_info</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span>, <span class="va">report</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/delete_file.html">delete_file</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span>, <span class="va">report</span><span class="op">)</span></span></code></pre></div>
+<p>File management verbs are currently only supported by Claude, Gemini,
+and OpenAI. Files are uploaded to and stored on the specific provider’s
+servers; a file uploaded to Claude cannot be used with Gemini or OpenAI.
+Supported file types vary by provider: Gemini accepts a wide range
+including video, audio, images, PDFs, and various document formats.
+OpenAI accepts 80+ formats including Office documents (PPTX, DOCX,
+XLSX), source code, ZIP archives, and more. Claude focuses on PDFs and
+images. Always check the provider’s current documentation for the full
+list.</p>
 </div>
 <div class="section level4">
 <h4 id="sending-r-outputs-to-models">Sending R Outputs to Models<a class="anchor" aria-label="anchor" href="#sending-r-outputs-to-models"></a>
 </h4>
 <p>Use <code>.f</code> to capture console output from a function and
 <code>.capture_plot</code> to include the last plot:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tidyverse.tidyverse.org" class="external-link">tidyverse</a></span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## Warning: package 'ggplot2' was built under R version 4.4.3</span></span></code></pre>
-<pre><code><span><span class="co">## Warning: package 'tibble' was built under R version 4.4.3</span></span></code></pre>
-<pre><code><span><span class="co">## Warning: package 'purrr' was built under R version 4.4.3</span></span></code></pre>
-<pre><code><span><span class="co">## Warning: package 'lubridate' was built under R version 4.4.3</span></span></code></pre>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">mtcars</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">wt</span>, <span class="va">mpg</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tidyverse.tidyverse.org" class="external-link">tidyverse</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">mtcars</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">wt</span>, <span class="va">mpg</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_smooth.html" class="external-link">geom_smooth</a></span><span class="op">(</span>method <span class="op">=</span> <span class="st">"lm"</span>, formula <span class="op">=</span> <span class="st">"y ~ x"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Weight"</span>, y <span class="op">=</span> <span class="st">"Miles per gallon"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tidyllm_files/figure-html/routputs_base-1.png" class="r-plt" alt="Scatter plot of car weight (x-axis) versus miles per gallon (y-axis) from the mtcars dataset, with a fitted linear regression line showing a negative relationship between weight and fuel efficiency." width="700"></p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Analyze this plot and data summary:"</span>,</span>
 <span>            .capture_plot <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>            .f <span class="op">=</span> <span class="op">~</span><span class="op">{</span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">mtcars</span><span class="op">)</span><span class="op">}</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## Warning: The `.imagefile` argument of `llm_message()` is deprecated as of tidyllm 0.5.0.</span></span>
+<span><span class="co">## <span style="color: #00BBBB;">ℹ</span> Please use the `.media` argument instead.</span></span>
+<span><span class="co">## <span style="color: #00BBBB;">ℹ</span> Replace with .media = img(path).</span></span>
+<span><span class="co">## <span style="color: #555555;">This warning is displayed once per session.</span></span></span>
+<span><span class="co">## <span style="color: #555555;">Call `lifecycle::last_lifecycle_warnings()` to see where this warning was</span></span></span>
+<span><span class="co">## <span style="color: #555555;">generated.</span></span></span></code></pre>
 <pre><code><span><span class="co">## Message History:</span></span>
 <span><span class="co">## system:</span></span>
 <span><span class="co">## You are a helpful assistant</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span>
 <span><span class="co">## user:</span></span>
 <span><span class="co">## Analyze this plot and data summary:</span></span>
-<span><span class="co">##  -&gt; Attached Media Files:  file1568f6c1b4565.png, RConsole.txt </span></span>
+<span><span class="co">##  -&gt; [image: file1568f6c1b4565.png] [rconsole: RConsole.txt] </span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span>
 <span><span class="co">## assistant:</span></span>
 <span><span class="co">## The scatter plot shows a clear negative correlation between</span></span>
@@ -550,7 +607,7 @@ handled transparently.</p>
 definitions with <code><a href="../reference/ellmer_tool.html">ellmer_tool()</a></code>:</p>
 <div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ellmer.tidyverse.org" class="external-link">ellmer</a></span><span class="op">)</span></span>
-<span><span class="va">btw_tool</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ellmer_tool.html">ellmer_tool</a></span><span class="op">(</span><span class="fu">btw</span><span class="fu">::</span><span class="va"><a href="https://posit-dev.github.io/btw/reference/btw_tool_files_list_files.html" class="external-link">btw_tool_files_list_files</a></span><span class="op">)</span></span>
+<span><span class="va">btw_tool</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ellmer_tool.html">ellmer_tool</a></span><span class="op">(</span><span class="fu">btw</span><span class="fu">::</span><span class="va">btw_tool_files_list_files</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"List files in the R/ folder."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span>, .tools <span class="op">=</span> <span class="va">btw_tool</span><span class="op">)</span></span></code></pre></div>
 <p>For a detailed guide, see the Tool Use article on the tidyllm
@@ -667,7 +724,8 @@ because it provides complete metadata and is more reliable.</p>
 <tr class="odd">
 <td><code><a href="../reference/openai.html">openai()</a></code></td>
 <td>Top benchmark performance across coding, math, and reasoning;
-<code>o3</code>/<code>o4</code> reasoning models</td>
+<code>o3</code>/<code>o4</code> reasoning models; built-in web search
+via <code><a href="../reference/openai_websearch.html">openai_websearch()</a></code>; Files API</td>
 </tr>
 <tr class="even">
 <td><code><a href="../reference/claude.html">claude()</a></code></td>
@@ -677,13 +735,14 @@ document workflows; batch</td>
 </tr>
 <tr class="odd">
 <td><code><a href="../reference/gemini.html">gemini()</a></code></td>
-<td>1M-token context window; video and audio via file upload API; search
-grounding; <code>.thinking_budget</code> for reasoning; batch</td>
+<td>1M-token context window; native image, audio, and video via
+<code>.media</code>; search grounding; <code>.thinking_budget</code> for
+reasoning; Files API; batch</td>
 </tr>
 <tr class="even">
 <td><code><a href="../reference/mistral.html">mistral()</a></code></td>
-<td>EU-hosted, GDPR-friendly; Magistral reasoning models; embeddings;
-batch</td>
+<td>EU-hosted, GDPR-friendly; Magistral reasoning models; Voxtral audio
+models (<code>.media = audio_file()</code>); embeddings; batch</td>
 </tr>
 <tr class="odd">
 <td><code><a href="../reference/groq.html">groq()</a></code></td>
@@ -713,8 +772,8 @@ multimodal embeddings (text + images);
 </tr>
 <tr class="odd">
 <td><code><a href="../reference/openrouter.html">openrouter()</a></code></td>
-<td>500+ models via one API key; automatic fallback routing;
-<code><a href="../reference/openrouter_credits.html">openrouter_credits()</a></code> and per-generation cost tracking</td>
+<td>500+ models via one API key; audio and video support on Gemini, Qwen
+3.6, and other multimodal routes; automatic fallback routing</td>
 </tr>
 <tr class="even">
 <td><code><a href="../reference/ollama.html">ollama()</a></code></td>
@@ -723,10 +782,10 @@ multimodal embeddings (text + images);
 </tr>
 <tr class="odd">
 <td><code><a href="../reference/llamacpp.html">llamacpp()</a></code></td>
-<td>Often the most performant local inference stack; BNF grammar
-constraints (<code>.grammar</code>); logprobs via
-<code><a href="../reference/get_logprobs.html">get_logprobs()</a></code>; <code><a href="../reference/llamacpp_rerank.html">llamacpp_rerank()</a></code>; model
-management</td>
+<td>Often the most performant local inference stack; audio input with
+Ultravox, Qwen2.5-Omni, Qwen3-Omni, and Gemma 4 models; BNF grammar
+constraints; logprobs; <code><a href="../reference/llamacpp_rerank.html">llamacpp_rerank()</a></code>
+</td>
 </tr>
 <tr class="even">
 <td><code><a href="../reference/azure_openai.html">azure_openai()</a></code></td>

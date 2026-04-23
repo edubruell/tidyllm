@@ -1,11 +1,11 @@
 Package: tidyllm
 Title: Tidy Integration of Large Language Models
-Version: 0.4.1.9000
+Version: 0.5.0
 Authors@R: c(
     person("Eduard", "Brüll", NULL, "eduard.bruell@zew.de", role = c("aut", "cre")),
     person("Jia", "Zhang", NULL, NULL, role = "ctb")
   )
-Description: A tidy interface for integrating large language model (LLM) APIs such as 'Claude', 'Openai', 'Gemini','Mistral' and local models via 'Ollama' into R workflows. The package supports text and media-based interactions, interactive message history, batch request APIs, and a tidy, pipeline-oriented interface for streamlined integration into data workflows. Web services are available at <https://www.anthropic.com>, <https://openai.com>, <https://aistudio.google.com/>, <https://mistral.ai/> and <https://ollama.com>.
+Description: A tidy interface for integrating large language model (LLM) APIs such as 'Claude', 'OpenAI', 'Gemini', 'Mistral', and local models via 'Ollama' into R workflows. The package supports text, image, audio, video, and document interactions; a unified media interface for attaching inline files or uploading to provider file stores; batch request APIs for cost-efficient large-scale processing; and a pipeline-oriented interface for seamless integration into data workflows. Web services are available at <https://www.anthropic.com>, <https://openai.com>, <https://aistudio.google.com/>, <https://mistral.ai/> and <https://ollama.com>.
 License: MIT + file LICENSE
 URL: https://edubruell.github.io/tidyllm/
 BugReports: https://github.com/edubruell/tidyllm/issues

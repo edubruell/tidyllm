@@ -19,6 +19,7 @@ mistral_chat(
   .max_tokens = NULL,
   .json_schema = NULL,
   .safe_prompt = FALSE,
+  .reasoning_effort = NULL,
   .timeout = 120,
   .max_tries = 3,
   .dry_run = FALSE,
@@ -56,6 +57,8 @@ mistral_chat(
 \item{.json_schema}{A JSON schema object provided by tidyllm schema or ellmer schemata.}
 
 \item{.safe_prompt}{Whether to inject a safety prompt before all conversations (default: \code{FALSE}).}
+
+\item{.reasoning_effort}{Controls the reasoning effort for Magistral thinking models; one of \code{"low"}, \code{"medium"}, or \code{"high"} (default: \code{NULL}, meaning the API default).}
 
 \item{.timeout}{When should our connection time out in seconds (default: \code{120}).}
 

@@ -30,7 +30,7 @@ test_that("perplexity function constructs a correct request and dry runs it", {
   # Now check the body content to ensure the JSON is constructed as expected
   body_json <- request$body |> jsonlite::toJSON() |> as.character()
   
-  expected_json <- "{\"data\":{\"model\":[\"sonar\"],\"messages\":[{\"role\":[\"user\"],\"content\":[\"Write a haiku about search indices \"]}],\"max_tokens\":[1024],\"return_images\":[false],\"search_mode\":[\"web\"],\"return_related_questions\":[false],\"stream\":[false]},\"type\":[\"json\"],\"content_type\":[\"application/json\"],\"params\":{\"auto_unbox\":[true],\"digits\":[22],\"null\":[\"null\"]}}"
+  expected_json <- "{\"data\":{\"model\":[\"sonar\"],\"messages\":[{\"role\":[\"user\"],\"content\":[\"Write a haiku about search indices\"]}],\"max_tokens\":[1024],\"return_images\":[false],\"search_mode\":[\"web\"],\"return_related_questions\":[false],\"stream\":[false]},\"type\":[\"json\"],\"content_type\":[\"application/json\"],\"params\":{\"auto_unbox\":[true],\"digits\":[22],\"null\":[\"null\"]}}"
   # Check if the JSON matches the expected JSON
   expect_equal(body_json, expected_json)
 })
