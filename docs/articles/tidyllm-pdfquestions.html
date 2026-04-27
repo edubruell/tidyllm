@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -43,7 +43,7 @@
     <li><a class="dropdown-item" href="../articles/tidyllm_embed.html">Embedding Models in tidyllm</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm_local_models.html">Local Models with tidyllm</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm_tools.html">Using Tools with tidyllm</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm_video.html">Video and Audio Data with the Gemini API</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_video.html">Working with Files and Media</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm-pdfquestions.html">Structured Question Answering from PDFs</a></li>
   </ul>
 </li>
@@ -95,10 +95,6 @@ analysis.</p>
 but no structure yet:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tidyverse.tidyverse.org" class="external-link">tidyverse</a></span><span class="op">)</span></span>
-<span><span class="co">## Warning: package 'ggplot2' was built under R version 4.4.3</span></span>
-<span><span class="co">## Warning: package 'tibble' was built under R version 4.4.3</span></span>
-<span><span class="co">## Warning: package 'purrr' was built under R version 4.4.3</span></span>
-<span><span class="co">## Warning: package 'lubridate' was built under R version 4.4.3</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://edubruell.github.io/tidyllm/">tidyllm</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">dir</a></span><span class="op">(</span><span class="st">"aipapers"</span><span class="op">)</span></span>
 <span><span class="co">##  [1] "2018_Felten_etal_AILinkOccupations.pdf"                                                           </span></span>
@@ -137,6 +133,13 @@ pages of each document. Even though <code>gpt-5.4</code> can process up
 to 128,000 tokens (roughly 80-90 pages of English text), we limit the
 input to five pages for demonstration purposes; the introduction is
 usually enough to get a first overview of a paper.</p>
+<p>Attach PDFs with <code><a href="../reference/pdf_file.html">pdf_file()</a></code> and the <code>.media</code>
+argument. On providers that support native PDF rendering (Claude,
+Gemini), the file is sent as binary, preserving images, tables, and
+formatting. On all other providers the text is extracted automatically
+and wrapped in <code>&lt;pdf&gt;</code> tags in the prompt. Pass
+<code>.text_extract = TRUE</code> to always force text extraction
+regardless of the provider:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">files</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files</a></span><span class="op">(</span><span class="st">"aipapers"</span>, full.names <span class="op">=</span> <span class="cn">TRUE</span>, pattern <span class="op">=</span> <span class="st">"\\.pdf$"</span><span class="op">)</span></span>
 <span></span>
@@ -144,11 +147,7 @@ usually enough to get a first overview of a paper.</p>
 <span>  <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span>\<span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span></span>
 <span>    <span class="st">"Below are the first 5 pages of a document.</span></span>
 <span><span class="st">     Summarise the document based on the provided schema."</span>,</span>
-<span>    .pdf <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>      filename   <span class="op">=</span> <span class="va">f</span>,</span>
-<span>      start_page <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>      end_page   <span class="op">=</span> <span class="fl">5</span></span>
-<span>    <span class="op">)</span></span>
+<span>    .media <span class="op">=</span> <span class="fu"><a href="../reference/pdf_file.html">pdf_file</a></span><span class="op">(</span><span class="va">f</span>, pages <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">)</span></span>
 <span>  <span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
@@ -323,18 +322,30 @@ helps preserve continuity.</p>
 <div class="section level3">
 <h3 id="gemini-and-claude-for-image-heavy-pdfs">Gemini and Claude for Image-Heavy PDFs<a class="anchor" aria-label="anchor" href="#gemini-and-claude-for-image-heavy-pdfs"></a>
 </h3>
-<p>For <code><a href="../reference/gemini.html">gemini()</a></code> there is an alternative to embedding PDF
-text in the prompt. You can upload a PDF directly to Google’s servers
-with <code><a href="../reference/gemini_upload_file.html">gemini_upload_file()</a></code> and reference it in your
-messages. The key advantage is that Gemini handles image-heavy PDFs and
-scanned documents that cannot be extracted as text. See the <a href="https://edubruell.github.io/tidyllm/articles/tidyllm_video.html">Video
-and Audio Data with the Gemini API</a> article for an example of the
-file upload workflow.</p>
-<p>Claude offers a parallel option via the Claude Files API
-(<code><a href="../reference/claude_upload_file.html">claude_upload_file()</a></code>), which is well suited for text-heavy
-PDFs where citation accuracy and long-context coherence matter most. The
-two providers complement each other: Gemini for image-only or scan-heavy
-documents, Claude for dense academic text.</p>
+<p>When you use <code><a href="../reference/pdf_file.html">pdf_file()</a></code> with <code><a href="../reference/gemini.html">gemini()</a></code> or
+<code><a href="../reference/claude.html">claude()</a></code>, the PDF is sent as binary rather than extracted
+text. This means the model sees the actual layout, tables, charts, and
+scanned pages, not just the raw characters. For text-only workflows on
+any provider, pass <code>.text_extract = TRUE</code> to
+<code><a href="../reference/pdf_file.html">pdf_file()</a></code> to force text extraction and skip binary
+encoding entirely.</p>
+<p>For large or frequently reused documents you can also upload them
+once to the provider’s servers with <code><a href="../reference/upload_file.html">upload_file()</a></code> and
+reference the returned handle in messages via <code>.files</code>. This
+avoids re-sending the binary on every request. Provider file APIs often
+accept a broader range of formats beyond PDFs: Gemini supports video,
+audio, and various document types; OpenAI accepts Office files (DOCX,
+PPTX, XLSX), source code, ZIP archives, and more. This makes
+<code><a href="../reference/upload_file.html">upload_file()</a></code> useful for workflows that go beyond plain
+PDFs.</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">report</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/upload_file.html">upload_file</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span>, .path <span class="op">=</span> <span class="st">"annual_report.pdf"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Summarise the key risks."</span>, .files <span class="op">=</span> <span class="va">report</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>See the <a href="https://edubruell.github.io/tidyllm/articles/tidyllm_video.html">Working
+with Files and Media</a> article for a full walkthrough of the file
+upload workflow across providers.</p>
 </div>
 <div class="section level3">
 <h3 id="local-models">Local Models<a class="anchor" aria-label="anchor" href="#local-models"></a>

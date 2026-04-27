@@ -35,7 +35,7 @@ voyage_embedding(
 - .model:
 
   The embedding model identifier. For text-only: "voyage-3.5-lite"
-  (default). For multimodal inputs: "voyage-multimodal-3" is used
+  (default). For multimodal inputs: "voyage-multimodal-3.5" is used
   automatically.
 
 - .output_dimension:

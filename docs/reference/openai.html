@@ -13,7 +13,7 @@ like openai_chat() and openai_embedding() based on the context of the call."><me
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -29,7 +29,7 @@ like openai_chat() and openai_embedding() based on the context of the call."><me
     <li><a class="dropdown-item" href="../articles/tidyllm_embed.html">Embedding Models in tidyllm</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm_local_models.html">Local Models with tidyllm</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm_tools.html">Using Tools with tidyllm</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm_video.html">Video and Audio Data with the Gemini API</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_video.html">Working with Files and Media</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm-pdfquestions.html">Structured Question Answering from PDFs</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -44,7 +44,7 @@ like openai_chat() and openai_embedding() based on the context of the call."><me
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>OpenAI Provider Function</h1>
-      <small class="dont-index">Source: <a href="https://github.com/edubruell/tidyllm/blob/HEAD/R/api_openai.R" class="external-link"><code>R/api_openai.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/edubruell/tidyllm/blob/HEAD/R/api_chat_completions.R" class="external-link"><code>R/api_chat_completions.R</code></a>, <a href="https://github.com/edubruell/tidyllm/blob/HEAD/R/api_openai.R" class="external-link"><code>R/api_openai.R</code></a></small>
       <div class="d-none name"><code>openai.Rd</code></div>
     </div>
 
@@ -57,7 +57,9 @@ like <code><a href="openai_chat.html">openai_chat()</a></code> and <code><a href
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">openai</span><span class="op">(</span><span class="va">...</span>, .called_from <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">openai</span><span class="op">(</span><span class="va">...</span>, .called_from <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">openai</span><span class="op">(</span><span class="va">...</span>, .called_from <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -65,20 +67,18 @@ like <code><a href="openai_chat.html">openai_chat()</a></code> and <code><a href
 
 
 <dl><dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>Parameters to be passed to the appropriate OpenAI-specific function,
-such as model configuration, input text, or API-specific options.</p></dd>
+<dd><p>Parameters passed to the appropriate OpenAI-specific function.</p></dd>
 
 
 <dt id="arg--called-from">.called_from<a class="anchor" aria-label="anchor" href="#arg--called-from"></a></dt>
-<dd><p>An internal argument that specifies which action (e.g.,
-<code>chat</code>, <code>embed</code>, <code>send_batch</code>) the function is being invoked from.
-This argument is automatically managed and should not be modified by the user.</p></dd>
+<dd><p>Internal routing argument; do not set manually.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>The result of the requested action, depending on the specific function invoked
 (e.g., an updated <code>LLMMessage</code> object for <code><a href="chat.html">chat()</a></code>, or a matrix for <code><a href="embed.html">embed()</a></code>).</p>
+<p>Result of the requested action.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

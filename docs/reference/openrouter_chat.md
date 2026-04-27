@@ -20,6 +20,7 @@ openrouter_chat(
   .json_schema = NULL,
   .tools = NULL,
   .tool_choice = NULL,
+  .reasoning = NULL,
   .provider = NULL,
   .route = NULL,
   .models = NULL,
@@ -82,6 +83,26 @@ openrouter_chat(
 - .tool_choice:
 
   Tool-calling behavior: `"none"`, `"auto"`, or `"required"` (optional).
+
+- .reasoning:
+
+  A named list controlling reasoning token behavior (optional).
+  Supported fields vary by model family:
+
+  - `effort`: one of `"xhigh"`, `"high"`, `"medium"`, `"low"`,
+    `"minimal"`, `"none"` (OpenAI/Grok)
+
+  - `max_tokens`: integer specifying the reasoning token budget
+    (Anthropic/Gemini/Alibaba)
+
+  - `exclude`: logical; if `TRUE`, reasoning is used internally but not
+    returned in the response
+
+  - `enabled`: logical; if `TRUE`, activates reasoning at default
+    settings
+
+  Example: `list(effort = "high")` or
+  `list(max_tokens = 4000, exclude = FALSE)`.
 
 - .provider:
 

@@ -2,7 +2,7 @@
 
 This function reads an image file from disk, encodes it in base64, and
 returns a `tidyllm_image` object that can be used in multimodal
-embedding requests.
+embedding requests or attached to messages via `.media`.
 
 ## Usage
 
@@ -18,10 +18,4 @@ img(.path)
 
 ## Value
 
-An `tidyllm_image`, containing:
-
-- `imagepath`: The original file path
-
-- `imagename`: The basename of the image
-
-- `imagebase64`: a "data:image/...;base64,..." string
+A `tidyllm_image` object.

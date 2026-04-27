@@ -9,7 +9,7 @@ It supports adding text prompts and various media types, such as images, PDFs, t
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -25,7 +25,7 @@ It supports adding text prompts and various media types, such as images, PDFs, t
     <li><a class="dropdown-item" href="../articles/tidyllm_embed.html">Embedding Models in tidyllm</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm_local_models.html">Local Models with tidyllm</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm_tools.html">Using Tools with tidyllm</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm_video.html">Video and Audio Data with the Gemini API</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_video.html">Working with Files and Media</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm-pdfquestions.html">Structured Question Answering from PDFs</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -56,6 +56,8 @@ It supports adding text prompts and various media types, such as images, PDFs, t
 <span>  .prompt <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .role <span class="op">=</span> <span class="st">"user"</span>,</span>
 <span>  .system_prompt <span class="op">=</span> <span class="st">"You are a helpful assistant"</span>,</span>
+<span>  .media <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  .files <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .imagefile <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .pdf <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .textfile <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -84,12 +86,20 @@ It supports adding text prompts and various media types, such as images, PDFs, t
 <dd><p>Default system prompt if a new LLMMessage needs to be created.</p></dd>
 
 
+<dt id="arg--media">.media<a class="anchor" aria-label="anchor" href="#arg--media"></a></dt>
+<dd><p>An inline media object or a list of them. Accepted types: <code><a href="img.html">img()</a></code>, <code><a href="audio_file.html">audio_file()</a></code>, <code><a href="video_file.html">video_file()</a></code>, <code><a href="pdf_file.html">pdf_file()</a></code>.</p></dd>
+
+
+<dt id="arg--files">.files<a class="anchor" aria-label="anchor" href="#arg--files"></a></dt>
+<dd><p>A <code>tidyllm_file</code> object or list of them returned by <code><a href="upload_file.html">upload_file()</a></code>. These are remote file references stored on a provider's server.</p></dd>
+
+
 <dt id="arg--imagefile">.imagefile<a class="anchor" aria-label="anchor" href="#arg--imagefile"></a></dt>
-<dd><p>Path to an image file to be attached (optional).</p></dd>
+<dd><p>Path to an image file to be attached (optional). Deprecated; use <code>.media = img(path)</code> instead.</p></dd>
 
 
 <dt id="arg--pdf">.pdf<a class="anchor" aria-label="anchor" href="#arg--pdf"></a></dt>
-<dd><p>Path to a PDF file to be attached (optional). Can be a character vector of length one (file path), or a list with <code>filename</code>, <code>start_page</code>, and <code>end_page</code>.</p></dd>
+<dd><p>Path to a PDF file to be attached (optional). Deprecated; use <code>.media = pdf_file(path)</code> instead.</p></dd>
 
 
 <dt id="arg--textfile">.textfile<a class="anchor" aria-label="anchor" href="#arg--textfile"></a></dt>

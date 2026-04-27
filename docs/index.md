@@ -5,29 +5,26 @@ MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.or
 [![CRAN
 Status](https://www.r-pkg.org/badges/version/tidyllm)](https://cran.r-project.org/package=tidyllm)
 
-**tidyllm** is an R package designed to access various large language
-model APIs, including **Anthropic Claude**, **OpenAI**,**Google
-Gemini**, **Perplexity**,**Groq**, **Mistral**, and local models via
-**Ollama** or OpenAI-compatible APIs. Built for simplicity and
-functionality, it helps you generate text, analyze media, and integrate
-model feedback into your data workflows with ease.
+**tidyllm** is an R package for working with large language model APIs
+in data analysis workflows. It supports **Anthropic Claude**,
+**OpenAI**, **Google Gemini**, **Mistral**, **Groq**, **Perplexity**,
+**DeepSeek**, **OpenRouter**, local models via **Ollama** and
+**llama.cpp**, and more — all through a single consistent interface.
 
 ## Features
 
-- **Multiple Model Support**: Seamlessly switch between various model
-  providers using the best of what each has to offer.
-- **Media Handling**: Extract and process text from PDFs and capture
-  console outputs for messaging. Upload imagefiles or the last plotpane
-  to multimodal models. For the Gemini API even video and audio inputs
-  are supported.
-- **Interactive Messaging History**: Manage an ongoing conversation with
-  models, maintaining a structured history of messages and media
-  interactions, which are automatically formatted for each API
-- **Batch processing:** Efficiently handle large workloads with
-  Anthropic, OpenAI or Mistral batch processing APIs, reducing costs by
-  up to 50%.
-- **Tidy Workflow**: Use R’s functional programming features for a
-  side-effect-free, pipeline-oriented operation style.
+- **Multiple providers**: Switch between cloud and local models using
+  the same verb + provider pattern.
+- **Unified media system**: Send images, audio, video, and PDFs to any
+  provider that supports them via `.media`. Upload files to provider
+  servers for reuse via `.files` and
+  [`upload_file()`](https://edubruell.github.io/tidyllm/reference/upload_file.md).
+- **Interactive message history**: Manage multi-turn conversations with
+  structured history automatically formatted for each API.
+- **Batch processing**: Handle large workloads with Anthropic, OpenAI,
+  Mistral, Groq, and Gemini batch APIs, reducing costs by up to 50%.
+- **Tidy workflow**: Pipeline-oriented, side-effect-free design that
+  integrates naturally with tidyverse data workflows.
 
 ## Installation
 
@@ -42,86 +39,80 @@ Or for the development version from GitHub:
 
 ``` r
 
-# Install devtools if not already installed
-if (!requireNamespace("devtools", quietly = TRUE)) {
-  install.packages("devtools")
-}
 devtools::install_github("edubruell/tidyllm")
 ```
 
 ## Basic Example
 
-Here’s a quick example using tidyllm to describe an image using the
-Claude model to and follow up with local open-source models:
-
 ``` r
 
-library("tidyllm")
+library(tidyllm)
 
-# Describe an image with  claude
-conversation <- llm_message("Describe this image", 
-                              .imagefile = here("image.png")) |>
+# Describe an image with Claude, continue with a local model
+conversation <- llm_message("Describe this image.",
+                             .media = img("photo.jpg")) |>
   chat(claude())
 
-# Use the description to query further with groq
 conversation |>
-  llm_message("Based on the previous description,
-  what could the research in the figure be about?") |>
-  chat(ollama(.model = "gemma2"))
+  llm_message("Based on that description, what research topic could this figure relate to?") |>
+  chat(ollama(.model = "qwen3.5:4b"))
 ```
 
-For more examples and advanced usage, check the [Get Started
+For more examples and advanced usage, see the [Get Started
 vignette](https://edubruell.github.io/tidyllm/articles/tidyllm.html).
 
-Please note: To use **tidyllm**, you need either an installation of
-**ollama** or an active API key for one of the supported providers
-(e.g., Claude, ChatGPT). See the [Get Started
+Please note: To use **tidyllm** you need either a local Ollama or
+llama.cpp installation, or an active API key for one of the supported
+cloud providers. See the [Get Started
 vignette](https://edubruell.github.io/tidyllm/articles/tidyllm.html) for
 setup instructions.
 
-## Interface-change in 0.3.0
+## What’s new in 0.5.0
 
-The CRAN release of **tidyllm** 0.3.0, introduced a major interface
-change to provide a more intuitive user experience. Previously,
-provider-specific functions like
-[`claude()`](https://edubruell.github.io/tidyllm/reference/claude.md),
-[`openai()`](https://edubruell.github.io/tidyllm/reference/openai.md),
-and others were directly used for chat-based workflows. They specified
-both an API-provider and performed a chat-interaction. Now, these
-functions primarily serve as provider configuration for more general
-verbs like
-[`chat()`](https://edubruell.github.io/tidyllm/reference/chat.md),[`embed()`](https://edubruell.github.io/tidyllm/reference/embed.md)
-or
-[`send_batch()`](https://edubruell.github.io/tidyllm/reference/send_batch.md).
-A combination of a general verb and a provider will always route
-requests to a provider-specific function like
-[`openai_chat()`](https://edubruell.github.io/tidyllm/reference/openai_chat.md).
-Read the [Changelog](https://edubruell.github.io/tidyllm/news/) or the
-[package
-vignette](https://edubruell.github.io/tidyllm/articles/tidyllm.html) for
-more information.
-
-For backward compatibility, the old use of functions like
-[`openai()`](https://edubruell.github.io/tidyllm/reference/openai.md) or
-[`claude()`](https://edubruell.github.io/tidyllm/reference/claude.md)
-directly for chat requests still works but now but issues deprecation
-warnings. It is recommended to either use the verb-based interface:
+**Unified media and files system.** All non-text content now attaches to
+messages, not to chat() call arguments:
 
 ``` r
 
-llm_message("Hallo") |> chat(openai(.model="gpt-4o"))
+# Inline binary — works with any provider that supports the type
+llm_message("Transcribe this audio.", .media = audio_file("recording.mp3")) |>
+  chat(gemini())
+
+llm_message("Summarize this paper.", .media = pdf_file("paper.pdf")) |>
+  chat(claude())
+
+# Multiple images in one message
+llm_message("Compare these two charts.",
+            .media = list(img("chart_a.png"), img("chart_b.png"))) |>
+  chat(openai())
+
+# Provider Files API — upload once, reuse across requests
+report <- upload_file(claude(), .path = "annual_report.pdf")
+llm_message("What are the key risks?", .files = report) |>
+  chat(claude())
 ```
 
-or to use the more verbose provider-specific functions directly:
+Audio and video are supported by Gemini, OpenRouter (Gemini, Gemma 4,
+Qwen 3.6, and other models), Mistral (Voxtral), and llama.cpp (Ultravox,
+Gemma 4, Qwen2.5-Omni). The `.imagefile` and old provider-specific
+upload functions still work but now emit deprecation warnings.
+
+OpenAI now uses the Responses API (`POST /v1/responses`) with reasoning
+effort control, built-in web search, and background deep research:
 
 ``` r
 
-llm_message("Hallo") |> openai_chat(.model="gpt-4o")
+llm_message("What are the latest developments in fusion energy?") |>
+  chat(openai(), .tools = openai_websearch())
+
+llm_message("Write a detailed report on EU AI regulation.") |>
+  deep_research(openai())
 ```
+
+Read the [Changelog](https://edubruell.github.io/tidyllm/news/) for the
+full list of changes.
 
 ## Learn More
-
-For detailed instructions and advanced features, see:
 
 - [Get Started with
   tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm.html)
@@ -134,29 +125,21 @@ For detailed instructions and advanced features, see:
     PDFs](https://edubruell.github.io/tidyllm/articles/tidyllm-pdfquestions.html)
   - [Embedding Models in
     tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_embed.html)
-  - [Video and Audio Data with the Gemini
-    API](https://edubruell.github.io/tidyllm/articles/tidyllm_video.html)
+  - [Working with Files and
+    Media](https://edubruell.github.io/tidyllm/articles/tidyllm_video.html)
   - [Local Models with
     tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_local_models.html)
 
 ## Similar packages
 
-The are some similar R packages for working with LLMs:
-
-- [ellmer](https://ellmer.tidyverse.org/) is especially great for
-  asynchronous chats, chatbots in Shiny and advanced tool-calling
-  capabilities. Its schema functions offer robust support for complex
-  structured data extraction, making it a great choice for applications
-  that require highly interactive or structured LLM interactions. While
-  **ellmer**’s feature set overlaps with **tidyllm** in some areas, its
-  interface and design philosophy are very different.
-- [rollama](https://jbgruber.github.io/rollama/) is specifically
-  designed to support the Ollama API, enabling seamless interaction with
-  local LLM models. A key strength of **rollama** lies in its
-  specialized Ollama API functionalities, such as `copy` and `create`
-  which are not currently available in **tidyllm**. These features make
-  **rollama** particularly suited for workflows requiring model
-  management or deployment within the Ollama ecosystem.
+- [ellmer](https://ellmer.tidyverse.org/) is especially well-suited for
+  asynchronous chats, chatbots in Shiny, and advanced tool-calling
+  workflows. Its design philosophy differs from tidyllm: ellmer targets
+  interactive agents while tidyllm targets data pipelines and batch
+  operations.
+- [rollama](https://jbgruber.github.io/rollama/) is purpose-built for
+  the Ollama API with specialized model management features not
+  currently in tidyllm.
 
 ## Contributing
 
@@ -165,5 +148,5 @@ requests on [GitHub](https://github.com/edubruell/tidyllm).
 
 ## License
 
-This project is licensed under the MIT License - see the
+This project is licensed under the MIT License — see the
 [LICENSE](https://opensource.org/licenses/MIT) file for details.

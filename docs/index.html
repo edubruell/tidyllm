@@ -16,8 +16,8 @@
 <script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Tidy Integration of Large Language Models">
-<meta name="description" content="A tidy interface for integrating large language model (LLM) APIs such as Claude, Openai, Gemini,Mistral and local models via Ollama into R workflows. The package supports text and media-based interactions, interactive message history, batch request APIs, and a tidy, pipeline-oriented interface for streamlined integration into data workflows. Web services are available at &lt;https://www.anthropic.com&gt;, &lt;https://openai.com&gt;, &lt;https://aistudio.google.com/&gt;, &lt;https://mistral.ai/&gt; and &lt;https://ollama.com&gt;.">
-<meta property="og:description" content="A tidy interface for integrating large language model (LLM) APIs such as Claude, Openai, Gemini,Mistral and local models via Ollama into R workflows. The package supports text and media-based interactions, interactive message history, batch request APIs, and a tidy, pipeline-oriented interface for streamlined integration into data workflows. Web services are available at &lt;https://www.anthropic.com&gt;, &lt;https://openai.com&gt;, &lt;https://aistudio.google.com/&gt;, &lt;https://mistral.ai/&gt; and &lt;https://ollama.com&gt;.">
+<meta name="description" content="A tidy interface for integrating large language model (LLM) APIs such as Claude, OpenAI, Gemini, Mistral, and local models via Ollama into R workflows. The package supports text, image, audio, video, and document interactions; a unified media interface for attaching inline files or uploading to provider file stores; batch request APIs for cost-efficient large-scale processing; and a pipeline-oriented interface for seamless integration into data workflows. Web services are available at &lt;https://www.anthropic.com&gt;, &lt;https://openai.com&gt;, &lt;https://aistudio.google.com/&gt;, &lt;https://mistral.ai/&gt; and &lt;https://ollama.com&gt;.">
+<meta property="og:description" content="A tidy interface for integrating large language model (LLM) APIs such as Claude, OpenAI, Gemini, Mistral, and local models via Ollama into R workflows. The package supports text, image, audio, video, and document interactions; a unified media interface for attaching inline files or uploading to provider file stores; batch request APIs for cost-efficient large-scale processing; and a pipeline-oriented interface for seamless integration into data workflows. Web services are available at &lt;https://www.anthropic.com&gt;, &lt;https://openai.com&gt;, &lt;https://aistudio.google.com/&gt;, &lt;https://mistral.ai/&gt; and &lt;https://ollama.com&gt;.">
 <meta property="og:image" content="https://edubruell.github.io/tidyllm/logo.png">
 </head>
 <body>
@@ -28,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -46,7 +46,7 @@
     <li><a class="dropdown-item" href="articles/tidyllm_embed.html">Embedding Models in tidyllm</a></li>
     <li><a class="dropdown-item" href="articles/tidyllm_local_models.html">Local Models with tidyllm</a></li>
     <li><a class="dropdown-item" href="articles/tidyllm_tools.html">Using Tools with tidyllm</a></li>
-    <li><a class="dropdown-item" href="articles/tidyllm_video.html">Video and Audio Data with the Gemini API</a></li>
+    <li><a class="dropdown-item" href="articles/tidyllm_video.html">Working with Files and Media</a></li>
     <li><a class="dropdown-item" href="articles/tidyllm-pdfquestions.html">Structured Question Answering from PDFs</a></li>
   </ul>
 </li>
@@ -71,21 +71,21 @@
 </h1>
 </div>
 <p><a href="https://opensource.org/licenses/MIT" class="external-link"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a> <a href="https://cran.r-project.org/package=tidyllm" class="external-link"><img src="https://www.r-pkg.org/badges/version/tidyllm" alt="CRAN Status"></a></p>
-<p><strong>tidyllm</strong> is an R package designed to access various large language model APIs, including <strong>Anthropic Claude</strong>, <strong>OpenAI</strong>,<strong>Google Gemini</strong>, <strong>Perplexity</strong>,<strong>Groq</strong>, <strong>Mistral</strong>, and local models via <strong>Ollama</strong> or OpenAI-compatible APIs. Built for simplicity and functionality, it helps you generate text, analyze media, and integrate model feedback into your data workflows with ease.</p>
+<p><strong>tidyllm</strong> is an R package for working with large language model APIs in data analysis workflows. It supports <strong>Anthropic Claude</strong>, <strong>OpenAI</strong>, <strong>Google Gemini</strong>, <strong>Mistral</strong>, <strong>Groq</strong>, <strong>Perplexity</strong>, <strong>DeepSeek</strong>, <strong>OpenRouter</strong>, local models via <strong>Ollama</strong> and <strong>llama.cpp</strong>, and more — all through a single consistent interface.</p>
 <div class="section level2">
 <h2 id="features">Features<a class="anchor" aria-label="anchor" href="#features"></a>
 </h2>
 <ul>
 <li>
-<strong>Multiple Model Support</strong>: Seamlessly switch between various model providers using the best of what each has to offer.</li>
+<strong>Multiple providers</strong>: Switch between cloud and local models using the same verb + provider pattern.</li>
 <li>
-<strong>Media Handling</strong>: Extract and process text from PDFs and capture console outputs for messaging. Upload imagefiles or the last plotpane to multimodal models. For the Gemini API even video and audio inputs are supported.</li>
+<strong>Unified media system</strong>: Send images, audio, video, and PDFs to any provider that supports them via <code>.media</code>. Upload files to provider servers for reuse via <code>.files</code> and <code><a href="reference/upload_file.html">upload_file()</a></code>.</li>
 <li>
-<strong>Interactive Messaging History</strong>: Manage an ongoing conversation with models, maintaining a structured history of messages and media interactions, which are automatically formatted for each API</li>
+<strong>Interactive message history</strong>: Manage multi-turn conversations with structured history automatically formatted for each API.</li>
 <li>
-<strong>Batch processing:</strong> Efficiently handle large workloads with Anthropic, OpenAI or Mistral batch processing APIs, reducing costs by up to 50%.</li>
+<strong>Batch processing</strong>: Handle large workloads with Anthropic, OpenAI, Mistral, Groq, and Gemini batch APIs, reducing costs by up to 50%.</li>
 <li>
-<strong>Tidy Workflow</strong>: Use R’s functional programming features for a side-effect-free, pipeline-oriented operation style.</li>
+<strong>Tidy workflow</strong>: Pipeline-oriented, side-effect-free design that integrates naturally with tidyverse data workflows.</li>
 </ul>
 </div>
 <div class="section level2">
@@ -96,47 +96,59 @@
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"tidyllm"</span><span class="op">)</span></span></code></pre></div>
 <p>Or for the development version from GitHub:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Install devtools if not already installed</span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"devtools"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"devtools"</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"edubruell/tidyllm"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/install-deprecated.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"edubruell/tidyllm"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="basic-example">Basic Example<a class="anchor" aria-label="anchor" href="#basic-example"></a>
 </h2>
-<p>Here’s a quick example using tidyllm to describe an image using the Claude model to and follow up with local open-source models:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="st"><a href="https://edubruell.github.io/tidyllm/">"tidyllm"</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://edubruell.github.io/tidyllm/">tidyllm</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Describe an image with  claude</span></span>
-<span><span class="va">conversation</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Describe this image"</span>, </span>
-<span>                              .imagefile <span class="op">=</span> <span class="fu">here</span><span class="op">(</span><span class="st">"image.png"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span><span class="co"># Describe an image with Claude, continue with a local model</span></span>
+<span><span class="va">conversation</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Describe this image."</span>,</span>
+<span>                             .media <span class="op">=</span> <span class="fu"><a href="reference/img.html">img</a></span><span class="op">(</span><span class="st">"photo.jpg"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Use the description to query further with groq</span></span>
 <span><span class="va">conversation</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Based on the previous description,</span></span>
-<span><span class="st">  what could the research in the figure be about?"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="reference/ollama.html">ollama</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gemma2"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p>For more examples and advanced usage, check the <a href="https://edubruell.github.io/tidyllm/articles/tidyllm.html">Get Started vignette</a>.</p>
-<p>Please note: To use <strong>tidyllm</strong>, you need either an installation of <strong>ollama</strong> or an active API key for one of the supported providers (e.g., Claude, ChatGPT). See the <a href="https://edubruell.github.io/tidyllm/articles/tidyllm.html">Get Started vignette</a> for setup instructions.</p>
+<span>  <span class="fu"><a href="reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Based on that description, what research topic could this figure relate to?"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="reference/ollama.html">ollama</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"qwen3.5:4b"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>For more examples and advanced usage, see the <a href="https://edubruell.github.io/tidyllm/articles/tidyllm.html">Get Started vignette</a>.</p>
+<p>Please note: To use <strong>tidyllm</strong> you need either a local Ollama or llama.cpp installation, or an active API key for one of the supported cloud providers. See the <a href="https://edubruell.github.io/tidyllm/articles/tidyllm.html">Get Started vignette</a> for setup instructions.</p>
 </div>
 <div class="section level2">
-<h2 id="interface-change-in-030">Interface-change in 0.3.0<a class="anchor" aria-label="anchor" href="#interface-change-in-030"></a>
+<h2 id="whats-new-in-050">What’s new in 0.5.0<a class="anchor" aria-label="anchor" href="#whats-new-in-050"></a>
 </h2>
-<p>The CRAN release of <strong>tidyllm</strong> 0.3.0, introduced a major interface change to provide a more intuitive user experience. Previously, provider-specific functions like <code><a href="reference/claude.html">claude()</a></code>, <code><a href="reference/openai.html">openai()</a></code>, and others were directly used for chat-based workflows. They specified both an API-provider and performed a chat-interaction. Now, these functions primarily serve as provider configuration for more general verbs like <code><a href="reference/chat.html">chat()</a></code>,<code><a href="reference/embed.html">embed()</a></code> or <code><a href="reference/send_batch.html">send_batch()</a></code>. A combination of a general verb and a provider will always route requests to a provider-specific function like <code><a href="reference/openai_chat.html">openai_chat()</a></code>. Read the <a href="https://edubruell.github.io/tidyllm/news/">Changelog</a> or the <a href="https://edubruell.github.io/tidyllm/articles/tidyllm.html">package vignette</a> for more information.</p>
-<p>For backward compatibility, the old use of functions like <code><a href="reference/openai.html">openai()</a></code> or <code><a href="reference/claude.html">claude()</a></code> directly for chat requests still works but now but issues deprecation warnings. It is recommended to either use the verb-based interface:</p>
+<p><strong>Unified media and files system.</strong> All non-text content now attaches to messages, not to chat() call arguments:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Hallo"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="reference/openai.html">openai</a></span><span class="op">(</span>.model<span class="op">=</span><span class="st">"gpt-4o"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p>or to use the more verbose provider-specific functions directly:</p>
+<code class="sourceCode R"><span><span class="co"># Inline binary — works with any provider that supports the type</span></span>
+<span><span class="fu"><a href="reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Transcribe this audio."</span>, .media <span class="op">=</span> <span class="fu"><a href="reference/audio_file.html">audio_file</a></span><span class="op">(</span><span class="st">"recording.mp3"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="reference/gemini.html">gemini</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Summarize this paper."</span>, .media <span class="op">=</span> <span class="fu"><a href="reference/pdf_file.html">pdf_file</a></span><span class="op">(</span><span class="st">"paper.pdf"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Multiple images in one message</span></span>
+<span><span class="fu"><a href="reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Compare these two charts."</span>,</span>
+<span>            .media <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="reference/img.html">img</a></span><span class="op">(</span><span class="st">"chart_a.png"</span><span class="op">)</span>, <span class="fu"><a href="reference/img.html">img</a></span><span class="op">(</span><span class="st">"chart_b.png"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="reference/openai.html">openai</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Provider Files API — upload once, reuse across requests</span></span>
+<span><span class="va">report</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/upload_file.html">upload_file</a></span><span class="op">(</span><span class="fu"><a href="reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span>, .path <span class="op">=</span> <span class="st">"annual_report.pdf"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"What are the key risks?"</span>, .files <span class="op">=</span> <span class="va">report</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>Audio and video are supported by Gemini, OpenRouter (Gemini, Gemma 4, Qwen 3.6, and other models), Mistral (Voxtral), and llama.cpp (Ultravox, Gemma 4, Qwen2.5-Omni). The <code>.imagefile</code> and old provider-specific upload functions still work but now emit deprecation warnings.</p>
+<p>OpenAI now uses the Responses API (<code>POST /v1/responses</code>) with reasoning effort control, built-in web search, and background deep research:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Hallo"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="reference/openai_chat.html">openai_chat</a></span><span class="op">(</span>.model<span class="op">=</span><span class="st">"gpt-4o"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"What are the latest developments in fusion energy?"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="reference/openai.html">openai</a></span><span class="op">(</span><span class="op">)</span>, .tools <span class="op">=</span> <span class="fu"><a href="reference/openai_websearch.html">openai_websearch</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Write a detailed report on EU AI regulation."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="reference/deep_research.html">deep_research</a></span><span class="op">(</span><span class="fu"><a href="reference/openai.html">openai</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>Read the <a href="https://edubruell.github.io/tidyllm/news/">Changelog</a> for the full list of changes.</p>
 </div>
 <div class="section level2">
 <h2 id="learn-more">Learn More<a class="anchor" aria-label="anchor" href="#learn-more"></a>
 </h2>
-<p>For detailed instructions and advanced features, see:</p>
 <ul>
 <li><a href="https://edubruell.github.io/tidyllm/articles/tidyllm.html">Get Started with tidyllm</a></li>
 <li><a href="https://edubruell.github.io/tidyllm/news/">Changelog</a></li>
@@ -146,7 +158,7 @@
 <li><a href="https://edubruell.github.io/tidyllm/articles/tidyllm_classifiers.html">Classifying Texts with tidyllm</a></li>
 <li><a href="https://edubruell.github.io/tidyllm/articles/tidyllm-pdfquestions.html">Structured Question Answering from PDFs</a></li>
 <li><a href="https://edubruell.github.io/tidyllm/articles/tidyllm_embed.html">Embedding Models in tidyllm</a></li>
-<li><a href="https://edubruell.github.io/tidyllm/articles/tidyllm_video.html">Video and Audio Data with the Gemini API</a></li>
+<li><a href="https://edubruell.github.io/tidyllm/articles/tidyllm_video.html">Working with Files and Media</a></li>
 <li><a href="https://edubruell.github.io/tidyllm/articles/tidyllm_local_models.html">Local Models with tidyllm</a></li>
 </ul>
 </li>
@@ -155,12 +167,11 @@
 <div class="section level2">
 <h2 id="similar-packages">Similar packages<a class="anchor" aria-label="anchor" href="#similar-packages"></a>
 </h2>
-<p>The are some similar R packages for working with LLMs:</p>
 <ul>
 <li>
-<a href="https://ellmer.tidyverse.org/" class="external-link">ellmer</a> is especially great for asynchronous chats, chatbots in Shiny and advanced tool-calling capabilities. Its schema functions offer robust support for complex structured data extraction, making it a great choice for applications that require highly interactive or structured LLM interactions. While <strong>ellmer</strong>’s feature set overlaps with <strong>tidyllm</strong> in some areas, its interface and design philosophy are very different.</li>
+<a href="https://ellmer.tidyverse.org/" class="external-link">ellmer</a> is especially well-suited for asynchronous chats, chatbots in Shiny, and advanced tool-calling workflows. Its design philosophy differs from tidyllm: ellmer targets interactive agents while tidyllm targets data pipelines and batch operations.</li>
 <li>
-<a href="https://jbgruber.github.io/rollama/" class="external-link">rollama</a> is specifically designed to support the Ollama API, enabling seamless interaction with local LLM models. A key strength of <strong>rollama</strong> lies in its specialized Ollama API functionalities, such as <code>copy</code> and <code>create</code> which are not currently available in <strong>tidyllm</strong>. These features make <strong>rollama</strong> particularly suited for workflows requiring model management or deployment within the Ollama ecosystem.</li>
+<a href="https://jbgruber.github.io/rollama/" class="external-link">rollama</a> is purpose-built for the Ollama API with specialized model management features not currently in tidyllm.</li>
 </ul>
 </div>
 <div class="section level2">
@@ -171,7 +182,7 @@
 <div class="section level2">
 <h2 id="license">License<a class="anchor" aria-label="anchor" href="#license"></a>
 </h2>
-<p>This project is licensed under the MIT License - see the <a href="https://opensource.org/licenses/MIT" class="external-link">LICENSE</a> file for details.</p>
+<p>This project is licensed under the MIT License — see the <a href="https://opensource.org/licenses/MIT" class="external-link">LICENSE</a> file for details.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">

@@ -22,10 +22,6 @@ meaning.
 ``` r
 
 library(tidyverse)
-## Warning: package 'ggplot2' was built under R version 4.4.3
-## Warning: package 'tibble' was built under R version 4.4.3
-## Warning: package 'purrr' was built under R version 4.4.3
-## Warning: package 'lubridate' was built under R version 4.4.3
 library(tidyllm)
 library(here)
 

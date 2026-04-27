@@ -23,10 +23,6 @@ but no structure yet:
 ``` r
 
 library(tidyverse)
-## Warning: package 'ggplot2' was built under R version 4.4.3
-## Warning: package 'tibble' was built under R version 4.4.3
-## Warning: package 'purrr' was built under R version 4.4.3
-## Warning: package 'lubridate' was built under R version 4.4.3
 library(tidyllm)
 dir("aipapers")
 ##  [1] "2018_Felten_etal_AILinkOccupations.pdf"                                                           
@@ -70,6 +66,15 @@ English text), we limit the input to five pages for demonstration
 purposes; the introduction is usually enough to get a first overview of
 a paper.
 
+Attach PDFs with
+[`pdf_file()`](https://edubruell.github.io/tidyllm/reference/pdf_file.md)
+and the `.media` argument. On providers that support native PDF
+rendering (Claude, Gemini), the file is sent as binary, preserving
+images, tables, and formatting. On all other providers the text is
+extracted automatically and wrapped in `<pdf>` tags in the prompt. Pass
+`.text_extract = TRUE` to always force text extraction regardless of the
+provider:
+
 ``` r
 
 files <- list.files("aipapers", full.names = TRUE, pattern = "\\.pdf$")
@@ -78,11 +83,7 @@ document_tasks <- files |>
   map(\(f) llm_message(
     "Below are the first 5 pages of a document.
      Summarise the document based on the provided schema.",
-    .pdf = list(
-      filename   = f,
-      start_page = 1,
-      end_page   = 5
-    )
+    .media = pdf_file(f, pages = 1:5)
   ))
 ```
 
@@ -287,23 +288,41 @@ helps preserve continuity.
 
 ### Gemini and Claude for Image-Heavy PDFs
 
-For
-[`gemini()`](https://edubruell.github.io/tidyllm/reference/gemini.md)
-there is an alternative to embedding PDF text in the prompt. You can
-upload a PDF directly to Google’s servers with
-[`gemini_upload_file()`](https://edubruell.github.io/tidyllm/reference/gemini_upload_file.md)
-and reference it in your messages. The key advantage is that Gemini
-handles image-heavy PDFs and scanned documents that cannot be extracted
-as text. See the [Video and Audio Data with the Gemini
-API](https://edubruell.github.io/tidyllm/articles/tidyllm_video.html)
-article for an example of the file upload workflow.
+When you use
+[`pdf_file()`](https://edubruell.github.io/tidyllm/reference/pdf_file.md)
+with
+[`gemini()`](https://edubruell.github.io/tidyllm/reference/gemini.md) or
+[`claude()`](https://edubruell.github.io/tidyllm/reference/claude.md),
+the PDF is sent as binary rather than extracted text. This means the
+model sees the actual layout, tables, charts, and scanned pages, not
+just the raw characters. For text-only workflows on any provider, pass
+`.text_extract = TRUE` to
+[`pdf_file()`](https://edubruell.github.io/tidyllm/reference/pdf_file.md)
+to force text extraction and skip binary encoding entirely.
 
-Claude offers a parallel option via the Claude Files API
-([`claude_upload_file()`](https://edubruell.github.io/tidyllm/reference/claude_upload_file.md)),
-which is well suited for text-heavy PDFs where citation accuracy and
-long-context coherence matter most. The two providers complement each
-other: Gemini for image-only or scan-heavy documents, Claude for dense
-academic text.
+For large or frequently reused documents you can also upload them once
+to the provider’s servers with
+[`upload_file()`](https://edubruell.github.io/tidyllm/reference/upload_file.md)
+and reference the returned handle in messages via `.files`. This avoids
+re-sending the binary on every request. Provider file APIs often accept
+a broader range of formats beyond PDFs: Gemini supports video, audio,
+and various document types; OpenAI accepts Office files (DOCX, PPTX,
+XLSX), source code, ZIP archives, and more. This makes
+[`upload_file()`](https://edubruell.github.io/tidyllm/reference/upload_file.md)
+useful for workflows that go beyond plain PDFs.
+
+``` r
+
+report <- upload_file(claude(), .path = "annual_report.pdf")
+
+llm_message("Summarise the key risks.", .files = report) |>
+  chat(claude())
+```
+
+See the [Working with Files and
+Media](https://edubruell.github.io/tidyllm/articles/tidyllm_video.html)
+article for a full walkthrough of the file upload workflow across
+providers.
 
 ### Local Models
 

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -23,7 +23,7 @@
     <li><a class="dropdown-item" href="articles/tidyllm_embed.html">Embedding Models in tidyllm</a></li>
     <li><a class="dropdown-item" href="articles/tidyllm_local_models.html">Local Models with tidyllm</a></li>
     <li><a class="dropdown-item" href="articles/tidyllm_tools.html">Using Tools with tidyllm</a></li>
-    <li><a class="dropdown-item" href="articles/tidyllm_video.html">Video and Audio Data with the Gemini API</a></li>
+    <li><a class="dropdown-item" href="articles/tidyllm_video.html">Working with Files and Media</a></li>
     <li><a class="dropdown-item" href="articles/tidyllm-pdfquestions.html">Structured Question Answering from PDFs</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
@@ -66,12 +66,14 @@
 <code class="sourceCode R"><span><span class="fu"><a href="reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Hello"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="reference/openai.html">openai</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"text1"</span>, <span class="st">"text2"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="reference/embed.html">embed</a></span><span class="op">(</span><span class="fu"><a href="reference/openai.html">openai</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">list_of_messages</span> <span class="op">|&gt;</span> <span class="fu"><a href="reference/send_batch.html">send_batch</a></span><span class="op">(</span><span class="fu"><a href="reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><strong>Verbs</strong>: <code><a href="reference/chat.html">chat()</a></code>, <code><a href="reference/embed.html">embed()</a></code>, <code><a href="reference/send_batch.html">send_batch()</a></code>, <code><a href="reference/check_batch.html">check_batch()</a></code>, <code><a href="reference/fetch_batch.html">fetch_batch()</a></code>, <code><a href="reference/list_batches.html">list_batches()</a></code>, <code><a href="reference/list_models.html">list_models()</a></code>, <code><a href="reference/deep_research.html">deep_research()</a></code>, <code><a href="reference/check_job.html">check_job()</a></code>, <code><a href="reference/fetch_job.html">fetch_job()</a></code></p>
+<p><strong>Verbs</strong>: <code><a href="reference/chat.html">chat()</a></code>, <code><a href="reference/embed.html">embed()</a></code>, <code><a href="reference/send_batch.html">send_batch()</a></code>, <code><a href="reference/check_batch.html">check_batch()</a></code>, <code><a href="reference/fetch_batch.html">fetch_batch()</a></code>, <code><a href="reference/list_batches.html">list_batches()</a></code>, <code><a href="reference/list_models.html">list_models()</a></code>, <code><a href="reference/deep_research.html">deep_research()</a></code>, <code><a href="reference/check_job.html">check_job()</a></code>, <code><a href="reference/fetch_job.html">fetch_job()</a></code>, <code><a href="reference/upload_file.html">upload_file()</a></code>, <code><a href="reference/list_files.html">list_files()</a></code>, <code><a href="reference/file_info.html">file_info()</a></code>, <code><a href="reference/delete_file.html">delete_file()</a></code></p>
 <ul><li>
-<code><a href="reference/check_job.html">check_job()</a></code> / <code><a href="reference/fetch_job.html">fetch_job()</a></code>: type-dispatching aliases — delegate to <code><a href="reference/check_batch.html">check_batch()</a></code>/<code><a href="reference/fetch_batch.html">fetch_batch()</a></code> for batch objects (have <code>batch_id</code> attr), or to <code><a href="reference/perplexity_check_research.html">perplexity_check_research()</a></code>/<code><a href="reference/perplexity_fetch_research.html">perplexity_fetch_research()</a></code> for <code>tidyllm_research_job</code> objects</li>
-</ul><p><strong>Providers</strong>: <code><a href="reference/openai.html">openai()</a></code>, <code><a href="reference/claude.html">claude()</a></code>, <code><a href="reference/gemini.html">gemini()</a></code>, <code><a href="reference/ollama.html">ollama()</a></code>, <code><a href="reference/mistral.html">mistral()</a></code>, <code><a href="reference/groq.html">groq()</a></code>, <code><a href="reference/perplexity.html">perplexity()</a></code>, <code><a href="reference/deepseek.html">deepseek()</a></code>, <code><a href="reference/voyage.html">voyage()</a></code>, <code><a href="reference/azure_openai.html">azure_openai()</a></code>, <code><a href="reference/openrouter.html">openrouter()</a></code>, <code><a href="reference/llamacpp.html">llamacpp()</a></code>, <code>mixedbread()</code> <em>(planned)</em></p>
+<code><a href="reference/check_job.html">check_job()</a></code> / <code><a href="reference/fetch_job.html">fetch_job()</a></code>: type-dispatching aliases — delegate to <code><a href="reference/check_batch.html">check_batch()</a></code>/<code><a href="reference/fetch_batch.html">fetch_batch()</a></code> for batch objects (have <code>batch_id</code> attr), or to provider-specific research functions for <code>tidyllm_research_job</code> objects (dispatches on <code>job$provider</code>: <code>"openai"</code> → <code>openai_check_research</code>/<code>openai_fetch_research</code>; <code>"perplexity"</code> → <code>perplexity_check_research</code>/<code>perplexity_fetch_research</code>)</li>
+<li>
+<code><a href="reference/upload_file.html">upload_file()</a></code> / <code><a href="reference/list_files.html">list_files()</a></code> / <code><a href="reference/file_info.html">file_info()</a></code> / <code><a href="reference/delete_file.html">delete_file()</a></code>: remote file verbs — manage files stored on provider servers (Claude, Gemini, OpenAI); other providers error with a clear message</li>
+</ul><p><strong>Providers</strong>: <code><a href="reference/openai.html">openai()</a></code>, <code><a href="reference/claude.html">claude()</a></code>, <code><a href="reference/gemini.html">gemini()</a></code>, <code><a href="reference/ollama.html">ollama()</a></code>, <code><a href="reference/mistral.html">mistral()</a></code>, <code><a href="reference/groq.html">groq()</a></code>, <code><a href="reference/perplexity.html">perplexity()</a></code>, <code><a href="reference/deepseek.html">deepseek()</a></code>, <code><a href="reference/voyage.html">voyage()</a></code>, <code><a href="reference/azure_openai.html">azure_openai()</a></code>, <code><a href="reference/openrouter.html">openrouter()</a></code>, <code><a href="reference/llamacpp.html">llamacpp()</a></code>, <code><a href="reference/chat_completions_chat.html">chat_completions()</a></code>, <code>mixedbread()</code> <em>(planned)</em></p>
 <p><strong>Batch providers</strong> (support send/check/fetch/list): Claude, OpenAI, Mistral, Groq, Gemini</p>
-<p><strong>Deep research providers</strong>: Perplexity (<code>sonar-deep-research</code> via async endpoint); OpenAI (<code>o3-deep-research</code>, <code>o4-mini-deep-research</code> via Responses API) deferred</p>
+<p><strong>Deep research providers</strong>: Perplexity (<code>sonar-deep-research</code> via async endpoint); OpenAI (<code>o3-deep-research</code>, <code>o4-mini-deep-research</code> via Responses API background mode)</p>
 </div>
 <div class="section level3">
 <h3 id="how-verb-dispatch-works">How Verb Dispatch Works<a class="anchor" aria-label="anchor" href="#how-verb-dispatch-works"></a></h3>
@@ -82,13 +84,23 @@
 <div class="section level3">
 <h3 id="key-classes-s7">Key Classes (S7)<a class="anchor" aria-label="anchor" href="#key-classes-s7"></a></h3>
 <ul><li>
-<strong><code>LLMMessage</code></strong>: Immutable conversation history container. History stored as a list of message objects in <code>@message_history</code>. Media attachments embedded in message content.</li>
+<strong><code>LLMMessage</code></strong>: Immutable conversation history container. History stored as a list of message objects in <code>@message_history</code>. Each message has <code>content</code>, <code>media</code> (inline media: base64-encoded binary read from disk at message construction time), and <code>files</code> (remote file references: <code>tidyllm_file</code> objects pointing to files stored on a provider’s servers).</li>
 <li>
 <strong><code>APIProvider</code></strong>: Base class with <code>@short_name</code>, <code>@long_name</code>, <code>@api_key_env_var</code>. Provides default implementations for most generics.</li>
 <li>
 <strong><code>TOOL</code></strong>: Tool/function definition. Has <code>@func</code> (R function), <code>@input_schema</code> (named list of <code>tidyllm_field</code>), <code>@builtin</code> (for provider-native tools like Claude web search).</li>
 <li>
 <strong><code>tidyllm_field</code></strong>: Schema field descriptor with <code>@type</code>, <code>@description</code>, <code>@enum</code>, <code>@vector</code>, <code>@schema</code> (for nested objects).</li>
+<li>
+<strong><code>tidyllm_image</code></strong>: Inline image; returned by <code><a href="reference/img.html">img()</a></code>. Base64-encoded eagerly at construction; stored in <code>message$media</code>; provider-agnostic.</li>
+<li>
+<strong><code>tidyllm_audio</code></strong>: Inline audio; returned by <code><a href="reference/audio_file.html">audio_file()</a></code>. Stores path and MIME only; binary read and base64-encode deferred to <code>to_api_format()</code>.</li>
+<li>
+<strong><code>tidyllm_video</code></strong>: Inline video; returned by <code><a href="reference/video_file.html">video_file()</a></code>. Same lazy-encoding pattern as audio.</li>
+<li>
+<strong><code>tidyllm_pdf</code></strong>: Inline PDF; returned by <code><a href="reference/pdf_file.html">pdf_file()</a></code>. Stores path + pdftools text extraction at construction; <code>to_api_format()</code> uses binary where supported, silently falls back to tagged text otherwise.</li>
+<li>
+<strong><code>tidyllm_file</code></strong>: Remote file reference; returned by <code><a href="reference/upload_file.html">upload_file()</a></code>. Has <code>@id</code>, <code>@provider</code>, <code>@mime_type</code>, <code>@filename</code>, <code>@uri</code>. Stored in <code>message$files</code>. Provider-specific: a Claude file cannot be sent to Gemini; mismatch is validated at <code>to_api_format()</code> time.</li>
 </ul></div>
 <div class="section level3">
 <h3 id="file-organization">File Organization<a class="anchor" aria-label="anchor" href="#file-organization"></a></h3>
@@ -101,12 +113,13 @@
 ├── tidyllm_schema.R       # JSON schema system (tidyllm_field, field_*(), tidyllm_schema())
 ├── tools.R                # TOOL class, tidyllm_tool(), ellmer_tool(), tools_to_api generics
 ├── perform_api_requests.R # perform_generic_request(), perform_chat_request(), perform_embedding_request()
-├── media.R                # Media attachment helpers (images, PDFs, audio, video)
+├── media.R                # tidyllm_image, tidyllm_file (S7); img(), audio_file(), video_file(), pdf_file(); extract_media()
 ├── rate_limits.R          # Per-provider rate limit tracking from response headers
 ├── embedding_helpers.R    # Shared embedding utilities
 ├── pdfbatch.R             # PDF batch processing utilities
 ├── utilites.R             # validate_inputs(), %||%, other helpers
-├── api_openai.R           # OpenAI chat via Chat Completions API (Responses API migration deferred to 0.5.0)
+├── api_chat_completions.R # ChatCompletions base class (renamed from api_openai); shared by 7 providers
+├── api_openai.R           # OpenAI Responses API (POST /v1/responses); extends APIProvider directly
 ├── api_claude.R           # Claude chat + extended thinking + file uploads + batch
 ├── api_gemini.R           # Gemini chat + video/audio + batch
 ├── api_groq.R             # Groq chat + batch
@@ -260,7 +273,8 @@
 ├── media/                   # Test assets (images, PDFs, audio) — tracked in git
 ├── providers/               # Per-provider suites — source one after changing a provider
 │   ├── claude.R             # chat, stream, tools, thinking (no batch — moved to batch_submit/fetch)
-│   ├── openai.R             # chat, stream, tools (no batch)
+│   ├── openai.R             # chat, stream, tools, vision, reasoning_effort, stateful, built-in tools
+│   ├── chat_completions.R   # generic chat_completions() provider smoke tests
 │   ├── gemini.R             # chat, tools, embed, list_models
 │   ├── perplexity.R         # chat, streaming, citations, search_recency_filter
 │   ├── ellmer.R             # chat_ellmer (anthropic + openai), ellmer_tool(), claude_websearch()
@@ -271,7 +285,10 @@
 │   ├── gemini_grounding.R   # .grounding_threshold, groundingMetadata in api_specific
 │   ├── gemini_file_api.R    # upload/chat/metadata/list/delete — on.exit cleanup
 │   ├── claude_file_api.R    # same lifecycle for Claude Files API
-│   └── perplexity_deep_research.R  # deep_research() blocking + background; slow (5-10 min)
+│   ├── openai_file_api.R    # same lifecycle for OpenAI Files API
+│   ├── inline_media.R       # img(), audio_file(), pdf_file(), multi-image — cross-provider
+│   ├── perplexity_deep_research.R  # deep_research() blocking + background; slow (5-10 min)
+│   └── openai_deep_research.R      # OpenAI o4-mini-deep-research; slow (5-30 min)
 ├── async_state/             # Gitignored — live batch job objects (.rds)
 ├── debug_state/             # Gitignored — dump.frames() post-mortem dumps (.rda)
 └── results/                 # Gitignored — JSON results for Claude Code to read
@@ -299,36 +316,142 @@
 </div>
 </div>
 <div class="section level2">
-<h2 id="known-limitations">Known Limitations<a class="anchor" aria-label="anchor" href="#known-limitations"></a></h2>
-<ul><li>
-<strong>Single image per message</strong>: <code>format_message()</code> supports only one image. Multi-image support not implemented.</li>
-<li>
-<strong>No async/await</strong>: Intentional — batch APIs are tidyllm’s preferred async pattern.</li>
-<li>
-<strong>Ollama default models require pull</strong>: Default chat (<code>qwen3.5:4b</code>) and embed (<code>qwen3-embedding:0.6b</code>) require <code>ollama pull qwen3.5:4b &amp;&amp; ollama pull qwen3-embedding:0.6b</code>. ## Release Status</li>
-</ul><p><strong>Current release: 0.4.0</strong> (submitted to CRAN 2026-03-17)</p>
-<p>0.4.0 is complete. All workplan phases shipped: new providers (OpenRouter, llama.cpp), unified tool loop, verb dispatch refactor, deep research (Perplexity), thinking modes (Claude, Gemini, DeepSeek), full test infrastructure, and all documentation vignettes.</p>
+<h2 id="provider-multimodal-capability-matrix">Provider Multimodal Capability Matrix<a class="anchor" aria-label="anchor" href="#provider-multimodal-capability-matrix"></a></h2>
+<table style="width:100%;" class="table"><colgroup><col width="14%"><col width="14%"><col width="14%"><col width="14%"><col width="14%"><col width="14%"><col width="14%"></colgroup><thead><tr><th>Provider</th>
+<th>Images</th>
+<th>Multi-image</th>
+<th>PDFs</th>
+<th>Audio</th>
+<th>Video</th>
+<th>Notes</th>
+</tr></thead><tbody><tr><td><code><a href="reference/claude.html">claude()</a></code></td>
+<td>Yes, Claude 3+</td>
+<td>Yes (up to 600)</td>
+<td>Yes, native <code>document</code> block</td>
+<td>No</td>
+<td>No</td>
+<td>Files API for upload/reuse; 5MB/img</td>
+</tr><tr><td><code><a href="reference/gemini.html">gemini()</a></code></td>
+<td>Yes, all models</td>
+<td>Yes (up to 3600)</td>
+<td>Yes, inline or File API</td>
+<td>Yes, inline or File API</td>
+<td>Yes, inline/File API/YouTube</td>
+<td>File API expires after 48h</td>
+</tr><tr><td><code><a href="reference/openai.html">openai()</a></code></td>
+<td>Yes, gpt-4o+</td>
+<td>Yes</td>
+<td>Via Files API only (<code>upload_file</code>)</td>
+<td>Audio-specific models only (<code>gpt-4o-audio-preview</code>)</td>
+<td>No</td>
+<td>Files API accepts 80+ formats (images, Office, code, PDF, zip…); <code>input_file</code> in Responses API = documents only; images must use inline <code><a href="reference/img.html">img()</a></code>
+</td>
+</tr><tr><td><code><a href="reference/openrouter.html">openrouter()</a></code></td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Text path (binary PDF = text fallback)</td>
+<td>Yes, model-dependent</td>
+<td>Yes, model-dependent</td>
+<td>
+<code>input_audio</code>/<code>video_url</code> blocks; growing list of AV-capable models: Gemini, Gemma 4, Qwen 3.6, and others — filter by <code>audio</code> modality on openrouter.ai/models</td>
+</tr><tr><td><code><a href="reference/chat_completions_chat.html">chat_completions()</a></code></td>
+<td>Yes (OAI format)</td>
+<td>Yes</td>
+<td>Text path only</td>
+<td>No</td>
+<td>No</td>
+<td>Base class for 7 providers</td>
+</tr><tr><td><code><a href="reference/ollama.html">ollama()</a></code></td>
+<td>Yes, vision models</td>
+<td>Yes</td>
+<td>Text path only</td>
+<td>No</td>
+<td>No</td>
+<td>Requires vision GGUF + model pull</td>
+</tr><tr><td><code><a href="reference/groq.html">groq()</a></code></td>
+<td>Yes, llama-4-scout only</td>
+<td>Yes (max 5)</td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
+<td>4MB base64 cap; vision in preview; separate transcription endpoint</td>
+</tr><tr><td><code><a href="reference/mistral.html">mistral()</a></code></td>
+<td>Yes, most models</td>
+<td>Yes</td>
+<td>OCR endpoint only</td>
+<td>Yes, Voxtral models only</td>
+<td>No</td>
+<td>
+<code>image_url</code> and <code>input_audio</code> are plain strings (not objects); max ~20 min audio</td>
+</tr><tr><td><code><a href="reference/perplexity.html">perplexity()</a></code></td>
+<td>Yes, some models</td>
+<td>Likely</td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
+<td>Vision under-documented</td>
+</tr><tr><td><code><a href="reference/deepseek.html">deepseek()</a></code></td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
+<td>Text-only API</td>
+</tr><tr><td><code><a href="reference/llamacpp.html">llamacpp()</a></code></td>
+<td>Yes, with mmproj</td>
+<td>Yes</td>
+<td>No</td>
+<td>Yes, Ultravox / Qwen2.5-Omni / Qwen3-Omni / Gemma 4 E2B/E4B GGUFs</td>
+<td>No</td>
+<td>Audio merged May 2025 (PR #13714); needs <code>--mmproj</code> audio encoder flag; Gemma 4 audio up to 30s</td>
+</tr><tr><td><code><a href="reference/azure_openai.html">azure_openai()</a></code></td>
+<td>Yes (inherits ChatCompletions)</td>
+<td>Yes</td>
+<td>Text path only</td>
+<td>No</td>
+<td>No</td>
+<td></td>
+</tr></tbody></table><p><strong>Inline vs. text-extracted PDFs</strong>: <code><a href="reference/pdf_file.html">pdf_file()</a></code> always extracts text at construction time as a fallback. Providers listed as “text path only” automatically use this fallback; no special handling needed. Providers with native PDF support (Claude, Gemini) use binary encoding instead.</p>
+<p><strong>Audio/video format details</strong>: Gemini supports WAV/MP3/AIFF/AAC/OGG/FLAC for audio; MP4/MPEG/MOV/AVI/WebM for video (inline up to 20MB/100MB; larger via File API). OpenRouter forwards <code>input_audio</code> and <code>video_url</code> blocks to the underlying model — audio/video capable models are a growing list including Gemini, Gemma 4 (E2B/E4B), Qwen 3.6, and others; filter by modality at openrouter.ai/models. tidyllm always sends the object format <code>{data, format}</code> for <code>input_audio</code> via OpenRouter (not plain string).</p>
+<p><strong>Audio wire format differences</strong>: Gemini and OpenRouter use <code>{data: "&lt;b64&gt;", format: "mp3"}</code> objects inside <code>input_audio</code>. Mistral uses a plain string (<code>"&lt;b64&gt;"</code> or URL). llama.cpp uses the same object format as OpenAI/OpenRouter.</p>
+<p><strong>tidyllm implementation status</strong>: Audio is currently implemented for <code><a href="reference/gemini.html">gemini()</a></code> and <code><a href="reference/openrouter.html">openrouter()</a></code>. Mistral and llama.cpp audio support is planned for an upcoming 0.5.x release — the wire formats are known and both providers already carry the format difference in their image implementations.</p>
 </div>
 <div class="section level2">
-<h2 id="planned-architecture-changes-050">Planned Architecture Changes (0.5.0)<a class="anchor" aria-label="anchor" href="#planned-architecture-changes-050"></a></h2>
+<h2 id="known-limitations">Known Limitations<a class="anchor" aria-label="anchor" href="#known-limitations"></a></h2>
 <ul><li>
-<strong><code>chat_completions()</code> provider</strong>: Rename current <code>api_openai.R</code> Chat Completions code to <code>api_chat_completions.R</code>; expose as a generic <code>chat_completions(.api_url, ...)</code> provider for any OAI-compatible endpoint. Becomes the shared base class for Mistral, Groq, DeepSeek, Perplexity, Azure, Ollama, etc.</li>
+<strong>No async/await</strong>: Intentional — batch APIs are tidyllm’s preferred async pattern.</li>
 <li>
-<strong>New <code>api_openai.R</code></strong>: Rewrite <code><a href="reference/openai.html">openai()</a></code> to use the OpenAI Responses API (<code>POST /v1/responses</code>). External interface (<code><a href="reference/openai.html">openai()</a></code>) stays identical.</li>
+<strong>Ollama default models require pull</strong>: Default chat (<code>qwen3.5:4b</code>) and embed (<code>qwen3-embedding:0.6b</code>) require <code>ollama pull qwen3.5:4b &amp;&amp; ollama pull qwen3-embedding:0.6b</code>.</li>
 <li>
-<strong>OpenAI deep_research()</strong>: After Responses API rewrite — <code>o3-deep-research</code> / <code>o4-mini-deep-research</code> with <code>background=true</code>; <code>tidyllm_research_job</code> + <code><a href="reference/check_job.html">check_job()</a></code>/<code><a href="reference/fetch_job.html">fetch_job()</a></code> already in place.</li>
+<strong><code>.imagefile</code> deprecated in 0.5.0</strong>: Use <code>.media = img(path)</code> instead. Emits a deprecation warning.</li>
 <li>
-<strong>Mixedbread provider</strong>: embedding + quantization, Wholembed v3 omnimodal.</li>
+<strong><code>.file_ids</code> / <code>.fileid</code> deprecated in 0.5.0</strong>: Use <code>upload_file(provider())</code> + <code>.files</code> on <code><a href="reference/llm_message.html">llm_message()</a></code> instead.</li>
 <li>
-<strong>Mistral thinking</strong> (<code>.thinking</code> → <code>magistral-medium-latest</code>), <strong>Mistral OCR</strong> (<code>mistral_ocr()</code>).</li>
+<strong>OpenAI Files API image limitation</strong>: <code>upload_file(openai())</code> accepts images but the Responses API only supports document types (<code>input_file</code> blocks); use inline <code><a href="reference/img.html">img()</a></code> for OpenAI image vision.</li>
 <li>
-<strong>Ollama native structured output</strong>: override <code>to_api_format()</code> to use <code>format</code> field directly.</li>
+<strong>Cross-provider chains with audio/video</strong>: Audio/video content blocks are silently ignored by providers that don’t support them. When chaining Gemini (audio leg) → Claude (text continuation), the audio item in the prior message is dropped at <code>to_api_format()</code> time — Claude only sees the text content.</li>
+</ul></div>
+<div class="section level2">
+<h2 id="release-status">Release Status<a class="anchor" aria-label="anchor" href="#release-status"></a></h2>
+<p><strong>Current release: 0.4.0</strong> (submitted to CRAN 2026-03-17)</p>
+<p><strong>In development: 0.5.0</strong> (feature-complete; NEWS.md and CRAN submission remaining)</p>
+<p>Phase 1 (OpenAI Provider Split) is complete: - <code>api_chat_completions</code> class (renamed from <code>api_openai</code>); <code><a href="reference/chat_completions_chat.html">chat_completions()</a></code> provider for any OAI-compatible endpoint - <code>api_openai</code> rewrote on the Responses API (<code>POST /v1/responses</code>); all generics implemented - OpenAI deep_research() via <code>background=true</code>; <code><a href="reference/check_job.html">check_job()</a></code>/<code><a href="reference/fetch_job.html">fetch_job()</a></code> provider-aware dispatch - <code>.stateful = TRUE</code> on <code><a href="reference/openai_chat.html">openai_chat()</a></code> for server-side context via <code>previous_response_id</code> - Built-in tools: <code><a href="reference/openai_websearch.html">openai_websearch()</a></code>, <code><a href="reference/openai_code_interpreter.html">openai_code_interpreter()</a></code> (<code>openai_file_search()</code> omitted: queries vector stores, which tidyllm cannot yet manage)</p>
+<p>Phase 2 (Files and Media System) is complete: - Four new S7 media types in <code>R/media.R</code>: <code>tidyllm_audio</code>, <code>tidyllm_video</code>, <code>tidyllm_pdf</code>, <code>tidyllm_file</code> - Constructors: <code><a href="reference/audio_file.html">audio_file()</a></code>, <code><a href="reference/video_file.html">video_file()</a></code>, <code><a href="reference/pdf_file.html">pdf_file()</a></code> (lazy encoding); <code><a href="reference/img.html">img()</a></code> unchanged (eager) - <code><a href="reference/llm_message.html">llm_message()</a></code> gains <code>.media</code> and <code>.files</code>; <code>.imagefile</code> and <code>.pdf</code> deprecated with warnings - <code>format_message()</code> returns <code>images</code> list (multi-image); all providers updated to iterate it - <code>add_message()</code> gains <code>.files</code> parameter; <code>print.LLMMessage</code> shows S7 media labels and file refs - Four new file verbs: <code><a href="reference/upload_file.html">upload_file()</a></code>, <code><a href="reference/list_files.html">list_files()</a></code>, <code><a href="reference/file_info.html">file_info()</a></code>, <code><a href="reference/delete_file.html">delete_file()</a></code> - <code>validate_message_attachments()</code> called by <code><a href="reference/chat.html">chat()</a></code> for provider mismatch detection - Claude: <code><a href="reference/upload_file.html">upload_file()</a></code> returns <code>tidyllm_file</code>; file verbs registered; <code>to_api_format()</code> handles multi-image, PDF text fallback, and <code>message$files</code> - Gemini: same; columns normalized to <code>file_id</code>/<code>filename</code>/<code>size_bytes</code>/<code>mime_type</code>/<code>created_at</code>/<code>expires_at</code>/<code>uri</code> - OpenAI Responses API: <code><a href="reference/upload_file.html">upload_file()</a></code> returns <code>tidyllm_file</code>; <code>to_api_format()</code> emits <code>input_image</code> and <code>input_file</code> blocks - ChatCompletions: <code>to_api_format()</code> updated for multi-image; no Files API (errors with message) - Ollama, Ellmer: <code>to_api_format()</code> updated to iterate <code>formatted$images</code> - OpenRouter: <code>to_api_format()</code> handles <code>tidyllm_audio</code> (<code>input_audio</code> block) and <code>tidyllm_video</code> (<code>video_url</code> block) in addition to images - Live tests: <code>local_tests/features/claude_file_api.R</code>, <code>gemini_file_api.R</code>, <code>openai_file_api.R</code>, <code>inline_media.R</code> (video + cross-provider chain included)</p>
+</div>
+<div class="section level2">
+<h2 id="planned-architecture-changes-051--deferred-from-050">Planned Architecture Changes (0.5.1+ — deferred from 0.5.0)<a class="anchor" aria-label="anchor" href="#planned-architecture-changes-051--deferred-from-050"></a></h2>
+<ul><li>
+<strong>Mixedbread provider</strong>: embedding + quantization, Wholembed v3 omnimodal. Deferred to 0.5.1+.</li>
 <li>
-<strong>Claude Citations API</strong>: <code>citations: {enabled: true}</code> on document content blocks.</li>
+<strong>Mistral thinking</strong> (<code>.thinking</code> → <code>magistral-medium-latest</code>) and <strong>Mistral OCR</strong> (<code>mistral_ocr()</code>). Deferred to 0.5.1+. Note: <code>.reasoning_effort</code> is already implemented for 0.5.0.</li>
 <li>
-<strong>Multi-image per message</strong> support.</li>
+<strong>Gemini multimodal embeddings</strong>: <code>gemini-embedding-2-preview</code> supports text + image + audio + video in one embedding space. Deferred to 0.5.1+.</li>
 <li>
-<strong><code>provider_capabilities()</code> discovery function</strong>.</li>
+<strong>Claude Citations API</strong>: <code>citations: {enabled: true}</code> on document content blocks. Out of scope for 0.5.0; incompatible with structured output.</li>
+<li>
+<strong><code>provider_capabilities()</code> discovery function</strong>: returns tibble of supported verbs and media types per provider.</li>
+<li>
+<strong>llama.cpp audio</strong>: wire format known (<code>input_audio</code> object, same as OpenAI); needs <code>--mmproj</code> audio encoder; deferred to 0.5.1+.</li>
 </ul></div>
 <div class="section level2">
 <h2 id="key-environment-variables">Key Environment Variables<a class="anchor" aria-label="anchor" href="#key-environment-variables"></a></h2>
@@ -372,6 +495,12 @@
 <ul><li>
 <code>local_wip/notes/workplan_0.4.0.md</code> — Completed 0.4.0 workplan (all phases done; see for full history)</li>
 <li>
+<code>local_wip/notes/workplan_0.5.0.md</code> — 0.5.0 workplan: all phases complete (Phase 1: Responses API split; Phase 2: files and media system)</li>
+<li>
+<code>local_wip/notes/design_files_and_media.md</code> — Design for Phase 2: tidyllm_file, .media, file verbs, deprecation</li>
+<li>
+<code>local_wip/notes/design_openai_stateful.md</code> — Design rationale for .stateful = TRUE on openai_chat()</li>
+<li>
 <code>local_wip/notes/TODOs.md</code> — Active feature TODOs and planned work</li>
 <li>
 <code>local_wip/notes/tech_debt.md</code> — Known tech debt, ranked by priority</li>
@@ -380,25 +509,27 @@
 <li>
 <code>local_wip/notes/local_testing_strategy.md</code> — Full local test design: harness, async tracker, per-provider suites</li>
 <li>
-<code>local_wip/notes/features/</code> — Provider-specific API feature notes (dated)
+<code>local_wip/notes/features/</code> — Provider-specific API feature notes (dated); old notes in <code>archive/</code>
 <ul><li>
-<code>2026_03_14_openai.md</code> — Responses API migration, deep research, new models</li>
+<code>2026_03_19_openai.md</code> — Responses API vs Chat Completions split, multimodal, reasoning</li>
 <li>
-<code>2026_03_14_claude.md</code> — Model update, Citations API, Files API</li>
+<code>2026_03_19_claude.md</code> — Multimodal wire formats, Files API, Citations API</li>
 <li>
-<code>2026_03_14_gemini.md</code> — Model update (2.5/3.x), thinking mode</li>
+<code>2026_03_19_gemini.md</code> — Full multimodal (image/audio/video/PDF), File API, thinking, grounding</li>
 <li>
-<code>2026_03_14_mistral.md</code> — Model update, reasoning (Magistral), multimodal</li>
+<code>2026_03_19_mistral.md</code> — Vision models, OCR endpoint, audio transcription</li>
 <li>
-<code>2026_03_14_groq.md</code> — Model update, gpt-oss-20b, Compound system</li>
+<code>2026_03_19_groq.md</code> — Vision (llama-4-scout only), limits, OAI-compat differences</li>
 <li>
-<code>2026_03_14_perplexity.md</code> — Deep research async endpoint, structured output</li>
+<code>2026_03_19_perplexity.md</code> — Model IDs, vision support, deep research, search features</li>
 <li>
-<code>2026_03_14_deepseek.md</code> — Model update, reasoning (V3.2), context caching</li>
+<code>2026_03_19_deepseek.md</code> — Text-only API, reasoning, context caching</li>
 <li>
-<code>2026_03_14_ollama.md</code> — Structured outputs, logprobs, streaming tool calls, qwen3.5 default</li>
+<code>2026_03_19_ollama.md</code> — Native vs OAI-compat image format, vision models, structured output</li>
 <li>
-<code>2026_03_14_voyage.md</code> — Voyage-4 family, multimodal update, reranking</li>
+<code>2026_03_19_llamacpp.md</code> — OAI-compat vision, mmproj flag, vision-capable GGUFs</li>
+<li>
+<code>2026_03_19_openrouter.md</code> — Unified multimodal (image/PDF/audio/video), reasoning, block formats</li>
 <li>
 <code>2026_03_14_mixedbread.md</code> — New provider: embedding + quantization, Wholembed v3 omnimodal</li>
 <li>

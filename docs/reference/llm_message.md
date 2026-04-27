@@ -12,6 +12,8 @@ llm_message(
   .prompt = NULL,
   .role = "user",
   .system_prompt = "You are a helpful assistant",
+  .media = NULL,
+  .files = NULL,
   .imagefile = NULL,
   .pdf = NULL,
   .textfile = NULL,
@@ -38,15 +40,29 @@ llm_message(
 
   Default system prompt if a new LLMMessage needs to be created.
 
+- .media:
+
+  An inline media object or a list of them. Accepted types:
+  [`img()`](https://edubruell.github.io/tidyllm/reference/img.md),
+  [`audio_file()`](https://edubruell.github.io/tidyllm/reference/audio_file.md),
+  [`video_file()`](https://edubruell.github.io/tidyllm/reference/video_file.md),
+  [`pdf_file()`](https://edubruell.github.io/tidyllm/reference/pdf_file.md).
+
+- .files:
+
+  A `tidyllm_file` object or list of them returned by
+  [`upload_file()`](https://edubruell.github.io/tidyllm/reference/upload_file.md).
+  These are remote file references stored on a provider's server.
+
 - .imagefile:
 
-  Path to an image file to be attached (optional).
+  Path to an image file to be attached (optional). Deprecated; use
+  `.media = img(path)` instead.
 
 - .pdf:
 
-  Path to a PDF file to be attached (optional). Can be a character
-  vector of length one (file path), or a list with `filename`,
-  `start_page`, and `end_page`.
+  Path to a PDF file to be attached (optional). Deprecated; use
+  `.media = pdf_file(path)` instead.
 
 - .textfile:
 

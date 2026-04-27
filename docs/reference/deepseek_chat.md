@@ -9,7 +9,7 @@ the DeepSeek API
 ``` r
 deepseek_chat(
   .llm,
-  .model = "deepseek-chat",
+  .model = "deepseek-v4-pro",
   .thinking = NULL,
   .max_tokens = 2048,
   .temperature = NULL,
@@ -39,12 +39,16 @@ deepseek_chat(
 
 - .model:
 
-  The identifier of the model to use (default: "deepseek-chat").
+  The identifier of the model to use (default: `"deepseek-v4-pro"`). Use
+  `"deepseek-v4-flash"` for a faster, cheaper alternative.
 
 - .thinking:
 
-  If TRUE, switches to the `deepseek-reasoner` model and captures the
-  reasoning trace (default: NULL).
+  If TRUE, enables thinking mode via `thinking: {type: "enabled"}` in
+  the request body and captures the reasoning trace in metadata
+  (default: NULL). Supported by all V4 models; note that `temperature`,
+  `top_p`, `presence_penalty`, and `frequency_penalty` are ignored when
+  thinking is active.
 
 - .max_tokens:
 
