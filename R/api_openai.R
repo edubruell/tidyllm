@@ -307,7 +307,7 @@ last_openai_response_id <- function(.llm) {
 
 prepare_responses_request <- function(.llm,
                                       .api,
-                                      .model         = "gpt-5.4",
+                                      .model         = "gpt-5.5",
                                       .max_output_tokens = NULL,
                                       .temperature   = NULL,
                                       .reasoning_effort = NULL,
@@ -362,7 +362,7 @@ prepare_responses_request <- function(.llm,
 #' and reasoning models (o-series) via `.reasoning_effort`.
 #'
 #' @param .llm An `LLMMessage` object containing the conversation history.
-#' @param .model The model identifier (default: `"gpt-4o"`).
+#' @param .model The model identifier (default: `"gpt-5.5"`).
 #' @param .max_output_tokens Maximum tokens to generate (caps reasoning + completion).
 #' @param .temperature Sampling temperature (0-2).
 #' @param .seed Seed for deterministic sampling.
@@ -386,7 +386,7 @@ prepare_responses_request <- function(.llm,
 #' @export
 openai_chat <- function(
     .llm,
-    .model               = "gpt-5.4",
+    .model               = "gpt-5.5",
     .max_output_tokens   = NULL,
     .temperature         = NULL,
     .seed                = NULL,

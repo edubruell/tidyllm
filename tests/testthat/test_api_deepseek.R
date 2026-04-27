@@ -18,7 +18,7 @@ test_that("deepseek function constructs a correct request and dry runs it", {
   expect_equal(headers$`content-type`, "application/json")
   
   body_json <- request$body |> jsonlite::toJSON() |> as.character()
-  expect_true(grepl("deepseek-chat", body_json))
+  expect_true(grepl("deepseek-v4-pro", body_json))
 })
 
 # Test response handling

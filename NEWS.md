@@ -186,6 +186,8 @@ The following are soft-deprecated with warnings in 0.5.0 and will remain as perm
 - Default model for `claude()` updated to `claude-sonnet-4-6`; fast model updated to `claude-haiku-4-5`
 - Default model for `gemini()` updated to `gemini-2.5-flash`; default embedding model updated to `gemini-embedding-2-preview`
 - Default model for `voyage_embedding()` updated to `voyage-4`
+- Default model for `openai()` updated to `gpt-5.5` (released April 2026)
+- Default model for `deepseek()` updated to `deepseek-v4-pro` (DeepSeek V4, released April 2026); `.thinking = TRUE` now enables thinking mode via the `thinking` body parameter instead of switching to the deprecated `deepseek-reasoner` model name; both `deepseek-v4-pro` and `deepseek-v4-flash` support thinking mode
 
 ---
 

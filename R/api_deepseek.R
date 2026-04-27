@@ -30,7 +30,7 @@ method(extract_metadata, list(api_deepseek,class_list))<- function(.api,.respons
 #' Currently tool calls cause problems on the DeepSeek API
 #'
 #' @param .llm An `LLMMessage` object containing the conversation history.
-#' @param .model The identifier of the model to use (default: "deepseek-chat").
+#' @param .model The identifier of the model to use (default: `"deepseek-v4-pro"`). Use `"deepseek-v4-flash"` for a faster, cheaper alternative.
 #' @param .max_tokens The maximum number of tokens that can be generated in the response (default: 2048).
 #' @param .temperature Controls the randomness in the model's response. Values between 0 and 2 are allowed (optional).
 #' @param .top_p Nucleus sampling parameter that controls the proportion of probability mass considered (optional).
@@ -49,13 +49,13 @@ method(extract_metadata, list(api_deepseek,class_list))<- function(.api,.respons
 #' @param .max_tries Maximum retries to perform the request (default: 3).
 #' @param .max_tool_rounds Integer specifying the maximum number of tool use iterations (default: 10).
 #'   Set to 1 for single-round tool use, or higher for multi-turn agentic loops.
-#' @param .thinking If TRUE, switches to the `deepseek-reasoner` model and captures the reasoning trace (default: NULL).
+#' @param .thinking If TRUE, enables thinking mode via `thinking: {type: "enabled"}` in the request body and captures the reasoning trace in metadata (default: NULL). Supported by all V4 models; note that `temperature`, `top_p`, `presence_penalty`, and `frequency_penalty` are ignored when thinking is active.
 #'
 #' @return A new `LLMMessage` object containing the original messages plus the assistant's response.
 #'
 #' @export
 deepseek_chat <- function(.llm,
-                          .model = "deepseek-chat",
+                          .model = "deepseek-v4-pro",
                           .thinking = NULL,
                           .max_tokens = 2048,
                           .temperature = NULL,
@@ -102,8 +102,6 @@ deepseek_chat <- function(.llm,
     ".max_tool_rounds must be a positive integer" = is_integer_valued(.max_tool_rounds) && .max_tool_rounds >= 1
   ) |> validate_inputs()
   
-  if (isTRUE(.thinking)) .model <- "deepseek-reasoner"
-
   api_obj <- api_deepseek(short_name = "deepseek",
                           long_name  = "DeepSeek",
                           api_key_env_var = "DEEPSEEK_API_KEY")
@@ -133,7 +131,8 @@ deepseek_chat <- function(.llm,
     logprobs = .logprobs,
     top_logprobs = .top_logprobs,
     tools = if(!is.null(tools_def)) tools_to_api(api_obj,tools_def) else NULL,
-    tool_choice = .tool_choice
+    tool_choice = .tool_choice,
+    thinking = if (isTRUE(.thinking)) list(type = "enabled") else list(type = "disabled")
   ) |> purrr::compact()
   
   request <- httr2::request(.api_url) |>

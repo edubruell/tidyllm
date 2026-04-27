@@ -6,7 +6,7 @@
 \usage{
 deepseek_chat(
   .llm,
-  .model = "deepseek-chat",
+  .model = "deepseek-v4-pro",
   .thinking = NULL,
   .max_tokens = 2048,
   .temperature = NULL,
@@ -30,9 +30,9 @@ deepseek_chat(
 \arguments{
 \item{.llm}{An \code{LLMMessage} object containing the conversation history.}
 
-\item{.model}{The identifier of the model to use (default: "deepseek-chat").}
+\item{.model}{The identifier of the model to use (default: \code{"deepseek-v4-pro"}). Use \code{"deepseek-v4-flash"} for a faster, cheaper alternative.}
 
-\item{.thinking}{If TRUE, switches to the \code{deepseek-reasoner} model and captures the reasoning trace (default: NULL).}
+\item{.thinking}{If TRUE, enables thinking mode via \code{thinking: {type: "enabled"}} in the request body and captures the reasoning trace in metadata (default: NULL). Supported by all V4 models; note that \code{temperature}, \code{top_p}, \code{presence_penalty}, and \code{frequency_penalty} are ignored when thinking is active.}
 
 \item{.max_tokens}{The maximum number of tokens that can be generated in the response (default: 2048).}
 

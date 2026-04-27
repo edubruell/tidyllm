@@ -33,7 +33,7 @@ test_that("openai function constructs a correct request and dry runs it", {
   # system message → top-level "instructions", user message → "input" array
   body_json <- request$body |> jsonlite::toJSON() |> as.character()
 
-  expected_json <- "{\"data\":{\"model\":[\"gpt-5.4\"],\"input\":[{\"role\":[\"user\"],\"content\":[\"Write a poem about a (stochastic) parrot\"]}],\"instructions\":[\"You are a helpful assistant\"]},\"type\":[\"json\"],\"content_type\":[\"application/json\"],\"params\":{\"auto_unbox\":[true],\"digits\":[22],\"null\":[\"null\"]}}"
+  expected_json <- "{\"data\":{\"model\":[\"gpt-5.5\"],\"input\":[{\"role\":[\"user\"],\"content\":[\"Write a poem about a (stochastic) parrot\"]}],\"instructions\":[\"You are a helpful assistant\"]},\"type\":[\"json\"],\"content_type\":[\"application/json\"],\"params\":{\"auto_unbox\":[true],\"digits\":[22],\"null\":[\"null\"]}}"
   expect_equal(body_json, expected_json)
   
 })
