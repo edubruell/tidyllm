@@ -218,7 +218,7 @@ method(append_tool_messages, list(api_ollama, class_any, class_any, class_any)) 
 #' @param .seed Integer; seed for reproducible generation (default: NULL)
 #' @param .json_schema A JSON schema object as R list to enforce the output structure (default: NULL)
 #' @param .temperature Float between 0-2; controls randomness in responses (default: NULL)
-#' @param .num_ctx Integer; sets the context window size (default: 2048)
+#' @param .num_ctx Integer; sets the context window size (default: 32768)
 #' @param .num_predict Integer; maximum number of tokens to predict (default: NULL)
 #' @param .top_k Integer; controls diversity by limiting top tokens considered (default: NULL)
 #' @param .top_p Float between 0-1; nucleus sampling threshold (default: NULL)
@@ -271,7 +271,7 @@ ollama_chat <- function(.llm,
                    .seed = NULL,
                    .json_schema = NULL,
                    .temperature = NULL,
-                   .num_ctx = 2048,
+                   .num_ctx = 32768,
                    .num_predict = NULL,
                    .top_k = NULL,
                    .top_p = NULL,
@@ -486,7 +486,7 @@ ollama_embedding <- function(.input,
 #' @param .seed Integer; seed for reproducible generation (default: NULL)
 #' @param .json_schema A JSON schema object as R list to enforce the output structure (default: NULL)
 #' @param .temperature Float between 0-2; controls randomness in responses (default: NULL)
-#' @param .num_ctx Integer; sets the context window size (default: 2048)
+#' @param .num_ctx Integer; sets the context window size (default: 32768)
 #' @param .num_predict Integer; maximum number of tokens to predict (default: NULL)
 #' @param .top_k Integer; controls diversity by limiting top tokens considered (default: NULL)
 #' @param .top_p Float between 0-1; nucleus sampling threshold (default: NULL)
@@ -520,7 +520,7 @@ send_ollama_batch <- function(.llms,
                         .seed = NULL,
                         .json_schema = NULL,
                         .temperature = NULL,
-                        .num_ctx = 2048,
+                        .num_ctx = 32768,
                         .num_predict = NULL,
                         .top_k = NULL,
                         .top_p = NULL,

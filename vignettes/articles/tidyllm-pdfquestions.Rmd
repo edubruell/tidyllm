@@ -26,7 +26,7 @@ Our goal is to get a first overview of these papers and to give them good file n
 
 ### Step 1: Generating Messages for Each Document
 
-First, we prepare a list of messages for all PDFs in the folder by applying `llm_message()` with a prompt to the first five pages of each document. Even though `gpt-5.4` can process up to 128,000 tokens (roughly 80-90 pages of English text), we limit the input to five pages for demonstration purposes; the introduction is usually enough to get a first overview of a paper.
+First, we prepare a list of messages for all PDFs in the folder by applying `llm_message()` with a prompt to the first five pages of each document. Even though `gpt-5.6-terra` can process up to 128,000 tokens (roughly 80-90 pages of English text), we limit the input to five pages for demonstration purposes; the introduction is usually enough to get a first overview of a paper.
 
 Attach PDFs with `pdf_file()` and the `.media` argument. On providers that support native PDF rendering (Claude, Gemini), the file is sent as binary, preserving images, tables, and formatting. On all other providers the text is extracted automatically and wrapped in `<pdf>` tags in the prompt. Pass `.text_extract = TRUE` to always force text extraction regardless of the provider:
 
@@ -70,7 +70,7 @@ To test the setup, we run the analysis on a single document with `chat()` and th
 ```{r example_task, eval = FALSE}
 example_task <- document_tasks[[1]] |>
   chat(openai(.json_schema = document_schema,
-              .model       = "gpt-5.4"))
+              .model       = "gpt-5.6-terra"))
 ```
 
 ```{r example_task_hidden, echo = FALSE}
@@ -93,7 +93,7 @@ get_metadata(example_task)
 
 ```{r, echo = FALSE}
 tibble(
-  model             = "gpt-5.4",
+  model             = "gpt-5.6-terra",
   timestamp         = as.POSIXct("2026-03-16 10:00:00"),
   prompt_tokens     = 4265L,
   completion_tokens = 337L,
@@ -107,7 +107,7 @@ tibble(
   )))
 ```
 
-At current `gpt-5.4` batch pricing the per-document cost is a few cents; processing a folder of 50 papers costs well under a dollar.
+At current `gpt-5.6-terra` batch pricing the per-document cost is a few cents; processing a folder of 50 papers costs well under a dollar.
 
 ### Step 5: Scaling Up to a Whole Batch of Papers
 
@@ -116,7 +116,7 @@ After confirming the single-document analysis works, we extend the workflow to p
 ```{r batch, eval = FALSE}
 document_tasks |>
   send_batch(openai(.json_schema = document_schema,
-                    .model       = "gpt-5.4")) |>
+                    .model       = "gpt-5.6-terra")) |>
   write_rds("document_batch.rds")
 ```
 

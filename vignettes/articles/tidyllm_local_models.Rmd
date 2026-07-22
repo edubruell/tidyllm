@@ -90,12 +90,12 @@ get_reply(reply)
 cat('[1] "A tibble is a modern reimagining of the data frame from the tidyverse. The main\ndifferences are that tibbles never convert strings to factors, never change column\nnames, and print only the first ten rows by default, showing column types beneath\nthe header. They also give more informative error messages when you access a column\nthat does not exist."\n')
 ```
 
-The `.num_ctx` parameter controls how much text the model can read at once, known as its *context window*. Text is measured in tokens, which are roughly three-quarters of a word each. The function default is `2048` tokens, which is quite short and much smaller than what modern models like Qwen3.5 actually support. For long documents, increase it to fit your input:
+The `.num_ctx` parameter controls how much text the model can read at once, known as its *context window*. Text is measured in tokens, which are roughly three-quarters of a word each. The function default is `32768` tokens, well short of what modern models like Qwen3.5 can support in principle, but a sane starting point on typical laptop hardware. For longer documents, increase it further to fit your input:
 
 ```{r ollama-ctx, eval=FALSE}
 long_document |>
   llm_message() |>
-  chat(ollama(.num_ctx = 32768))
+  chat(ollama(.num_ctx = 131072))
 ```
 
 For embeddings, use the `embed()` verb. Embeddings convert text into numeric vectors that capture meaning, making them useful for similarity search and clustering. The default embedding model is `qwen3-embedding:0.6b`, a purpose-built model for this task:
@@ -344,7 +344,7 @@ cat('[1] "A mixture-of-experts model routes each token through only a subset of 
 
 When you use a model for classification or annotation, not all predictions are equally confident. Log-probabilities give you a numeric confidence score for each output token: a score close to zero means the model was highly certain; a strongly negative score means it was genuinely uncertain between several options.
 
-Passing `.logprobs = TRUE` stores these scores in the response metadata alongside the reply:
+Passing `.logprobs = TRUE` stores these scores alongside the reply; `get_logprobs()` extracts them into a tidy tibble:
 
 ```{r llamacpp-logprobs, eval=FALSE}
 result <- llm_message(
@@ -354,20 +354,14 @@ result <- llm_message(
   chat(llamacpp(.logprobs = TRUE, .top_logprobs = 3))
 
 get_reply(result)
-get_metadata(result)$api_specific$logprobs
+get_logprobs(result)
 ```
 
 ```{r llamacpp-logprobs-out, eval=TRUE, echo=FALSE}
 cat('[1] "neutral"\n\n')
-cat("$content\n")
-cat("$content[[1]]\n$content[[1]]$token\n[1] \"neutral\"\n\n")
-cat("$content[[1]]$logprob\n[1] -0.847\n\n")
-cat("$content[[1]]$top_logprobs\n")
 print(tibble::tribble(
-  ~token,      ~logprob,
-  "neutral",   -0.847,
-  "mixed",     -1.204,
-  "positive",  -2.031
+  ~reply_index, ~token,      ~logprob, ~top_logprobs,
+  1,            "neutral",   -0.847,   "<tibble [3 x 2]>"
 ))
 ```
 

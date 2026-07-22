@@ -117,7 +117,7 @@ knitr::include_graphics("picture.jpeg")
 # Single image
 image_description <- llm_message("Describe this picture. Can you guess where it was taken?",
                                   .media = img("picture.jpeg")) |>
-  chat(openai(.model = "gpt-5.4"))
+  chat(openai(.model = "gpt-5.6-terra"))
 
 get_reply(image_description)
 ```
@@ -526,7 +526,7 @@ For getting started with local models (Ollama and llama.cpp), see the Local Mode
 Avoid specifying a provider on every call by setting options:
 
 ```{r, eval=FALSE}
-options(tidyllm_chat_default   = openai(.model = "gpt-5.4"))
+options(tidyllm_chat_default   = openai(.model = "gpt-5.6-terra"))
 options(tidyllm_embed_default  = ollama())
 options(tidyllm_sbatch_default = claude(.temperature = 0))
 options(tidyllm_cbatch_default = claude())

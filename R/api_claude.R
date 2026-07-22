@@ -353,7 +353,7 @@ claude_inject_files <- function(.claude_messages, .file_ids) {
 #' Interact with Claude AI models via the Anthropic API
 #'
 #' @param .llm An LLMMessage object containing the conversation history and system prompt.
-#' @param .model Character string specifying the Claude model version (default: "claude-sonnet-4-6").
+#' @param .model Character string specifying the Claude model version (default: "claude-sonnet-5").
 #' @param .max_tokens Integer specifying the maximum number of tokens in the response (default: 1024).
 #' @param .temperature Numeric between 0 and 1 controlling response randomness.
 #' @param .top_k Integer controlling diversity by limiting the top K tokens.
@@ -389,7 +389,7 @@ claude_inject_files <- function(.claude_messages, .file_ids) {
 #'
 #' @export
 claude_chat <- function(.llm,
-                        .model = "claude-sonnet-4-6",
+                        .model = "claude-sonnet-5",
                         .max_tokens = 2048,
                         .temperature = NULL,
                         .top_k = NULL,
@@ -557,7 +557,7 @@ claude_chat <- function(.llm,
 #' This function creates and submits a batch of messages to the Claude API for asynchronous processing.
 #'
 #' @param .llms A list of LLMMessage objects containing conversation histories.
-#' @param .model Character string specifying the Claude model version (default: "claude-sonnet-4-6").
+#' @param .model Character string specifying the Claude model version (default: "claude-sonnet-5").
 #' @param .max_tokens Integer specifying the maximum tokens per response (default: 1024).
 #' @param .temperature Numeric between 0 and 1 controlling response randomness.
 #' @param .top_k Integer for diversity by limiting the top K tokens.
@@ -579,7 +579,7 @@ claude_chat <- function(.llm,
 #' @return An updated and named list of `.llms` with identifiers that align with batch responses, including a `batch_id` attribute.
 #' @export
 send_claude_batch <- function(.llms, 
-                              .model = "claude-sonnet-4-6", 
+                              .model = "claude-sonnet-5", 
                               .max_tokens = 1024, 
                               .temperature = NULL, 
                               .top_k = NULL, 

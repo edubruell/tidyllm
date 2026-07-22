@@ -149,7 +149,7 @@ llm_message("Summarise what is discussed in this recording.") |>
 # Route to a Gemini model via OpenRouter
 llm_message("Summarise this recording.",
             .media = audio_file("bosch_interview.mp3")) |>
-  chat(openrouter(.model = "google/gemini-2.5-flash"))
+  chat(openrouter(.model = "google/gemini-3.6-flash"))
 ```
 
 Video works the same way:

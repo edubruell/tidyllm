@@ -94,7 +94,7 @@ method(to_api_format, list(LLMMessage, api_openrouter)) <- function(.llm,
 #' of models from different providers through a single OpenAI-compatible endpoint.
 #'
 #' @param .llm An `LLMMessage` object containing the conversation history.
-#' @param .model The model identifier to use (default: `"google/gemini-2.5-flash"`).
+#' @param .model The model identifier to use (default: `"google/gemini-3.6-flash"`).
 #'   Any model available on OpenRouter can be used.
 #' @param .max_tokens Maximum number of tokens in the response (default: 2048).
 #' @param .temperature Controls randomness (0–2, optional).
@@ -131,7 +131,7 @@ method(to_api_format, list(LLMMessage, api_openrouter)) <- function(.llm,
 #'
 #' @export
 openrouter_chat <- function(.llm,
-                            .model = "anthropic/claude-sonnet-4-6",
+                            .model = "anthropic/claude-sonnet-5",
                             .max_tokens = 2048,
                             .temperature = NULL,
                             .top_p = NULL,

@@ -16,3 +16,5 @@
 ^CRAN-SUBMISSION$
 ^\.sidekick$
 ^claude\.md$
+^\.positai$
+^\.claude$

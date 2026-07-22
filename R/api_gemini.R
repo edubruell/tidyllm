@@ -369,13 +369,13 @@ gemini_inject_files <- function(.gemini_contents,
 #' @param .stream Should the response be streamed (default: FALSE).
 #' @param .max_tool_rounds Integer specifying the maximum number of tool use iterations (default: 10).
 #'   Set to 1 for single-round tool use, or higher for multi-turn agentic loops.
-#' @param .thinking_budget Token budget for internal reasoning (default: NULL). Works with `gemini-2.5-flash` and `gemini-2.5-pro`.
+#' @param .thinking_budget Token budget for internal reasoning (default: NULL). Works with `gemini-3.6-flash` and `gemini-3.1-pro`.
 #'
 #' @return A new `LLMMessage` object containing the original messages plus the assistant's response.
 #'
 #' @export
 gemini_chat <- function(.llm,
-                   .model = "gemini-2.5-flash",
+                   .model = "gemini-3.6-flash",
                    .fileid = NULL,
                    .temperature = NULL,
                    .max_output_tokens = NULL,
@@ -831,7 +831,7 @@ gemini_embedding <- function(.input,
 #' @return Named list of LLMMessage objects with attributes `batch_id` and `json`
 #' @export
 send_gemini_batch <- function(.llms,
-                              .model = "gemini-2.5-flash",
+                              .model = "gemini-3.6-flash",
                               .temperature = NULL,
                               .max_output_tokens = NULL,
                               .top_p = NULL,
