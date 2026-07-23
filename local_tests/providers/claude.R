@@ -109,4 +109,61 @@ llt_test("max_tool_rounds limit raises error", {
   )
 })
 
+# ── Thinking, effort, sampling gates (0.5.1) ──────────────────────────────────
+
+llt_test("adaptive thinking works on default model", {
+  result <- llm_message("What is 27 * 453? Reply with just the number.") |>
+    chat(claude(.thinking = TRUE))
+  llt_expect_reply(result)
+  llt_expect_true(grepl("12231", get_reply(result)), "Reply should contain 12231")
+})
+
+llt_test("effort parameter is accepted", {
+  result <- llm_message("Say hello in one word.") |>
+    chat(claude(.effort = "low"))
+  llt_expect_reply(result)
+})
+
+llt_test("budget thinking still works on older model", {
+  result <- llm_message("What is 12 * 12? Reply with just the number.") |>
+    chat(claude(.model = "claude-haiku-4-5", .thinking = TRUE, .thinking_budget = 1024,
+                .max_tokens = 2048))
+  llt_expect_reply(result)
+})
+
+llt_test("temperature on new model errors client-side", {
+  err <- tryCatch(
+    llm_message("Hi") |> chat(claude(.temperature = 0.5)),
+    error = function(e) e
+  )
+  llt_expect_true(inherits(err, "error"), "Should raise an error")
+  llt_expect_true(grepl("sampling parameters", conditionMessage(err)),
+                  "Error should mention sampling parameters")
+})
+
+llt_test("temperature still passes through on older model", {
+  result <- llm_message("Say hi in one word.") |>
+    chat(claude(.model = "claude-haiku-4-5", .temperature = 0.5))
+  llt_expect_reply(result)
+})
+
+# ── Prompt caching (0.5.1) ────────────────────────────────────────────────────
+
+llt_test("cache=TRUE request succeeds and reports cache metadata", {
+  long_system <- paste(rep(
+    "You are a meticulous assistant for a fictional archive of Elyndorian trade records.",
+    300), collapse = " ")
+  msg <- llm_message("Answer in one word: what is the capital of France?",
+                     .system = long_system)
+  r1 <- msg |> chat(claude(.cache = TRUE))
+  meta1 <- get_metadata(r1)
+  llt_expect_true("cache_creation_input_tokens" %in% names(meta1$api_specific[[1]]),
+                  "Metadata should carry cache_creation_input_tokens")
+  r2 <- msg |> chat(claude(.cache = TRUE))
+  meta2 <- get_metadata(r2)
+  read_tokens <- meta2$api_specific[[1]]$cache_read_input_tokens
+  llt_expect_true(!is.null(read_tokens) && read_tokens > 0,
+                  "Second request should read from cache")
+})
+
 llt_report()

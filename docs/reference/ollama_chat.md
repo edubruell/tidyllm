@@ -12,7 +12,7 @@ ollama_chat(
   .seed = NULL,
   .json_schema = NULL,
   .temperature = NULL,
-  .num_ctx = 2048,
+  .num_ctx = 32768,
   .num_predict = NULL,
   .top_k = NULL,
   .top_p = NULL,
@@ -65,7 +65,7 @@ ollama_chat(
 
 - .num_ctx:
 
-  Integer; sets the context window size (default: 2048)
+  Integer; sets the context window size (default: 32768)
 
 - .num_predict:
 

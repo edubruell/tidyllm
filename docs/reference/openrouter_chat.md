@@ -9,7 +9,7 @@ OpenAI-compatible endpoint.
 ``` r
 openrouter_chat(
   .llm,
-  .model = "anthropic/claude-sonnet-4-6",
+  .model = "anthropic/claude-sonnet-5",
   .max_tokens = 2048,
   .temperature = NULL,
   .top_p = NULL,
@@ -41,7 +41,7 @@ openrouter_chat(
 
 - .model:
 
-  The model identifier to use (default: `"google/gemini-2.5-flash"`).
+  The model identifier to use (default: `"google/gemini-3.6-flash"`).
   Any model available on OpenRouter can be used.
 
 - .max_tokens:

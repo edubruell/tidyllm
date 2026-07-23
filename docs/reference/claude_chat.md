@@ -7,7 +7,7 @@ Interact with Claude AI models via the Anthropic API
 ``` r
 claude_chat(
   .llm,
-  .model = "claude-sonnet-4-6",
+  .model = "claude-sonnet-5",
   .max_tokens = 2048,
   .temperature = NULL,
   .top_k = NULL,
@@ -25,6 +25,8 @@ claude_chat(
   .dry_run = FALSE,
   .thinking = FALSE,
   .thinking_budget = 1024,
+  .effort = NULL,
+  .cache = FALSE,
   .max_tool_rounds = 10
 )
 ```
@@ -39,7 +41,7 @@ claude_chat(
 - .model:
 
   Character string specifying the Claude model version (default:
-  "claude-sonnet-4-6").
+  "claude-sonnet-5").
 
 - .max_tokens:
 
@@ -48,15 +50,19 @@ claude_chat(
 
 - .temperature:
 
-  Numeric between 0 and 1 controlling response randomness.
+  Numeric between 0 and 1 controlling response randomness. Only
+  supported on older models; Claude Sonnet 5 and Opus 4.7 or newer
+  reject sampling parameters.
 
 - .top_k:
 
-  Integer controlling diversity by limiting the top K tokens.
+  Integer controlling diversity by limiting the top K tokens. Only
+  supported on older models.
 
 - .top_p:
 
-  Numeric between 0 and 1 for nucleus sampling.
+  Numeric between 0 and 1 for nucleus sampling. Only supported on older
+  models.
 
 - .metadata:
 
@@ -109,13 +115,33 @@ claude_chat(
 
 - .thinking:
 
-  Logical; if TRUE, enables Claude's thinking mode for complex reasoning
-  tasks (default: FALSE).
+  Logical; if TRUE, enables Claude's thinking mode. On Claude Sonnet
+  4.6, Opus 4.6 or newer this maps to adaptive thinking; on older models
+  it uses a fixed thinking budget (default: FALSE).
 
 - .thinking_budget:
 
   Integer specifying the maximum tokens Claude can spend on thinking
-  (default: 1024). Must be at least 1024.
+  (default: 1024). Must be at least 1024. Only used on older models;
+  ignored when the model supports adaptive thinking, where `.effort`
+  controls thinking depth instead.
+
+- .effort:
+
+  Character; one of "low", "medium", "high", "xhigh", or "max". Controls
+  thinking depth and overall token spend on models that support the
+  effort parameter (Claude Opus 4.5 or newer, Claude Sonnet 4.6 or
+  newer). Default NULL uses the API default ("high").
+
+- .cache:
+
+  Logical or character; enables Anthropic prompt caching for the
+  request. TRUE caches with the default 5-minute time to live; "1h"
+  requests a one-hour time to live. Cache reads cost roughly a tenth of
+  the base input price. Cache token counts are reported in
+  [`get_metadata()`](https://edubruell.github.io/tidyllm/reference/get_metadata.md)
+  under `cache_creation_input_tokens` and `cache_read_input_tokens`
+  (default: FALSE).
 
 - .max_tool_rounds:
 
@@ -136,9 +162,9 @@ if (FALSE) { # \dontrun{
 msg <- llm_message("What is R programming?")
 result <- claude_chat(msg)
 
-# With custom parameters
-result2 <- claude_chat(msg, 
-                 .temperature = 0.7, 
-                 .max_tokens = 1000)
+# With adaptive thinking and effort control
+result2 <- claude_chat(msg,
+                 .thinking = TRUE,
+                 .effort = "low")
 } # }
 ```

@@ -11,7 +11,7 @@ send_ollama_batch(
   .seed = NULL,
   .json_schema = NULL,
   .temperature = NULL,
-  .num_ctx = 2048,
+  .num_ctx = 32768,
   .num_predict = NULL,
   .top_k = NULL,
   .top_p = NULL,
@@ -42,7 +42,7 @@ send_ollama_batch(
 
 \item{.temperature}{Float between 0-2; controls randomness in responses (default: NULL)}
 
-\item{.num_ctx}{Integer; sets the context window size (default: 2048)}
+\item{.num_ctx}{Integer; sets the context window size (default: 32768)}
 
 \item{.num_predict}{Integer; maximum number of tokens to predict (default: NULL)}
 

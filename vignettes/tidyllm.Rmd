@@ -42,7 +42,7 @@ Sys.setenv(OPENAI_API_KEY = "your-key-here")
 
 | Provider | Environment Variable | Where to get a key |
 |----------|---------------------|--------------------|
-| **Claude** (Anthropic) | `ANTHROPIC_API_KEY` | [Anthropic Console](https://console.anthropic.com/settings/keys) |
+| **Claude** (Anthropic) | `ANTHROPIC_API_KEY` | [Anthropic Console](https://platform.claude.com/settings/keys) |
 | **OpenAI** | `OPENAI_API_KEY` | [OpenAI API Keys](https://platform.openai.com/account/api-keys) |
 | **Google Gemini** | `GOOGLE_API_KEY` | [Google AI Studio](https://aistudio.google.com/app/apikey) |
 | **Mistral** | `MISTRAL_API_KEY` | [Mistral Console](https://console.mistral.ai/api-keys/) |
@@ -254,8 +254,8 @@ conversation |> get_metadata()
 ```
 ```{r get_metadata_out, eval=TRUE, echo=FALSE}
 tibble::tibble(
-  model             = c("groq-model", "claude-sonnet-4-6-20251001"),
-  timestamp         = as.POSIXct(c("2025-11-08 14:25:43", "2025-11-08 14:26:02")),
+  model             = c("groq-model", "claude-sonnet-5"),
+  timestamp         = as.POSIXct(c("2026-07-08 14:25:43", "2026-07-08 14:26:02")),
   prompt_tokens     = c(20L, 80L),
   completion_tokens = c(45L, 40L),
   total_tokens      = c(65L, 120L),

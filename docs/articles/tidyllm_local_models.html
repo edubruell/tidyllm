@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.5.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.5.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -160,13 +160,14 @@ standard tidyllm verb pattern:</p>
 <p>The <code>.num_ctx</code> parameter controls how much text the model
 can read at once, known as its <em>context window</em>. Text is measured
 in tokens, which are roughly three-quarters of a word each. The function
-default is <code>2048</code> tokens, which is quite short and much
-smaller than what modern models like Qwen3.5 actually support. For long
-documents, increase it to fit your input:</p>
+default is <code>32768</code> tokens, well short of what modern models
+like Qwen3.5 can support in principle, but a sane starting point on
+typical laptop hardware. For longer documents, increase it further to
+fit your input:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">long_document</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/ollama.html">ollama</a></span><span class="op">(</span>.num_ctx <span class="op">=</span> <span class="fl">32768</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/ollama.html">ollama</a></span><span class="op">(</span>.num_ctx <span class="op">=</span> <span class="fl">131072</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>For embeddings, use the <code><a href="../reference/embed.html">embed()</a></code> verb. Embeddings convert
 text into numeric vectors that capture meaning, making them useful for
 similarity search and clustering. The default embedding model is
@@ -271,7 +272,7 @@ upgrading to Q8_0 on the 7B.</p>
 </h3>
 <p>Model size is measured in <em>parameters</em>, the numerical weights
 learned during training. More parameters generally means more capable,
-but also more memory required and slower inference. As of early 2026,
+but also more memory required and slower inference. As of mid-2026,
 strong open-weight families come from a range of labs:</p>
 <table class="table">
 <colgroup>
@@ -288,55 +289,64 @@ strong open-weight families come from a range of labs:</p>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td><strong>Qwen3.5</strong></td>
+<td><strong>Qwen3.6</strong></td>
 <td>Alibaba</td>
-<td>0.8B–9B; 27B, 35B-A3B, 122B-A10B; 397B-A17B</td>
-<td>201 languages, 1M context, thinking mode on by default; default in
-tidyllm</td>
+<td>27B dense, 35B-A3B (MoE)</td>
+<td>Flagship-level coding performance; Apache 2.0; supersedes Qwen3.5,
+tidyllm’s Ollama default</td>
 </tr>
 <tr class="even">
-<td><strong>Mistral Small 4</strong></td>
-<td>Mistral AI</td>
-<td>119B total / 6B active (MoE)</td>
-<td>Reasoning, vision, and agentic coding unified; 256K context; Apache
-2.0</td>
-</tr>
-<tr class="odd">
-<td><strong>Llama 4 Scout</strong></td>
-<td>Meta</td>
-<td>109B total / ~17B active (MoE)</td>
-<td>Native multimodal, 10M token context</td>
-</tr>
-<tr class="even">
-<td><strong>Gemma 3</strong></td>
+<td><strong>Gemma 4</strong></td>
 <td>Google</td>
-<td>1B, 4B, 12B, 27B</td>
-<td>Compact multimodal models; permissive license</td>
+<td>26B-A4B (MoE), 31B dense</td>
+<td>140+ languages, native audio/video input; Apache 2.0</td>
 </tr>
 <tr class="odd">
-<td><strong>Kimi K2.5</strong></td>
-<td>Moonshot AI</td>
-<td>1T total / 32B active (MoE)</td>
-<td>Strong coding and vision; MIT license</td>
+<td><strong>Llama 5</strong></td>
+<td>Meta</td>
+<td>600B total (MoE)</td>
+<td>5M token context, matches frontier closed models; open weight</td>
 </tr>
 <tr class="even">
-<td><strong>MiniMax M2.5</strong></td>
+<td><strong>GLM-5.2</strong></td>
+<td>Z.ai</td>
+<td>744B total / 40B active (MoE)</td>
+<td>One of the first open weights to seriously rival Fable-tier coding
+quality</td>
+</tr>
+<tr class="odd">
+<td><strong>Kimi K3</strong></td>
+<td>Moonshot AI</td>
+<td>2.8T total (MoE)</td>
+<td>World’s largest open-weight model; weights land July 27, 2026 under
+a Modified MIT license; targets Fable/GPT-5.6-class coding</td>
+</tr>
+<tr class="even">
+<td><strong>MiniMax M3</strong></td>
 <td>MiniMax</td>
 <td>large MoE</td>
 <td>Near-frontier quality at a fraction of proprietary API cost</td>
 </tr>
 <tr class="odd">
-<td><strong>DeepSeek V3.2</strong></td>
+<td><strong>DeepSeek V4 Pro</strong></td>
 <td>DeepSeek</td>
-<td>671B MoE</td>
-<td>Open-weight general model; best when hardware is not the
-constraint</td>
+<td>1.6T total / 49B active (MoE)</td>
+<td>1M context; now MIT licensed, up from DeepSeek’s earlier custom
+terms</td>
 </tr>
 <tr class="even">
-<td><strong>Phi-4</strong></td>
-<td>Microsoft</td>
-<td>14B</td>
-<td>Punches well above weight class on reasoning tasks</td>
+<td><strong>Mistral Medium 3.5</strong></td>
+<td>Mistral AI</td>
+<td>Open weight (undisclosed size)</td>
+<td>Unified reasoning, vision, and coding; free for individuals and
+small teams</td>
+</tr>
+<tr class="odd">
+<td><strong>Inkling</strong></td>
+<td>Thinking Machines</td>
+<td>975B total / 41B active (MoE)</td>
+<td>First US entrant at this scale; Apache 2.0; built as a base for
+fine-tuning rather than top-end quality</td>
 </tr>
 </tbody>
 </table>
@@ -364,9 +374,9 @@ candidates requires only changing the <code>.model</code> argument:</p>
 <code class="sourceCode R"><span><span class="va">prompt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Classify this job description into a one-sentence occupation label:</span></span>
 <span><span class="st">                        'I oversee a team of data engineers building our company data platform'"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">result_qwen</span>    <span class="op">&lt;-</span> <span class="va">prompt</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openrouter.html">openrouter</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"qwen/qwen3.5-35b-a3b"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">result_mistral</span> <span class="op">&lt;-</span> <span class="va">prompt</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openrouter.html">openrouter</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"mistralai/mistral-small-4"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">result_kimi</span>    <span class="op">&lt;-</span> <span class="va">prompt</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openrouter.html">openrouter</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"moonshotai/kimi-k2.5"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">result_qwen</span>    <span class="op">&lt;-</span> <span class="va">prompt</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openrouter.html">openrouter</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"qwen/qwen3.6-35b-a3b"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">result_mistral</span> <span class="op">&lt;-</span> <span class="va">prompt</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openrouter.html">openrouter</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"mistralai/mistral-medium-3-5"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">result_kimi</span>    <span class="op">&lt;-</span> <span class="va">prompt</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openrouter.html">openrouter</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"moonshotai/kimi-k3"</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/get_reply.html">get_reply</a></span><span class="op">(</span><span class="va">result_qwen</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/get_reply.html">get_reply</a></span><span class="op">(</span><span class="va">result_mistral</span><span class="op">)</span></span>
@@ -386,14 +396,14 @@ candidates:</p>
 <pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 8 × 5</span></span></span>
 <span><span class="co">##   id          name  context_length prompt_price_per_mil…¹ completion_price_per…²</span></span>
 <span><span class="co">##   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>                  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>                  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">1</span> qwen/qwen3… Qwen…        1<span style="text-decoration: underline;">000</span>000                   0.1                    0.3 </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">2</span> mistralai/… Mist…         <span style="text-decoration: underline;">256</span>000                   0.1                    0.3 </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">3</span> google/gem… Gemm…         <span style="text-decoration: underline;">131</span>072                   0.1                    0.2 </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">4</span> microsoft/… Phi-4         <span style="text-decoration: underline;">131</span>072                   0.14                   0.14</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">5</span> meta-llama… Llam…       10<span style="text-decoration: underline;">000</span>000                   0.17                   0.6 </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">6</span> minimax/mi… Mini…        1<span style="text-decoration: underline;">000</span>000                   0.2                    0.55</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">7</span> moonshotai… Kimi…         <span style="text-decoration: underline;">131</span>072                   0.5                    1.5 </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">8</span> deepseek/d… Deep…         <span style="text-decoration: underline;">163</span>840                   0.55                   2.19</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">1</span> meta-llama… Llam…        1<span style="text-decoration: underline;">310</span>720                   0.1                    0.3 </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">2</span> google/gem… Gemm…         <span style="text-decoration: underline;">262</span>144                   0.12                   0.35</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">3</span> qwen/qwen3… Qwen…         <span style="text-decoration: underline;">262</span>144                   0.14                   1   </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">4</span> minimax/mi… Mini…        1<span style="text-decoration: underline;">048</span>576                   0.3                    1.2 </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">5</span> deepseek/d… Deep…        1<span style="text-decoration: underline;">048</span>576                   0.44                   0.87</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">6</span> z-ai/glm-5… GLM …        1<span style="text-decoration: underline;">048</span>576                   0.81                   2.56</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">7</span> mistralai/… Mist…         <span style="text-decoration: underline;">262</span>144                   1.5                    7.5 </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">8</span> moonshotai… Kimi…        1<span style="text-decoration: underline;">048</span>576                   3                     15   </span></span>
 <span><span class="co">## <span style="color: #949494;"># ℹ abbreviated names: ¹​prompt_price_per_million, ²​completion_price_per_million</span></span></span></code></pre>
 <p>Prices are in US dollars per million tokens. Once a model performs
 well on your task, find the corresponding GGUF on HuggingFace and run it
@@ -527,8 +537,9 @@ predictions are equally confident. Log-probabilities give you a numeric
 confidence score for each output token: a score close to zero means the
 model was highly certain; a strongly negative score means it was
 genuinely uncertain between several options.</p>
-<p>Passing <code>.logprobs = TRUE</code> stores these scores in the
-response metadata alongside the reply:</p>
+<p>Passing <code>.logprobs = TRUE</code> stores these scores alongside
+the reply; <code><a href="../reference/get_logprobs.html">get_logprobs()</a></code> extracts them into a tidy
+tibble:</p>
 <div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span></span>
 <span>    <span class="st">"Reply with exactly one word. Classify the sentiment of this review:</span></span>
@@ -537,21 +548,12 @@ response metadata alongside the reply:</p>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/llamacpp.html">llamacpp</a></span><span class="op">(</span>.logprobs <span class="op">=</span> <span class="cn">TRUE</span>, .top_logprobs <span class="op">=</span> <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/get_reply.html">get_reply</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/get_metadata.html">get_metadata</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span><span class="op">$</span><span class="va">api_specific</span><span class="op">$</span><span class="va">logprobs</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/get_logprobs.html">get_logprobs</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## [1] "neutral"</span></span>
-<span><span class="co">## $content</span></span>
-<span><span class="co">## $content[[1]]</span></span>
-<span><span class="co">## $content[[1]]$token</span></span>
-<span><span class="co">## [1] "neutral"</span></span>
-<span><span class="co">## $content[[1]]$logprob</span></span>
-<span><span class="co">## [1] -0.847</span></span>
-<span><span class="co">## $content[[1]]$top_logprobs</span></span>
-<span><span class="co">## <span style="color: #949494;"># A tibble: 3 × 2</span></span></span>
-<span><span class="co">##   token    logprob</span></span>
-<span><span class="co">##   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">1</span> neutral   -<span style="color: #BB0000;">0.847</span></span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">2</span> mixed     -<span style="color: #BB0000;">1.20</span> </span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">3</span> positive  -<span style="color: #BB0000;">2.03</span></span></span></code></pre>
+<span><span class="co">## <span style="color: #949494;"># A tibble: 1 × 4</span></span></span>
+<span><span class="co">##   reply_index token   logprob top_logprobs    </span></span>
+<span><span class="co">##         <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>           </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">1</span>           1 neutral  -<span style="color: #BB0000;">0.847</span> &lt;tibble [3 x 2]&gt;</span></span></code></pre>
 <p>A score of -0.85 on “neutral” means the model had genuine
 uncertainty; the review is mixed and the model knows it. In a large
 annotation batch, you can flag predictions where the winning score is

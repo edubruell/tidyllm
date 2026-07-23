@@ -10,7 +10,7 @@ via `.reasoning_effort`.
 ``` r
 openai_chat(
   .llm,
-  .model = "gpt-5.5",
+  .model = "gpt-5.6-terra",
   .max_output_tokens = NULL,
   .temperature = NULL,
   .seed = NULL,
@@ -36,7 +36,7 @@ openai_chat(
 
 - .model:
 
-  The model identifier (default: `"gpt-5.5"`).
+  The model identifier (default: `"gpt-5.6-terra"`).
 
 - .max_output_tokens:
 

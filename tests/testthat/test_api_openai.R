@@ -33,7 +33,7 @@ test_that("openai function constructs a correct request and dry runs it", {
   # system message → top-level "instructions", user message → "input" array
   body_json <- request$body |> jsonlite::toJSON() |> as.character()
 
-  expected_json <- "{\"data\":{\"model\":[\"gpt-5.5\"],\"input\":[{\"role\":[\"user\"],\"content\":[\"Write a poem about a (stochastic) parrot\"]}],\"instructions\":[\"You are a helpful assistant\"]},\"type\":[\"json\"],\"content_type\":[\"application/json\"],\"params\":{\"auto_unbox\":[true],\"digits\":[22],\"null\":[\"null\"]}}"
+  expected_json <- "{\"data\":{\"model\":[\"gpt-5.6-terra\"],\"input\":[{\"role\":[\"user\"],\"content\":[\"Write a poem about a (stochastic) parrot\"]}],\"instructions\":[\"You are a helpful assistant\"]},\"type\":[\"json\"],\"content_type\":[\"application/json\"],\"params\":{\"auto_unbox\":[true],\"digits\":[22],\"null\":[\"null\"]}}"
   expect_equal(body_json, expected_json)
   
 })
@@ -56,6 +56,7 @@ test_that("openai returns expected response", {
     
     result <- tidyllm:::cc_chat(
       .llm = llm,
+      .model = "gpt-5.1-chat-latest",
       .stream = FALSE
     )
     result_tbl <- as_tibble(result)
@@ -139,7 +140,7 @@ test_that("tidyllm_schema() handles single element correctly", {
       area = "numeric"
     )
     message_single <- llm_message("Imagine an area in JSON format that matches the schema.") |>
-      chat(openai(), .json_schema = schema_single) %>%
+      chat(openai(.model = "gpt-5.5"), .json_schema = schema_single) %>%
       get_metadata()
     
     expect_true("completion_tokens" %in% colnames(message_single))
@@ -165,7 +166,7 @@ test_that("tidyllm_schema() handles multiple elements correctly", {
       population = "numeric"
     )
     message_multiple <- llm_message("Imagine an area and population in JSON format that matches the schema.") |>
-      chat(openai(), .json_schema = schema_multiple) %>%
+      chat(openai(.model = "gpt-5.5"), .json_schema = schema_multiple) %>%
       get_metadata()
     
     expect_true("completion_tokens" %in% colnames(message_multiple))

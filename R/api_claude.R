@@ -3,6 +3,68 @@
 #' @noRd
 api_claude <- new_class("Claude", APIProvider)
 
+#' Does a Claude model reject sampling parameters?
+#'
+#' Claude Sonnet 5, Opus 4.7 and later, and the Fable/Mythos models return a
+#' 400 error when temperature, top_k, or top_p are sent.
+#'
+#' @noRd
+claude_rejects_sampling_params <- function(.model) {
+  grepl("^claude-(fable|mythos)", .model) ||
+    grepl("^claude-opus-4-[7-9]", .model) ||
+    grepl("^claude-opus-[5-9]", .model) ||
+    grepl("^claude-sonnet-[5-9]", .model)
+}
+
+#' Does a Claude model support adaptive thinking?
+#'
+#' Adaptive thinking replaces the budget_tokens interface on Opus 4.6+,
+#' Sonnet 4.6+, Sonnet 5, and the Fable/Mythos models. Models that reject
+#' sampling parameters also reject the budget_tokens thinking interface.
+#'
+#' @noRd
+claude_supports_adaptive_thinking <- function(.model) {
+  claude_rejects_sampling_params(.model) ||
+    grepl("^claude-opus-4-6", .model) ||
+    grepl("^claude-sonnet-4-6", .model)
+}
+
+#' Build the thinking config for a Claude request (model-gated)
+#'
+#' @noRd
+claude_thinking_config <- function(.model, .thinking, .thinking_budget) {
+  if (!isTRUE(.thinking)) return(NULL)
+  if (claude_supports_adaptive_thinking(.model)) {
+    list(type = "adaptive", display = "summarized")
+  } else {
+    list(type = "enabled", budget_tokens = .thinking_budget)
+  }
+}
+
+#' Error early when sampling parameters are sent to a model that rejects them
+#'
+#' @noRd
+claude_check_sampling_params <- function(.model, .temperature, .top_k, .top_p) {
+  supplied <- c(".temperature", ".top_k", ".top_p")[
+    !c(is.null(.temperature), is.null(.top_k), is.null(.top_p))]
+  if (length(supplied) == 0) return(invisible(NULL))
+  if (claude_rejects_sampling_params(.model)) {
+    stop(sprintf(
+      "%s is not supported by \"%s\". The Anthropic API rejects sampling parameters on Claude Sonnet 5 and Opus 4.7 or newer. Remove the argument or use an older model.",
+      paste(supplied, collapse = ", "), .model), call. = FALSE)
+  }
+  invisible(NULL)
+}
+
+#' Build a cache_control list from the .cache argument
+#'
+#' @noRd
+claude_cache_control <- function(.cache) {
+  if (is.null(.cache) || isFALSE(.cache)) return(NULL)
+  if (isTRUE(.cache)) return(list(type = "ephemeral"))
+  list(type = "ephemeral", ttl = .cache)
+}
+
 
 #' Convert LLMMessage to Claude API-Compatible Format
 #'
@@ -101,9 +163,8 @@ method(parse_chat_response, list(api_claude,class_list)) <- function(.api,.conte
     paste0("Received empty response from ",api_label) |>
       stop()
   }
-  
-  if(r_has_name(.content,"thinking")) return(.content$content[[2]]$text)
-  .content$content[[1]]$text
+
+  collapse_claude_blocks(.content$content)
 }
 
 
@@ -111,6 +172,11 @@ method(parse_chat_response, list(api_claude,class_list)) <- function(.api,.conte
 #'
 #' @noRd
 method(extract_metadata, list(api_claude,class_list))<- function(.api,.response) {
+  thinking_block <- NULL
+  if (is.list(.response$content) && !is.data.frame(.response$content)) {
+    thinking_block <- purrr::detect(.response$content,
+                                    function(b) is.list(b) && identical(b$type, "thinking"))
+  }
   list(
     model             = .response$model,
     timestamp         = lubridate::as_datetime(lubridate::now()),
@@ -122,11 +188,13 @@ method(extract_metadata, list(api_claude,class_list))<- function(.api,.response)
       stop_reason        = .response$stop_reason,
       id                 = .response$id,
       stop_sequence      = .response$stop_sequence,
-      thinking           = if(r_has_name(.response,"thinking")) .response$content[[1]]$thinking else NULL,
-      signature          = if(r_has_name(.response,"thinking")) .response$content[[1]]$signature else NULL
+      cache_creation_input_tokens = .response$usage$cache_creation_input_tokens,
+      cache_read_input_tokens     = .response$usage$cache_read_input_tokens,
+      thinking           = thinking_block$thinking,
+      signature          = thinking_block$signature
     )
   )
-}  
+}
 
 #' A function to get metadata from claude streaming responses
 #'
@@ -355,9 +423,10 @@ claude_inject_files <- function(.claude_messages, .file_ids) {
 #' @param .llm An LLMMessage object containing the conversation history and system prompt.
 #' @param .model Character string specifying the Claude model version (default: "claude-sonnet-5").
 #' @param .max_tokens Integer specifying the maximum number of tokens in the response (default: 1024).
-#' @param .temperature Numeric between 0 and 1 controlling response randomness.
-#' @param .top_k Integer controlling diversity by limiting the top K tokens.
-#' @param .top_p Numeric between 0 and 1 for nucleus sampling.
+#' @param .temperature Numeric between 0 and 1 controlling response randomness. Only supported on
+#'   older models; Claude Sonnet 5 and Opus 4.7 or newer reject sampling parameters.
+#' @param .top_k Integer controlling diversity by limiting the top K tokens. Only supported on older models.
+#' @param .top_p Numeric between 0 and 1 for nucleus sampling. Only supported on older models.
 #' @param .metadata List of additional metadata to include with the request.
 #' @param .stop_sequences Character vector of sequences that will halt response generation.
 #' @param .tools List of additional tools or functions the model can use.
@@ -369,9 +438,19 @@ claude_inject_files <- function(.claude_messages, .file_ids) {
 #' @param .stream Logical; if TRUE, streams the response piece by piece (default: FALSE).
 #' @param .dry_run Logical; if TRUE, returns the prepared request object without executing it (default: FALSE).
 #' @param .file_ids Character; A vector of file IDs for files that were uploaded to Anthropics Servers
-#' @param .thinking Logical; if TRUE, enables Claude's thinking mode for complex reasoning tasks (default: FALSE).
-#' @param .thinking_budget Integer specifying the maximum tokens Claude can spend on thinking (default: 1024). Must be at least 1024.
-#' @param .max_tool_rounds Integer specifying the maximum number of tool use iterations (default: 10). 
+#' @param .thinking Logical; if TRUE, enables Claude's thinking mode. On Claude Sonnet 4.6, Opus 4.6
+#'   or newer this maps to adaptive thinking; on older models it uses a fixed thinking budget (default: FALSE).
+#' @param .thinking_budget Integer specifying the maximum tokens Claude can spend on thinking (default: 1024).
+#'   Must be at least 1024. Only used on older models; ignored when the model supports adaptive thinking,
+#'   where `.effort` controls thinking depth instead.
+#' @param .effort Character; one of "low", "medium", "high", "xhigh", or "max". Controls thinking depth
+#'   and overall token spend on models that support the effort parameter (Claude Opus 4.5 or newer,
+#'   Claude Sonnet 4.6 or newer). Default NULL uses the API default ("high").
+#' @param .cache Logical or character; enables Anthropic prompt caching for the request. TRUE caches
+#'   with the default 5-minute time to live; "1h" requests a one-hour time to live. Cache reads cost
+#'   roughly a tenth of the base input price. Cache token counts are reported in `get_metadata()`
+#'   under `cache_creation_input_tokens` and `cache_read_input_tokens` (default: FALSE).
+#' @param .max_tool_rounds Integer specifying the maximum number of tool use iterations (default: 10).
 #'   Set to 1 for single-round tool use, or higher for multi-turn agentic loops.
 #'
 #' @return A new LLMMessage object containing the original messages plus Claude's response.
@@ -380,11 +459,11 @@ claude_inject_files <- function(.claude_messages, .file_ids) {
 #' # Basic usage
 #' msg <- llm_message("What is R programming?")
 #' result <- claude_chat(msg)
-#' 
-#' # With custom parameters
-#' result2 <- claude_chat(msg, 
-#'                  .temperature = 0.7, 
-#'                  .max_tokens = 1000)
+#'
+#' # With adaptive thinking and effort control
+#' result2 <- claude_chat(msg,
+#'                  .thinking = TRUE,
+#'                  .effort = "low")
 #' }
 #'
 #' @export
@@ -407,7 +486,9 @@ claude_chat <- function(.llm,
                         .dry_run = FALSE,
                         .thinking = FALSE,
                         .thinking_budget = 1024,
-                        .max_tool_rounds = 10) {  
+                        .effort = NULL,
+                        .cache = FALSE,
+                        .max_tool_rounds = 10) {
   # Validate inputs to the Claude function
   c(
     ".llm must be an LLMMessage object" = S7_inherits(.llm, LLMMessage),
@@ -433,12 +514,18 @@ claude_chat <- function(.llm,
     "Streaming is not supported for requests with structured outputs" = is.null(.json_schema) || !isTRUE(.stream),
     ".thinking must be logical" = is.logical(.thinking),
     ".thinking_budget must be a positive integer larger than 1024" = is_integer_valued(.thinking_budget) && .thinking_budget >= 1024,
+    ".effort must be NULL or one of \"low\", \"medium\", \"high\", \"xhigh\", \"max\"" =
+      is.null(.effort) || (is.character(.effort) && length(.effort) == 1 && .effort %in% c("low", "medium", "high", "xhigh", "max")),
+    ".cache must be logical or one of \"5m\", \"1h\"" =
+      (is.logical(.cache) && length(.cache) == 1) || (is.character(.cache) && length(.cache) == 1 && .cache %in% c("5m", "1h")),
     ".file_ids must be a character vector" =
       is.null(.file_ids) | is.character(.file_ids),
     ".max_tool_rounds must be a positive integer" = is_integer_valued(.max_tool_rounds) && .max_tool_rounds >= 1
   ) |>
     validate_inputs()
-  
+
+  claude_check_sampling_params(.model, .temperature, .top_k, .top_p)
+
   json <- FALSE
   output_format <- NULL
   if(!is.null(.json_schema)){
@@ -454,7 +541,7 @@ claude_chat <- function(.llm,
       schema = .json_schema
     )
   }
-  
+
   api_obj <- api_claude(short_name = "claude",
                         long_name  = "Anthropic Claude",
                         api_key_env_var = "ANTHROPIC_API_KEY")
@@ -481,6 +568,12 @@ claude_chat <- function(.llm,
     NULL
   }
   
+  output_config <- purrr::compact(list(
+    effort = .effort,
+    format = output_format
+  ))
+  if (length(output_config) == 0) output_config <- NULL
+
   request_body <- list(
     model = .model,
     max_tokens = .max_tokens,
@@ -493,16 +586,13 @@ claude_chat <- function(.llm,
     stop_sequences = .stop_sequences,
     stream = .stream,
     tools = if(!is.null(tools_def)) tools_to_api(api_obj, tools_def) else NULL,
-    thinking = if(.thinking) list(type = "enabled", budget_tokens = .thinking_budget) else NULL,
-    output_format = output_format
+    thinking = claude_thinking_config(.model, .thinking, .thinking_budget),
+    output_config = output_config,
+    cache_control = claude_cache_control(.cache)
   ) |> purrr::compact()
 
-  # Build beta headers - combine features as needed
   beta_features <- "files-api-2025-04-14"
-  if (!is.null(output_format)) {
-    beta_features <- paste(beta_features, "structured-outputs-2025-11-13", sep = ",")
-  }
-  
+
   # Build request with httr2
   request <- httr2::request(.api_url) |>
     httr2::req_url_path("/v1/messages") |>
@@ -559,9 +649,10 @@ claude_chat <- function(.llm,
 #' @param .llms A list of LLMMessage objects containing conversation histories.
 #' @param .model Character string specifying the Claude model version (default: "claude-sonnet-5").
 #' @param .max_tokens Integer specifying the maximum tokens per response (default: 1024).
-#' @param .temperature Numeric between 0 and 1 controlling response randomness.
-#' @param .top_k Integer for diversity by limiting the top K tokens.
-#' @param .top_p Numeric between 0 and 1 for nucleus sampling.
+#' @param .temperature Numeric between 0 and 1 controlling response randomness. Only supported on
+#'   older models; Claude Sonnet 5 and Opus 4.7 or newer reject sampling parameters.
+#' @param .top_k Integer for diversity by limiting the top K tokens. Only supported on older models.
+#' @param .top_p Numeric between 0 and 1 for nucleus sampling. Only supported on older models.
 #' @param .stop_sequences Character vector of sequences that halt response generation.
 #' @param .api_url Base URL for the Claude API (default: "https://api.anthropic.com/").
 #' @param .verbose Logical; if TRUE, prints a message with the batch ID (default: FALSE).
@@ -571,24 +662,33 @@ claude_chat <- function(.llm,
 #' @param .dry_run Logical; if TRUE, returns the prepared request object without executing it (default: FALSE).
 #' @param .id_prefix Character string to specify a prefix for generating custom IDs when names in `.llms` are missing.
 #' @param .json_schema A schema to enforce an output structure
-#' @param .thinking Logical; if TRUE, enables Claude's thinking mode for complex reasoning tasks (default: FALSE).
-#' @param .thinking_budget Integer specifying the maximum tokens Claude can spend on thinking (default: 1024). Must be at least 1024.
+#' @param .thinking Logical; if TRUE, enables Claude's thinking mode. On Claude Sonnet 4.6, Opus 4.6
+#'   or newer this maps to adaptive thinking; on older models it uses a fixed thinking budget (default: FALSE).
+#' @param .thinking_budget Integer specifying the maximum tokens Claude can spend on thinking (default: 1024).
+#'   Must be at least 1024. Only used on older models without adaptive thinking.
+#' @param .effort Character; one of "low", "medium", "high", "xhigh", or "max". Controls thinking depth
+#'   and overall token spend on models that support the effort parameter. Default NULL uses the API default.
+#' @param .cache Logical or character; enables Anthropic prompt caching for the shared system prompt
+#'   across the batch. TRUE caches with the default 5-minute time to live; "1h" requests a one-hour
+#'   time to live. Useful when many requests share one large system prompt (default: FALSE).
 #'
 #'   Defaults to "tidyllm_claude_req_".
-#' 
+#'
 #' @return An updated and named list of `.llms` with identifiers that align with batch responses, including a `batch_id` attribute.
 #' @export
-send_claude_batch <- function(.llms, 
-                              .model = "claude-sonnet-5", 
-                              .max_tokens = 1024, 
-                              .temperature = NULL, 
-                              .top_k = NULL, 
-                              .top_p = NULL, 
-                              .stop_sequences = NULL, 
+send_claude_batch <- function(.llms,
+                              .model = "claude-sonnet-5",
+                              .max_tokens = 1024,
+                              .temperature = NULL,
+                              .top_k = NULL,
+                              .top_p = NULL,
+                              .stop_sequences = NULL,
                               .json_schema = NULL,
                               .thinking = FALSE,
                               .thinking_budget = 1024,
-                              .api_url = "https://api.anthropic.com/", 
+                              .effort = NULL,
+                              .cache = FALSE,
+                              .api_url = "https://api.anthropic.com/",
                               .verbose = FALSE,
                               .dry_run = FALSE,
                               .overwrite = FALSE,
@@ -609,12 +709,18 @@ send_claude_batch <- function(.llms,
     ".dry_run must be logical" = is.logical(.dry_run),
     ".overwrite must be logical" = is.logical(.overwrite),
     ".json_schema must be NULL or a list or an ellmer type object" = is.null(.json_schema) | is.list(.json_schema) | is_ellmer_type(.json_schema),
+    ".effort must be NULL or one of \"low\", \"medium\", \"high\", \"xhigh\", \"max\"" =
+      is.null(.effort) || (is.character(.effort) && length(.effort) == 1 && .effort %in% c("low", "medium", "high", "xhigh", "max")),
+    ".cache must be logical or one of \"5m\", \"1h\"" =
+      (is.logical(.cache) && length(.cache) == 1) || (is.character(.cache) && length(.cache) == 1 && .cache %in% c("5m", "1h")),
     ".id_prefix must be a character vector of length 1" = is.character(.id_prefix),
     ".max_tries must be integer-valued numeric" = is_integer_valued(.max_tries),
     ".timeout must be an integer" = is_integer_valued(.timeout)
   ) |> validate_inputs()
-  
-  
+
+  claude_check_sampling_params(.model, .temperature, .top_k, .top_p)
+
+
   api_obj <- api_claude(short_name = "claude",
                         long_name  = "Anthropic Claude",
                         api_key_env_var = "ANTHROPIC_API_KEY")
@@ -642,9 +748,24 @@ send_claude_batch <- function(.llms,
     )
   }
   
-  requests_list <- lapply(seq_along(prepared_llms), function(i) { 
+  output_config <- purrr::compact(list(
+    effort = .effort,
+    format = output_format
+  ))
+  if (length(output_config) == 0) output_config <- NULL
+
+  cache_ctl <- claude_cache_control(.cache)
+
+  requests_list <- lapply(seq_along(prepared_llms), function(i) {
     messages <- to_api_format(.llms[[i]], api_obj)
-    
+
+    system_prompt <- .llms[[i]]@system_prompt
+    system_field <- if (!is.null(cache_ctl) && length(system_prompt) == 1 && nzchar(system_prompt)) {
+      list(list(type = "text", text = system_prompt, cache_control = cache_ctl))
+    } else {
+      system_prompt
+    }
+
     custom_id <- names(prepared_llms)[i]
     list(
       custom_id = custom_id,
@@ -655,19 +776,16 @@ send_claude_batch <- function(.llms,
         temperature = .temperature,
         top_k = .top_k,
         top_p = .top_p,
-        system = .llms[[i]]@system_prompt,
+        system = system_field,
         stop_sequences = .stop_sequences,
-        thinking = if(.thinking) list(type = "enabled", budget_tokens = .thinking_budget) else NULL,
-        output_format = output_format
+        thinking = claude_thinking_config(.model, .thinking, .thinking_budget),
+        output_config = output_config
       ) |> purrr::compact()
     )
   })
-  
+
   beta_features <- "message-batches-2024-09-24"
-  if (!is.null(output_format)) {
-    beta_features <- paste(beta_features, "structured-outputs-2025-11-13", sep = ",")
-  }
-  
+
   request <- httr2::request(.api_url) |>
     httr2::req_url_path("/v1/messages/batches") |>
     httr2::req_headers(
@@ -901,7 +1019,13 @@ fetch_claude_batch <- function(.llms,
     result <- results_by_custom_id[[custom_id]]
     
     if (!is.null(result) && result$result$type == "succeeded") {
-      assistant_reply <- result$result$message$content$text
+      content <- result$result$message$content
+      assistant_reply <- if (is.data.frame(content)) {
+        text_rows <- content$type == "text" & !is.na(content$text)
+        paste(content$text[text_rows], collapse = "")
+      } else {
+        collapse_claude_blocks(content)
+      }
       llm <- add_message(.llm = .llms[[custom_id]],
                          .role = "assistant", 
                          .content = assistant_reply,
@@ -1409,19 +1533,47 @@ claude_delete_file_verb <- function(.file_id, .called_from = NULL, ...) {
 
 #' Builtin Claude Web Search Tool
 #'
-#' Returns a TOOL object for Claude's builtin web_search tool.
+#' Returns a TOOL object for Claude's builtin web_search tool. The default tool
+#' version `web_search_20260209` adds dynamic result filtering and requires
+#' Claude Sonnet 4.6, Opus 4.6 or newer; pass `.version = "web_search_20250305"`
+#' for older models.
+#'
+#' @param .max_uses Integer; maximum number of searches the model may run per request.
+#' @param .allowed_domains Character vector of domains to restrict search results to.
+#' @param .blocked_domains Character vector of domains to exclude from search results.
+#' @param .version Character; the Anthropic web search tool version (default: "web_search_20260209").
 #'
 #' @export
-claude_websearch <- function() {
+claude_websearch <- function(.max_uses = NULL,
+                             .allowed_domains = NULL,
+                             .blocked_domains = NULL,
+                             .version = "web_search_20260209") {
+  c(
+    ".max_uses must be a positive integer if provided" =
+      is.null(.max_uses) || (is_integer_valued(.max_uses) && .max_uses > 0),
+    ".allowed_domains must be a character vector if provided" =
+      is.null(.allowed_domains) || is.character(.allowed_domains),
+    ".blocked_domains must be a character vector if provided" =
+      is.null(.blocked_domains) || is.character(.blocked_domains),
+    "Only one of .allowed_domains or .blocked_domains may be specified" =
+      is.null(.allowed_domains) || is.null(.blocked_domains),
+    ".version must be a character string" = is.character(.version) && length(.version) == 1
+  ) |> validate_inputs()
+
+  builtin_def <- purrr::compact(list(
+    name = "web_search",
+    type = .version,
+    max_uses = .max_uses,
+    allowed_domains = if (!is.null(.allowed_domains)) as.list(.allowed_domains) else NULL,
+    blocked_domains = if (!is.null(.blocked_domains)) as.list(.blocked_domains) else NULL
+  ))
+
   TOOL(
     name = "web_search",
     description = "Builtin tool: web_search",
     input_schema = list(),           # no input schema needed
     func = function() NULL,          # not used for builtin tools
-    builtin = list(list(
-      name = "web_search",
-      type = "web_search_20250305"
-    ))
+    builtin = list(builtin_def)
   )
 }
 

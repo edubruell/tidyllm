@@ -733,7 +733,7 @@ gemini_delete_file <- function(.file_name) {
 #' Generate Embeddings Using the Google Gemini API
 #'
 #' @param .input  A character vector of texts to embed or an `LLMMessage` object
-#' @param .model The embedding model identifier (default: "text-embedding-3-small").
+#' @param .model The embedding model identifier (default: "gemini-embedding-2").
 #' @param .truncate Whether to truncate inputs to fit the model's context length (default: TRUE).
 #' @param .timeout Timeout for the API request in seconds (default: 120).
 #' @param .dry_run If TRUE, perform a dry run and return the request object.
@@ -741,7 +741,7 @@ gemini_delete_file <- function(.file_name) {
 #' @return A matrix where each column corresponds to the embedding of a message in the message history.
 #' @export
 gemini_embedding <- function(.input,
-                             .model = "gemini-embedding-2-preview",
+                             .model = "gemini-embedding-2",
                              .truncate = TRUE,
                              .timeout = 120,
                              .dry_run = FALSE,

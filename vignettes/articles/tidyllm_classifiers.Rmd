@@ -147,7 +147,7 @@ classification_tasks[[1]] |>
 
 ```{r metadata_output, eval = TRUE, echo = FALSE}
 tibble(
-  model             = "claude-sonnet-4-6-20251001",
+  model             = "claude-sonnet-5",
   timestamp         = as.POSIXct(NA),
   prompt_tokens     = 349L,
   completion_tokens = 5L,

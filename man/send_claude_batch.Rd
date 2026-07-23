@@ -6,7 +6,7 @@
 \usage{
 send_claude_batch(
   .llms,
-  .model = "claude-sonnet-4-6",
+  .model = "claude-sonnet-5",
   .max_tokens = 1024,
   .temperature = NULL,
   .top_k = NULL,
@@ -15,6 +15,8 @@ send_claude_batch(
   .json_schema = NULL,
   .thinking = FALSE,
   .thinking_budget = 1024,
+  .effort = NULL,
+  .cache = FALSE,
   .api_url = "https://api.anthropic.com/",
   .verbose = FALSE,
   .dry_run = FALSE,
@@ -27,23 +29,33 @@ send_claude_batch(
 \arguments{
 \item{.llms}{A list of LLMMessage objects containing conversation histories.}
 
-\item{.model}{Character string specifying the Claude model version (default: "claude-sonnet-4-6").}
+\item{.model}{Character string specifying the Claude model version (default: "claude-sonnet-5").}
 
 \item{.max_tokens}{Integer specifying the maximum tokens per response (default: 1024).}
 
-\item{.temperature}{Numeric between 0 and 1 controlling response randomness.}
+\item{.temperature}{Numeric between 0 and 1 controlling response randomness. Only supported on
+older models; Claude Sonnet 5 and Opus 4.7 or newer reject sampling parameters.}
 
-\item{.top_k}{Integer for diversity by limiting the top K tokens.}
+\item{.top_k}{Integer for diversity by limiting the top K tokens. Only supported on older models.}
 
-\item{.top_p}{Numeric between 0 and 1 for nucleus sampling.}
+\item{.top_p}{Numeric between 0 and 1 for nucleus sampling. Only supported on older models.}
 
 \item{.stop_sequences}{Character vector of sequences that halt response generation.}
 
 \item{.json_schema}{A schema to enforce an output structure}
 
-\item{.thinking}{Logical; if TRUE, enables Claude's thinking mode for complex reasoning tasks (default: FALSE).}
+\item{.thinking}{Logical; if TRUE, enables Claude's thinking mode. On Claude Sonnet 4.6, Opus 4.6
+or newer this maps to adaptive thinking; on older models it uses a fixed thinking budget (default: FALSE).}
 
-\item{.thinking_budget}{Integer specifying the maximum tokens Claude can spend on thinking (default: 1024). Must be at least 1024.
+\item{.thinking_budget}{Integer specifying the maximum tokens Claude can spend on thinking (default: 1024).
+Must be at least 1024. Only used on older models without adaptive thinking.}
+
+\item{.effort}{Character; one of "low", "medium", "high", "xhigh", or "max". Controls thinking depth
+and overall token spend on models that support the effort parameter. Default NULL uses the API default.}
+
+\item{.cache}{Logical or character; enables Anthropic prompt caching for the shared system prompt
+across the batch. TRUE caches with the default 5-minute time to live; "1h" requests a one-hour
+time to live. Useful when many requests share one large system prompt (default: FALSE).
 
 Defaults to "tidyllm_claude_req_".}
 

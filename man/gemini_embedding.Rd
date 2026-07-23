@@ -6,7 +6,7 @@
 \usage{
 gemini_embedding(
   .input,
-  .model = "gemini-embedding-2-preview",
+  .model = "gemini-embedding-2",
   .truncate = TRUE,
   .timeout = 120,
   .dry_run = FALSE,
@@ -16,7 +16,7 @@ gemini_embedding(
 \arguments{
 \item{.input}{A character vector of texts to embed or an \code{LLMMessage} object}
 
-\item{.model}{The embedding model identifier (default: "text-embedding-3-small").}
+\item{.model}{The embedding model identifier (default: "gemini-embedding-2").}
 
 \item{.truncate}{Whether to truncate inputs to fit the model's context length (default: TRUE).}
 

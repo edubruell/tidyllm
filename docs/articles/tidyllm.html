@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.5.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.5.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -118,7 +118,7 @@ to your <code>.Renviron</code> file (run
 <td>
 <strong>Claude</strong> (Anthropic)</td>
 <td><code>ANTHROPIC_API_KEY</code></td>
-<td><a href="https://console.anthropic.com/settings/keys" class="external-link">Anthropic
+<td><a href="https://platform.claude.com/settings/keys" class="external-link">Anthropic
 Console</a></td>
 </tr>
 <tr class="even">
@@ -256,7 +256,7 @@ single media object or a list of them:</p>
 <code class="sourceCode R"><span><span class="co"># Single image</span></span>
 <span><span class="va">image_description</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Describe this picture. Can you guess where it was taken?"</span>,</span>
 <span>                                  .media <span class="op">=</span> <span class="fu"><a href="../reference/img.html">img</a></span><span class="op">(</span><span class="st">"picture.jpeg"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-5.4"</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-5.6-terra"</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/get_reply.html">get_reply</a></span><span class="op">(</span><span class="va">image_description</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## [1] "The picture shows a beautiful landscape with a lake, mountains, and a town nestled below. The area appears lush and green, with agricultural fields visible. This scenery is reminiscent of northern Italy, particularly around Lake Garda."</span></span></code></pre>
@@ -438,8 +438,8 @@ API-specific metadata for all assistant replies:</p>
 <pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">##   model  timestamp           prompt_tokens completion_tokens</span></span>
 <span><span class="co">##   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dttm&gt;</span>                      <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">1</span> groq-… 2025-11-08 <span style="color: #949494;">14:25:43</span>            20                45</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">2</span> claud… 2025-11-08 <span style="color: #949494;">14:26:02</span>            80                40</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">1</span> groq-… 2026-07-08 <span style="color: #949494;">14:25:43</span>            20                45</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">2</span> claud… 2026-07-08 <span style="color: #949494;">14:26:02</span>            80                40</span></span>
 <span><span class="co">## <span style="color: #949494;"># ℹ 2 more variables: total_tokens &lt;int&gt;,</span></span></span>
 <span><span class="co">## <span style="color: #949494;">#   api_specific &lt;list&gt;</span></span></span></code></pre>
 <p>The <code>api_specific</code> list column holds provider-only
@@ -800,7 +800,7 @@ Local Models article on the tidyllm website.</p>
 </h3>
 <p>Avoid specifying a provider on every call by setting options:</p>
 <div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>tidyllm_chat_default   <span class="op">=</span> <span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-5.4"</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>tidyllm_chat_default   <span class="op">=</span> <span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-5.6-terra"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>tidyllm_embed_default  <span class="op">=</span> <span class="fu"><a href="../reference/ollama.html">ollama</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>tidyllm_sbatch_default <span class="op">=</span> <span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span>.temperature <span class="op">=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>tidyllm_cbatch_default <span class="op">=</span> <span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>

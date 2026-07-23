@@ -7,7 +7,7 @@ Returns a named list (same as input) with batch_id and json attributes.
 ``` r
 send_gemini_batch(
   .llms,
-  .model = "gemini-2.5-flash",
+  .model = "gemini-3.6-flash",
   .temperature = NULL,
   .max_output_tokens = NULL,
   .top_p = NULL,

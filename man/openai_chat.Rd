@@ -6,7 +6,7 @@
 \usage{
 openai_chat(
   .llm,
-  .model = "gpt-5.5",
+  .model = "gpt-5.6-terra",
   .max_output_tokens = NULL,
   .temperature = NULL,
   .seed = NULL,
@@ -26,7 +26,7 @@ openai_chat(
 \arguments{
 \item{.llm}{An \code{LLMMessage} object containing the conversation history.}
 
-\item{.model}{The model identifier (default: \code{"gpt-5.5"}).}
+\item{.model}{The model identifier (default: \code{"gpt-5.6-terra"}).}
 
 \item{.max_output_tokens}{Maximum tokens to generate (caps reasoning + completion).}
 

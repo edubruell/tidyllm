@@ -41,7 +41,7 @@ Sys.setenv(OPENAI_API_KEY = "your-key-here")
 
 | Provider | Environment Variable | Where to get a key |
 |----|----|----|
-| **Claude** (Anthropic) | `ANTHROPIC_API_KEY` | [Anthropic Console](https://console.anthropic.com/settings/keys) |
+| **Claude** (Anthropic) | `ANTHROPIC_API_KEY` | [Anthropic Console](https://platform.claude.com/settings/keys) |
 | **OpenAI** | `OPENAI_API_KEY` | [OpenAI API Keys](https://platform.openai.com/account/api-keys) |
 | **Google Gemini** | `GOOGLE_API_KEY` | [Google AI Studio](https://aistudio.google.com/app/apikey) |
 | **Mistral** | `MISTRAL_API_KEY` | [Mistral Console](https://console.mistral.ai/api-keys/) |
@@ -162,7 +162,7 @@ Italy.](picture.jpeg)
 # Single image
 image_description <- llm_message("Describe this picture. Can you guess where it was taken?",
                                   .media = img("picture.jpeg")) |>
-  chat(openai(.model = "gpt-5.4"))
+  chat(openai(.model = "gpt-5.6-terra"))
 
 get_reply(image_description)
 ```
@@ -401,8 +401,8 @@ conversation |> get_metadata()
     ## # A tibble: 2 × 6
     ##   model  timestamp           prompt_tokens completion_tokens
     ##   <chr>  <dttm>                      <int>             <int>
-    ## 1 groq-… 2025-11-08 14:25:43            20                45
-    ## 2 claud… 2025-11-08 14:26:02            80                40
+    ## 1 groq-… 2026-07-08 14:25:43            20                45
+    ## 2 claud… 2026-07-08 14:26:02            80                40
     ## # ℹ 2 more variables: total_tokens <int>,
     ## #   api_specific <list>
 
@@ -767,7 +767,7 @@ Avoid specifying a provider on every call by setting options:
 
 ``` r
 
-options(tidyllm_chat_default   = openai(.model = "gpt-5.4"))
+options(tidyllm_chat_default   = openai(.model = "gpt-5.6-terra"))
 options(tidyllm_embed_default  = ollama())
 options(tidyllm_sbatch_default = claude(.temperature = 0))
 options(tidyllm_cbatch_default = claude())

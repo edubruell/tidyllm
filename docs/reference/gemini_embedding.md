@@ -7,7 +7,7 @@ Generate Embeddings Using the Google Gemini API
 ``` r
 gemini_embedding(
   .input,
-  .model = "gemini-embedding-2-preview",
+  .model = "gemini-embedding-2",
   .truncate = TRUE,
   .timeout = 120,
   .dry_run = FALSE,
@@ -23,7 +23,7 @@ gemini_embedding(
 
 - .model:
 
-  The embedding model identifier (default: "text-embedding-3-small").
+  The embedding model identifier (default: "gemini-embedding-2").
 
 - .truncate:
 

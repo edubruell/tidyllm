@@ -1,4 +1,4 @@
 # License
 
-    YEAR: 2025
-    COPYRIGHT HOLDER: Eddy Brüll
+    YEAR: 2026
+    COPYRIGHT HOLDER: Eduard Brüll

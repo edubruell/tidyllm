@@ -6,7 +6,7 @@
 \usage{
 claude_chat(
   .llm,
-  .model = "claude-sonnet-4-6",
+  .model = "claude-sonnet-5",
   .max_tokens = 2048,
   .temperature = NULL,
   .top_k = NULL,
@@ -24,21 +24,24 @@ claude_chat(
   .dry_run = FALSE,
   .thinking = FALSE,
   .thinking_budget = 1024,
+  .effort = NULL,
+  .cache = FALSE,
   .max_tool_rounds = 10
 )
 }
 \arguments{
 \item{.llm}{An LLMMessage object containing the conversation history and system prompt.}
 
-\item{.model}{Character string specifying the Claude model version (default: "claude-sonnet-4-6").}
+\item{.model}{Character string specifying the Claude model version (default: "claude-sonnet-5").}
 
 \item{.max_tokens}{Integer specifying the maximum number of tokens in the response (default: 1024).}
 
-\item{.temperature}{Numeric between 0 and 1 controlling response randomness.}
+\item{.temperature}{Numeric between 0 and 1 controlling response randomness. Only supported on
+older models; Claude Sonnet 5 and Opus 4.7 or newer reject sampling parameters.}
 
-\item{.top_k}{Integer controlling diversity by limiting the top K tokens.}
+\item{.top_k}{Integer controlling diversity by limiting the top K tokens. Only supported on older models.}
 
-\item{.top_p}{Numeric between 0 and 1 for nucleus sampling.}
+\item{.top_p}{Numeric between 0 and 1 for nucleus sampling. Only supported on older models.}
 
 \item{.metadata}{List of additional metadata to include with the request.}
 
@@ -62,9 +65,21 @@ claude_chat(
 
 \item{.dry_run}{Logical; if TRUE, returns the prepared request object without executing it (default: FALSE).}
 
-\item{.thinking}{Logical; if TRUE, enables Claude's thinking mode for complex reasoning tasks (default: FALSE).}
+\item{.thinking}{Logical; if TRUE, enables Claude's thinking mode. On Claude Sonnet 4.6, Opus 4.6
+or newer this maps to adaptive thinking; on older models it uses a fixed thinking budget (default: FALSE).}
 
-\item{.thinking_budget}{Integer specifying the maximum tokens Claude can spend on thinking (default: 1024). Must be at least 1024.}
+\item{.thinking_budget}{Integer specifying the maximum tokens Claude can spend on thinking (default: 1024).
+Must be at least 1024. Only used on older models; ignored when the model supports adaptive thinking,
+where \code{.effort} controls thinking depth instead.}
+
+\item{.effort}{Character; one of "low", "medium", "high", "xhigh", or "max". Controls thinking depth
+and overall token spend on models that support the effort parameter (Claude Opus 4.5 or newer,
+Claude Sonnet 4.6 or newer). Default NULL uses the API default ("high").}
+
+\item{.cache}{Logical or character; enables Anthropic prompt caching for the request. TRUE caches
+with the default 5-minute time to live; "1h" requests a one-hour time to live. Cache reads cost
+roughly a tenth of the base input price. Cache token counts are reported in \code{get_metadata()}
+under \code{cache_creation_input_tokens} and \code{cache_read_input_tokens} (default: FALSE).}
 
 \item{.max_tool_rounds}{Integer specifying the maximum number of tool use iterations (default: 10).
 Set to 1 for single-round tool use, or higher for multi-turn agentic loops.}
@@ -81,10 +96,10 @@ Interact with Claude AI models via the Anthropic API
 msg <- llm_message("What is R programming?")
 result <- claude_chat(msg)
 
-# With custom parameters
-result2 <- claude_chat(msg, 
-                 .temperature = 0.7, 
-                 .max_tokens = 1000)
+# With adaptive thinking and effort control
+result2 <- claude_chat(msg,
+                 .thinking = TRUE,
+                 .effort = "low")
 }
 
 }

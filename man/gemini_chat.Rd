@@ -6,7 +6,7 @@
 \usage{
 gemini_chat(
   .llm,
-  .model = "gemini-2.5-flash",
+  .model = "gemini-3.6-flash",
   .fileid = NULL,
   .temperature = NULL,
   .max_output_tokens = NULL,
@@ -59,7 +59,7 @@ before answering.  (default: NULL).}
 
 \item{.tools}{Either a single TOOL object or a list of TOOL objects representing the available functions for tool calls.}
 
-\item{.thinking_budget}{Token budget for internal reasoning (default: NULL). Works with \code{gemini-2.5-flash} and \code{gemini-2.5-pro}.}
+\item{.thinking_budget}{Token budget for internal reasoning (default: NULL). Works with \code{gemini-3.6-flash} and \code{gemini-3.1-pro}.}
 
 \item{.timeout}{When should our connection time out (default: 120 seconds).}
 

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.5.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.5.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -50,7 +50,7 @@
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">claude_chat</span><span class="op">(</span></span>
 <span>  <span class="va">.llm</span>,</span>
-<span>  .model <span class="op">=</span> <span class="st">"claude-sonnet-4-6"</span>,</span>
+<span>  .model <span class="op">=</span> <span class="st">"claude-sonnet-5"</span>,</span>
 <span>  .max_tokens <span class="op">=</span> <span class="fl">2048</span>,</span>
 <span>  .temperature <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .top_k <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -68,6 +68,8 @@
 <span>  .dry_run <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  .thinking <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  .thinking_budget <span class="op">=</span> <span class="fl">1024</span>,</span>
+<span>  .effort <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  .cache <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  .max_tool_rounds <span class="op">=</span> <span class="fl">10</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -81,7 +83,7 @@
 
 
 <dt id="arg--model">.model<a class="anchor" aria-label="anchor" href="#arg--model"></a></dt>
-<dd><p>Character string specifying the Claude model version (default: "claude-sonnet-4-6").</p></dd>
+<dd><p>Character string specifying the Claude model version (default: "claude-sonnet-5").</p></dd>
 
 
 <dt id="arg--max-tokens">.max_tokens<a class="anchor" aria-label="anchor" href="#arg--max-tokens"></a></dt>
@@ -89,15 +91,16 @@
 
 
 <dt id="arg--temperature">.temperature<a class="anchor" aria-label="anchor" href="#arg--temperature"></a></dt>
-<dd><p>Numeric between 0 and 1 controlling response randomness.</p></dd>
+<dd><p>Numeric between 0 and 1 controlling response randomness. Only supported on
+older models; Claude Sonnet 5 and Opus 4.7 or newer reject sampling parameters.</p></dd>
 
 
 <dt id="arg--top-k">.top_k<a class="anchor" aria-label="anchor" href="#arg--top-k"></a></dt>
-<dd><p>Integer controlling diversity by limiting the top K tokens.</p></dd>
+<dd><p>Integer controlling diversity by limiting the top K tokens. Only supported on older models.</p></dd>
 
 
 <dt id="arg--top-p">.top_p<a class="anchor" aria-label="anchor" href="#arg--top-p"></a></dt>
-<dd><p>Numeric between 0 and 1 for nucleus sampling.</p></dd>
+<dd><p>Numeric between 0 and 1 for nucleus sampling. Only supported on older models.</p></dd>
 
 
 <dt id="arg--metadata">.metadata<a class="anchor" aria-label="anchor" href="#arg--metadata"></a></dt>
@@ -145,11 +148,27 @@
 
 
 <dt id="arg--thinking">.thinking<a class="anchor" aria-label="anchor" href="#arg--thinking"></a></dt>
-<dd><p>Logical; if TRUE, enables Claude's thinking mode for complex reasoning tasks (default: FALSE).</p></dd>
+<dd><p>Logical; if TRUE, enables Claude's thinking mode. On Claude Sonnet 4.6, Opus 4.6
+or newer this maps to adaptive thinking; on older models it uses a fixed thinking budget (default: FALSE).</p></dd>
 
 
 <dt id="arg--thinking-budget">.thinking_budget<a class="anchor" aria-label="anchor" href="#arg--thinking-budget"></a></dt>
-<dd><p>Integer specifying the maximum tokens Claude can spend on thinking (default: 1024). Must be at least 1024.</p></dd>
+<dd><p>Integer specifying the maximum tokens Claude can spend on thinking (default: 1024).
+Must be at least 1024. Only used on older models; ignored when the model supports adaptive thinking,
+where <code>.effort</code> controls thinking depth instead.</p></dd>
+
+
+<dt id="arg--effort">.effort<a class="anchor" aria-label="anchor" href="#arg--effort"></a></dt>
+<dd><p>Character; one of "low", "medium", "high", "xhigh", or "max". Controls thinking depth
+and overall token spend on models that support the effort parameter (Claude Opus 4.5 or newer,
+Claude Sonnet 4.6 or newer). Default NULL uses the API default ("high").</p></dd>
+
+
+<dt id="arg--cache">.cache<a class="anchor" aria-label="anchor" href="#arg--cache"></a></dt>
+<dd><p>Logical or character; enables Anthropic prompt caching for the request. TRUE caches
+with the default 5-minute time to live; "1h" requests a one-hour time to live. Cache reads cost
+roughly a tenth of the base input price. Cache token counts are reported in <code><a href="get_metadata.html">get_metadata()</a></code>
+under <code>cache_creation_input_tokens</code> and <code>cache_read_input_tokens</code> (default: FALSE).</p></dd>
 
 
 <dt id="arg--max-tool-rounds">.max_tool_rounds<a class="anchor" aria-label="anchor" href="#arg--max-tool-rounds"></a></dt>
@@ -169,10 +188,10 @@ Set to 1 for single-round tool use, or higher for multi-turn agentic loops.</p><
 <span class="r-in"><span><span class="va">msg</span> <span class="op">&lt;-</span> <span class="fu"><a href="llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"What is R programming?"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">claude_chat</span><span class="op">(</span><span class="va">msg</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># With custom parameters</span></span></span>
-<span class="r-in"><span><span class="va">result2</span> <span class="op">&lt;-</span> <span class="fu">claude_chat</span><span class="op">(</span><span class="va">msg</span>, </span></span>
-<span class="r-in"><span>                 .temperature <span class="op">=</span> <span class="fl">0.7</span>, </span></span>
-<span class="r-in"><span>                 .max_tokens <span class="op">=</span> <span class="fl">1000</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co"># With adaptive thinking and effort control</span></span></span>
+<span class="r-in"><span><span class="va">result2</span> <span class="op">&lt;-</span> <span class="fu">claude_chat</span><span class="op">(</span><span class="va">msg</span>,</span></span>
+<span class="r-in"><span>                 .thinking <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
+<span class="r-in"><span>                 .effort <span class="op">=</span> <span class="st">"low"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>

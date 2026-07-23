@@ -111,15 +111,15 @@ get_reply(reply)
 The `.num_ctx` parameter controls how much text the model can read at
 once, known as its *context window*. Text is measured in tokens, which
 are roughly three-quarters of a word each. The function default is
-`2048` tokens, which is quite short and much smaller than what modern
-models like Qwen3.5 actually support. For long documents, increase it to
-fit your input:
+`32768` tokens, well short of what modern models like Qwen3.5 can
+support in principle, but a sane starting point on typical laptop
+hardware. For longer documents, increase it further to fit your input:
 
 ``` r
 
 long_document |>
   llm_message() |>
-  chat(ollama(.num_ctx = 32768))
+  chat(ollama(.num_ctx = 131072))
 ```
 
 For embeddings, use the
@@ -197,19 +197,20 @@ upgrading to Q8_0 on the 7B.
 
 Model size is measured in *parameters*, the numerical weights learned
 during training. More parameters generally means more capable, but also
-more memory required and slower inference. As of early 2026, strong
+more memory required and slower inference. As of mid-2026, strong
 open-weight families come from a range of labs:
 
 | Family | Lab | Sizes | Notes |
 |----|----|----|----|
-| **Qwen3.5** | Alibaba | 0.8B–9B; 27B, 35B-A3B, 122B-A10B; 397B-A17B | 201 languages, 1M context, thinking mode on by default; default in tidyllm |
-| **Mistral Small 4** | Mistral AI | 119B total / 6B active (MoE) | Reasoning, vision, and agentic coding unified; 256K context; Apache 2.0 |
-| **Llama 4 Scout** | Meta | 109B total / ~17B active (MoE) | Native multimodal, 10M token context |
-| **Gemma 3** | Google | 1B, 4B, 12B, 27B | Compact multimodal models; permissive license |
-| **Kimi K2.5** | Moonshot AI | 1T total / 32B active (MoE) | Strong coding and vision; MIT license |
-| **MiniMax M2.5** | MiniMax | large MoE | Near-frontier quality at a fraction of proprietary API cost |
-| **DeepSeek V3.2** | DeepSeek | 671B MoE | Open-weight general model; best when hardware is not the constraint |
-| **Phi-4** | Microsoft | 14B | Punches well above weight class on reasoning tasks |
+| **Qwen3.6** | Alibaba | 27B dense, 35B-A3B (MoE) | Flagship-level coding performance; Apache 2.0; supersedes Qwen3.5, tidyllm’s Ollama default |
+| **Gemma 4** | Google | 26B-A4B (MoE), 31B dense | 140+ languages, native audio/video input; Apache 2.0 |
+| **Llama 5** | Meta | 600B total (MoE) | 5M token context, matches frontier closed models; open weight |
+| **GLM-5.2** | Z.ai | 744B total / 40B active (MoE) | One of the first open weights to seriously rival Fable-tier coding quality |
+| **Kimi K3** | Moonshot AI | 2.8T total (MoE) | World’s largest open-weight model; weights land July 27, 2026 under a Modified MIT license; targets Fable/GPT-5.6-class coding |
+| **MiniMax M3** | MiniMax | large MoE | Near-frontier quality at a fraction of proprietary API cost |
+| **DeepSeek V4 Pro** | DeepSeek | 1.6T total / 49B active (MoE) | 1M context; now MIT licensed, up from DeepSeek’s earlier custom terms |
+| **Mistral Medium 3.5** | Mistral AI | Open weight (undisclosed size) | Unified reasoning, vision, and coding; free for individuals and small teams |
+| **Inkling** | Thinking Machines | 975B total / 41B active (MoE) | First US entrant at this scale; Apache 2.0; built as a base for fine-tuning rather than top-end quality |
 
 Several of these are *Mixture-of-Experts* (MoE) models. Instead of
 activating the entire network for every word, MoE models route each step
@@ -237,9 +238,9 @@ changing the `.model` argument:
 prompt <- llm_message("Classify this job description into a one-sentence occupation label:
                         'I oversee a team of data engineers building our company data platform'")
 
-result_qwen    <- prompt |> chat(openrouter(.model = "qwen/qwen3.5-35b-a3b"))
-result_mistral <- prompt |> chat(openrouter(.model = "mistralai/mistral-small-4"))
-result_kimi    <- prompt |> chat(openrouter(.model = "moonshotai/kimi-k2.5"))
+result_qwen    <- prompt |> chat(openrouter(.model = "qwen/qwen3.6-35b-a3b"))
+result_mistral <- prompt |> chat(openrouter(.model = "mistralai/mistral-medium-3-5"))
+result_kimi    <- prompt |> chat(openrouter(.model = "moonshotai/kimi-k3"))
 
 get_reply(result_qwen)
 get_reply(result_mistral)
@@ -266,14 +267,14 @@ openrouter_list_models() |>
     ## # A tibble: 8 × 5
     ##   id          name  context_length prompt_price_per_mil…¹ completion_price_per…²
     ##   <chr>       <chr>          <int>                  <dbl>                  <dbl>
-    ## 1 qwen/qwen3… Qwen…        1000000                   0.1                    0.3 
-    ## 2 mistralai/… Mist…         256000                   0.1                    0.3 
-    ## 3 google/gem… Gemm…         131072                   0.1                    0.2 
-    ## 4 microsoft/… Phi-4         131072                   0.14                   0.14
-    ## 5 meta-llama… Llam…       10000000                   0.17                   0.6 
-    ## 6 minimax/mi… Mini…        1000000                   0.2                    0.55
-    ## 7 moonshotai… Kimi…         131072                   0.5                    1.5 
-    ## 8 deepseek/d… Deep…         163840                   0.55                   2.19
+    ## 1 meta-llama… Llam…        1310720                   0.1                    0.3 
+    ## 2 google/gem… Gemm…         262144                   0.12                   0.35
+    ## 3 qwen/qwen3… Qwen…         262144                   0.14                   1   
+    ## 4 minimax/mi… Mini…        1048576                   0.3                    1.2 
+    ## 5 deepseek/d… Deep…        1048576                   0.44                   0.87
+    ## 6 z-ai/glm-5… GLM …        1048576                   0.81                   2.56
+    ## 7 mistralai/… Mist…         262144                   1.5                    7.5 
+    ## 8 moonshotai… Kimi…        1048576                   3                     15   
     ## # ℹ abbreviated names: ¹​prompt_price_per_million, ²​completion_price_per_million
 
 Prices are in US dollars per million tokens. Once a model performs well
@@ -451,8 +452,9 @@ confidence score for each output token: a score close to zero means the
 model was highly certain; a strongly negative score means it was
 genuinely uncertain between several options.
 
-Passing `.logprobs = TRUE` stores these scores in the response metadata
-alongside the reply:
+Passing `.logprobs = TRUE` stores these scores alongside the reply;
+[`get_logprobs()`](https://edubruell.github.io/tidyllm/reference/get_logprobs.md)
+extracts them into a tidy tibble:
 
 ``` r
 
@@ -463,23 +465,14 @@ result <- llm_message(
   chat(llamacpp(.logprobs = TRUE, .top_logprobs = 3))
 
 get_reply(result)
-get_metadata(result)$api_specific$logprobs
+get_logprobs(result)
 ```
 
     ## [1] "neutral"
-    ## $content
-    ## $content[[1]]
-    ## $content[[1]]$token
-    ## [1] "neutral"
-    ## $content[[1]]$logprob
-    ## [1] -0.847
-    ## $content[[1]]$top_logprobs
-    ## # A tibble: 3 × 2
-    ##   token    logprob
-    ##   <chr>      <dbl>
-    ## 1 neutral   -0.847
-    ## 2 mixed     -1.20 
-    ## 3 positive  -2.03
+    ## # A tibble: 1 × 4
+    ##   reply_index token   logprob top_logprobs    
+    ##         <dbl> <chr>     <dbl> <chr>           
+    ## 1           1 neutral  -0.847 <tibble [3 x 2]>
 
 A score of -0.85 on “neutral” means the model had genuine uncertainty;
 the review is mixed and the model knows it. In a large annotation batch,

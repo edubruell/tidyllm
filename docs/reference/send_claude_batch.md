@@ -8,7 +8,7 @@ for asynchronous processing.
 ``` r
 send_claude_batch(
   .llms,
-  .model = "claude-sonnet-4-6",
+  .model = "claude-sonnet-5",
   .max_tokens = 1024,
   .temperature = NULL,
   .top_k = NULL,
@@ -17,6 +17,8 @@ send_claude_batch(
   .json_schema = NULL,
   .thinking = FALSE,
   .thinking_budget = 1024,
+  .effort = NULL,
+  .cache = FALSE,
   .api_url = "https://api.anthropic.com/",
   .verbose = FALSE,
   .dry_run = FALSE,
@@ -36,7 +38,7 @@ send_claude_batch(
 - .model:
 
   Character string specifying the Claude model version (default:
-  "claude-sonnet-4-6").
+  "claude-sonnet-5").
 
 - .max_tokens:
 
@@ -44,15 +46,19 @@ send_claude_batch(
 
 - .temperature:
 
-  Numeric between 0 and 1 controlling response randomness.
+  Numeric between 0 and 1 controlling response randomness. Only
+  supported on older models; Claude Sonnet 5 and Opus 4.7 or newer
+  reject sampling parameters.
 
 - .top_k:
 
-  Integer for diversity by limiting the top K tokens.
+  Integer for diversity by limiting the top K tokens. Only supported on
+  older models.
 
 - .top_p:
 
-  Numeric between 0 and 1 for nucleus sampling.
+  Numeric between 0 and 1 for nucleus sampling. Only supported on older
+  models.
 
 - .stop_sequences:
 
@@ -64,13 +70,28 @@ send_claude_batch(
 
 - .thinking:
 
-  Logical; if TRUE, enables Claude's thinking mode for complex reasoning
-  tasks (default: FALSE).
+  Logical; if TRUE, enables Claude's thinking mode. On Claude Sonnet
+  4.6, Opus 4.6 or newer this maps to adaptive thinking; on older models
+  it uses a fixed thinking budget (default: FALSE).
 
 - .thinking_budget:
 
   Integer specifying the maximum tokens Claude can spend on thinking
-  (default: 1024). Must be at least 1024.
+  (default: 1024). Must be at least 1024. Only used on older models
+  without adaptive thinking.
+
+- .effort:
+
+  Character; one of "low", "medium", "high", "xhigh", or "max". Controls
+  thinking depth and overall token spend on models that support the
+  effort parameter. Default NULL uses the API default.
+
+- .cache:
+
+  Logical or character; enables Anthropic prompt caching for the shared
+  system prompt across the batch. TRUE caches with the default 5-minute
+  time to live; "1h" requests a one-hour time to live. Useful when many
+  requests share one large system prompt (default: FALSE).
 
   Defaults to "tidyllm_claude_req\_".
 

@@ -61,7 +61,7 @@ First, we prepare a list of messages for all PDFs in the folder by
 applying
 [`llm_message()`](https://edubruell.github.io/tidyllm/reference/llm_message.md)
 with a prompt to the first five pages of each document. Even though
-`gpt-5.4` can process up to 128,000 tokens (roughly 80-90 pages of
+`gpt-5.6-terra` can process up to 128,000 tokens (roughly 80-90 pages of
 English text), we limit the input to five pages for demonstration
 purposes; the introduction is usually enough to get a first overview of
 a paper.
@@ -130,7 +130,7 @@ the schema:
 
 example_task <- document_tasks[[1]] |>
   chat(openai(.json_schema = document_schema,
-              .model       = "gpt-5.4"))
+              .model       = "gpt-5.6-terra"))
 ```
 
 ### Step 4: Extracting and Formatting the Results
@@ -184,8 +184,8 @@ get_metadata(example_task)
     ## 1 gpt-5… 2026-03-16 10:00:00          4265               337         4602 FALSE 
     ## # ℹ 1 more variable: api_specific <list>
 
-At current `gpt-5.4` batch pricing the per-document cost is a few cents;
-processing a folder of 50 papers costs well under a dollar.
+At current `gpt-5.6-terra` batch pricing the per-document cost is a few
+cents; processing a folder of 50 papers costs well under a dollar.
 
 ### Step 5: Scaling Up to a Whole Batch of Papers
 
@@ -199,7 +199,7 @@ your regular quota.
 
 document_tasks |>
   send_batch(openai(.json_schema = document_schema,
-                    .model       = "gpt-5.4")) |>
+                    .model       = "gpt-5.6-terra")) |>
   write_rds("document_batch.rds")
 ```
 

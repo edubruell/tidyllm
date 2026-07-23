@@ -144,18 +144,19 @@ For most research tasks, Q4_K_M on a model one size class larger than your first
 
 ### The current model landscape
 
-Model size is measured in *parameters*, the numerical weights learned during training. More parameters generally means more capable, but also more memory required and slower inference. As of early 2026, strong open-weight families come from a range of labs:
+Model size is measured in *parameters*, the numerical weights learned during training. More parameters generally means more capable, but also more memory required and slower inference. As of mid-2026, strong open-weight families come from a range of labs:
 
 | Family | Lab | Sizes | Notes |
 |--------|-----|-------|-------|
-| **Qwen3.5** | Alibaba | 0.8B--9B; 27B, 35B-A3B, 122B-A10B; 397B-A17B | 201 languages, 1M context, thinking mode on by default; default in tidyllm |
-| **Mistral Small 4** | Mistral AI | 119B total / 6B active (MoE) | Reasoning, vision, and agentic coding unified; 256K context; Apache 2.0 |
-| **Llama 4 Scout** | Meta | 109B total / ~17B active (MoE) | Native multimodal, 10M token context |
-| **Gemma 3** | Google | 1B, 4B, 12B, 27B | Compact multimodal models; permissive license |
-| **Kimi K2.5** | Moonshot AI | 1T total / 32B active (MoE) | Strong coding and vision; MIT license |
-| **MiniMax M2.5** | MiniMax | large MoE | Near-frontier quality at a fraction of proprietary API cost |
-| **DeepSeek V3.2** | DeepSeek | 671B MoE | Open-weight general model; best when hardware is not the constraint |
-| **Phi-4** | Microsoft | 14B | Punches well above weight class on reasoning tasks |
+| **Qwen3.6** | Alibaba | 27B dense, 35B-A3B (MoE) | Flagship-level coding performance; Apache 2.0; supersedes Qwen3.5, tidyllm's Ollama default |
+| **Gemma 4** | Google | 26B-A4B (MoE), 31B dense | 140+ languages, native audio/video input; Apache 2.0 |
+| **Llama 5** | Meta | 600B total (MoE) | 5M token context, matches frontier closed models; open weight |
+| **GLM-5.2** | Z.ai | 744B total / 40B active (MoE) | One of the first open weights to seriously rival Fable-tier coding quality |
+| **Kimi K3** | Moonshot AI | 2.8T total (MoE) | World's largest open-weight model; weights land July 27, 2026 under a Modified MIT license; targets Fable/GPT-5.6-class coding |
+| **MiniMax M3** | MiniMax | large MoE | Near-frontier quality at a fraction of proprietary API cost |
+| **DeepSeek V4 Pro** | DeepSeek | 1.6T total / 49B active (MoE) | 1M context; now MIT licensed, up from DeepSeek's earlier custom terms |
+| **Mistral Medium 3.5** | Mistral AI | Open weight (undisclosed size) | Unified reasoning, vision, and coding; free for individuals and small teams |
+| **Inkling** | Thinking Machines | 975B total / 41B active (MoE) | First US entrant at this scale; Apache 2.0; built as a base for fine-tuning rather than top-end quality |
 
 Several of these are *Mixture-of-Experts* (MoE) models. Instead of activating the entire network for every word, MoE models route each step through only a small subset of specialised sub-networks. This means the memory and speed cost depends on the *active* parameter count, not the total. In the table, notation like "35B-A3B" means 35 billion total parameters but only 3 billion active per step; it runs much more like a 3B model than a 35B one.
 
@@ -169,9 +170,9 @@ Running a large model locally requires significant hardware: a 13B model at Q4_K
 prompt <- llm_message("Classify this job description into a one-sentence occupation label:
                         'I oversee a team of data engineers building our company data platform'")
 
-result_qwen    <- prompt |> chat(openrouter(.model = "qwen/qwen3.5-35b-a3b"))
-result_mistral <- prompt |> chat(openrouter(.model = "mistralai/mistral-small-4"))
-result_kimi    <- prompt |> chat(openrouter(.model = "moonshotai/kimi-k2.5"))
+result_qwen    <- prompt |> chat(openrouter(.model = "qwen/qwen3.6-35b-a3b"))
+result_mistral <- prompt |> chat(openrouter(.model = "mistralai/mistral-medium-3-5"))
+result_kimi    <- prompt |> chat(openrouter(.model = "moonshotai/kimi-k3"))
 
 get_reply(result_qwen)
 get_reply(result_mistral)
@@ -195,15 +196,15 @@ openrouter_list_models() |>
 
 ```{r openrouter-list-out, eval=TRUE, echo=FALSE}
 tibble::tribble(
-  ~id,                          ~name,                ~context_length, ~prompt_price_per_million, ~completion_price_per_million,
-  "qwen/qwen3.5-35b-a3b",       "Qwen3.5 35B A3B",         1000000L,                       0.10,                          0.30,
-  "mistralai/mistral-small-4",  "Mistral Small 4",           256000L,                       0.10,                          0.30,
-  "google/gemma-3-27b-it",      "Gemma 3 27B",               131072L,                       0.10,                          0.20,
-  "microsoft/phi-4",            "Phi-4",                     131072L,                       0.14,                          0.14,
-  "meta-llama/llama-4-scout",   "Llama 4 Scout",           10000000L,                       0.17,                          0.60,
-  "minimax/minimax-m2.5",       "MiniMax M2.5",             1000000L,                       0.20,                          0.55,
-  "moonshotai/kimi-k2.5",       "Kimi K2.5",                 131072L,                       0.50,                          1.50,
-  "deepseek/deepseek-v3.2",     "DeepSeek V3.2",             163840L,                       0.55,                          2.19
+  ~id,                            ~name,                        ~context_length, ~prompt_price_per_million, ~completion_price_per_million,
+  "meta-llama/llama-4-scout",     "Llama 4 Scout",                   1310720L,                      0.10,                          0.30,
+  "google/gemma-4-31b-it",        "Gemma 4 31B",                      262144L,                      0.12,                          0.35,
+  "qwen/qwen3.6-35b-a3b",         "Qwen3.6 35B A3B",                  262144L,                      0.14,                          1.00,
+  "minimax/minimax-m3",           "MiniMax M3",                      1048576L,                      0.30,                          1.20,
+  "deepseek/deepseek-v4-pro",     "DeepSeek V4 Pro",                 1048576L,                      0.44,                          0.87,
+  "z-ai/glm-5.2",                 "GLM 5.2",                         1048576L,                      0.81,                          2.56,
+  "mistralai/mistral-medium-3-5", "Mistral Medium 3.5",               262144L,                      1.50,                          7.50,
+  "moonshotai/kimi-k3",           "Kimi K3",                         1048576L,                      3.00,                         15.00
 )
 ```
 

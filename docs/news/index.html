@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.5.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.5.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -42,7 +42,33 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.5.0" id="tidyllm-050">tidyllm 0.5.0<a class="anchor" aria-label="anchor" href="#tidyllm-050"></a></h2>
+<h2 class="pkg-version" data-toc-text="0.5.1" id="tidyllm-051">tidyllm 0.5.1<a class="anchor" aria-label="anchor" href="#tidyllm-051"></a></h2>
+<div class="section level3">
+<h3 id="anthropic-api-migration-0-5-1">Anthropic API migration<a class="anchor" aria-label="anchor" href="#anthropic-api-migration-0-5-1"></a></h3>
+<p>The Anthropic Messages API changed for current-generation models (Claude Sonnet 5, Opus 4.7 and newer): the fixed-budget thinking interface and the sampling parameters <code>temperature</code>, <code>top_k</code>, and <code>top_p</code> are rejected with a 400 error. tidyllm 0.5.1 tracks these changes:</p>
+<ul><li>
+<code>.thinking = TRUE</code> in <code><a href="../reference/claude_chat.html">claude_chat()</a></code> and <code><a href="../reference/send_claude_batch.html">send_claude_batch()</a></code> now maps to adaptive thinking (<code>thinking: {type: "adaptive"}</code>) on models that support it (Claude Sonnet 4.6, Opus 4.6 or newer). Older models keep the <code>budget_tokens</code> interface; <code>.thinking_budget</code> only applies there.</li>
+<li>New <code>.effort</code> argument on <code><a href="../reference/claude_chat.html">claude_chat()</a></code> and <code><a href="../reference/send_claude_batch.html">send_claude_batch()</a></code>: one of <code>"low"</code>, <code>"medium"</code>, <code>"high"</code>, <code>"xhigh"</code>, <code>"max"</code>. Controls thinking depth and token spend on models with adaptive thinking; replaces the thinking budget as the depth control.</li>
+<li>Sampling parameters passed to a model that rejects them now raise a clear client-side error before any request is sent. Older models accept them as before.</li>
+<li>Structured output requests moved from the deprecated top-level <code>output_format</code> parameter to <code>output_config.format</code>; the <code>structured-outputs</code> beta header is no longer sent (the feature is generally available).</li>
+<li>Response parsing and metadata extraction now handle thinking blocks in any position of the response content; batch fetching collapses text blocks correctly when thinking is enabled.</li>
+<li>
+<code><a href="../reference/claude_websearch.html">claude_websearch()</a></code> defaults to the <code>web_search_20260209</code> tool version with dynamic result filtering, and gains <code>.max_uses</code>, <code>.allowed_domains</code>, <code>.blocked_domains</code>, and <code>.version</code> arguments. Pass <code>.version = "web_search_20250305"</code> for models older than Claude Sonnet 4.6 / Opus 4.6.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="prompt-caching-0-5-1">Prompt caching<a class="anchor" aria-label="anchor" href="#prompt-caching-0-5-1"></a></h3>
+<ul><li>New <code>.cache</code> argument on <code><a href="../reference/claude_chat.html">claude_chat()</a></code> and <code><a href="../reference/send_claude_batch.html">send_claude_batch()</a></code>. <code>.cache = TRUE</code> enables Anthropic prompt caching with the default 5-minute time to live; <code>.cache = "1h"</code> requests a one-hour time to live. In <code><a href="../reference/claude_chat.html">claude_chat()</a></code> the cache breakpoint is placed automatically at the end of the request; in <code><a href="../reference/send_claude_batch.html">send_claude_batch()</a></code> the shared system prompt is cached across all requests in the batch, which is where batch workloads save the most.</li>
+<li>
+<code><a href="../reference/get_metadata.html">get_metadata()</a></code> for Claude replies now reports <code>cache_creation_input_tokens</code> and <code>cache_read_input_tokens</code> in <code>api_specific</code>, so cache hits are verifiable.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="other-changes-0-5-1">Other changes<a class="anchor" aria-label="anchor" href="#other-changes-0-5-1"></a></h3>
+<ul><li>
+<code><a href="../reference/gemini_embedding.html">gemini_embedding()</a></code> default model updated from <code>gemini-embedding-2-preview</code> to the generally available <code>gemini-embedding-2</code>.</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.5.0" id="tidyllm-050">tidyllm 0.5.0<a class="anchor" aria-label="anchor" href="#tidyllm-050"></a></h2><p class="text-muted">CRAN release: 2026-04-30</p>
 <div class="section level3">
 <h3 id="unified-media-interface-0-5-0">Unified Media Interface<a class="anchor" aria-label="anchor" href="#unified-media-interface-0-5-0"></a></h3>
 <div class="section level4">

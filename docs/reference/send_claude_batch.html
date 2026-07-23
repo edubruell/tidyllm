@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.5.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.5.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -50,7 +50,7 @@
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">send_claude_batch</span><span class="op">(</span></span>
 <span>  <span class="va">.llms</span>,</span>
-<span>  .model <span class="op">=</span> <span class="st">"claude-sonnet-4-6"</span>,</span>
+<span>  .model <span class="op">=</span> <span class="st">"claude-sonnet-5"</span>,</span>
 <span>  .max_tokens <span class="op">=</span> <span class="fl">1024</span>,</span>
 <span>  .temperature <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .top_k <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -59,6 +59,8 @@
 <span>  .json_schema <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .thinking <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  .thinking_budget <span class="op">=</span> <span class="fl">1024</span>,</span>
+<span>  .effort <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  .cache <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  .api_url <span class="op">=</span> <span class="st">"https://api.anthropic.com/"</span>,</span>
 <span>  .verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  .dry_run <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -78,7 +80,7 @@
 
 
 <dt id="arg--model">.model<a class="anchor" aria-label="anchor" href="#arg--model"></a></dt>
-<dd><p>Character string specifying the Claude model version (default: "claude-sonnet-4-6").</p></dd>
+<dd><p>Character string specifying the Claude model version (default: "claude-sonnet-5").</p></dd>
 
 
 <dt id="arg--max-tokens">.max_tokens<a class="anchor" aria-label="anchor" href="#arg--max-tokens"></a></dt>
@@ -86,15 +88,16 @@
 
 
 <dt id="arg--temperature">.temperature<a class="anchor" aria-label="anchor" href="#arg--temperature"></a></dt>
-<dd><p>Numeric between 0 and 1 controlling response randomness.</p></dd>
+<dd><p>Numeric between 0 and 1 controlling response randomness. Only supported on
+older models; Claude Sonnet 5 and Opus 4.7 or newer reject sampling parameters.</p></dd>
 
 
 <dt id="arg--top-k">.top_k<a class="anchor" aria-label="anchor" href="#arg--top-k"></a></dt>
-<dd><p>Integer for diversity by limiting the top K tokens.</p></dd>
+<dd><p>Integer for diversity by limiting the top K tokens. Only supported on older models.</p></dd>
 
 
 <dt id="arg--top-p">.top_p<a class="anchor" aria-label="anchor" href="#arg--top-p"></a></dt>
-<dd><p>Numeric between 0 and 1 for nucleus sampling.</p></dd>
+<dd><p>Numeric between 0 and 1 for nucleus sampling. Only supported on older models.</p></dd>
 
 
 <dt id="arg--stop-sequences">.stop_sequences<a class="anchor" aria-label="anchor" href="#arg--stop-sequences"></a></dt>
@@ -106,11 +109,24 @@
 
 
 <dt id="arg--thinking">.thinking<a class="anchor" aria-label="anchor" href="#arg--thinking"></a></dt>
-<dd><p>Logical; if TRUE, enables Claude's thinking mode for complex reasoning tasks (default: FALSE).</p></dd>
+<dd><p>Logical; if TRUE, enables Claude's thinking mode. On Claude Sonnet 4.6, Opus 4.6
+or newer this maps to adaptive thinking; on older models it uses a fixed thinking budget (default: FALSE).</p></dd>
 
 
 <dt id="arg--thinking-budget">.thinking_budget<a class="anchor" aria-label="anchor" href="#arg--thinking-budget"></a></dt>
-<dd><p>Integer specifying the maximum tokens Claude can spend on thinking (default: 1024). Must be at least 1024.</p>
+<dd><p>Integer specifying the maximum tokens Claude can spend on thinking (default: 1024).
+Must be at least 1024. Only used on older models without adaptive thinking.</p></dd>
+
+
+<dt id="arg--effort">.effort<a class="anchor" aria-label="anchor" href="#arg--effort"></a></dt>
+<dd><p>Character; one of "low", "medium", "high", "xhigh", or "max". Controls thinking depth
+and overall token spend on models that support the effort parameter. Default NULL uses the API default.</p></dd>
+
+
+<dt id="arg--cache">.cache<a class="anchor" aria-label="anchor" href="#arg--cache"></a></dt>
+<dd><p>Logical or character; enables Anthropic prompt caching for the shared system prompt
+across the batch. TRUE caches with the default 5-minute time to live; "1h" requests a one-hour
+time to live. Useful when many requests share one large system prompt (default: FALSE).</p>
 <p>Defaults to "tidyllm_claude_req_".</p></dd>
 
 
