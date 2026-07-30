@@ -98,7 +98,19 @@ llt_test("reasoning with effort level returns reply and reasoning in metadata", 
                   "Should have reasoning tokens or text in metadata")
 })
 
-llt_test("reasoning with exclude=TRUE still returns answer without reasoning text", {
+llt_test("reasoning with exclude=TRUE is forwarded and still returns an answer", {
+  # Checked 2026-07-30: tidyllm forwards reasoning$exclude verbatim, but upstream
+  # Anthropic routes now return a short reasoning summary anyway. Assert what
+  # tidyllm controls (the request body and a usable reply), not the upstream policy.
+  dry <- llm_message("Is 9.11 or 9.9 larger?") |>
+    chat(openrouter(
+      .model     = "anthropic/claude-sonnet-4-6",
+      .reasoning = list(effort = "low", exclude = TRUE),
+      .dry_run   = TRUE
+    ))
+  llt_expect_true(isTRUE(dry$body$data$reasoning$exclude),
+                  "reasoning$exclude must reach the request body")
+
   result <- llm_message("Is 9.11 or 9.9 larger?") |>
     chat(openrouter(
       .model     = "anthropic/claude-sonnet-4-6",
@@ -106,9 +118,6 @@ llt_test("reasoning with exclude=TRUE still returns answer without reasoning tex
     ))
   llt_expect_s7(result, LLMMessage)
   llt_expect_reply(result)
-  meta <- get_metadata(result)
-  llt_expect_true(is.null(meta$api_specific[[1]]$reasoning),
-                  "Reasoning text should be absent when exclude=TRUE")
 })
 
 llt_test("multi-turn with reasoning passes reasoning back correctly", {
@@ -145,8 +154,14 @@ llt_test("openrouter_generation returns cost and provider", {
     chat(openrouter(.model = "google/gemini-2.5-flash"))
   gen_id <- get_metadata(result)$api_specific[[1]]$id
   llt_expect_true(nzchar(gen_id), "Generation ID should be non-empty")
-  Sys.sleep(10)
-  gen <- openrouter_generation(gen_id)
+  # generation stats are eventually consistent; a 404 right after the call is normal
+  gen <- NULL
+  for (attempt in 1:12) {
+    Sys.sleep(15)
+    gen <- tryCatch(openrouter_generation(gen_id), error = function(e) NULL)
+    if (!is.null(gen)) break
+  }
+  llt_expect_true(!is.null(gen), "Generation stats never became available")
   llt_expect_true(!is.null(gen$total_cost), "Should have total_cost")
   llt_expect_true(is.numeric(gen$total_cost), "total_cost should be numeric")
   llt_expect_true(!is.null(gen$provider), "Should have provider")

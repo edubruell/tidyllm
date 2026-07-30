@@ -123,14 +123,12 @@ prepare_mistral_request <- function(
       }
     }
     if (schema_name != "ellmer_schema") {
-      schema_name <- attr(.json_schema, "name")
+      schema_name <- attr(.json_schema, "name", exact = TRUE) %||% "tidyllm_schema"
     }
     
   
-    # Ensure additionalProperties is set to FALSE if not already provided
-    if (is.null(.json_schema$additionalProperties)) {
-      .json_schema$additionalProperties <- FALSE
-    }
+    # Strict mode requires additionalProperties = FALSE on every object node
+    .json_schema <- add_no_extra_fields(.json_schema)
     
     response_format <- list(
       type = "json_schema",

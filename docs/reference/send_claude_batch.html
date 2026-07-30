@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.5.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.5.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -126,7 +126,8 @@ and overall token spend on models that support the effort parameter. Default NUL
 <dt id="arg--cache">.cache<a class="anchor" aria-label="anchor" href="#arg--cache"></a></dt>
 <dd><p>Logical or character; enables Anthropic prompt caching for the shared system prompt
 across the batch. TRUE caches with the default 5-minute time to live; "1h" requests a one-hour
-time to live. Useful when many requests share one large system prompt (default: FALSE).</p>
+time to live. Useful when many requests share one large system prompt, provided that prompt
+clears the per-model minimum cacheable length (default: FALSE).</p>
 <p>Defaults to "tidyllm_claude_req_".</p></dd>
 
 

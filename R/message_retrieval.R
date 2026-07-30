@@ -128,7 +128,12 @@ last_reply_data <- function(.llm) {
 #' - `prompt_tokens`: The number of tokens in the input prompt.
 #' - `completion_tokens`: The number of tokens in the assistant's reply.
 #' - `total_tokens`: The total number of tokens (prompt + completion).
-#' - `api_specific`: A list column with API-specific metadata.
+#' - `cached_tokens`: Prompt tokens served from the provider's prompt cache. `NA_integer_`
+#'   for providers that do not report cache usage; `0` means a reported cache miss.
+#' - `cache_creation_tokens`: Prompt tokens written to the cache. Currently reported by
+#'   `claude()` only; `NA_integer_` elsewhere.
+#' - `api_specific`: A list column with API-specific metadata, including the raw
+#'   provider-specific cache fields.
 #' 
 #' For convenience, [last_metadata()] is provided to retrieve the metadata for the last message.
 #'
@@ -169,6 +174,8 @@ get_metadata <- function(.llm, .index = NULL) {
       prompt_tokens = if (!is.null(meta$prompt_tokens)) meta$prompt_tokens else NA_integer_,
       completion_tokens = if (!is.null(meta$completion_tokens)) meta$completion_tokens else NA_integer_,
       total_tokens = if (!is.null(meta$total_tokens)) meta$total_tokens else NA_integer_,
+      cached_tokens = as_token_count(meta$cached_tokens),
+      cache_creation_tokens = as_token_count(meta$cache_creation_tokens),
       stream  = if (!is.null(meta$stream)) meta$stream else NA,
       api_specific = list(meta$specific_metadata)
     )

@@ -259,7 +259,8 @@ tidyllm_schema <- function(name = "tidyllm_schema", ...) {
           is_ellmer_type(field)
       }))
   ))
-  build_schema(fields, name = name)
+  schema <- build_schema(fields, name = name)
+  add_no_extra_fields(schema)
 }
 
 

@@ -47,6 +47,8 @@ method(extract_metadata, list(APIProvider,class_list))<- function(.api,.response
     prompt_tokens     = NA_integer_,
     completion_tokens = NA_integer_,
     total_tokens      = NA_integer_,
+    cached_tokens         = NA_integer_,
+    cache_creation_tokens = NA_integer_,
     stream            = FALSE,
     specific_metadata = list() 
   )
@@ -62,6 +64,8 @@ method(extract_metadata_stream, list(APIProvider,class_list))<- function(.api,.s
     prompt_tokens     = NA_integer_,
     completion_tokens = NA_integer_,
     total_tokens      = NA_integer_,
+    cached_tokens         = NA_integer_,
+    cache_creation_tokens = NA_integer_,
     stream            = TRUE,
     specific_metadata = list() 
   )

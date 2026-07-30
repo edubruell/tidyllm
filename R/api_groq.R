@@ -14,6 +14,9 @@ method(extract_metadata, list(api_groq,class_list))<- function(.api, .response) 
     prompt_tokens     = .response$usage$prompt_tokens,
     completion_tokens = .response$usage$completion_tokens,
     total_tokens      = .response$usage$total_tokens,
+    cached_tokens         = as_token_count(.response$usage$prompt_tokens_details$cached_tokens),
+    cache_creation_tokens = NA_integer_,
+    stream            = FALSE,
     specific_metadata = list(
       system_fingerprint        = .response$system_fingerprint,
       completion_time           = .response$usage$completion_time,
@@ -138,11 +141,9 @@ groq_chat <- function(.llm,
       }
     }
     if (schema_name != "ellmer_schema") {
-      schema_name <- attr(.json_schema, "name") %||% "schema"
+      schema_name <- attr(.json_schema, "name", exact = TRUE) %||% "schema"
     }
-    if (is.null(.json_schema$additionalProperties)) {
-      .json_schema$additionalProperties <- FALSE
-    }
+    .json_schema <- add_no_extra_fields(.json_schema)
     response_format <- list(
       type = "json_schema",
       json_schema = list(
@@ -479,11 +480,9 @@ send_groq_batch <- function(.llms,
       }
     }
     if (schema_name != "ellmer_schema") {
-      schema_name <- attr(.json_schema, "name") %||% "schema"
+      schema_name <- attr(.json_schema, "name", exact = TRUE) %||% "schema"
     }
-    if (is.null(.json_schema$additionalProperties)) {
-      .json_schema$additionalProperties <- FALSE
-    }
+    .json_schema <- add_no_extra_fields(.json_schema)
     response_format <- list(
       type = "json_schema",
       json_schema = list(

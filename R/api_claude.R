@@ -183,6 +183,8 @@ method(extract_metadata, list(api_claude,class_list))<- function(.api,.response)
     prompt_tokens     = .response$usage$input_tokens,
     completion_tokens = .response$usage$output_tokens,
     total_tokens      = .response$usage$input_tokens + .response$usage$output_tokens,
+    cached_tokens         = as_token_count(.response$usage$cache_read_input_tokens),
+    cache_creation_tokens = as_token_count(.response$usage$cache_creation_input_tokens),
     stream            = FALSE,
     specific_metadata = list(
       stop_reason        = .response$stop_reason,
@@ -200,23 +202,57 @@ method(extract_metadata, list(api_claude,class_list))<- function(.api,.response)
 #'
 #' @noRd
 method(extract_metadata_stream, list(api_claude,class_list))<- function(.api,.stream_raw_data) {
-  start_message <- .stream_raw_data |> 
+  start_message <- .stream_raw_data |>
     purrr::keep(~.x$type=="message_start") |>
     unlist(recursive = FALSE)
-  
-  last_message <- .stream_raw_data[[length(.stream_raw_data) - 1]] |> 
-    unlist(recursive = FALSE)
+
+  # select message_delta by type rather than by position: a ping event can arrive
+  # between the last delta and message_stop
+  delta_messages <- .stream_raw_data |>
+    purrr::keep(~ identical(.x$type, "message_delta"))
+
+  last_message <- if (length(delta_messages) > 0) {
+    delta_messages[[length(delta_messages)]] |> unlist(recursive = FALSE)
+  } else {
+    .stream_raw_data[[length(.stream_raw_data) - 1]] |> unlist(recursive = FALSE)
+  }
+
+  start_usage <- start_message$message$usage
+  output_tokens <- as_token_count(last_message$usage.output_tokens)
+  input_tokens  <- as_token_count(start_usage$input_tokens)
+
+  thinking_text <- .stream_raw_data |>
+    purrr::keep(~ identical(.x$type, "content_block_delta") &&
+                  identical(.x$delta$type, "thinking_delta")) |>
+    purrr::map_chr(~ .x$delta$thinking %||% "") |>
+    paste(collapse = "")
+
+  thinking_signature <- .stream_raw_data |>
+    purrr::keep(~ identical(.x$type, "content_block_delta") &&
+                  identical(.x$delta$type, "signature_delta")) |>
+    purrr::map_chr(~ .x$delta$signature %||% "") |>
+    paste(collapse = "")
 
   list(
     model             = start_message$message$model,
     timestamp         = lubridate::as_datetime(lubridate::now()),
-    prompt_tokens     = start_message$message$usage$input_tokens,
-    completion_tokens = last_message$usage.output_tokens,
-    total_tokens      = start_message$message$usage$input_tokens + last_message$usage.output_tokens,
+    prompt_tokens     = input_tokens,
+    completion_tokens = output_tokens,
+    total_tokens      = sum(c(input_tokens, output_tokens), na.rm = TRUE),
+    cached_tokens         = as_token_count(start_usage$cache_read_input_tokens),
+    cache_creation_tokens = as_token_count(start_usage$cache_creation_input_tokens),
     stream            = TRUE,
-    specific_metadata = list(warning="Specific Metadata is not yet implemented for Claude streaming requests") 
+    specific_metadata = list(
+      stop_reason        = last_message$delta.stop_reason,
+      id                 = start_message$message$id,
+      stop_sequence      = last_message$delta.stop_sequence,
+      cache_creation_input_tokens = start_usage$cache_creation_input_tokens,
+      cache_read_input_tokens     = start_usage$cache_read_input_tokens,
+      thinking           = if (nzchar(thinking_text)) thinking_text else NULL,
+      signature          = if (nzchar(thinking_signature)) thinking_signature else NULL
+    )
   )
-}  
+}
 
 
 #Claude-specific method to format tool calls for the API
@@ -449,7 +485,12 @@ claude_inject_files <- function(.claude_messages, .file_ids) {
 #' @param .cache Logical or character; enables Anthropic prompt caching for the request. TRUE caches
 #'   with the default 5-minute time to live; "1h" requests a one-hour time to live. Cache reads cost
 #'   roughly a tenth of the base input price. Cache token counts are reported in `get_metadata()`
+#'   in the `cached_tokens` and `cache_creation_tokens` columns, and in raw form in `api_specific`
 #'   under `cache_creation_input_tokens` and `cache_read_input_tokens` (default: FALSE).
+#'
+#'   Anthropic only caches prompts above a per-model minimum, and that minimum is higher on the
+#'   cheaper models: 4096 tokens on Haiku 4.5, 1024 on Sonnet 5 and Sonnet 4.6, 512 on Opus 5.
+#'   Shorter prompts are not an error; they simply report zero cache tokens.
 #' @param .max_tool_rounds Integer specifying the maximum number of tool use iterations (default: 10).
 #'   Set to 1 for single-round tool use, or higher for multi-turn agentic loops.
 #'
@@ -670,7 +711,8 @@ claude_chat <- function(.llm,
 #'   and overall token spend on models that support the effort parameter. Default NULL uses the API default.
 #' @param .cache Logical or character; enables Anthropic prompt caching for the shared system prompt
 #'   across the batch. TRUE caches with the default 5-minute time to live; "1h" requests a one-hour
-#'   time to live. Useful when many requests share one large system prompt (default: FALSE).
+#'   time to live. Useful when many requests share one large system prompt, provided that prompt
+#'   clears the per-model minimum cacheable length (default: FALSE).
 #'
 #'   Defaults to "tidyllm_claude_req_".
 #'
@@ -1534,20 +1576,32 @@ claude_delete_file_verb <- function(.file_id, .called_from = NULL, ...) {
 #' Builtin Claude Web Search Tool
 #'
 #' Returns a TOOL object for Claude's builtin web_search tool. The default tool
-#' version `web_search_20260209` adds dynamic result filtering and requires
-#' Claude Sonnet 4.6, Opus 4.6 or newer; pass `.version = "web_search_20250305"`
-#' for older models.
+#' version is `web_search_20260318`, which adds the `response_inclusion` control
+#' on top of the dynamic result filtering introduced in `web_search_20260209`.
+#'
+#' From `web_search_20260209` onwards the API defaults `allowed_callers` to the
+#' code execution tool, which only models with programmatic tool calling support.
+#' tidyllm therefore sends `allowed_callers = "direct"` by default, so web search
+#' works on every model. Pass `.allowed_callers = "code_execution_20260120"` to
+#' opt into the dynamic filtering path on Sonnet 4.6, Opus 4.6 or newer.
 #'
 #' @param .max_uses Integer; maximum number of searches the model may run per request.
 #' @param .allowed_domains Character vector of domains to restrict search results to.
 #' @param .blocked_domains Character vector of domains to exclude from search results.
-#' @param .version Character; the Anthropic web search tool version (default: "web_search_20260209").
+#' @param .allowed_callers Character vector of callers allowed to invoke the tool;
+#'   `"direct"` (default) or `"code_execution_20260120"`. Pass `NULL` to let the API
+#'   apply its own default. Ignored for `"web_search_20250305"`, which has no such field.
+#' @param .response_inclusion Character; `"full"` or `"excluded"`, controlling whether
+#'   search results enter the model context. Requires `web_search_20260318` or newer.
+#' @param .version Character; the Anthropic web search tool version (default: "web_search_20260318").
 #'
 #' @export
 claude_websearch <- function(.max_uses = NULL,
                              .allowed_domains = NULL,
                              .blocked_domains = NULL,
-                             .version = "web_search_20260209") {
+                             .allowed_callers = "direct",
+                             .response_inclusion = NULL,
+                             .version = "web_search_20260318") {
   c(
     ".max_uses must be a positive integer if provided" =
       is.null(.max_uses) || (is_integer_valued(.max_uses) && .max_uses > 0),
@@ -1557,15 +1611,28 @@ claude_websearch <- function(.max_uses = NULL,
       is.null(.blocked_domains) || is.character(.blocked_domains),
     "Only one of .allowed_domains or .blocked_domains may be specified" =
       is.null(.allowed_domains) || is.null(.blocked_domains),
+    ".allowed_callers must be a character vector if provided" =
+      is.null(.allowed_callers) || is.character(.allowed_callers),
+    ".response_inclusion must be \"full\" or \"excluded\" if provided" =
+      is.null(.response_inclusion) ||
+      (is.character(.response_inclusion) && length(.response_inclusion) == 1 &&
+         .response_inclusion %in% c("full", "excluded")),
+    ".response_inclusion requires .version \"web_search_20260318\" or newer" =
+      is.null(.response_inclusion) || .version >= "web_search_20260318",
     ".version must be a character string" = is.character(.version) && length(.version) == 1
   ) |> validate_inputs()
+
+  # web_search_20250305 predates allowed_callers and rejects the field
+  allowed_callers <- if (.version > "web_search_20250305") .allowed_callers else NULL
 
   builtin_def <- purrr::compact(list(
     name = "web_search",
     type = .version,
     max_uses = .max_uses,
     allowed_domains = if (!is.null(.allowed_domains)) as.list(.allowed_domains) else NULL,
-    blocked_domains = if (!is.null(.blocked_domains)) as.list(.blocked_domains) else NULL
+    blocked_domains = if (!is.null(.blocked_domains)) as.list(.blocked_domains) else NULL,
+    allowed_callers = if (!is.null(allowed_callers)) as.list(allowed_callers) else NULL,
+    response_inclusion = .response_inclusion
   ))
 
   TOOL(

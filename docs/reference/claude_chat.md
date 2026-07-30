@@ -140,8 +140,14 @@ claude_chat(
   requests a one-hour time to live. Cache reads cost roughly a tenth of
   the base input price. Cache token counts are reported in
   [`get_metadata()`](https://edubruell.github.io/tidyllm/reference/get_metadata.md)
-  under `cache_creation_input_tokens` and `cache_read_input_tokens`
-  (default: FALSE).
+  in the `cached_tokens` and `cache_creation_tokens` columns, and in raw
+  form in `api_specific` under `cache_creation_input_tokens` and
+  `cache_read_input_tokens` (default: FALSE).
+
+  Anthropic only caches prompts above a per-model minimum, and that
+  minimum is higher on the cheaper models: 4096 tokens on Haiku 4.5,
+  1024 on Sonnet 5 and Sonnet 4.6, 512 on Opus 5. Shorter prompts are
+  not an error; they simply report zero cache tokens.
 
 - .max_tool_rounds:
 

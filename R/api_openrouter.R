@@ -16,9 +16,12 @@ method(extract_metadata, list(api_openrouter, class_list)) <- function(.api, .re
     prompt_tokens     = .response$usage$prompt_tokens,
     completion_tokens = .response$usage$completion_tokens,
     total_tokens      = .response$usage$total_tokens,
+    cached_tokens         = as_token_count(.response$usage$prompt_tokens_details$cached_tokens),
+    cache_creation_tokens = NA_integer_,
     stream            = FALSE,
     specific_metadata = list(
       id                       = .response$id,
+      cache_discount           = .response$usage$cache_discount,
       native_tokens_prompt     = .response$usage$native_tokens_prompt,
       native_tokens_completion = .response$usage$native_tokens_completion,
       reasoning_tokens         = .response$usage$reasoning_tokens,
@@ -201,7 +204,8 @@ openrouter_chat <- function(.llm,
     if (requireNamespace("ellmer", quietly = TRUE) && S7_inherits(.json_schema, ellmer::TypeObject)) {
       .json_schema <- to_schema(.json_schema)
     }
-    schema_name <- attr(.json_schema, "name") %||% "tidyllm_schema"
+    schema_name <- attr(.json_schema, "name", exact = TRUE) %||% "tidyllm_schema"
+    .json_schema <- add_no_extra_fields(.json_schema)
     response_format <- list(
       type = "json_schema",
       json_schema = list(name = schema_name, schema = .json_schema)

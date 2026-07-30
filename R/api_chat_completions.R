@@ -77,10 +77,11 @@ method(ratelimit_from_header, list(api_chat_completions, new_S3_class("httr2_hea
 method(parse_chat_response, list(api_chat_completions,class_list)) <- function(.api,.content) {
     api_label <- .api@long_name 
       if("error" %in% names(.content)){
+        error_type <- .content$error$type %||% .content$error$code %||% "unknown"
         sprintf("%s returned an Error:\nType: %s\nMessage: %s",
                 api_label,
-                .content$error$type,
-                .content$error$message) |>
+                error_type,
+                api_error_message(.content$error)) |>
           stop()
       }
       
@@ -102,6 +103,8 @@ method(extract_metadata, list(api_chat_completions, class_list)) <- function(.ap
     prompt_tokens     = .response$usage$prompt_tokens,
     completion_tokens = .response$usage$completion_tokens,
     total_tokens      = .response$usage$total_tokens,
+    cached_tokens         = as_token_count(.response$usage$prompt_tokens_details$cached_tokens),
+    cache_creation_tokens = NA_integer_,
     stream            = FALSE,
     specific_metadata = list(
       system_fingerprint        = .response$system_fingerprint,
@@ -125,6 +128,8 @@ method(extract_metadata_stream, list(api_chat_completions,class_list))<- functio
     prompt_tokens     = final_stream_chunk$usage$prompt_tokens,
     completion_tokens = final_stream_chunk$usage$completion_tokens,
     total_tokens      = final_stream_chunk$usage$total_tokens,
+    cached_tokens         = as_token_count(final_stream_chunk$usage$prompt_tokens_details$cached_tokens),
+    cache_creation_tokens = NA_integer_,
     stream            = TRUE,
     specific_metadata = list(
       system_fingerprint = final_stream_chunk$system_fingerprint,
@@ -363,8 +368,9 @@ prepare_chat_completions_request <- function(
       }
     }
     if (schema_name != "ellmer_schema") {
-      schema_name <- attr(.json_schema, "name")
+      schema_name <- attr(.json_schema, "name", exact = TRUE) %||% "tidyllm_schema"
     }
+    .json_schema <- add_no_extra_fields(.json_schema)
     response_format <- list(
       type = "json_schema",
       json_schema = list(

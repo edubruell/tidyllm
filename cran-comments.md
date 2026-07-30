@@ -1,11 +1,15 @@
-Test environment: local macOS install, R CMD check --as-cran.
+This is a bugfix release. It fixes structured output schemas for providers that enforce OpenAI strict mode (nested object nodes were missing `additionalProperties: false`), restores tool use for the Gemini backend and web search for older Claude models after upstream API changes, surfaces provider errors that previously arrived empty, and adds two token-accounting columns to `get_metadata()`.
 
-R CMD check result: 0 errors, 0 warnings, 3 notes.
+## Test environments
 
-Two notes are local-environment artifacts that will not occur on CRAN's build machines: an offline clock note ("unable to verify current time") and an HTML Tidy version note from an outdated local Tidy binary.
+* local macOS (aarch64-apple-darwin20), R 4.5.3
 
-The remaining note flags URL issues in a vignette. These URLs point to the account pages where a user obtains the API key needed to use the package with each provider, so they are functional documentation links rather than incidental references. One URL had moved and has been updated. The others are 403 responses from openai.com and platform.openai.com; those hosts return 403 to any automated client, confirmed with a plain curl request using a browser user agent, so this is bot blocking on their end rather than a broken link.
+## R CMD check results
 
-Summary of changes: this release updates the Claude provider for changes in the Anthropic Messages API affecting current generation models, covering extended thinking configuration, sampling parameter support, and structured output requests. It also adds optional prompt caching for Claude requests and batches, with cache usage reported in request metadata. A few other provider defaults and documentation links were refreshed to match current upstream APIs.
+0 errors | 0 warnings | 1 note
+
+The note is "checking for future file timestamps: unable to verify current time", which is a network condition on the check machine rather than a package issue.
+
+A previous submission raised a note for `https://platform.openai.com/account/api-keys` in the vignette. That URL is valid and current; the host returns 403 to automated clients, so the note is a false positive and the link is kept.
 
 There are no reverse dependencies.

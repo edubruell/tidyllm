@@ -138,11 +138,11 @@ guess_mime_type <- function(file_path) {
 #' @noRd
 add_no_extra_fields <- function(node) {
   if (!is.list(node)) return(node)
-  
+
   if (identical(node$type, "object")) {
     node$additionalProperties <- FALSE
   }
-  
+
   if (!is.null(node$properties)) {
     node$properties <- lapply(node$properties, add_no_extra_fields)
   }
@@ -152,4 +152,83 @@ add_no_extra_fields <- function(node) {
   }
 
   node
+}
+
+#' Coerce a raw token count from an API response to a scalar integer.
+#' Missing or empty values become NA_integer_, so that "provider does not
+#' report this" stays distinguishable from a reported zero.
+#' @noRd
+as_token_count <- function(.x) {
+  if (is.null(.x) || length(.x) == 0) return(NA_integer_)
+  .x <- .x[[1]]
+  if (!is.numeric(.x) && !is.logical(.x)) return(NA_integer_)
+  if (length(.x) != 1 || is.na(.x)) return(NA_integer_)
+  as.integer(.x)
+}
+
+#' Recursively removes additionalProperties from every node of a JSON schema.
+#' The mirror image of add_no_extra_fields(), used at the Gemini boundary,
+#' where the OpenAPI-subset schema dialect rejects the key on any node.
+#' @noRd
+remove_extra_fields_key <- function(node) {
+  if (!is.list(node)) return(node)
+
+  # assign NULL rather than subsetting, so attributes such as the schema name survive
+  node$additionalProperties <- NULL
+
+  if (!is.null(node$properties)) {
+    node$properties <- lapply(node$properties, remove_extra_fields_key)
+  }
+
+  if (!is.null(node$items)) {
+    node$items <- remove_extra_fields_key(node$items)
+  }
+
+  node
+}
+
+#' Build a human readable message from a provider error object.
+#'
+#' Some gateways, OpenRouter in particular, return a generic
+#' "Provider returned error" in error$message and keep the upstream
+#' diagnostic in error$metadata$raw as a JSON string. This helper unwraps
+#' that so users see the real cause instead of an empty error.
+#' @noRd
+api_error_message <- function(.error) {
+  generic_messages <- c("Provider returned error")
+
+  message <- .error$message
+  if (is.list(message)) message <- message$message
+  if (!is.character(message)) message <- NULL
+  if (length(message) > 1) message <- paste(message, collapse = "; ")
+  if (length(message) == 0) message <- NULL
+
+  is_generic <- is.null(message) || !nzchar(message) || message %in% generic_messages
+
+  raw <- .error$metadata$raw
+  if (is_generic && !is.null(raw)) {
+    raw_message <- NULL
+    if (is.character(raw)) {
+      parsed <- tryCatch(jsonlite::fromJSON(raw, simplifyVector = FALSE),
+                         error = function(e) NULL)
+      raw_message <- parsed$error$message %||% parsed$message
+      if (is.null(raw_message) && nzchar(raw)) raw_message <- raw
+    } else if (is.list(raw)) {
+      raw_message <- raw$error$message %||% raw$message
+    }
+    if (is.character(raw_message) && nzchar(raw_message)) {
+      message <- if (is.null(message) || !nzchar(message)) {
+        raw_message
+      } else {
+        paste0(message, ": ", raw_message)
+      }
+    }
+  }
+
+  provider_name <- .error$metadata$provider_name
+  if (is.character(provider_name) && length(provider_name) == 1 && nzchar(provider_name)) {
+    message <- paste0(message %||% "Unknown error", " (upstream provider: ", provider_name, ")")
+  }
+
+  message %||% "No error message returned by the API"
 }

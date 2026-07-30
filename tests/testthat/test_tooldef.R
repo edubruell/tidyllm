@@ -77,3 +77,22 @@ test_that("tidyllm_tool does not allow invalid schema arguments", {
     "Schema defines arguments not present in function: y"
   )
 })
+
+test_that("tool parameter schemas set additionalProperties on nested objects", {
+  nested_tool <- tidyllm_tool(
+    function(loc) loc$city,
+    "get_weather",
+    loc = field_object("A location",
+                       city    = field_chr("City"),
+                       country = field_chr("Country"))
+  )
+
+  api_obj <- tidyllm:::api_openai(short_name = "openai",
+                                  long_name = "OpenAI",
+                                  api_key_env_var = "OPENAI_API_KEY")
+  converted <- tidyllm:::tools_to_api(api_obj, list(nested_tool))[[1]]
+
+  expect_true(converted$strict)
+  expect_false(converted$parameters$additionalProperties)
+  expect_false(converted$parameters$properties$loc$additionalProperties)
+})

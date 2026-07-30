@@ -45,8 +45,8 @@ method(parse_chat_response, list(api_azure_openai,class_list)) <- function(.api,
   if("error" %in% names(.content)){
     sprintf("%s returned an Error:\nType: %s\nMessage: %s",
             api_label,
-            .content$error$code,
-            .content$error$message) |>
+            .content$error$code %||% .content$error$type %||% "unknown",
+            api_error_message(.content$error)) |>
       stop()
   }
   

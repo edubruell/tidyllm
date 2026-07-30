@@ -9,7 +9,7 @@ It returns the metadata as a tibble."><meta property="og:image" content="https:/
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.5.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.5.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -80,7 +80,12 @@ If <code>NULL</code> (default), metadata for all replies is returned.</p></dd>
 <li><p><code>prompt_tokens</code>: The number of tokens in the input prompt.</p></li>
 <li><p><code>completion_tokens</code>: The number of tokens in the assistant's reply.</p></li>
 <li><p><code>total_tokens</code>: The total number of tokens (prompt + completion).</p></li>
-<li><p><code>api_specific</code>: A list column with API-specific metadata.</p></li>
+<li><p><code>cached_tokens</code>: Prompt tokens served from the provider's prompt cache. <code>NA_integer_</code>
+for providers that do not report cache usage; <code>0</code> means a reported cache miss.</p></li>
+<li><p><code>cache_creation_tokens</code>: Prompt tokens written to the cache. Currently reported by
+<code><a href="claude.html">claude()</a></code> only; <code>NA_integer_</code> elsewhere.</p></li>
+<li><p><code>api_specific</code>: A list column with API-specific metadata, including the raw
+provider-specific cache fields.</p></li>
 </ul><p>For convenience, <code>last_metadata()</code> is provided to retrieve the metadata for the last message.</p>
     </div>
     <div class="section level2">

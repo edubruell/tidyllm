@@ -114,10 +114,13 @@ method(extract_metadata, list(api_openai, class_list)) <- function(.api, .respon
     prompt_tokens     = usage$input_tokens,
     completion_tokens = usage$output_tokens,
     total_tokens      = (usage$input_tokens %||% 0L) + (usage$output_tokens %||% 0L),
+    cached_tokens         = as_token_count(usage$input_tokens_details$cached_tokens),
+    cache_creation_tokens = NA_integer_,
     stream            = FALSE,
     specific_metadata = list(
       response_id      = .response$id,
-      reasoning_tokens = usage$output_tokens_details$reasoning_tokens
+      reasoning_tokens = usage$output_tokens_details$reasoning_tokens,
+      cached_tokens    = usage$input_tokens_details$cached_tokens
     )
   )
 }
@@ -142,10 +145,13 @@ method(extract_metadata_stream, list(api_openai, class_list)) <- function(.api, 
     prompt_tokens     = usage$input_tokens,
     completion_tokens = usage$output_tokens,
     total_tokens      = (usage$input_tokens %||% 0L) + (usage$output_tokens %||% 0L),
+    cached_tokens         = as_token_count(usage$input_tokens_details$cached_tokens),
+    cache_creation_tokens = NA_integer_,
     stream            = TRUE,
     specific_metadata = list(
       response_id      = resp$id,
-      reasoning_tokens = usage$output_tokens_details$reasoning_tokens
+      reasoning_tokens = usage$output_tokens_details$reasoning_tokens,
+      cached_tokens    = usage$input_tokens_details$cached_tokens
     )
   )
 }
@@ -210,12 +216,11 @@ method(tools_to_api, list(api_openai, class_list)) <- function(.api, .tools) {
       type        = "function",
       name        = tool@name,
       description = tool@description,
-      parameters  = list(
+      parameters  = add_no_extra_fields(list(
         type                 = "object",
         properties           = purrr::map(tool@input_schema, field_to_param_schema),
-        required             = as.list(names(tool@input_schema)),
-        additionalProperties = FALSE
-      ),
+        required             = as.list(names(tool@input_schema))
+      )),
       strict      = TRUE
     )
   })
@@ -284,21 +289,6 @@ method(append_tool_messages, list(api_openai, class_any, class_any, class_any)) 
     .request_body
   }
 
-#' Prepare OpenAI Responses API request body parameters
-#'
-#' @noRd
-add_no_additional_properties <- function(schema) {
-  if (is.list(schema) && identical(schema$type, "object")) {
-    schema$additionalProperties <- FALSE
-    if (!is.null(schema$properties)) {
-      schema$properties <- lapply(schema$properties, add_no_additional_properties)
-    }
-  } else if (is.list(schema) && !is.null(schema$items)) {
-    schema$items <- add_no_additional_properties(schema$items)
-  }
-  schema
-}
-
 last_openai_response_id <- function(.llm) {
   assistant_msgs <- Filter(function(m) m$role == "assistant", .llm@message_history)
   if (length(assistant_msgs) == 0) return(NULL)
@@ -325,8 +315,8 @@ prepare_responses_request <- function(.llm,
       .json_schema <- to_schema(.json_schema)
       schema_name <- "ellmer_schema"
     }
-    if (!is.null(attr(.json_schema, "name"))) schema_name <- attr(.json_schema, "name")
-    .json_schema <- add_no_additional_properties(.json_schema)
+    if (!is.null(attr(.json_schema, "name", exact = TRUE))) schema_name <- attr(.json_schema, "name", exact = TRUE)
+    .json_schema <- add_no_extra_fields(.json_schema)
     text_format <- list(
       format = list(
         type        = "json_schema",

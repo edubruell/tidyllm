@@ -170,8 +170,14 @@ ellmer_tool <- function(.ellmer_tool) {
       stop(sprintf("Builtin tool '%s' is executed by the provider, not locally", fn_name))
     }
     
+    builtin_description <- tryCatch(.ellmer_tool@description, error = function(e) NULL)
+    if (!is.character(builtin_description) || length(builtin_description) != 1 ||
+        !nzchar(builtin_description)) {
+      builtin_description <- sprintf("Builtin tool: %s", fn_name)
+    }
+
     TOOL(
-      description = sprintf("Builtin tool: %s", fn_name),
+      description = builtin_description,
       input_schema = list(),
       func = dummy_fn,
       name = fn_name,
@@ -228,7 +234,8 @@ convert_ellmer_type_to_field <- function(.ellmer_type) {
       "boolean" = "boolean"
     )
     
-    tidyllm_type <- type_map[ellmer_type_name] %||% "string"
+    tidyllm_type <- unname(type_map[ellmer_type_name])
+    if (is.na(tidyllm_type)) tidyllm_type <- "string"
     
     tidyllm_field(
       type = tidyllm_type,
@@ -309,11 +316,11 @@ method(tools_to_api, list(APIProvider, class_list)) <- function(.api, .tools) {
         `function` = list(
           name = tool@name,
           description = tool@description,
-          parameters = list(
+          parameters = add_no_extra_fields(list(
             type = "object",
             properties = purrr::map(tool@input_schema, field_to_param_schema),
             required = as.list(names(tool@input_schema))
-          )
+          ))
         )
       )
     }

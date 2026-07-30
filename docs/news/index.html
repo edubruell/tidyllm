@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.5.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.5.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -42,7 +42,45 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.5.1" id="tidyllm-051">tidyllm 0.5.1<a class="anchor" aria-label="anchor" href="#tidyllm-051"></a></h2>
+<h2 class="pkg-version" data-toc-text="0.5.2" id="tidyllm-052">tidyllm 0.5.2<a class="anchor" aria-label="anchor" href="#tidyllm-052"></a></h2>
+<p>A bugfix release. No new providers, verbs, or media types.</p>
+<div class="section level3">
+<h3 id="json-schemas-structured-output-and-tool-definitions-0-5-2">JSON schemas (structured output and tool definitions)<a class="anchor" aria-label="anchor" href="#json-schemas-structured-output-and-tool-definitions-0-5-2"></a></h3>
+<ul><li>
+<code><a href="../reference/tidyllm_schema.html">tidyllm_schema()</a></code> now sets <code>additionalProperties: false</code> on <strong>every</strong> object node of the assembled schema, not just the root. Schemas containing <code>field_object(..., .vector = TRUE)</code>, i.e. an array of objects, were rejected with an HTTP 400 <code>invalid_json_schema</code> by every provider enforcing OpenAI strict mode: <code><a href="../reference/openai.html">openai()</a></code> itself and any <code><a href="../reference/openrouter.html">openrouter()</a></code> route to OpenAI or Azure. The same recursive normalization is applied at the provider boundary, so raw list schemas and <code>ellmer</code> types are covered as well.</li>
+<li>
+<code><a href="../reference/gemini.html">gemini()</a></code> strips <code>additionalProperties</code> recursively before sending a schema. Gemini rejects the key on any node, and previously only the root was stripped.</li>
+<li>Tool definitions get the same treatment. A <code><a href="../reference/tidyllm_tool.html">tidyllm_tool()</a></code> with a <code><a href="../reference/field_object.html">field_object()</a></code> argument produced a nested object node without <code>additionalProperties</code>, which <code><a href="../reference/openai.html">openai()</a></code> rejected with a 400 because tidyllm sends <code>strict = TRUE</code> on tool schemas.</li>
+<li>The schema name is now read with <code>attr(..., exact = TRUE)</code>. Passing a hand-written list schema without a <code>name</code> attribute previously partial-matched the <code>names</code> attribute, so the property names went on the wire as the schema name and strict providers rejected the request.</li>
+<li>Note that an explicit <code>additionalProperties = TRUE</code>, for instance from <code>ellmer::type_object(.additional_properties = TRUE)</code>, is now normalized to <code>FALSE</code>, since that is what strict mode requires.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="error-messages-0-5-2">Error messages<a class="anchor" aria-label="anchor" href="#error-messages-0-5-2"></a></h3>
+<ul><li>Provider errors coming through an OpenAI-compatible gateway are no longer empty. <code><a href="../reference/openrouter.html">openrouter()</a></code> reports a generic <code>"Provider returned error"</code> in <code>error$message</code> and keeps the real upstream diagnostic in <code>error$metadata$raw</code>; tidyllm now unwraps that payload and names the upstream provider in the error it raises. This is what made the schema bug above so hard to diagnose in the field. It applies to the whole ChatCompletions family and to <code><a href="../reference/azure_openai.html">azure_openai()</a></code>.</li>
+<li>The error type falls back to <code>error$code</code> when a provider reports no <code>error$type</code>, so the error header is no longer <code>Type: NULL</code>.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="token-metadata-0-5-2">Token metadata<a class="anchor" aria-label="anchor" href="#token-metadata-0-5-2"></a></h3>
+<ul><li>
+<code><a href="../reference/get_metadata.html">get_metadata()</a></code> gains two top-level columns: <code>cached_tokens</code> (prompt tokens served from the provider’s cache, the billing-relevant number) and <code>cache_creation_tokens</code> (cache writes; Claude only). Providers that do not report cache usage return <code>NA_integer_</code>, so “no caching” and “cache miss” stay distinguishable. Raw provider fields remain in <code>api_specific</code>, so existing code keeps working.</li>
+<li>Cache counts are now read where they were previously discarded: <code><a href="../reference/openai.html">openai()</a></code> (Responses API), <code><a href="../reference/gemini.html">gemini()</a></code>, <code><a href="../reference/deepseek.html">deepseek()</a></code>, <code><a href="../reference/chat_ellmer.html">chat_ellmer()</a></code>, and the whole ChatCompletions family including <code><a href="../reference/openrouter.html">openrouter()</a></code>. <code><a href="../reference/openrouter.html">openrouter()</a></code> additionally reports <code>cache_discount</code> in <code>api_specific</code>.</li>
+<li>
+<code><a href="../reference/gemini.html">gemini()</a></code> and <code><a href="../reference/groq.html">groq()</a></code> replies now report <code>stream = FALSE</code> instead of <code>NA</code>, so a metadata tibble mixing providers is consistent.</li>
+<li>Claude streaming metadata is no longer a stub. Streamed replies now report <code>stop_reason</code>, <code>id</code>, <code>stop_sequence</code>, cache tokens and the thinking trace, matching the non-streaming path.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="provider-fixes-0-5-2">Provider fixes<a class="anchor" aria-label="anchor" href="#provider-fixes-0-5-2"></a></h3>
+<ul><li>
+<code><a href="../reference/gemini.html">gemini()</a></code> tool calls work again. Gemini now rejects a <code>functionCall</code> part whose <code>thoughtSignature</code> was dropped (“Function call is missing a thought_signature”), which broke every multi-round tool call. tidyllm sends the model’s parts back verbatim.</li>
+<li>
+<code><a href="../reference/claude_websearch.html">claude_websearch()</a></code> defaults to the current <code>web_search_20260318</code> tool version and gains <code>.allowed_callers</code> and <code>.response_inclusion</code>. Since <code>web_search_20260209</code> the API defaults <code>allowed_callers</code> to the code execution tool, which only models with programmatic tool calling support; web search therefore failed with a 400 on Claude Haiku 4.5 and other older models. tidyllm now sends <code>allowed_callers = "direct"</code> by default, so web search works on every model again. Pass <code>.allowed_callers = "code_execution_20260120"</code> for the dynamic filtering path.</li>
+<li>
+<code><a href="../reference/ellmer_tool.html">ellmer_tool()</a></code> no longer produces a <code>tidyllm_field</code> whose type carries a stray name, and it uses the built-in tool’s own description when <code>ellmer</code> provides one. <code>ellmer</code> is now declared as <code>Suggests: ellmer (&gt;= 0.4.0)</code>, which is the version tidyllm’s tool conversion actually requires.</li>
+<li>The <code>.cache</code> documentation for <code><a href="../reference/claude_chat.html">claude_chat()</a></code> now states the per-model minimum cacheable prompt length. Anthropic silently caches nothing below that floor, and the floor is higher on the cheap models (4096 tokens on Haiku 4.5) than on Sonnet 5 (1024).</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.5.1" id="tidyllm-051">tidyllm 0.5.1<a class="anchor" aria-label="anchor" href="#tidyllm-051"></a></h2><p class="text-muted">CRAN release: 2026-07-23</p>
 <div class="section level3">
 <h3 id="anthropic-api-migration-0-5-1">Anthropic API migration<a class="anchor" aria-label="anchor" href="#anthropic-api-migration-0-5-1"></a></h3>
 <p>The Anthropic Messages API changed for current-generation models (Claude Sonnet 5, Opus 4.7 and newer): the fixed-budget thinking interface and the sampling parameters <code>temperature</code>, <code>top_k</code>, and <code>top_p</code> are rejected with a 400 error. tidyllm 0.5.1 tracks these changes:</p>
@@ -168,7 +206,7 @@
 <h3 id="openai-provider-rewrite-0-5-0">OpenAI Provider Rewrite<a class="anchor" aria-label="anchor" href="#openai-provider-rewrite-0-5-0"></a></h3>
 <div class="section level4">
 <h4 id="responses-api-0-5-0">Responses API<a class="anchor" aria-label="anchor" href="#responses-api-0-5-0"></a></h4>
-<p><code><a href="../reference/openai.html">openai()</a></code> now uses the <a href="https://platform.openai.com/docs/api-reference/responses" class="external-link">Responses API</a> (<code>POST /v1/responses</code>). All existing workflows continue to work unchanged. New capabilities unlocked by the rewrite:</p>
+<p><code><a href="../reference/openai.html">openai()</a></code> now uses the <a href="https://developers.openai.com/api/reference/resources/responses" class="external-link">Responses API</a> (<code>POST /v1/responses</code>). All existing workflows continue to work unchanged. New capabilities unlocked by the rewrite:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Reasoning effort for o-series models</span></span>
 <span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Prove that there are infinitely many primes."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -364,7 +402,7 @@
 <ul><li>
 <p><code><a href="../reference/ellmer_tool.html">ellmer_tool()</a></code> converts ellmer <code>ToolDef</code> objects to tidyllm <code>TOOL</code> objects, enabling tools defined in ellmer (and packages like <code>btw</code>) to be used directly with tidyllm:</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">btw_tool</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ellmer_tool.html">ellmer_tool</a></span><span class="op">(</span><span class="fu">btw</span><span class="fu">::</span><span class="va">btw_tool_files_list_files</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">btw_tool</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ellmer_tool.html">ellmer_tool</a></span><span class="op">(</span><span class="fu">btw</span><span class="fu">::</span><span class="va"><a href="https://posit-dev.github.io/btw/reference/deprecated.html" class="external-link">btw_tool_files_list_files</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"List files in the R/ folder"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span>, .tools <span class="op">=</span> <span class="va">btw_tool</span><span class="op">)</span></span></code></pre></div>
 </li>

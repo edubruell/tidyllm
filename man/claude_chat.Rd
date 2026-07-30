@@ -79,7 +79,12 @@ Claude Sonnet 4.6 or newer). Default NULL uses the API default ("high").}
 \item{.cache}{Logical or character; enables Anthropic prompt caching for the request. TRUE caches
 with the default 5-minute time to live; "1h" requests a one-hour time to live. Cache reads cost
 roughly a tenth of the base input price. Cache token counts are reported in \code{get_metadata()}
-under \code{cache_creation_input_tokens} and \code{cache_read_input_tokens} (default: FALSE).}
+in the \code{cached_tokens} and \code{cache_creation_tokens} columns, and in raw form in \code{api_specific}
+under \code{cache_creation_input_tokens} and \code{cache_read_input_tokens} (default: FALSE).
+
+Anthropic only caches prompts above a per-model minimum, and that minimum is higher on the
+cheaper models: 4096 tokens on Haiku 4.5, 1024 on Sonnet 5 and Sonnet 4.6, 512 on Opus 5.
+Shorter prompts are not an error; they simply report zero cache tokens.}
 
 \item{.max_tool_rounds}{Integer specifying the maximum number of tool use iterations (default: 10).
 Set to 1 for single-round tool use, or higher for multi-turn agentic loops.}

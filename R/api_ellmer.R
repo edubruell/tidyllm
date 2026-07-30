@@ -53,6 +53,8 @@ method(extract_metadata, list(api_ellmer, class_list)) <- function(.api, .respon
     prompt_tokens     = as.integer(tokens["input"] %||% NA),
     completion_tokens = as.integer(tokens["output"] %||% NA),
     total_tokens      = as.integer((tokens["input"] %||% 0) + (tokens["output"] %||% 0)),
+    cached_tokens         = as_token_count(tokens["cached_input"]),
+    cache_creation_tokens = NA_integer_,
     stream            = FALSE,
     specific_metadata = list(
       cost = .response$cost,

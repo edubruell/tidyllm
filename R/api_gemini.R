@@ -152,8 +152,12 @@ method(extract_metadata, list(api_gemini,class_list))<- function(.api,.response)
     prompt_tokens     = .response$usageMetadata$promptTokenCount,
     completion_tokens = .response$usageMetadata$candidatesTokenCount,
     total_tokens      = .response$usageMetadata$totalTokenCount,
+    cached_tokens         = as_token_count(.response$usageMetadata$cachedContentTokenCount),
+    cache_creation_tokens = NA_integer_,
+    stream            = FALSE,
     specific_metadata = list(
       finishReason      = .response$candidates[[1]]$finishReason,
+      cachedContentTokenCount = .response$usageMetadata$cachedContentTokenCount,
       avgLogprobs       = .response$candidates[[1]]$avgLogprobs,
       groundingMetadata = .response$candidates[[1]]$groundingMetadata,
       thinking_tokens   = .response$usageMetadata$thoughtsTokenCount
@@ -174,6 +178,8 @@ method(extract_metadata_stream, list(api_gemini,class_list))<- function(.api,.st
     prompt_tokens     = final_stream_chunk$usageMetadata$promptTokenCount,
     completion_tokens = final_stream_chunk$usageMetadata$candidatesTokenCount,
     total_tokens      = final_stream_chunk$usageMetadata$totalTokenCount,
+    cached_tokens         = as_token_count(final_stream_chunk$usageMetadata$cachedContentTokenCount),
+    cache_creation_tokens = NA_integer_,
     stream            = TRUE,
     specific_metadata = list(
       warning    = "Gemini outputs different metadata for streaming and non-streaming responses",
@@ -223,10 +229,17 @@ method(extract_tool_calls, list(api_gemini, class_any)) <- function(.api, .respo
 
 method(append_tool_messages, list(api_gemini, class_any, class_any, class_any)) <-
   function(.api, .request_body, .response, .tool_results) {
-    tool_calls <- extract_tool_calls(.api, .response)
+    # The model's parts have to go back verbatim: since the thinking models,
+    # Gemini rejects a functionCall part whose sibling thoughtSignature was
+    # dropped ("Function call is missing a thought_signature").
+    model_parts <- .response$raw$content$candidates[[1]]$content$parts
+    if (is.null(model_parts)) {
+      model_parts <- purrr::map(extract_tool_calls(.api, .response),
+                                ~list(functionCall = .x))
+    }
     assistant_message <- list(
       role = "model",
-      parts = purrr::map(tool_calls, ~list(functionCall = .x))
+      parts = model_parts
     )
     .request_body$contents <- c(
       .request_body$contents,
@@ -454,14 +467,12 @@ gemini_chat <- function(.llm,
     #Handle ellmer json schemata Objects
     if(S7_inherits(.json_schema,ellmer::TypeObject)){
       .json_schema = to_schema(.json_schema)
-      # Remove additionalProperties if it exists
-      if (!is.null(.json_schema) && "additionalProperties" %in% names(.json_schema)) {
-        .json_schema <- .json_schema[setdiff(names(.json_schema), "additionalProperties")]
-      }
-    } 
+    }
   }
   if (!is.null(.json_schema)) {
     json=TRUE
+    # Gemini rejects additionalProperties on every node, not just the root
+    .json_schema <- remove_extra_fields_key(.json_schema)
     response_format <- list(
       response_mime_type = "application/json",
       response_schema = .json_schema
@@ -895,9 +906,7 @@ send_gemini_batch <- function(.llms,
   }
   if (!is.null(.json_schema)) {
     json <- TRUE
-    if ("additionalProperties" %in% names(.json_schema)) {
-      .json_schema <- .json_schema[setdiff(names(.json_schema), "additionalProperties")]
-    }
+    .json_schema <- remove_extra_fields_key(.json_schema)
   }
   
   # --- Generation config ---

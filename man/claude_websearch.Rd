@@ -8,7 +8,9 @@ claude_websearch(
   .max_uses = NULL,
   .allowed_domains = NULL,
   .blocked_domains = NULL,
-  .version = "web_search_20260209"
+  .allowed_callers = "direct",
+  .response_inclusion = NULL,
+  .version = "web_search_20260318"
 )
 }
 \arguments{
@@ -18,11 +20,24 @@ claude_websearch(
 
 \item{.blocked_domains}{Character vector of domains to exclude from search results.}
 
-\item{.version}{Character; the Anthropic web search tool version (default: "web_search_20260209").}
+\item{.allowed_callers}{Character vector of callers allowed to invoke the tool;
+\code{"direct"} (default) or \code{"code_execution_20260120"}. Pass \code{NULL} to let the API
+apply its own default. Ignored for \code{"web_search_20250305"}, which has no such field.}
+
+\item{.response_inclusion}{Character; \code{"full"} or \code{"excluded"}, controlling whether
+search results enter the model context. Requires \code{web_search_20260318} or newer.}
+
+\item{.version}{Character; the Anthropic web search tool version (default: "web_search_20260318").}
 }
 \description{
 Returns a TOOL object for Claude's builtin web_search tool. The default tool
-version \code{web_search_20260209} adds dynamic result filtering and requires
-Claude Sonnet 4.6, Opus 4.6 or newer; pass \code{.version = "web_search_20250305"}
-for older models.
+version is \code{web_search_20260318}, which adds the \code{response_inclusion} control
+on top of the dynamic result filtering introduced in \code{web_search_20260209}.
+}
+\details{
+From \code{web_search_20260209} onwards the API defaults \code{allowed_callers} to the
+code execution tool, which only models with programmatic tool calling support.
+tidyllm therefore sends \code{allowed_callers = "direct"} by default, so web search
+works on every model. Pass \code{.allowed_callers = "code_execution_20260120"} to
+opt into the dynamic filtering path on Sonnet 4.6, Opus 4.6 or newer.
 }

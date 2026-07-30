@@ -15,9 +15,13 @@ method(extract_metadata, list(api_deepseek,class_list))<- function(.api,.respons
     prompt_tokens     = .response$usage$prompt_tokens,
     completion_tokens = .response$usage$completion_tokens,
     total_tokens      = .response$usage$total_tokens,
+    cached_tokens         = as_token_count(.response$usage$prompt_cache_hit_tokens),
+    cache_creation_tokens = NA_integer_,
     stream            = FALSE,
     specific_metadata = list(
       id      = .response$id,
+      prompt_cache_hit_tokens  = .response$usage$prompt_cache_hit_tokens,
+      prompt_cache_miss_tokens = .response$usage$prompt_cache_miss_tokens,
       thinking = .response$choices[[1]]$message$reasoning_content
     )
   )

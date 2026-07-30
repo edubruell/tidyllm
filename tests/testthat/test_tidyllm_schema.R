@@ -86,3 +86,43 @@ test_that("tidyllm_schema validates incorrect field types", {
 #  expect_equal(schema$properties$field1$type, "string")
 #  expect_equal(schema$properties$field1$description, "An ellmer string field")
 #})
+test_that("tidyllm_schema sets additionalProperties on every object node", {
+  schema <- tidyllm_schema(
+    name = "NestedSchema",
+    classifications = field_object(
+      "One entry per title",
+      title    = field_chr("Title"),
+      relevant = field_lgl("Is it research"),
+      .vector  = TRUE
+    ),
+    summary = field_object(
+      "Aggregate counts",
+      n_total = field_dbl("Number of titles")
+    )
+  )
+
+  expect_false(schema$additionalProperties)
+  expect_false(schema$properties$classifications$items$additionalProperties)
+  expect_false(schema$properties$summary$additionalProperties)
+  expect_equal(attr(schema, "name"), "NestedSchema")
+})
+
+test_that("the Gemini boundary strips additionalProperties recursively", {
+  schema <- tidyllm_schema(
+    name = "NestedSchema",
+    classifications = field_object(
+      "One entry per title",
+      title   = field_chr("Title"),
+      .vector = TRUE
+    )
+  )
+
+  stripped <- tidyllm:::remove_extra_fields_key(schema)
+  has_key <- function(node) {
+    if (!is.list(node)) return(FALSE)
+    if ("additionalProperties" %in% names(node)) return(TRUE)
+    any(vapply(node, has_key, logical(1)))
+  }
+
+  expect_false(has_key(stripped))
+})

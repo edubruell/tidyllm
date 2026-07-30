@@ -248,10 +248,8 @@ perplexity_chat <- function(
   response_format <- NULL
   if (!is.null(.json_schema)) {
     json <- TRUE
-    schema_name <- attr(.json_schema, "name") %||% "schema"
-    if (is.null(.json_schema$additionalProperties)) {
-      .json_schema$additionalProperties <- FALSE
-    }
+    schema_name <- attr(.json_schema, "name", exact = TRUE) %||% "schema"
+    .json_schema <- add_no_extra_fields(.json_schema)
     response_format <- list(
       type = "json_schema",
       json_schema = list(
@@ -410,10 +408,8 @@ perplexity_deep_research <- function(.llm,
   response_format <- NULL
   if (!is.null(.json_schema)) {
     json <- TRUE
-    schema_name <- attr(.json_schema, "name") %||% "schema"
-    if (is.null(.json_schema$additionalProperties)) {
-      .json_schema$additionalProperties <- FALSE
-    }
+    schema_name <- attr(.json_schema, "name", exact = TRUE) %||% "schema"
+    .json_schema <- add_no_extra_fields(.json_schema)
     response_format <- list(
       type = "json_schema",
       json_schema = list(

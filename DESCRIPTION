@@ -1,6 +1,6 @@
 Package: tidyllm
 Title: Tidy Integration of Large Language Models
-Version: 0.5.1
+Version: 0.5.2
 Authors@R: c(
     person("Eduard", "Brüll", NULL, "eduard.bruell@zew.de", role = c("aut", "cre")),
     person("Jia", "Zhang", NULL, NULL, role = "ctb")
@@ -20,7 +20,7 @@ Suggests:
     tidyverse,
     httptest2,
     httpuv,
-    ellmer
+    ellmer (>= 0.4.0)
 Imports: 
     S7 (>= 0.2.0),
     base64enc,

@@ -30,7 +30,12 @@ Metadata columns may include:
 \item \code{prompt_tokens}: The number of tokens in the input prompt.
 \item \code{completion_tokens}: The number of tokens in the assistant's reply.
 \item \code{total_tokens}: The total number of tokens (prompt + completion).
-\item \code{api_specific}: A list column with API-specific metadata.
+\item \code{cached_tokens}: Prompt tokens served from the provider's prompt cache. \code{NA_integer_}
+for providers that do not report cache usage; \code{0} means a reported cache miss.
+\item \code{cache_creation_tokens}: Prompt tokens written to the cache. Currently reported by
+\code{claude()} only; \code{NA_integer_} elsewhere.
+\item \code{api_specific}: A list column with API-specific metadata, including the raw
+provider-specific cache fields.
 }
 
 For convenience, \code{\link[=last_metadata]{last_metadata()}} is provided to retrieve the metadata for the last message.

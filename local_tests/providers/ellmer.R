@@ -98,12 +98,35 @@ llt_test("claude_websearch() returns a TOOL object", {
   ws <- claude_websearch()
   llt_expect_true(S7_inherits(ws, TOOL), "Should be a TOOL object")
   llt_expect_true(length(ws@builtin) > 0, "Should have non-empty builtin list")
-  llt_expect_true(ws@builtin[[1]]$type == "web_search_20250305", "Should have correct type")
+  llt_expect_true(ws@builtin[[1]]$type == "web_search_20260318", "Should default to the current tool version")
+  llt_expect_true(identical(ws@builtin[[1]]$allowed_callers, list("direct")),
+                  "Should send allowed_callers = direct so older models keep working")
+})
+
+llt_test("claude_websearch() omits allowed_callers on the legacy tool version", {
+  ws <- claude_websearch(.version = "web_search_20250305")
+  llt_expect_true(is.null(ws@builtin[[1]]$allowed_callers),
+                  "web_search_20250305 has no allowed_callers field")
+})
+
+llt_test("claude_websearch() rejects response_inclusion on old versions", {
+  err <- tryCatch({
+    claude_websearch(.response_inclusion = "excluded", .version = "web_search_20260209")
+    NULL
+  }, error = function(e) conditionMessage(e))
+  llt_expect_true(!is.null(err), "Should error client-side instead of hitting a 400")
 })
 
 llt_test("claude_websearch() tool used in chat returns reply with web results", {
   result <- llm_message("What is the current year? Use web search.") |>
     chat(claude(), .tools = claude_websearch())
+  llt_expect_reply(result)
+})
+
+llt_test("claude_websearch() works on models without programmatic tool calling", {
+  result <- llm_message("What is the current year? Use web search.") |>
+    chat(claude(.model = "claude-haiku-4-5", .max_tokens = 300),
+         .tools = claude_websearch(.max_uses = 1))
   llt_expect_reply(result)
 })
 

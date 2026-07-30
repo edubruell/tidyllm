@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.5.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.5.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -168,7 +168,11 @@ Claude Sonnet 4.6 or newer). Default NULL uses the API default ("high").</p></dd
 <dd><p>Logical or character; enables Anthropic prompt caching for the request. TRUE caches
 with the default 5-minute time to live; "1h" requests a one-hour time to live. Cache reads cost
 roughly a tenth of the base input price. Cache token counts are reported in <code><a href="get_metadata.html">get_metadata()</a></code>
-under <code>cache_creation_input_tokens</code> and <code>cache_read_input_tokens</code> (default: FALSE).</p></dd>
+in the <code>cached_tokens</code> and <code>cache_creation_tokens</code> columns, and in raw form in <code>api_specific</code>
+under <code>cache_creation_input_tokens</code> and <code>cache_read_input_tokens</code> (default: FALSE).</p>
+<p>Anthropic only caches prompts above a per-model minimum, and that minimum is higher on the
+cheaper models: 4096 tokens on Haiku 4.5, 1024 on Sonnet 5 and Sonnet 4.6, 512 on Opus 5.
+Shorter prompts are not an error; they simply report zero cache tokens.</p></dd>
 
 
 <dt id="arg--max-tool-rounds">.max_tool_rounds<a class="anchor" aria-label="anchor" href="#arg--max-tool-rounds"></a></dt>

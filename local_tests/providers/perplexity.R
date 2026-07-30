@@ -2,6 +2,23 @@ devtools::load_all(quiet = TRUE)
 source("local_tests/test_harness.R")
 llt_suite("perplexity")
 
+# This account has no Perplexity credits (Perplexity enforces a high minimum API
+# spend), so every live call returns insufficient_quota. Bail out with a clear
+# message instead of reporting a wall of failures that are not tidyllm defects.
+probe <- tryCatch({
+  llm_message("hi") |> chat(perplexity(.max_tokens = 8))
+  NULL
+}, error = function(e) conditionMessage(e))
+
+perplexity_available <- is.null(probe) ||
+  !grepl("quota|billing|credit", probe, ignore.case = TRUE)
+
+if (!perplexity_available) {
+  cat("  ! skipped: the Perplexity account has no quota\n    ", probe, "\n", sep = "")
+}
+
+if (perplexity_available) {
+
 # ── Basic chat ────────────────────────────────────────────────────────────────
 
 llt_test("basic chat returns LLMMessage", {
@@ -73,4 +90,6 @@ llt_test("json_schema returns structured data", {
   llt_expect_true("year" %in% names(data), "Should have year field")
 })
 
-llt_report()
+}
+
+if (perplexity_available) llt_report()

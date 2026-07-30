@@ -55,7 +55,8 @@ and overall token spend on models that support the effort parameter. Default NUL
 
 \item{.cache}{Logical or character; enables Anthropic prompt caching for the shared system prompt
 across the batch. TRUE caches with the default 5-minute time to live; "1h" requests a one-hour
-time to live. Useful when many requests share one large system prompt (default: FALSE).
+time to live. Useful when many requests share one large system prompt, provided that prompt
+clears the per-model minimum cacheable length (default: FALSE).
 
 Defaults to "tidyllm_claude_req_".}
 
