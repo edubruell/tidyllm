@@ -307,7 +307,10 @@ method(assemble_stream_response, list(api_chat_completions, class_list)) <- func
   for (event in .events) {
     envelope <- merge_stream_envelope(
       envelope, event,
-      c("id", "model", "created", "object", "system_fingerprint", "usage")
+      # `search_results` and `citations` are Perplexity's; they are response-level
+      # in exactly the same way, and `intersect()` ignores them elsewhere.
+      c("id", "model", "created", "object", "system_fingerprint", "usage",
+        "search_results", "citations")
     )
 
     # The final usage-only chunk carries no choices at all.

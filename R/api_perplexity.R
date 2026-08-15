@@ -357,8 +357,11 @@ perplexity_build_chat_request <- function(
     # Search results ride alongside the response rather than inside its
     # metadata, so they are folded in here.
     .meta_fn = function(meta, response) {
-      if (!is.null(response$search_results)) {
-        meta$specific_metadata$search_results <- response$search_results
+      # The interpreted response keeps the parsed body under `raw$content`; the
+      # search results are a top-level field of that body, not of the response.
+      results <- response$raw$content$search_results
+      if (!is.null(results)) {
+        meta$specific_metadata$search_results <- results
       }
       meta
     }

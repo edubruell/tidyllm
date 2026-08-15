@@ -81,6 +81,12 @@ meant nothing but `*_chat()` itself could reach the middle of it.
   to file an issue. The pipeline split moved these calls one frame deeper, which
   changed how `lifecycle` resolved the calling environment.
 
+* `perplexity()` attaches its search results to the metadata again. The hook
+  read them from the response object rather than from the parsed body inside it,
+  so `get_metadata()$api_specific$search_results` had always been `NULL`.
+  Streamed replies carry them too, since the assembler now merges Perplexity's
+  response-level `search_results` and `citations` fields.
+
 ## Streaming
 
 * Every provider now streams through one shared pump. The six hand-rolled

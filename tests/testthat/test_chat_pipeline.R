@@ -168,13 +168,37 @@ test_that("finish_chat_response folds perplexity search results into metadata", 
   expect_false(is.null(built$meta_fn))
 
   results <- list(list(title = "A source", url = "https://example.org"))
+  # The shape matters and used to be wrong: the parsed body lives under
+  # `raw$content`, so a hook reading `response$search_results` found nothing and
+  # perplexity's search results never reached the metadata at all.
   out <- tidyllm:::finish_chat_response(
     built,
-    fake_response("answer", meta = list(model = "sonar"), search_results = results)
+    fake_response("answer", meta = list(model = "sonar"),
+                  raw = list(content = list(search_results = results)))
   )
 
   # api_specific is a list-column on the metadata tibble.
   expect_identical(get_metadata(out)$api_specific[[1]]$search_results, results)
+})
+
+test_that("perplexity search results survive the streaming assembler", {
+  # Streamed chunks repeat the response-level fields, so the assembled body has
+  # to carry `search_results` through for the hook above to see anything.
+  results <- list(list(title = "A source", url = "https://example.org"))
+  events <- list(
+    list(id = "1", model = "sonar",
+         choices = list(list(delta = list(content = "an")))),
+    list(search_results = results, citations = list("https://example.org"),
+         choices = list(list(delta = list(content = "swer"),
+                             finish_reason = "stop")))
+  )
+  assembled <- assemble_stream_response(tidyllm:::api_perplexity(
+    short_name = "perplexity", long_name = "Perplexity",
+    api_key_env_var = "PERPLEXITY_API_KEY"
+  ), events)
+
+  expect_identical(assembled$search_results, results)
+  expect_identical(assembled$choices[[1]]$message$content, "answer")
 })
 
 test_that("finish_chat_response leaves metadata alone without a meta_fn", {
