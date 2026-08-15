@@ -28,6 +28,12 @@ NULL
 #'
 #' @param .meta_fn Optional; post-processes metadata, given `(meta, response)`.
 #'   Perplexity uses it to fold in search results.
+#' @param .on_chunk Where streamed text deltas go. Carried on the built request
+#'   rather than passed at perform time so that it survives into the tool loop:
+#'   a job with a sink would otherwise stream its first round to the sink and
+#'   every later round to the console.
+#' @param .quiet Suppress the streaming banners; set by `send_chat()`, whose
+#'   job runs in the background of a session doing something else.
 #' @noRd
 new_chat_request <- function(.request,
                              .api,
@@ -41,7 +47,9 @@ new_chat_request <- function(.request,
                              .max_tool_rounds = 10,
                              .verbose = FALSE,
                              .meta_fn = NULL,
-                             .perform_fn = NULL) {
+                             .perform_fn = NULL,
+                             .on_chunk = NULL,
+                             .quiet = FALSE) {
   # An unrecognised mode reads as non-streaming, which would block on a request
   # whose body asked to stream. The mode is the one place the two halves are
   # kept in sync, so a typo has to be an error rather than a silent hang.
@@ -61,7 +69,9 @@ new_chat_request <- function(.request,
       max_tool_rounds  = .max_tool_rounds,
       verbose          = .verbose,
       meta_fn          = .meta_fn,
-      perform_fn       = .perform_fn
+      perform_fn       = .perform_fn,
+      on_chunk         = .on_chunk,
+      quiet            = .quiet
     ),
     class = "tidyllm_chat_request"
   )
@@ -97,7 +107,9 @@ perform_built_request <- function(.built) {
     .api       = .built$api,
     .stream    = chat_request_streams(.built),
     .timeout   = .built$timeout,
-    .max_tries = .built$max_tries
+    .max_tries = .built$max_tries,
+    .on_chunk  = .built$on_chunk,
+    .quiet     = .built$quiet
   )
 }
 

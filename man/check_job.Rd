@@ -2,20 +2,25 @@
 % Please edit documentation in R/llm_verbs.R
 \name{check_job}
 \alias{check_job}
-\title{Check the Status of a Batch or Research Job}
+\title{Check the Status of a Job}
 \usage{
 check_job(.job, ...)
 }
 \arguments{
-\item{.job}{An object with a \code{batch_id} attribute (from \code{send_batch()}) or
-a \code{tidyllm_research_job} (from \code{deep_research(.background = TRUE)}).}
+\item{.job}{A \code{tidyllm_chat_job}, a \code{tidyllm_research_job}, or a batch object
+from \code{send_batch()}.}
 
 \item{...}{Additional arguments passed to the underlying function.}
 }
 \value{
-Status information; type depends on \code{.job} class.
+Status information; type depends on \code{.job}.
 }
 \description{
-\code{check_job()} dispatches to \code{check_batch()} for batch objects or
-\code{perplexity_check_research()} / \code{openai_check_research()} for \code{tidyllm_research_job} objects.
+\code{check_job()} reports on anything tidyllm dispatched and did not wait for: a
+batch from \code{send_batch()}, a background research job from
+\code{deep_research(.background = TRUE)}, or a chat from \code{send_chat()}.
+}
+\details{
+What it costs differs by job, and knowingly so: on a batch it is an HTTP call
+to the provider, on a chat it is a turn of this session's event loop.
 }

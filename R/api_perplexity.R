@@ -608,5 +608,6 @@ perplexity_fetch_research <- function(.job,
 perplexity <- create_provider_function(
   .name = "perplexity",
   chat = perplexity_chat,
+  build = perplexity_build_chat_request,
   deep_research = perplexity_deep_research
 )

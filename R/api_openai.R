@@ -503,7 +503,8 @@ openai_build_chat_request <- function(
     .perform_fn = if (!stateful_active) NULL else function(built) {
       tryCatch(
         perform_chat_request(built$request, built$api, isTRUE(.stream),
-                             built$timeout, built$max_tries),
+                             built$timeout, built$max_tries,
+                             built$on_chunk, built$quiet),
         error = function(e) {
           if (!identical(built$body, request_body)) stop(e)
           warning(
@@ -524,7 +525,8 @@ openai_build_chat_request <- function(
             ) |>
             httr2::req_body_json(data = full_body)
           response <- perform_chat_request(fallback_req, built$api, isTRUE(.stream),
-                                           built$timeout, built$max_tries)
+                                           built$timeout, built$max_tries,
+                                           built$on_chunk, built$quiet)
           # The tool loop appends its results to whatever was actually sent, not
           # to the stateful body that just failed.
           attr(response, "tidyllm_continue") <- list(request = fallback_req,
@@ -858,6 +860,7 @@ openai_delete_file <- function(.file_id, .called_from = NULL, ...) {
 openai <- create_provider_function(
   .name          = "openai",
   chat           = openai_chat,
+  build          = openai_build_chat_request,
   embed          = openai_embedding,
   send_batch     = send_openai_batch,
   check_batch    = check_openai_batch,

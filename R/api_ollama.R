@@ -825,6 +825,7 @@ ollama_delete_model <- function(.model, .ollama_server = "http://localhost:11434
 ollama <- create_provider_function(
   .name = "ollama",
   chat = ollama_chat,
+  build = ollama_build_chat_request,
   embed = ollama_embedding,
   send_batch = send_ollama_batch,
   list_models = ollama_list_models   

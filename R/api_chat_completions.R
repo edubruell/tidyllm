@@ -1410,9 +1410,34 @@ chat_completions_chat <- function(.llm,
   )
 }
 
+#' Build a generic ChatCompletions request without performing it
+#'
+#' `chat_completions()` is the one provider whose chat function is not a thin
+#' rename of its builder: it derives `.compatible` from whether a key variable
+#' was named. `send_chat()` has to go through the same derivation, so it gets
+#' its own wrapper rather than `cc_build_chat_request()` directly.
+#'
+#' @noRd
+chat_completions_build_chat_request <- function(.llm,
+                                                .api_url,
+                                                .api_key_env_var = NULL,
+                                                .model = "default",
+                                                ...) {
+  use_auth <- !is.null(.api_key_env_var)
+  cc_build_chat_request(
+    .llm = .llm,
+    .model = .model,
+    .api_url = .api_url,
+    .api_key_env_var = .api_key_env_var %||% "OPENAI_API_KEY",
+    .compatible = !use_auth,
+    ...
+  )
+}
+
 #' @rdname chat_completions_chat
 #' @export
 chat_completions <- create_provider_function(
   .name = "chat_completions",
-  chat = chat_completions_chat
+  chat = chat_completions_chat,
+  build = chat_completions_build_chat_request
 )

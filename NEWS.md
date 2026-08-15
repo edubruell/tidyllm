@@ -4,6 +4,48 @@ Work in progress. This section covers the internal restructuring that the
 release's async surface is built on: the shared stream pump, the chat pipeline
 split, and the maintenance backlog.
 
+## `send_chat()`: a chat that does not block the session
+
+There are now three ways to run a chat. `chat()` when you want the answer now.
+`send_batch()` when you have thousands of prompts and want them at half price
+overnight. And new in 0.6.0, `send_chat()` when you have *one* slow request and
+a session you would rather keep using. All three end in an `LLMMessage`, and the
+last two share the same `check_job()` / `fetch_job()` vocabulary.
+
+```r
+job <- llm_message("Summarise this 400-page report") |>
+  send_chat(claude(), .stream = TRUE)
+
+while (check_job(job) == "running") {
+  do_something_else()
+  cat("\r", nchar(get_partial(job)), "characters so far")
+}
+
+reply <- fetch_job(job)          # the LLMMessage chat() would have returned
+```
+
+`get_partial()` is the text so far and `cancel_job()` stops the request.
+`.on_chunk` is the push form of the same thing: a function called with each
+delta as it arrives, which is all a Shiny app needs to render a reply
+token-by-token into a `reactiveVal`, with no `promises` and no `coro` involved.
+
+Nothing runs on a thread or in a second process. The request is driven from R's
+own event loop, waiting on curl's file descriptors rather than on a timer, in
+the gaps between whatever else the session is doing. Two consequences follow
+from that and are worth knowing: several jobs run genuinely concurrently, and a
+blocking call of your own pauses them all for its duration.
+
+Requires the `later` package, and `promises` as well for `.stream = FALSE`.
+Neither is a new hard dependency; both are checked at the point of use.
+
+Known limits of the first cut: a job with `.tools` performs its tool rounds
+without yielding, so the session pauses for their duration, and a streamed job
+is not retried after a transient 429 the way `chat()` is.
+
+`check_job()` and `fetch_job()` are S3 generics now rather than a chain of
+`if`s, so batch jobs, background research jobs and chat jobs are one vocabulary
+reached by one mechanism.
+
 ## Streaming and tool calls work together
 
 `.stream = TRUE` and `.tools` used to be mutually exclusive: every provider

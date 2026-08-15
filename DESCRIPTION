@@ -14,6 +14,8 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 VignetteBuilder: knitr
 Suggests: 
+    later,
+    promises,
     knitr,
     rmarkdown,
     testthat (>= 3.0.0),
@@ -47,6 +49,7 @@ Collate:
     'APIProvider.R'
     'stream_pump.R'
     'chat_pipeline.R'
+    'async_chat.R'
     'llm_message.R'
     'llm_verbs.R'
     'media.R'

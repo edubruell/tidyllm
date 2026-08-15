@@ -905,6 +905,7 @@ list_groq_batches <- function(.api_url = "https://api.groq.com/",
 groq <- create_provider_function(
   .name = "groq",
   chat = groq_chat,
+  build = groq_build_chat_request,
   list_models = groq_list_models,
   send_batch = send_groq_batch,
   check_batch = check_groq_batch,

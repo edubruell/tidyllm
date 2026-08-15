@@ -114,65 +114,104 @@ run_stream_pump <- function(.api,
                             .on_chunk     = NULL,
                             .idle_timeout = 60,
                             .verbose      = TRUE) {
-  sink        <- .on_chunk %||% stream_sink_console
-  text_parts  <- list()
-  events      <- list()
-  finished    <- FALSE
-  last_event  <- Sys.time()
+  state <- new_stream_state(.api, .response, .on_chunk, .idle_timeout, .verbose)
+  # A blocking connection makes `read_stream_chunk()` wait for bytes, so a step
+  # that reports "wait" is only possible on the non-blocking form the event-loop
+  # driver opens. Looping on it costs nothing here and keeps one step function.
+  while (!isTRUE(state$done)) stream_pump_step(state)
+  stream_pump_result(state)
+}
 
-  finish <- function() {
-    if (isTRUE(.verbose)) message("\n---------\nStream finished\n---------\n")
+#' The pump's state, so that it can be stepped rather than run
+#'
+#' An environment rather than a list because both drivers advance the same
+#' object in place: the blocking loop below and the `later`-driven one in
+#' `R/async_chat.R`, which is handed control back between chunks and must find
+#' the accumulated text where it left it.
+#'
+#' @noRd
+new_stream_state <- function(.api,
+                             .response,
+                             .on_chunk     = NULL,
+                             .idle_timeout = 60,
+                             .verbose      = TRUE) {
+  state <- new.env(parent = emptyenv())
+  state$api          <- .api
+  state$response     <- .response
+  state$sink         <- .on_chunk %||% stream_sink_console
+  state$idle_timeout <- .idle_timeout
+  state$verbose      <- .verbose
+  state$text_parts   <- list()
+  state$events       <- list()
+  state$done         <- FALSE
+  state$last_event   <- Sys.time()
+  state
+}
+
+#' Advance the pump by one read
+#'
+#' @return `"done"` when the provider's terminal event arrived, `"wait"` when
+#'   nothing complete was available yet, `"continue"` otherwise. Raises on a
+#'   provider error, a truncated connection or an exceeded idle deadline; the
+#'   caller owns nothing that needs unwinding, because the response is closed
+#'   before the error is thrown.
+#' @noRd
+stream_pump_step <- function(.state) {
+  chunk <- read_stream_chunk(.state$api, .state$response)
+
+  if (is.null(chunk)) {
+    # Nothing parseable arrived. Either the connection is done, in which case
+    # the provider never sent its terminal event, or we are still waiting.
+    if (httr2::resp_stream_is_complete(.state$response)) {
+      close(.state$response)
+      .state$done <- TRUE
+      stop(sprintf(
+        "%s stream ended after %d events without a completion signal. The connection was closed or truncated before the response finished.",
+        .state$api@long_name, length(.state$events)
+      ), call. = FALSE)
+    }
+    if (difftime(Sys.time(), .state$last_event, units = "secs") > .state$idle_timeout) {
+      close(.state$response)
+      .state$done <- TRUE
+      stop(sprintf(
+        "%s stream produced no data for %g seconds; giving up.",
+        .state$api@long_name, .state$idle_timeout
+      ), call. = FALSE)
+    }
+    return("wait")
   }
 
-  repeat {
-    chunk <- read_stream_chunk(.api, .response)
+  .state$last_event <- Sys.time()
+  parsed <- parse_stream_event(.state$api, chunk)
 
-    if (is.null(chunk)) {
-      # Nothing parseable arrived. Either the connection is done, in which case
-      # the provider never sent its terminal event, or we are still waiting.
-      if (httr2::resp_stream_is_complete(.response)) {
-        close(.response)
-        stop(sprintf(
-          "%s stream ended after %d events without a completion signal. The connection was closed or truncated before the response finished.",
-          .api@long_name, length(events)
-        ), call. = FALSE)
-      }
-      if (difftime(Sys.time(), last_event, units = "secs") > .idle_timeout) {
-        close(.response)
-        stop(sprintf(
-          "%s stream produced no data for %g seconds; giving up.",
-          .api@long_name, .idle_timeout
-        ), call. = FALSE)
-      }
-      next
-    }
+  if (isTRUE(parsed$keep)) .state$events <- append(.state$events, list(parsed$event))
 
-    last_event <- Sys.time()
-    parsed     <- parse_stream_event(.api, chunk)
-
-    if (isTRUE(parsed$keep)) events <- append(events, list(parsed$event))
-
-    if (!is.null(parsed$error)) {
-      close(.response)
-      stop(sprintf("%s stream error: %s", .api@long_name, parsed$error), call. = FALSE)
-    }
-
-    if (parsed$kind == "text" && !is.null(parsed$text) && nzchar(parsed$text)) {
-      text_parts <- append(text_parts, list(parsed$text))
-      sink(parsed$text)
-    }
-
-    if (isTRUE(parsed$done)) {
-      finished <- TRUE
-      close(.response)
-      finish()
-      break
-    }
+  if (!is.null(parsed$error)) {
+    close(.state$response)
+    .state$done <- TRUE
+    stop(sprintf("%s stream error: %s", .state$api@long_name, parsed$error), call. = FALSE)
   }
 
+  if (parsed$kind == "text" && !is.null(parsed$text) && nzchar(parsed$text)) {
+    .state$text_parts <- append(.state$text_parts, list(parsed$text))
+    .state$sink(parsed$text)
+  }
+
+  if (isTRUE(parsed$done)) {
+    .state$done <- TRUE
+    close(.state$response)
+    if (isTRUE(.state$verbose)) message("\n---------\nStream finished\n---------\n")
+    return("done")
+  }
+
+  "continue"
+}
+
+#' @noRd
+stream_pump_result <- function(.state) {
   list(
-    reply    = paste0(unlist(text_parts), collapse = ""),
-    raw_data = events
+    reply    = paste0(unlist(.state$text_parts), collapse = ""),
+    raw_data = .state$events
   )
 }
 
@@ -183,7 +222,8 @@ run_stream_pump <- function(.api,
 #'
 #' @noRd
 method(handle_stream, list(APIProvider, new_S3_class("httr2_response"))) <-
-  function(.api, .stream_response, .on_chunk = NULL, .idle_timeout = 60) {
-    run_stream_pump(.api, .stream_response,
-                    .on_chunk = .on_chunk, .idle_timeout = .idle_timeout)
+  function(.api, .stream_response, .on_chunk = NULL, .idle_timeout = 60,
+           .verbose = TRUE) {
+    run_stream_pump(.api, .stream_response, .on_chunk = .on_chunk,
+                    .idle_timeout = .idle_timeout, .verbose = .verbose)
   }

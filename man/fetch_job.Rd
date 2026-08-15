@@ -2,22 +2,25 @@
 % Please edit documentation in R/llm_verbs.R
 \name{fetch_job}
 \alias{fetch_job}
-\title{Fetch Results from a Batch or Research Job}
+\title{Fetch the Results of a Job}
 \usage{
 fetch_job(.job, .provider = NULL, ...)
 }
 \arguments{
-\item{.job}{An object with a \code{batch_id} attribute (from \code{send_batch()}) or
-a \code{tidyllm_research_job} (from \code{deep_research(.background = TRUE)}).}
+\item{.job}{A \code{tidyllm_chat_job}, a \code{tidyllm_research_job}, or a batch object
+from \code{send_batch()}.}
 
-\item{.provider}{A provider function (required for batch jobs, ignored for research jobs).}
+\item{.provider}{A provider function; required for batch jobs and ignored by
+the others.}
 
 \item{...}{Additional arguments passed to the underlying function.}
 }
 \value{
-Fetched results; type depends on \code{.job} class.
+Fetched results; type depends on \code{.job}.
 }
 \description{
-\code{fetch_job()} dispatches to \code{fetch_batch()} for batch objects or
-\code{perplexity_fetch_research()} / \code{openai_fetch_research()} for \code{tidyllm_research_job} objects.
+\code{fetch_job()} collects what \code{\link[=check_job]{check_job()}} reports on: the messages of a
+finished batch, the report of a background research job, or the \code{LLMMessage}
+of a chat from \code{send_chat()}. On a chat it waits for the reply if it has not
+arrived yet.
 }

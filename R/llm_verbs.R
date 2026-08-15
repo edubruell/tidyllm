@@ -525,55 +525,74 @@ deep_research <- function(.llm, .provider, .background = FALSE, ...) {
 }
 
 
-#' Check the Status of a Batch or Research Job
+#' Check the Status of a Job
 #'
-#' `check_job()` dispatches to `check_batch()` for batch objects or
-#' `perplexity_check_research()` / `openai_check_research()` for `tidyllm_research_job` objects.
+#' `check_job()` reports on anything tidyllm dispatched and did not wait for: a
+#' batch from `send_batch()`, a background research job from
+#' `deep_research(.background = TRUE)`, or a chat from `send_chat()`.
 #'
-#' @param .job An object with a `batch_id` attribute (from `send_batch()`) or
-#'   a `tidyllm_research_job` (from `deep_research(.background = TRUE)`).
+#' What it costs differs by job, and knowingly so: on a batch it is an HTTP call
+#' to the provider, on a chat it is a turn of this session's event loop.
+#'
+#' @param .job A `tidyllm_chat_job`, a `tidyllm_research_job`, or a batch object
+#'   from `send_batch()`.
 #' @param ... Additional arguments passed to the underlying function.
-#' @return Status information; type depends on `.job` class.
+#' @return Status information; type depends on `.job`.
 #' @export
-check_job <- function(.job, ...) {
-  if (!is.null(attr(.job, "batch_id"))) {
-    check_batch(.job, ...)
-  } else if (inherits(.job, "tidyllm_research_job")) {
-    provider <- .job$provider %||% "perplexity"
-    if (provider == "openai") {
-      openai_check_research(.job, ...)
-    } else {
-      perplexity_check_research(.job, ...)
-    }
+check_job <- function(.job, ...) UseMethod("check_job")
+
+#' @export
+check_job.default <- function(.job, ...) {
+  # Batch objects are a list of `LLMMessage`s carrying a `batch_id` attribute
+  # rather than a class of their own, so they are recognised here rather than by
+  # dispatch. Giving them a class is worth doing, but it touches all six batch
+  # providers and both ends of the round trip, so it is not folded into this.
+  if (!is.null(attr(.job, "batch_id"))) return(check_batch(.job, ...))
+
+  stop("check_job() expects a job from send_chat(), send_batch() or deep_research(.background = TRUE).",
+       call. = FALSE)
+}
+
+#' @export
+check_job.tidyllm_research_job <- function(.job, ...) {
+  if (identical(.job$provider %||% "perplexity", "openai")) {
+    openai_check_research(.job, ...)
   } else {
-    stop("check_job() expects an object with a 'batch_id' attribute or a tidyllm_research_job.")
+    perplexity_check_research(.job, ...)
   }
 }
 
 
-#' Fetch Results from a Batch or Research Job
+#' Fetch the Results of a Job
 #'
-#' `fetch_job()` dispatches to `fetch_batch()` for batch objects or
-#' `perplexity_fetch_research()` / `openai_fetch_research()` for `tidyllm_research_job` objects.
+#' `fetch_job()` collects what [check_job()] reports on: the messages of a
+#' finished batch, the report of a background research job, or the `LLMMessage`
+#' of a chat from `send_chat()`. On a chat it waits for the reply if it has not
+#' arrived yet.
 #'
-#' @param .job An object with a `batch_id` attribute (from `send_batch()`) or
-#'   a `tidyllm_research_job` (from `deep_research(.background = TRUE)`).
-#' @param .provider A provider function (required for batch jobs, ignored for research jobs).
+#' @param .job A `tidyllm_chat_job`, a `tidyllm_research_job`, or a batch object
+#'   from `send_batch()`.
+#' @param .provider A provider function; required for batch jobs and ignored by
+#'   the others.
 #' @param ... Additional arguments passed to the underlying function.
-#' @return Fetched results; type depends on `.job` class.
+#' @return Fetched results; type depends on `.job`.
 #' @export
-fetch_job <- function(.job, .provider = NULL, ...) {
-  if (!is.null(attr(.job, "batch_id"))) {
-    fetch_batch(.job, .provider, ...)
-  } else if (inherits(.job, "tidyllm_research_job")) {
-    provider <- .job$provider %||% "perplexity"
-    if (provider == "openai") {
-      openai_fetch_research(.job, ...)
-    } else {
-      perplexity_fetch_research(.job, ...)
-    }
+fetch_job <- function(.job, .provider = NULL, ...) UseMethod("fetch_job")
+
+#' @export
+fetch_job.default <- function(.job, .provider = NULL, ...) {
+  if (!is.null(attr(.job, "batch_id"))) return(fetch_batch(.job, .provider, ...))
+
+  stop("fetch_job() expects a job from send_chat(), send_batch() or deep_research(.background = TRUE).",
+       call. = FALSE)
+}
+
+#' @export
+fetch_job.tidyllm_research_job <- function(.job, .provider = NULL, ...) {
+  if (identical(.job$provider %||% "perplexity", "openai")) {
+    openai_fetch_research(.job, ...)
   } else {
-    stop("fetch_job() expects an object with a 'batch_id' attribute or a tidyllm_research_job.")
+    perplexity_fetch_research(.job, ...)
   }
 }
 

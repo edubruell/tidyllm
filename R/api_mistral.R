@@ -954,6 +954,7 @@ mistral_list_models <- function(.api_url = "https://api.mistral.ai",
 mistral <- create_provider_function(
   .name = "mistral",
   chat  = mistral_chat,
+  build = mistral_build_chat_request,
   embed = mistral_embedding,
   send_batch = send_mistral_batch,
   check_batch = check_mistral_batch,

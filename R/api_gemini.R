@@ -1445,6 +1445,7 @@ gemini_delete_file_verb <- function(.file_id, .called_from = NULL, ...) {
 gemini <- create_provider_function(
   .name = "gemini",
   chat = gemini_chat,
+  build = gemini_build_chat_request,
   embed = gemini_embedding,
   send_batch = send_gemini_batch,
   check_batch = check_gemini_batch,

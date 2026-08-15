@@ -546,6 +546,7 @@ openrouter_embedding <- function(.input,
 openrouter <- create_provider_function(
   .name = "openrouter",
   chat = openrouter_chat,
+  build = openrouter_build_chat_request,
   embed = openrouter_embedding,
   list_models = openrouter_list_models
 )

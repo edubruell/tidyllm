@@ -644,6 +644,7 @@ llamacpp_rerank <- function(.query,
 llamacpp <- create_provider_function(
   .name       = "llamacpp",
   chat        = llamacpp_chat,
+  build       = llamacpp_build_chat_request,
   embed       = llamacpp_embedding,
   list_models = llamacpp_list_models
 )

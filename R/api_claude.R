@@ -1709,6 +1709,7 @@ claude_websearch <- function(.max_uses = NULL,
 claude <- create_provider_function(
   .name = "claude",
   chat = claude_chat,
+  build = claude_build_chat_request,
   send_batch = send_claude_batch,
   check_batch = check_claude_batch,
   list_batches = list_claude_batches,

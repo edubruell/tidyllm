@@ -849,6 +849,7 @@ fetch_azure_openai_batch <- function(.llms,
 azure_openai <- create_provider_function(
   .name = "azure_openai",
   chat = azure_openai_chat,
+  build = azure_openai_build_chat_request,
   embed = azure_openai_embedding, 
   send_batch = send_azure_openai_batch, 
   check_batch = check_azure_openai_batch,

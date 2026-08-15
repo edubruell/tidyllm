@@ -3,6 +3,11 @@
 #' @param .request The httr2 request object.
 #' @param .timeout Request timeout in seconds.
 #' @param .max_tries Maximum retry attempts for requests (default: 3).
+#' @param .on_chunk Sink for text deltas; defaults to the console. A chat job
+#'   passes its own so that every round of a tool loop reaches the same place as
+#'   the first, rather than the console the caller has moved on from.
+#' @param .quiet Suppress the streaming banners, for a request nobody is
+#'   watching.
 #'
 #' @return A list containing the assistant's reply and response headers.
 #' @noRd
@@ -35,18 +40,25 @@ perform_generic_request <- function(.request,
 #' @param .stream Stream the response if TRUE.
 #' @param .timeout Request timeout in seconds.
 #' @param .max_tries Maximum retry attempts for requests (default: 3).
+#' @param .on_chunk Sink for text deltas; defaults to the console. A chat job
+#'   passes its own so that every round of a tool loop reaches the same place as
+#'   the first, rather than the console the caller has moved on from.
+#' @param .quiet Suppress the streaming banners, for a request nobody is
+#'   watching.
 #'
 #' @return A list containing the assistant's reply and response headers.
 #' @noRd
-perform_chat_request <- function(.request, 
-                                .api, 
-                                .stream = FALSE, 
-                                .timeout = 60, 
-                                .max_tries = 3) {
+perform_chat_request <- function(.request,
+                                .api,
+                                .stream = FALSE,
+                                .timeout = 60,
+                                .max_tries = 3,
+                                .on_chunk = NULL,
+                                .quiet = FALSE) {
 
   api_name <- .api@long_name
   if (.stream == TRUE) {
-    message("\n---------\nStart ", api_name, " streaming: \n---------\n")
+    if (!isTRUE(.quiet)) message("\n---------\nStart ", api_name, " streaming: \n---------\n")
     # `blocking = TRUE` waits for bytes instead of spinning on empty reads. The
     # console path has nothing else to do while it waits, and the event-loop
     # driver (0.6.0 Phase B) is what needs the non-blocking form.
@@ -54,7 +66,9 @@ perform_chat_request <- function(.request,
     # `.timeout` now applies to streaming too, as an idle deadline between
     # events rather than a total, so a long generation is not killed for being
     # long. Before 0.6.0 the streaming path had no timeout backstop at all.
-    stream_response <- handle_stream(.api, response, .idle_timeout = .timeout)
+    stream_response <- handle_stream(.api, response, .on_chunk = .on_chunk,
+                                     .idle_timeout = .timeout,
+                                     .verbose = !isTRUE(.quiet))
 
     # `raw` carries the same shape a blocking request produces, so that
     # everything downstream of the transport reads one shape. The tool loop is
