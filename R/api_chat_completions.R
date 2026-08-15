@@ -176,27 +176,17 @@ method(parse_logprobs, list(api_chat_completions, class_list)) <- function(.api,
     )
   }
   
-  #Extract log-probs for standard responses
+  # One branch for both transports. Streams used to need their own, walking the
+  # per-chunk deltas, because `raw` held the raw event list; since 0.6.0
+  # `assemble_stream_response()` collects the streamed logprob entries into the
+  # same `choices[[1]]$logprobs$content` a blocking response carries.
   if(!is.null(.input$content$choices)){
     input <- .input$content$choices[[1]]
     if (!is.null(input$logprobs)) {
       return(purrr::map(input$logprobs$content, parse_token))
     }
   }
-  
-  #Extract log-probs for streaming responses
-  if(r_has_name(.input,"delta")){
-    logprobs <- .input |> 
-        purrr::map("choices") |>
-        purrr::map(1) |>
-        purrr::map("logprobs") |>
-        purrr::map("content") |>
-        purrr::compact() |> 
-      purrr::map(~parse_token(.x[[1]])) 
-    
-    return(logprobs)
-  }
-  
+
   NULL  # Return NULL if no logprobs are found
 }
 
@@ -293,6 +283,82 @@ method(parse_stream_event, api_chat_completions) <- function(.api, .chunk) {
   } else {
     stream_event("meta", keep = TRUE, event = parsed)
   }
+}
+
+#' Rebuild a Chat Completions body from its stream events
+#'
+#' Tool call deltas are accumulated by `index` unconditionally. Both providers
+#' recorded in `local_tests/fixtures/streams/` happened to send each call whole,
+#' but that is a property of those two models on those two days, not of the
+#' format: OpenAI's own Chat Completions endpoint routinely splits `arguments`
+#' across chunks and sends the `id` and `name` only on the first. Accumulating
+#' regardless costs nothing and is the only version that is right in both cases.
+#'
+#' @noRd
+method(assemble_stream_response, list(api_chat_completions, class_list)) <- function(.api, .events) {
+  text      <- character()
+  reasoning <- character()
+  calls     <- list()
+  indices   <- character()
+  logprobs  <- list()
+  finish    <- NULL
+  envelope  <- list()
+
+  for (event in .events) {
+    envelope <- utils::modifyList(
+      envelope,
+      event[intersect(names(event), c("id", "model", "created", "object",
+                                      "system_fingerprint", "usage"))]
+    )
+
+    # The final usage-only chunk carries no choices at all.
+    if (length(event$choices) == 0) next
+    choice <- event$choices[[1]]
+    finish <- choice$finish_reason %||% finish
+
+    delta <- choice$delta %||% list()
+    if (!is.null(delta$content))   text      <- c(text, delta$content)
+    # Reasoning models on this dialect (Groq's gpt-oss, DeepSeek) stream their
+    # chain of thought in a sibling field that the blocking body also carries.
+    if (!is.null(delta$reasoning)) reasoning <- c(reasoning, delta$reasoning)
+
+    # Streamed logprobs arrive one token per chunk under the same key a blocking
+    # response uses for the whole array.
+    logprobs <- c(logprobs, choice$logprobs$content %||% list())
+
+    for (call in delta$tool_calls %||% list()) {
+      # A delta without an index cannot be attributed to a call; treating it as
+      # index 0 would silently merge two tool calls into one.
+      if (is.null(call$index)) next
+      key <- as.character(call$index)
+
+      if (is.null(calls[[key]])) {
+        calls[[key]] <- list(id = NULL, type = "function",
+                             `function` = list(name = NULL, arguments = character()))
+        indices <- c(indices, key)
+      }
+      calls[[key]]$id   <- call$id   %||% calls[[key]]$id
+      calls[[key]]$type <- call$type %||% calls[[key]]$type
+      calls[[key]]$`function`$name <- call$`function`$name %||% calls[[key]]$`function`$name
+      calls[[key]]$`function`$arguments <-
+        c(calls[[key]]$`function`$arguments, call$`function`$arguments %||% character())
+    }
+  }
+
+  assembled <- lapply(indices, function(key) {
+    call <- calls[[key]]
+    call$`function`$arguments <- paste0(call$`function`$arguments, collapse = "")
+    call
+  })
+
+  message <- list(role = "assistant", content = paste0(text, collapse = ""))
+  if (length(reasoning) > 0) message$reasoning <- paste0(reasoning, collapse = "")
+  if (length(assembled) > 0) message$tool_calls <- assembled
+
+  choice <- list(index = 0L, message = message, finish_reason = finish)
+  if (length(logprobs) > 0) choice$logprobs <- list(content = logprobs)
+
+  utils::modifyList(envelope, list(choices = list(choice)))
 }
 
 
@@ -524,8 +590,7 @@ cc_build_chat_request <- function(
     "Input .top_logprobs must be NULL or an integer between 0 and 5" = is.null(.top_logprobs) | (is_integer_valued(.top_logprobs) && .top_logprobs >= 0 && .top_logprobs <= 5),
     "Input .tools must be NULL, a TOOL object, or a list of TOOL objects" = is.null(.tools) || S7_inherits(.tools, TOOL) || (is.list(.tools) && all(purrr::map_lgl(.tools, ~ S7_inherits(.x, TOOL)))),
     "Input .tool_choice must be NULL or a character (one of 'none', 'auto', 'required')" = is.null(.tool_choice) || (is.character(.tool_choice) && .tool_choice %in% c("none", "auto", "required")),
-    ".max_tool_rounds must be a positive integer" = is_integer_valued(.max_tool_rounds) && .max_tool_rounds >= 1,
-    "Streaming is not supported for requests with tool calls" = is.null(.tools) || !isTRUE(.stream)
+    ".max_tool_rounds must be a positive integer" = is_integer_valued(.max_tool_rounds) && .max_tool_rounds >= 1
   ) |> validate_inputs()
   
   # Create API object

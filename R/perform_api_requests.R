@@ -56,11 +56,26 @@ perform_chat_request <- function(.request,
     # long. Before 0.6.0 the streaming path had no timeout backstop at all.
     stream_response <- handle_stream(.api, response, .idle_timeout = .timeout)
     assistant_reply <- stream_response$reply
-    response_data   <- stream_response$raw_data 
     metadata <- extract_metadata_stream(.api,stream_response$raw_data)
     # Capture response headers for rate limiting information
     response_headers <- httr2::resp_headers(response)
-    
+
+    # `raw` carries the same shape a blocking request produces, so that
+    # everything downstream of the transport reads one shape. The tool loop is
+    # the reason: it looks for tool calls in `raw$content`, and before 0.6.0 a
+    # stream put its bare event list there instead, which is why streaming and
+    # tools could not be combined.
+    #
+    # The events are deliberately NOT kept alongside. `parse_logprobs()` asks
+    # `r_has_name(.input, "delta")`, which recurses, so a stashed event list
+    # would answer yes for every stream and send a body-shaped response down the
+    # per-chunk path.
+    response_data <- list(
+      content = assemble_stream_response(.api, stream_response$raw_data),
+      headers = response_headers,
+      status  = httr2::resp_status(response)
+    )
+
   } else {
     return(interpret_chat_response(
       .api,

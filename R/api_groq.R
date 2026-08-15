@@ -141,8 +141,7 @@ groq_build_chat_request <- function(.llm,
     "Input .verbose must be logical" = is.logical(.verbose),
     "Input .max_tries must be integer-valued numeric" = is_integer_valued(.max_tries),
     "Input .dry_run must be logical" = is.logical(.dry_run),
-    ".max_tool_rounds must be a positive integer" = is_integer_valued(.max_tool_rounds) && .max_tool_rounds >= 1,
-    "Streaming is not supported for requests with tool calls" = is.null(.tools) || !isTRUE(.stream)
+    ".max_tool_rounds must be a positive integer" = is_integer_valued(.max_tool_rounds) && .max_tool_rounds >= 1
   ) |>
     validate_inputs()
   

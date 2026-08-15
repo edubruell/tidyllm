@@ -108,12 +108,11 @@ finish_chat_response <- function(.built, .response) {
   api      <- .built$api
   streams  <- chat_request_streams(.built)
 
-  # Streaming skips the tool loop entirely, because the loop reads a complete
-  # non-streaming body that a stream never produces, and because every provider
-  # still rejects .stream together with .tools. Both halves of that change in
-  # Phase B2: an assembler folds stream events back into the body shape, and the
-  # guards come out.
-  if (!streams && !is.null(.built$tools_def)) {
+  # Streaming runs the same loop as everything else. `assemble_stream_response()`
+  # folds the stream's events back into the body shape the tool generics read,
+  # so `has_tool_calls()` and friends are reused unchanged, and each follow-up
+  # round streams too.
+  if (!is.null(.built$tools_def)) {
     .response <- process_tool_loop(
       .api             = api,
       .response        = .response,
@@ -122,7 +121,8 @@ finish_chat_response <- function(.built, .response) {
       .request         = .built$request,
       .timeout         = .built$timeout,
       .max_tries       = .built$max_tries,
-      .max_tool_rounds = .built$max_tool_rounds
+      .max_tool_rounds = .built$max_tool_rounds,
+      .stream          = streams
     )
   }
 

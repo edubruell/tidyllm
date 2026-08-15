@@ -371,7 +371,83 @@ method(parse_stream_event, api_claude) <- function(.api, .chunk) {
   stream_event("meta", keep = TRUE, event = parsed)
 }
 
+#' Rebuild a Claude message body from its stream events
+#'
+#' Claude is the only provider that genuinely requires accumulation: tool
+#' arguments arrive as `input_json_delta` fragments that split mid-token, and the
+#' fragments of two concurrent tool calls interleave. They are therefore
+#' accumulated per content block index, never into one buffer; welding every
+#' fragment of this package's own recorded two-call stream together produces
+#' invalid JSON, which `local_tests/features/stream_tools_replay.R` asserts.
+#'
+#' @noRd
+method(assemble_stream_response, list(api_claude, class_list)) <- function(.api, .events) {
+  blocks  <- list()
+  indices <- character()
+  message <- list(role = "assistant", type = "message", content = list())
 
+  for (event in .events) {
+    type <- event$type %||% ""
+
+    if (type == "message_start") {
+      start   <- event$message %||% list()
+      message <- utils::modifyList(message, start[setdiff(names(start), "content")])
+
+    } else if (type == "content_block_start") {
+      key <- as.character(event$index)
+      blocks[[key]] <- list(block = event$content_block %||% list(),
+                            text  = character(),
+                            json  = character())
+      indices <- c(indices, key)
+
+    } else if (type == "content_block_delta") {
+      key <- as.character(event$index)
+      if (is.null(blocks[[key]])) next
+      delta <- event$delta %||% list()
+
+      switch(
+        delta$type %||% "",
+        text_delta       = blocks[[key]]$text <- c(blocks[[key]]$text, delta$text %||% ""),
+        thinking_delta   = blocks[[key]]$text <- c(blocks[[key]]$text, delta$thinking %||% ""),
+        input_json_delta = blocks[[key]]$json <- c(blocks[[key]]$json, delta$partial_json %||% ""),
+        signature_delta  = blocks[[key]]$block$signature <- delta$signature,
+        NULL
+      )
+
+    } else if (type == "message_delta") {
+      message <- utils::modifyList(message, event$delta %||% list())
+      if (!is.null(event$usage)) {
+        message$usage <- utils::modifyList(message$usage %||% list(), event$usage)
+      }
+    }
+  }
+
+  message$content <- lapply(indices, function(key) {
+    acc   <- blocks[[key]]
+    block <- acc$block
+    joined <- paste0(acc$text, collapse = "")
+
+    switch(
+      block$type %||% "",
+      text     = block$text     <- joined,
+      thinking = block$thinking <- joined,
+      tool_use = {
+        args <- paste0(acc$json, collapse = "")
+        # An empty accumulator means a tool that takes no arguments, which is
+        # `{}` rather than a parse failure.
+        block$input <- if (nzchar(args)) {
+          jsonlite::fromJSON(args, simplifyVector = FALSE)
+        } else {
+          list()
+        }
+      },
+      NULL
+    )
+    block
+  })
+
+  message
+}
 
 
 #' Collapse Claude content blocks into a single character string
@@ -568,7 +644,6 @@ claude_build_chat_request <- function(.llm,
     ".stream must be logical" = is.logical(.stream),
     ".max_tries must be integer-valued numeric" = is_integer_valued(.max_tries),
     ".dry_run must be logical" = is.logical(.dry_run),
-    "Streaming is not supported for requests with tool calls" = is.null(.tools) || !isTRUE(.stream),
     ".json_schema must be NULL or a list or an ellmer type object" = is.null(.json_schema) | is.list(.json_schema) | is_ellmer_type(.json_schema),
     "Streaming is not supported for requests with structured outputs" = is.null(.json_schema) || !isTRUE(.stream),
     ".thinking must be logical" = is.logical(.thinking),

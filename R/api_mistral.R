@@ -274,8 +274,7 @@ mistral_build_chat_request <- function(.llm,
     "Input .tool_choice must be NULL or a character (one of 'none', 'auto', 'required')" = is.null(.tool_choice) || (is.character(.tool_choice) && .tool_choice %in% c("none", "auto", "required")),
     "Input .dry_run must be logical" = is.logical(.dry_run) && length(.dry_run) == 1,
     "Input .verbose must be logical" = is.logical(.verbose) && length(.verbose) == 1,
-    ".max_tool_rounds must be a positive integer" = is_integer_valued(.max_tool_rounds) && .max_tool_rounds >= 1,
-    "Streaming is not supported for requests with tool calls" = is.null(.tools) || !isTRUE(.stream)
+    ".max_tool_rounds must be a positive integer" = is_integer_valued(.max_tool_rounds) && .max_tool_rounds >= 1
   ) |>
     validate_inputs()
   

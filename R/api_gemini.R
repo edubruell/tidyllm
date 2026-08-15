@@ -136,7 +136,59 @@ method(parse_stream_event, api_gemini) <- function(.api, .chunk) {
   kind <- if (nzchar(text)) "text" else if (any(is_think)) "thinking" else "meta"
   stream_event(kind, text = text, done = done, keep = TRUE, event = parsed)
 }
-    
+
+#' Rebuild a Gemini candidate body from its stream events
+#'
+#' Gemini splits a response across chunks but never splits a part: each chunk
+#' carries whole parts, and `functionCall$args` arrives as a parsed object rather
+#' than a JSON string. So the parts are concatenated in arrival order and handed
+#' back untouched, which also preserves the `thoughtSignature` that
+#' `append_tool_messages()` has to send back or the continued turn is rejected.
+#'
+#' Consecutive text parts are merged, because a caller reading `parts` expects
+#' the shape of a blocking response, where the text is one part and not one per
+#' chunk.
+#'
+#' @noRd
+method(assemble_stream_response, list(api_gemini, class_list)) <- function(.api, .events) {
+  parts     <- list()
+  candidate <- list(role = "model")
+  envelope  <- list()
+
+  for (event in .events) {
+    envelope <- utils::modifyList(
+      envelope,
+      event[intersect(names(event), c("usageMetadata", "modelVersion", "responseId"))]
+    )
+
+    if (length(event$candidates) == 0) next
+    cand <- event$candidates[[1]]
+    candidate <- utils::modifyList(
+      candidate,
+      cand[intersect(names(cand), c("finishReason", "index", "safetyRatings",
+                                    "groundingMetadata", "citationMetadata"))]
+    )
+
+    for (part in cand$content$parts %||% list()) {
+      last <- if (length(parts) > 0) parts[[length(parts)]] else NULL
+      mergeable <- !is.null(part$text) && !isTRUE(part$thought) &&
+        !is.null(last) && !is.null(last$text) && !isTRUE(last$thought) &&
+        identical(names(last), names(part))
+
+      if (mergeable) {
+        parts[[length(parts)]]$text <- paste0(last$text, part$text)
+      } else {
+        parts <- append(parts, list(part))
+      }
+    }
+  }
+
+  candidate$content <- list(parts = parts, role = "model")
+  candidate$role    <- NULL
+
+  utils::modifyList(envelope, list(candidates = list(candidate)))
+}
+
 
 
 #' A function to get metadata from Openai responses
@@ -468,7 +520,6 @@ gemini_build_chat_request <- function(.llm,
     "Input .verbose must be logical" = is.logical(.verbose),
     "Input .stream must be logical" = is.logical(.verbose),
     "Input .tools must be NULL, a TOOL object, or a list of TOOL objects" = is.null(.tools) || S7_inherits(.tools, TOOL) || (is.list(.tools) && all(purrr::map_lgl(.tools, ~ S7_inherits(.x, TOOL)))),
-    "Streaming is not supported for requests with tool calls" = is.null(.tools) || !isTRUE(.stream),
     ".max_tool_rounds must be a positive integer" = is_integer_valued(.max_tool_rounds) && .max_tool_rounds >= 1,
     ".thinking_budget must be NULL or a non-negative integer" = is.null(.thinking_budget) || (is_integer_valued(.thinking_budget) && .thinking_budget >= 0)
   ) |>

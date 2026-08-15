@@ -1,18 +1,18 @@
-# Offline characterization of streamed responses that call tools.
+# Offline tests for streamed responses that call tools.
 #
-# Groundwork for Phase B2, the streaming tool loop. Nothing assembles stream
-# events back into tool calls yet, so this suite does two jobs:
+# Three jobs:
 #
-#   1. It locks in the wire facts the assembler will have to handle, per
+#   1. It locks in the wire facts `assemble_stream_response()` has to handle, per
 #      provider, as executable statements rather than prose in a design note.
-#   2. It asserts that the shared pump still RETAINS the events an assembler
+#   2. It asserts that the shared pump still RETAINS the events the assembler
 #      needs. Each provider's `parse_stream_event()` decides what to keep, and a
 #      keep flag flipped for a plausible-looking reason would silently strip the
 #      tool calls out of `raw_data` while every existing streaming test stayed
 #      green.
-#
-# When the assembler lands, extend this suite to assert its output instead of
-# re-deriving the shapes inline.
+#   3. It runs each provider's assembler over its fixture and asserts that the
+#      unchanged tool generics find the calls in the result. That is the whole
+#      claim of Phase B2: a streamed response reaches `process_tool_loop()` in
+#      the same shape a blocking one does.
 #
 #   Rscript -e 'devtools::load_all("."); source("local_tests/features/stream_tools_replay.R")'
 #
@@ -39,6 +39,17 @@ kept_events <- function(name) {
   api  <- stream_fixture_api(fx)
   resp <- replay_stream_response(server, name)
   handle_stream(api, resp)$raw_data
+}
+
+#' Replay a fixture and return what a performed response would look like.
+#'
+#' The `raw$content` nesting is not decoration: it is exactly where
+#' `perform_chat_request()` puts the assembled body, and where every
+#' `has_tool_calls()` method looks.
+replayed_response <- function(name) {
+  api <- stream_fixture_api(server$fixtures[[name]])
+  list(api = api,
+       response = list(raw = list(content = assemble_stream_response(api, kept_events(name)))))
 }
 
 llt_test("all six tool-call fixtures are present", {
@@ -258,27 +269,131 @@ llt_test("ollama streams complete tool calls and a done terminator", {
                   "no event with done = TRUE terminated the ollama stream")
 })
 
-# ── The guards that Phase B2 removes ─────────────────────────────────────────
+# ── What the assembler produces ──────────────────────────────────────────────
 #
-# Every provider currently refuses `.stream = TRUE` together with `.tools`. That
-# is why the fixtures above had to be recorded by mutating a built request body.
-# When B2 lands, this test should be inverted rather than deleted, so the day the
-# guards go is a deliberate, visible change.
+# The tests above describe the wire. These assert the point of the exercise: the
+# tool generics, which were written for blocking responses and have not been
+# touched, find the calls in an assembled stream.
 
-llt_test("streaming with tools is still rejected client-side", {
-  llm <- llm_message("hello")
-  tool <- tidyllm_tool(function(city) "x", "Get weather", city = field_chr("City"))
+#' How each provider names the tool and its city argument, once extracted.
+#'
+#' The generics deliberately return each provider's own call shape rather than a
+#' normalised one, because `run_tool_calls()` is provider-specific too. So the
+#' expectations have to un-normalise here.
+CALL_READERS <- list(
+  claude     = function(tc) list(name = tc$name, city = tc$input$city),
+  openai     = function(tc) list(name = tc$name,
+                                 city = jsonlite::fromJSON(tc$arguments)$city),
+  gemini     = function(tc) list(name = tc$name, city = tc$args$city),
+  ollama     = function(tc) list(name = tc$`function`$name,
+                                 city = tc$`function`$arguments$city),
+  chat_completions = function(tc) list(name = tc$`function`$name,
+                                       city = jsonlite::fromJSON(tc$`function`$arguments)$city)
+)
 
-  for (p in c("claude", "openai", "groq", "mistral", "ollama", "gemini")) {
-    f <- get(paste0(p, "_chat"), asNamespace("tidyllm"))
-    err <- tryCatch({
-      f(llm, .tools = tool, .stream = TRUE, .dry_run = TRUE)
-      NULL
-    }, error = function(e) conditionMessage(e))
+fixture_reader <- function(name) {
+  if (grepl("^claude", name))           CALL_READERS$claude
+  else if (grepl("^openai", name))      CALL_READERS$openai
+  else if (grepl("^gemini", name))      CALL_READERS$gemini
+  else if (grepl("^ollama", name))      CALL_READERS$ollama
+  else                                  CALL_READERS$chat_completions
+}
 
-    llt_expect_true(!is.null(err),
-                    sprintf("%s no longer rejects .stream with .tools; if Phase B2 landed, invert this test", p))
+llt_test("the tool generics find calls in every assembled stream", {
+  for (nm in TOOL_FIXTURES) {
+    rr <- replayed_response(nm)
+    llt_expect_true(has_tool_calls(rr$api, rr$response),
+                    sprintf("%s: has_tool_calls() is FALSE on the assembled body", nm))
+
+    calls <- extract_tool_calls(rr$api, rr$response)
+    llt_expect_true(length(calls) >= 1,
+                    sprintf("%s: assembled body yielded no tool calls", nm))
+
+    read <- fixture_reader(nm)
+    for (tc in calls) {
+      got <- read(tc)
+      llt_expect_true(nzchar(got$name %||% ""),
+                      sprintf("%s: an assembled call has no tool name", nm))
+      llt_expect_true(got$city %in% c("Berlin", "Reykjavik"),
+                      sprintf("%s: assembled argument is '%s', not a recorded city",
+                              nm, got$city %||% "<missing>"))
+    }
   }
 })
+
+llt_test("claude's two calls survive assembly with distinct arguments", {
+  # The provider where assembly is real work rather than a projection, so the
+  # end-to-end result gets asserted rather than only the fragments.
+  rr    <- replayed_response("claude_tools_stream")
+  calls <- extract_tool_calls(rr$api, rr$response)
+
+  llt_expect_true(length(calls) == 2,
+                  sprintf("expected two assembled tool_use blocks, got %d", length(calls)))
+  cities <- sort(vapply(calls, function(tc) tc$input$city, character(1)))
+  llt_expect_true(identical(cities, c("Berlin", "Reykjavik")),
+                  sprintf("assembled cities are %s", paste(cities, collapse = ", ")))
+  ids <- vapply(calls, function(tc) tc$id, character(1))
+  llt_expect_true(length(unique(ids)) == 2,
+                  "the two assembled calls share a tool_use id, so results would be misrouted")
+})
+
+llt_test("assembly preserves the text claude streamed alongside its calls", {
+  # Claude narrates before calling. That text is what the user already saw go
+  # past on the console, so dropping it from the assembled body would make the
+  # follow-up round contradict the transcript: `append_tool_messages()` sends
+  # these very blocks back as the assistant turn.
+  body   <- replayed_response("claude_tools_stream")$response$raw$content
+  blocks <- body$content
+  texts  <- Filter(function(b) identical(b$type, "text"), blocks)
+
+  llt_expect_true(length(texts) >= 1, "no text block survived assembly")
+  llt_expect_true(nzchar(texts[[1]]$text %||% ""),
+                  "the assembled text block is empty despite streamed text")
+  llt_expect_true(identical(body$stop_reason, "tool_use"),
+                  sprintf("assembled stop_reason is '%s'", body$stop_reason %||% "<missing>"))
+})
+
+llt_test("chat_completions assembly keeps finish_reason and streamed reasoning", {
+  # Groq's gpt-oss streams its chain of thought in a `reasoning` field beside
+  # `content`, which the blocking body also carries; dropping it silently would
+  # make the assembled body a lossy copy of the same turn.
+  body   <- replayed_response("chat_completions_groq_tools_stream")$response$raw$content
+  choice <- body$choices[[1]]
+
+  llt_expect_true(identical(choice$finish_reason, "tool_calls"),
+                  sprintf("assembled finish_reason is '%s'",
+                          choice$finish_reason %||% "<missing>"))
+  llt_expect_true(nzchar(choice$message$reasoning %||% ""),
+                  "streamed reasoning deltas did not survive assembly")
+})
+
+llt_test("assembly keeps gemini's thoughtSignature on the functionCall part", {
+  # `append_tool_messages()` sends the model's parts back verbatim; a dropped
+  # signature makes Gemini reject the continued turn outright.
+  rr    <- replayed_response("gemini_tools_stream_sse")
+  parts <- rr$response$raw$content$candidates[[1]]$content$parts
+  sigs  <- Filter(function(p) !is.null(p$thoughtSignature), parts)
+  llt_expect_true(length(sigs) >= 1,
+                  "no thoughtSignature survived assembly; the continued turn would be rejected")
+})
+
+llt_test("the base-class default is silent rather than an error", {
+  # `perform_chat_request()` assembles on every stream, including providers that
+  # will never see a tool call, so the default has to return quietly. No shipped
+  # provider still inherits it: perplexity, the one provider with no tool
+  # support, is a ChatCompletions subclass and gets that family's assembler.
+  api <- tidyllm:::APIProvider(short_name = "x", long_name = "X", api_key_env_var = "K")
+  llt_expect_true(is.null(assemble_stream_response(api, list())),
+                  "the APIProvider default no longer returns NULL")
+})
+
+# -- What moved to the CRAN suite --------------------------------------------
+#
+# The two invariants that used to close this file, that no provider still
+# rejects `.stream` with `.tools` and that every provider accepting the
+# combination has its own assembler, are pure introspection: no key, no network,
+# no fixture. They live in tests/testthat/test_chat_pipeline.R so that R CMD
+# check runs them, along with hand-built event lists covering the accumulation
+# cases the recordings happen not to contain.
 
 llt_report("stream_tools_replay")

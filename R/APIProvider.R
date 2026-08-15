@@ -22,6 +22,7 @@ prepare_llms_for_batch     <- new_generic("prepare_llms_for_batch",".api")
 extract_metadata           <- new_generic("extract_metadata",c(".api", ".response"))
 extract_metadata_stream    <- new_generic("extract_metadata_stream",c(".api", ".stream_raw_data"))
 parse_logprobs             <- new_generic("parse_logprobs", c(".api", ".input"))
+assemble_stream_response   <- new_generic("assemble_stream_response", c(".api", ".events"))
 
 #' Defaults: a provider reports no rate limits and no logprobs
 #'
@@ -40,6 +41,21 @@ method(ratelimit_from_header, list(APIProvider, class_any)) <- function(.api, .h
 
 #' @noRd
 method(parse_logprobs, list(APIProvider, class_any)) <- function(.api, .input) NULL
+
+#' Default: a provider's stream does not reassemble into a response body
+#'
+#' `assemble_stream_response()` folds the events a stream produced back into the
+#' body shape a blocking request would have returned, so that everything
+#' downstream of the transport, above all the tool loop, reads one shape and
+#' does not care how the response arrived.
+#'
+#' Providers that implement it can stream and call tools in the same request.
+#' Providers that do not keep the client-side guard against `.stream` with
+#' `.tools`, and returning NULL here leaves `has_tool_calls()` reading an absent
+#' body, which is FALSE for every provider.
+#'
+#' @noRd
+method(assemble_stream_response, list(APIProvider, class_any)) <- function(.api, .events) NULL
 
 #Default method for metadata extraction
 #'

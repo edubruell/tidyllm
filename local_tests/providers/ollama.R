@@ -101,4 +101,26 @@ llt_test("calculator tool works", {
   llt_expect_reply(result)
 })
 
+
+# -- Streaming with tools (0.6.0) ---------------------------------------------
+
+llt_test("streamed tool use assembles and completes", {
+  # The stream has to be folded back into a response body before the tool loop
+  # can read it, and the follow-up round then streams too. Asserting that the
+  # tool's own answer reaches the reply separates a working loop from a model that
+  # guessed: nchar("Berlin") is 6 and nchar("Reykjavik") is 9.
+  temp_tool <- tidyllm_tool(
+    function(city) paste0(city, ": ", nchar(city), " degrees"),
+    "Get the current temperature in a city",
+    city = field_chr("City name")
+  )
+  result <- llm_message("What is the temperature in Berlin and in Reykjavik? Use the tool for both.") |>
+    chat(ollama(), .tools = temp_tool, .stream = TRUE)
+
+  llt_expect_reply(result)
+  reply <- get_reply(result)
+  llt_expect_true(grepl("6", reply) && grepl("9", reply),
+                  paste("streamed tool results did not reach the reply:", reply))
+})
+
 llt_report()

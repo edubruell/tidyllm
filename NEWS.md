@@ -4,6 +4,34 @@ Work in progress. This section covers the internal restructuring that the
 release's async surface is built on: the shared stream pump, the chat pipeline
 split, and the maintenance backlog.
 
+## Streaming and tool calls work together
+
+`.stream = TRUE` and `.tools` used to be mutually exclusive: every provider
+raised "Streaming is not supported for requests with tool calls" if both were
+given. That restriction is gone for `claude()`, `openai()`, `gemini()`,
+`ollama()`, `groq()`, `mistral()`, `deepseek()`, `openrouter()`, `llamacpp()`,
+`azure_openai()` and `chat_completions()`. The reply streams to the console, the
+tool calls run when the stream ends, and each follow-up round streams too.
+
+```r
+llm_message("What is the weather in Berlin and Reykjavik?") |>
+  chat(claude(), .tools = weather_tool, .stream = TRUE)
+```
+
+The reason it was blocked is that the tool loop reads tool calls out of a
+complete response body, which a stream never produced; it produced a list of
+events instead. A new `assemble_stream_response()` generic folds those events
+back into the body shape, so `has_tool_calls()`, `extract_tool_calls()`,
+`run_tool_calls()` and `append_tool_messages()` are reused without a single
+streaming-specific branch. Streamed and blocking responses now carry the same
+`raw$content`, which is also what the async driver needs.
+
+Only Claude requires real reassembly: it streams tool arguments as JSON
+fragments that split mid-token and interleave between two concurrent calls, so
+they are accumulated per content block rather than into one buffer. OpenAI's
+`response.completed` event already carries fully-formed calls, and Gemini and
+Ollama send their calls parsed.
+
 ## Internal: the chat pipeline
 
 Nothing user-visible changed here, but it is the largest structural change in

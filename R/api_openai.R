@@ -186,6 +186,21 @@ method(parse_stream_event, api_openai) <- function(.api, .chunk) {
   )
 }
 
+#' Rebuild a Responses API body from its stream events
+#'
+#' Nothing to accumulate: the Responses API ends a stream with a
+#' `response.completed` event whose `response` field is the same object a
+#' blocking request returns, `output` array and fully-formed `function_call`
+#' items included. `parse_stream_event()` keeps that one event and discards the
+#' deltas, so this is a projection rather than an assembly.
+#'
+#' @noRd
+method(assemble_stream_response, list(api_openai, class_list)) <- function(.api, .events) {
+  completed <- Filter(function(e) identical(e$type, "response.completed"), .events)
+  if (length(completed) == 0) return(NULL)
+  completed[[length(completed)]]$response
+}
+
 #' Convert TOOL list to OpenAI Responses API flat tool schema
 #'
 #' @noRd
@@ -415,8 +430,7 @@ openai_build_chat_request <- function(
     "Input .tools must be NULL, a TOOL object, or a list of TOOL objects"                 = is.null(.tools) || S7_inherits(.tools, TOOL) || (is.list(.tools) && all(purrr::map_lgl(.tools, ~ S7_inherits(.x, TOOL)))),
     "Input .tool_choice must be NULL or one of 'none', 'auto', 'required'"                = is.null(.tool_choice) || (.tool_choice %in% c("none", "auto", "required")),
     ".max_tool_rounds must be a positive integer"                                         = is_integer_valued(.max_tool_rounds) && .max_tool_rounds >= 1,
-    "Input .stateful must be logical"                                                     = is.logical(.stateful),
-    "Streaming is not supported for requests with tool calls"                             = is.null(.tools) || !isTRUE(.stream)
+    "Input .stateful must be logical"                                                     = is.logical(.stateful)
   ) |> validate_inputs()
 
   api_obj <- api_openai(

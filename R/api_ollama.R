@@ -126,7 +126,43 @@ method(parse_stream_event, api_ollama) <- function(.api, .chunk) {
 
 
 
-#' A chat parsing method for Ollama to extract the assitant response 
+#' Rebuild an Ollama message body from its stream events
+#'
+#' Ollama streams one JSON object per token and sends tool calls whole, with
+#' `arguments` already parsed, so only the text needs joining. Calls are
+#' collected in arrival order rather than by `function$index`: the index is
+#' present in the recorded stream but is not documented as stable, and arrival
+#' order is what the blocking response returns.
+#'
+#' @noRd
+method(assemble_stream_response, list(api_ollama, class_list)) <- function(.api, .events) {
+  text     <- character()
+  thinking <- character()
+  calls    <- list()
+  envelope <- list()
+
+  for (event in .events) {
+    envelope <- utils::modifyList(
+      envelope,
+      event[intersect(names(event), c("model", "created_at", "done", "done_reason",
+                                      "total_duration", "load_duration",
+                                      "prompt_eval_count", "prompt_eval_duration",
+                                      "eval_count", "eval_duration"))]
+    )
+    message  <- event$message %||% list()
+    text     <- c(text, message$content %||% character())
+    thinking <- c(thinking, message$thinking %||% character())
+    calls    <- append(calls, message$tool_calls %||% list())
+  }
+
+  assembled <- list(role = "assistant", content = paste0(text, collapse = ""))
+  if (length(thinking) > 0) assembled$thinking <- paste0(thinking, collapse = "")
+  if (length(calls) > 0)    assembled$tool_calls <- calls
+
+  utils::modifyList(envelope, list(message = assembled))
+}
+
+#' A chat parsing method for Ollama to extract the assitant response
 #'
 #' @noRd
 method(parse_chat_response, list(api_ollama,class_list)) <- function(.api,.content) {
@@ -344,7 +380,6 @@ ollama_build_chat_request <- function(.llm,
     "Input .tools must be NULL, a TOOL object, or a list of TOOL objects" = is.null(.tools) || S7_inherits(.tools, TOOL) || (is.list(.tools) && all(purrr::map_lgl(.tools, ~ S7_inherits(.x, TOOL)))),
     "Input .think must be logical or one of 'high', 'medium', 'low' if provided" = is.null(.think) || is.logical(.think) || (.think %in% c("high", "medium", "low")),
     "Input .dry_run must be logical" = is.logical(.dry_run),
-    "Streaming is not supported for requests with tool calls" = is.null(.tools) || !isTRUE(.stream),
     ".max_tool_rounds must be a positive integer" = is_integer_valued(.max_tool_rounds) && .max_tool_rounds >= 1
   ) |>
     validate_inputs()

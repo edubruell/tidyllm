@@ -88,21 +88,24 @@ crashed on the empty read instead.
 
 ## Tool-call streams
 
-Recorded 2026-08-15, after Phase A, as groundwork for Phase B2 (the streaming
-tool loop). Replayed by `local_tests/features/stream_tools_replay.R`, which
-characterizes the wire shapes an assembler will have to fold back into the body
-shape the existing tool generics already understand.
+Recorded 2026-08-15, after Phase A, and now the offline test bed for the
+streaming tool loop. Replayed by `local_tests/features/stream_tools_replay.R`,
+which characterizes the wire shapes and then runs each provider's
+`assemble_stream_response()` over them, asserting that the unchanged tool
+generics find the calls in the result.
 
 They have **no baseline entry** and are excluded from the parity block in
 `stream_replay.R`: they were recorded after the refactor, so there is no
 pre-refactor reply to compare against, and the text reply is not the interesting
 part of them. They are still covered by the transport and truncation blocks.
 
-Every provider currently rejects `.stream = TRUE` together with `.tools` in
-`validate_inputs()`, so these requests cannot be built through the public API.
-The recorder goes through `<provider>_build_chat_request()` and sets the stream
-flag on the returned `$body` instead. That is a bypass of a client-side guard
-Phase B2 removes, not of anything a provider enforces.
+When these were recorded, every provider still rejected `.stream = TRUE`
+together with `.tools` in `validate_inputs()`, so the requests could not be
+built through the public API. The recorder goes through
+`<provider>_build_chat_request()` and sets the stream flag on the returned
+`$body` instead. Those guards are gone now, so a re-recording could use
+`.stream = TRUE` directly; the bypass is kept because it is also how a fixture
+gets recorded for a provider whose guard is still in place.
 
 What the recordings show, per provider:
 
@@ -114,13 +117,14 @@ What the recordings show, per provider:
 | gemini | `functionCall` parts, args already parsed | part order | no |
 | ollama | complete `tool_calls` per line | `function.index` | no |
 
-Two results worth carrying into Phase B2:
+Two results that shaped the assemblers:
 
 - **Claude is the only provider that forces per-block accumulation.** Its
   fragments split mid-token (`{"city` / `": "B` / `er` / `lin"}`) and welding
   them all into one buffer yields `{"city": "Berlin"}{"city": "Reykjavik"}`,
   which does not parse. The suite asserts both halves of that: the welded string
-  fails to parse and the per-block strings succeed.
+  fails to parse and the per-block strings succeed. One recorded fragment is the
+  empty string, so the guard against reading that as a terminator is exercised.
 - **OpenAI needs no accumulation at all.** The pump keeps exactly one event for
   that stream, `response.completed`, and it carries the complete `output` array
   with fully-formed `function_call` items; the assembler is a projection.
