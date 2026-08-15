@@ -13,8 +13,14 @@ NULL
 #'
 #' `kind` exists because a text delta, a thinking delta and a provider error are
 #' three different things that used to be conflated. `keep` decides whether the
-#' event is stored for `extract_metadata_stream()`; providers differ (OpenAI's
-#' Responses API keeps only the terminal event, Claude keeps all of them).
+#' event is stored; providers differ (OpenAI's Responses API keeps only the
+#' terminal event, Claude keeps all of them).
+#'
+#' Kept events have two consumers, not one. Besides
+#' `extract_metadata_stream()`, `assemble_stream_response()` rebuilds the
+#' response body out of them, so an event dropped here is a tool call that will
+#' never be seen. Narrowing what a provider keeps is therefore not the local
+#' memory optimisation it looks like.
 #'
 #' @noRd
 stream_event <- function(kind  = "noop",

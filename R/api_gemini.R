@@ -152,7 +152,7 @@ method(parse_stream_event, api_gemini) <- function(.api, .chunk) {
 #' @noRd
 method(assemble_stream_response, list(api_gemini, class_list)) <- function(.api, .events) {
   parts     <- list()
-  candidate <- list(role = "model")
+  candidate <- list()
   envelope  <- list()
 
   for (event in .events) {
@@ -183,7 +183,6 @@ method(assemble_stream_response, list(api_gemini, class_list)) <- function(.api,
   }
 
   candidate$content <- list(parts = parts, role = "model")
-  candidate$role    <- NULL
 
   utils::modifyList(envelope, list(candidates = list(candidate)))
 }
