@@ -2,6 +2,7 @@
 "_PACKAGE"
 
 ## usethis namespace: start
+#' @importFrom coro yield
 #' @importFrom grDevices dev.copy
 #' @importFrom grDevices dev.off
 #' @importFrom grDevices png

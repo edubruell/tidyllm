@@ -50,6 +50,7 @@ Collate:
     'stream_pump.R'
     'chat_pipeline.R'
     'async_chat.R'
+    'parallel_chat.R'
     'llm_message.R'
     'llm_verbs.R'
     'media.R'

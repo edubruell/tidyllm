@@ -60,3 +60,16 @@ test_that("check_job and fetch_job dispatch on the job's class", {
   expect_error(check_job(42), "send_chat")
   expect_error(fetch_job(42), "send_chat")
 })
+
+test_that("parallel_chat validates its inputs and refuses what it cannot do", {
+  msgs <- list(llm_message("a"), llm_message("b"))
+
+  expect_error(parallel_chat(list(), claude()), "non-empty list")
+  expect_error(parallel_chat(list("a"), claude()), "LLMMessage")
+  expect_error(parallel_chat(msgs, NULL), "provider")
+
+  # Refused by name rather than left out of the signature, so the message says
+  # why and points at the function that does support them.
+  expect_error(parallel_chat(msgs, claude(), .stream = TRUE), "send_chat")
+  expect_error(parallel_chat(msgs, claude(), .tools = list()), "send_chat")
+})
