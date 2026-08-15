@@ -19,11 +19,10 @@
 #   source("local_tests/batch_fetch.R")             # fetch and assert
 
 run_all_local_tests <- function(providers = NULL) {
-  all_providers <- c(
-    "claude", "openai", "gemini", "ollama",
-    "mistral", "groq", "perplexity", "deepseek",
-    "voyage", "azure_openai"
-  )
+  # Discovered, not listed. The hardcoded list had drifted: it named
+  # azure_openai, which has no suite, while chat_completions, openrouter,
+  # llamacpp and ellmer had suites that nothing ever ran.
+  all_providers <- sub("\\.R$", "", list.files("local_tests/providers", pattern = "\\.R$"))
   targets <- providers %||% all_providers
 
   for (p in targets) {
@@ -37,12 +36,15 @@ run_all_local_tests <- function(providers = NULL) {
 }
 
 run_feature_tests <- function(features = NULL) {
-  all_features <- c(
-    "gemini_grounding",
-    "gemini_file_api",
-    "claude_file_api"
-  )
-  targets <- features %||% all_features
+  # Discovered for the same reason: chat_pipeline, stream_replay and
+  # stream_tools_replay were unreachable from any runner.
+  #
+  # Deep research runs take 5-30 minutes and cost real money, so they stay
+  # opt-in: name them explicitly to run them.
+  OPT_IN <- c("openai_deep_research", "perplexity_deep_research")
+
+  discovered <- sub("\\.R$", "", list.files("local_tests/features", pattern = "\\.R$"))
+  targets <- features %||% setdiff(discovered, OPT_IN)
 
   for (f in targets) {
     path <- file.path("local_tests/features", paste0(f, ".R"))

@@ -7,15 +7,14 @@
 #' `httr2` request with no api object, no tool definitions and no `json` flag, so
 #' a caller could send it but could never interpret what came back.
 #'
-#' The seam is the same one ellmer draws, and it is what the async and parallel
-#' entry points consume:
+#' The three steps, and what the async and parallel entry points consume:
 #'
 #'   build   ->  a `tidyllm_chat_request`: request plus everything finish needs
 #'   perform ->  a response (blocking value or stream today)
 #'   finish  ->  tool loop, reply extraction, rate limit, `add_message()`
 #'
-#' `.dry_run = TRUE` is now `build_chat_request(...)$request`, so the user-facing
-#' contract is unchanged.
+#' `.dry_run = TRUE` is now `<provider>_build_chat_request(...)$request`, so the
+#' user-facing contract is unchanged.
 #'
 #' @noRd
 NULL
@@ -25,14 +24,10 @@ NULL
 #' The `mode` is baked in at build time on purpose. Every provider commits to
 #' streaming in the request itself; Gemini in the URL path, Claude, OpenAI and
 #' the ChatCompletions family in the body. A request built for `"value"` will
-#' not stream, so `perform_chat()` cannot be handed the choice.
+#' not stream, so the perform step cannot be handed the choice.
 #'
-#' @param .reply_fn Optional; extracts the reply from the response. Defaults to
-#'   `response$assistant_reply`. Claude re-derives it from the raw body instead.
 #' @param .meta_fn Optional; post-processes metadata, given `(meta, response)`.
 #'   Perplexity uses it to fold in search results.
-#' @param .track_rate_limit Only 6 of the 13 chat functions track rate limits,
-#'   because only those providers return the headers to track.
 #' @noRd
 new_chat_request <- function(.request,
                              .api,
@@ -45,9 +40,6 @@ new_chat_request <- function(.request,
                              .max_tries = 3,
                              .max_tool_rounds = 10,
                              .verbose = FALSE,
-                             .track_rate_limit = FALSE,
-                             .parse_logprobs = FALSE,
-                             .reply_fn = NULL,
                              .meta_fn = NULL,
                              .perform_fn = NULL) {
   structure(
@@ -63,9 +55,6 @@ new_chat_request <- function(.request,
       max_tries        = .max_tries,
       max_tool_rounds  = .max_tool_rounds,
       verbose          = .verbose,
-      track_rate_limit = .track_rate_limit,
-      parse_logprobs   = .parse_logprobs,
-      reply_fn         = .reply_fn,
       meta_fn          = .meta_fn,
       perform_fn       = .perform_fn
     ),
@@ -73,7 +62,13 @@ new_chat_request <- function(.request,
   )
 }
 
-#' Is this built request a streaming one?
+#' Does this built request stream?
+#'
+#' `"async-stream"` is not produced anywhere yet. It is listed because the
+#' streaming tool loop and the event-loop driver both need a mode that streams
+#' without blocking, and a driver that emits it should not have to remember to
+#' edit this predicate too.
+#'
 #' @noRd
 chat_request_streams <- function(.built) {
   .built$mode %in% c("stream", "async-stream")
@@ -81,13 +76,13 @@ chat_request_streams <- function(.built) {
 
 #' Perform a built chat request
 #'
-#' Deliberately *not* named `perform_chat_request()`. That function keeps its
-#' name and its exact signature because `process_tool_loop()` calls it on every
-#' follow-up round; rebinding the name to new semantics would make any future
-#' bisect through the tool loop miserable.
+#' Named for the built object it takes, so that call sites cannot be confused
+#' with `perform_chat_request()`, which takes an httr2 request and keeps both its
+#' name and its signature because `process_tool_loop()` calls it every follow-up
+#' round.
 #'
 #' @noRd
-perform_chat <- function(.built) {
+perform_built_request <- function(.built) {
   # `openai_chat(.stateful = TRUE)` supplies its own, because a stale
   # server-side context has to be retried against a rebuilt body.
   if (!is.null(.built$perform_fn)) return(.built$perform_fn(.built))
@@ -113,6 +108,11 @@ finish_chat_response <- function(.built, .response) {
   api      <- .built$api
   streams  <- chat_request_streams(.built)
 
+  # Streaming skips the tool loop entirely, because the loop reads a complete
+  # non-streaming body that a stream never produces, and because every provider
+  # still rejects .stream together with .tools. Both halves of that change in
+  # Phase B2: an assembler folds stream events back into the body shape, and the
+  # guards come out.
   if (!streams && !is.null(.built$tools_def)) {
     .response <- process_tool_loop(
       .api             = api,
@@ -126,35 +126,28 @@ finish_chat_response <- function(.built, .response) {
     )
   }
 
-  assistant_reply <- if (is.null(.built$reply_fn)) {
-    .response$assistant_reply
-  } else {
-    .built$reply_fn(.response)
-  }
-
-  logprobs <- if (isTRUE(.built$parse_logprobs)) parse_logprobs(api, .response$raw) else NULL
+  # Both generics have an APIProvider default returning NULL, and every provider
+  # that inherits a method it should not use overrides it back. So these are
+  # unconditional: whether they do anything is the provider class's business.
+  logprobs <- parse_logprobs(api, .response$raw)
 
   meta <- .response$meta
   if (!is.null(.built$meta_fn)) meta <- .built$meta_fn(meta, .response)
 
-  if (isTRUE(.built$track_rate_limit)) {
-    track_rate_limit(api, .response$headers, .built$verbose)
-  }
+  track_rate_limit(api, .response$headers, .built$verbose)
 
   add_message(
     .llm      = .built$llm,
     .role     = "assistant",
-    .content  = assistant_reply,
+    .content  = .response$assistant_reply,
     .json     = .built$json,
     .meta     = meta,
     .logprobs = logprobs
   )
 }
 
-#' Run all three steps
-#'
 #' @noRd
 run_chat_pipeline <- function(.built, .dry_run = FALSE) {
   if (.dry_run) return(.built$request)
-  finish_chat_response(.built, perform_chat(.built))
+  finish_chat_response(.built, perform_built_request(.built))
 }

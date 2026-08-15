@@ -374,7 +374,7 @@ openai_chat <- function(
     .max_tool_rounds     = 10,
     .stateful            = FALSE
 ) {
-  built <- do.call(openai_build_chat_request, mget(names(formals())))
+  built <- do.call(openai_build_chat_request, mget(names(formals())), quote = TRUE)
   run_chat_pipeline(built, .dry_run)
 }
 
@@ -506,7 +506,6 @@ openai_build_chat_request <- function(
     .max_tries        = .max_tries,
     .max_tool_rounds  = .max_tool_rounds,
     .verbose          = .verbose,
-    .track_rate_limit = TRUE,
     # Stateful mode sends only the new turn and lets the server supply the
     # history. When the stored context has expired the request fails, and the
     # only recovery is to resend the full history against a rebuilt body. Note

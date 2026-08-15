@@ -4,6 +4,20 @@
 #' @noRd
 api_perplexity <- new_class("Perplexity", api_chat_completions)
 
+#' Perplexity speaks the ChatCompletions wire format but returns none of OpenAI's
+#' `x-ratelimit-*` headers, so the inherited parser would raise and
+#' `track_rate_limit()` would turn that into a warning on every call.
+#'
+#' @noRd
+method(ratelimit_from_header, list(api_perplexity, class_any)) <- function(.api, .headers) NULL
+
+#' Perplexity exposes no way to request logprobs, so the inherited ChatCompletions
+#' parser has nothing to find.
+#'
+#' @noRd
+method(parse_logprobs, list(api_perplexity, class_any)) <- function(.api, .input) NULL
+
+
 
 #' A function to get metadata from Perplexity responses
 #'
@@ -163,7 +177,7 @@ perplexity_chat <- function(
     .max_tries = 3,
     .dry_run = FALSE
 ) {
-  built <- do.call(perplexity_build_chat_request, mget(names(formals())))
+  built <- do.call(perplexity_build_chat_request, mget(names(formals())), quote = TRUE)
   run_chat_pipeline(built, .dry_run)
 }
 
@@ -328,7 +342,6 @@ perplexity_build_chat_request <- function(
     ) |>
     httr2::req_body_json(data = request_body)
   
-  # Dry run returns request object for inspection
   new_chat_request(
     .request   = request,
     .api       = api_obj,

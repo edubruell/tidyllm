@@ -62,21 +62,41 @@ perform_chat_request <- function(.request,
     response_headers <- httr2::resp_headers(response)
     
   } else {
-    # Non-streaming mode
-    response_data <- perform_generic_request(.request, .timeout, .max_tries)
-    #parse_chat_response <- parse_chat_function(.api)
-    assistant_reply <- parse_chat_response(.api,response_data$content)
-    # Capture response headers for rate limiting information
-    response_headers <- response_data$headers
-    metadata <- extract_metadata(.api,response_data$content)
-    #metadata <- extract_response_metadata(response_data$content)
+    return(interpret_chat_response(
+      .api,
+      perform_generic_request(.request, .timeout, .max_tries)
+    ))
   }
-  
 
-  list(assistant_reply  = assistant_reply, 
+  list(assistant_reply  = assistant_reply,
        headers          = response_headers,
        meta             = metadata,
        raw              = response_data)
+}
+
+
+#' Turn a completed non-streaming response into the shape `finish_chat_response()` expects
+#'
+#' Split out of `perform_chat_request()` because that function fuses transport
+#' with interpretation, and the async and parallel drivers do their own
+#' transport: `req_perform_promise()` and `req_perform_parallel()` both hand back
+#' a bare response with no api object attached. Without this seam each of them
+#' would have to re-implement the non-streaming branch, which is the duplication
+#' the 0.6.0 pipeline split exists to prevent.
+#'
+#' @param .api An api provider object.
+#' @param .response_data The list returned by `perform_generic_request()`, i.e.
+#'   `content`, `headers` and `status`.
+#'
+#' @return A list of `assistant_reply`, `headers`, `meta` and `raw`.
+#' @noRd
+interpret_chat_response <- function(.api, .response_data) {
+  list(
+    assistant_reply = parse_chat_response(.api, .response_data$content),
+    headers         = .response_data$headers,
+    meta            = extract_metadata(.api, .response_data$content),
+    raw             = .response_data
+  )
 }
 
 

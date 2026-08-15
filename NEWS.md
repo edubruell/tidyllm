@@ -19,6 +19,23 @@ meant nothing but `*_chat()` itself could reach the middle of it.
   time, because every provider commits to streaming in the request itself:
   Gemini in the URL path, the rest in the request body.
 * `.dry_run = TRUE` still returns the bare `httr2` request, unchanged.
+* `ratelimit_from_header()` and `parse_logprobs()` gained an `APIProvider`
+  default returning `NULL`, and the providers that inherit a method they should
+  not use override it back. Whether a provider reports rate limits or logprobs is
+  now a property of its class rather than a flag each call site had to set
+  correctly. A new `api_compatible` class covers `chat_completions(.compatible =
+  TRUE)`, which is a third-party endpoint speaking the OpenAI dialect and does
+  not return OpenAI's rate limit headers.
+* `interpret_chat_response()` splits response interpretation away from transport,
+  so a driver holding a response from `req_perform_promise()` or
+  `req_perform_parallel()` can reach the same handling the blocking path uses.
+
+## Bug fixes (this development cycle)
+
+* Deprecation warnings for `claude(.file_ids=)` and `gemini(.fileid=)` no longer
+  tell the user the feature "was likely used in the tidyllm package" and ask them
+  to file an issue. The pipeline split moved these calls one frame deeper, which
+  changed how `lifecycle` resolved the calling environment.
 
 ## Streaming
 

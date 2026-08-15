@@ -4,6 +4,14 @@
 #' @noRd
 api_deepseek <- new_class("Deepseek", api_chat_completions)
 
+#' DeepSeek speaks the ChatCompletions wire format but returns none of OpenAI's
+#' `x-ratelimit-*` headers, so the inherited parser would raise and
+#' `track_rate_limit()` would turn that into a warning on every call.
+#'
+#' @noRd
+method(ratelimit_from_header, list(api_deepseek, class_any)) <- function(.api, .headers) NULL
+
+
 
 #' A function to get metadata from Perplexity responses
 #'
@@ -78,7 +86,7 @@ deepseek_chat <- function(.llm,
                           .dry_run = FALSE,
                           .max_tries = 3,
                           .max_tool_rounds = 10) {
-  built <- do.call(deepseek_build_chat_request, mget(names(formals())))
+  built <- do.call(deepseek_build_chat_request, mget(names(formals())), quote = TRUE)
   run_chat_pipeline(built, .dry_run)
 }
 
@@ -185,9 +193,7 @@ deepseek_build_chat_request <- function(.llm,
     .timeout          = .timeout,
     .max_tries        = .max_tries,
     .max_tool_rounds  = .max_tool_rounds,
-    .verbose          = .verbose,
-    .track_rate_limit = FALSE,
-    .parse_logprobs   = TRUE
+    .verbose          = .verbose
   )
 }
 

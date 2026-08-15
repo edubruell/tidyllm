@@ -418,7 +418,7 @@ gemini_chat <- function(.llm,
                    .verbose = FALSE,
                    .stream = FALSE,
                    .max_tool_rounds = 10) {
-  built <- do.call(gemini_build_chat_request, mget(names(formals())))
+  built <- do.call(gemini_build_chat_request, mget(names(formals())), quote = TRUE)
   run_chat_pipeline(built, .dry_run)
 }
 
@@ -482,9 +482,12 @@ gemini_build_chat_request <- function(.llm,
   
   # Deprecated .fileid: convert to tidyllm_file objects and inject into last message
   if (!is.null(.fileid)) {
+    # See the note on the matching call in R/api_claude.R: the builder is one
+    # frame deeper than gemini_chat(), so user_env must be passed explicitly.
     lifecycle::deprecate_warn(
       "0.5.0", "gemini(.fileid=)",
-      details = "Pass tidyllm_file objects via .files on llm_message() instead."
+      details = "Pass tidyllm_file objects via .files on llm_message() instead.",
+      user_env = rlang::caller_env(2)
     )
     file_objs <- lapply(.fileid, function(id) {
       meta <- tryCatch(gemini_file_metadata(id), error = function(e) NULL)
@@ -606,9 +609,7 @@ gemini_build_chat_request <- function(.llm,
     .timeout          = .timeout,
     .max_tries        = .max_tries,
     .max_tool_rounds  = .max_tool_rounds,
-    .verbose          = .verbose,
-    .track_rate_limit = FALSE,
-    .parse_logprobs   = FALSE
+    .verbose          = .verbose
   )
 }
 

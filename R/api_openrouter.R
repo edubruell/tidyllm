@@ -4,6 +4,20 @@
 #' @noRd
 api_openrouter <- new_class("OpenRouter", api_chat_completions)
 
+#' OpenRouter speaks the ChatCompletions wire format but returns none of OpenAI's
+#' `x-ratelimit-*` headers, so the inherited parser would raise and
+#' `track_rate_limit()` would turn that into a warning on every call.
+#'
+#' @noRd
+method(ratelimit_from_header, list(api_openrouter, class_any)) <- function(.api, .headers) NULL
+
+#' OpenRouter exposes no way to request logprobs, so the inherited ChatCompletions
+#' parser has nothing to find.
+#'
+#' @noRd
+method(parse_logprobs, list(api_openrouter, class_any)) <- function(.api, .input) NULL
+
+
 
 #' Extract metadata from OpenRouter chat responses
 #'
@@ -155,7 +169,7 @@ openrouter_chat <- function(.llm,
                             .dry_run = FALSE,
                             .max_tries = 3,
                             .max_tool_rounds = 10) {
-  built <- do.call(openrouter_build_chat_request, mget(names(formals())))
+  built <- do.call(openrouter_build_chat_request, mget(names(formals())), quote = TRUE)
   run_chat_pipeline(built, .dry_run)
 }
 
@@ -279,9 +293,7 @@ openrouter_build_chat_request <- function(.llm,
     .timeout          = .timeout,
     .max_tries        = .max_tries,
     .max_tool_rounds  = .max_tool_rounds,
-    .verbose          = .verbose,
-    .track_rate_limit = FALSE,
-    .parse_logprobs   = FALSE
+    .verbose          = .verbose
   )
 }
 

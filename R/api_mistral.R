@@ -5,6 +5,13 @@
 #' @noRd
 api_mistral <- new_class("Mistral", api_chat_completions)
 
+#' Mistral exposes no way to request logprobs, so the inherited ChatCompletions
+#' parser has nothing to find.
+#'
+#' @noRd
+method(parse_logprobs, list(api_mistral, class_any)) <- function(.api, .input) NULL
+
+
 
 #' Convert LLMMessage to Mistral API format
 #'
@@ -214,7 +221,7 @@ mistral_chat <- function(.llm,
                          .tools = NULL,
                          .tool_choice = NULL,
                          .max_tool_rounds = 10) {
-  built <- do.call(mistral_build_chat_request, mget(names(formals())))
+  built <- do.call(mistral_build_chat_request, mget(names(formals())), quote = TRUE)
   run_chat_pipeline(built, .dry_run)
 }
 
@@ -348,9 +355,7 @@ mistral_build_chat_request <- function(.llm,
     .timeout          = .timeout,
     .max_tries        = .max_tries,
     .max_tool_rounds  = .max_tool_rounds,
-    .verbose          = .verbose,
-    .track_rate_limit = TRUE,
-    .parse_logprobs   = FALSE
+    .verbose          = .verbose
   )
 }
 

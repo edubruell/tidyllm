@@ -23,6 +23,24 @@ extract_metadata           <- new_generic("extract_metadata",c(".api", ".respons
 extract_metadata_stream    <- new_generic("extract_metadata_stream",c(".api", ".stream_raw_data"))
 parse_logprobs             <- new_generic("parse_logprobs", c(".api", ".input"))
 
+#' Defaults: a provider reports no rate limits and no logprobs
+#'
+#' Both generics used to be partial, defined only for the providers that had
+#' something to return, so every caller had to know in advance whether calling
+#' them was safe. That knowledge lived as two booleans on each chat request.
+#' With a default method the question is answered by the provider class, which is
+#' where the rest of this package's capability knowledge lives.
+#'
+#' Providers that inherit a method they should not use override it back to NULL
+#' next to their own class definition, the same way they override
+#' `extract_metadata()`.
+#'
+#' @noRd
+method(ratelimit_from_header, list(APIProvider, class_any)) <- function(.api, .headers) NULL
+
+#' @noRd
+method(parse_logprobs, list(APIProvider, class_any)) <- function(.api, .input) NULL
+
 #Default method for metadata extraction
 #'
 #' @noRd

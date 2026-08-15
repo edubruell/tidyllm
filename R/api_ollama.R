@@ -285,7 +285,7 @@ ollama_chat <- function(.llm,
                    .max_tries = 3,
                    .keep_alive = NULL,
                    .dry_run = FALSE) {
-  built <- do.call(ollama_build_chat_request, mget(names(formals())))
+  built <- do.call(ollama_build_chat_request, mget(names(formals())), quote = TRUE)
   run_chat_pipeline(built, .dry_run)
 }
 
@@ -420,9 +420,7 @@ ollama_build_chat_request <- function(.llm,
     .mode             = if (isTRUE(.stream)) "stream" else "value",
     .timeout          = .timeout,
     .max_tries        = .max_tries,
-    .max_tool_rounds  = .max_tool_rounds,
-    .track_rate_limit = FALSE,
-    .parse_logprobs   = FALSE
+    .max_tool_rounds  = .max_tool_rounds
   )
 }
 

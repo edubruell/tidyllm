@@ -117,7 +117,7 @@ azure_openai_chat <- function(
     .tool_choice = NULL,
     .max_tool_rounds = 10
 ) {
-  built <- do.call(azure_openai_build_chat_request, mget(names(formals())))
+  built <- do.call(azure_openai_build_chat_request, mget(names(formals())), quote = TRUE)
   run_chat_pipeline(built, .dry_run)
 }
 
@@ -245,7 +245,6 @@ azure_openai_build_chat_request <- function(
     httr2::req_headers_redacted(`api-key` = api_key) |>
     httr2::req_body_json(data = request_body)
   
-  # Return only the request object in a dry run
   new_chat_request(
     .request          = request,
     .api              = api_obj,
@@ -257,9 +256,7 @@ azure_openai_build_chat_request <- function(
     .timeout          = .timeout,
     .max_tries        = .max_tries,
     .max_tool_rounds  = .max_tool_rounds,
-    .verbose          = .verbose,
-    .track_rate_limit = TRUE,
-    .parse_logprobs   = TRUE
+    .verbose          = .verbose
   )
 }
 

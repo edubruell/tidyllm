@@ -4,6 +4,22 @@
 #' @noRd
 api_chat_completions <- new_class("ChatCompletions", APIProvider)
 
+#' A third-party endpoint speaking the OpenAI dialect
+#'
+#' `.compatible = TRUE` means some other vendor's server behind an OpenAI-shaped
+#' API. It parses and formats identically, so it inherits everything, but it does
+#' not return OpenAI's `x-ratelimit-*` headers and the inherited parser would
+#' raise on their absence.
+#'
+#' This is a class rather than a flag because it is a statement about what the
+#' endpoint is, not about what this one call should do.
+#'
+#' @noRd
+api_compatible <- new_class("OpenAI-compatible", api_chat_completions)
+
+#' @noRd
+method(ratelimit_from_header, list(api_compatible, class_any)) <- function(.api, .headers) NULL
+
 #' Convert LLMMessage to OpenAI API-Compatible Format
 #'
 #' Converts the `message_history` of an `LLMMessage` object into the
@@ -447,7 +463,7 @@ cc_chat <- function(
     .tool_choice = NULL,
     .max_tool_rounds = 10
 ) {
-  built <- do.call(cc_build_chat_request, mget(names(formals())))
+  built <- do.call(cc_build_chat_request, mget(names(formals())), quote = TRUE)
   run_chat_pipeline(built, .dry_run)
 }
 
@@ -513,7 +529,8 @@ cc_build_chat_request <- function(
   ) |> validate_inputs()
   
   # Create API object
-  api_obj <- api_chat_completions(
+  api_ctor <- if (.compatible) api_compatible else api_chat_completions
+  api_obj <- api_ctor(
     short_name = "openai",
     long_name = "OpenAI",
     api_key_env_var = .api_key_env_var
@@ -597,11 +614,7 @@ cc_build_chat_request <- function(
     .timeout          = .timeout,
     .max_tries        = .max_tries,
     .max_tool_rounds  = .max_tool_rounds,
-    .verbose          = .verbose,
-    # A compatible endpoint is some third party speaking the OpenAI dialect; its
-    # headers carry no OpenAI rate limits to track.
-    .track_rate_limit = !.compatible,
-    .parse_logprobs   = TRUE
+    .verbose          = .verbose
   )
 }
 

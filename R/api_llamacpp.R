@@ -4,6 +4,14 @@
 #' @noRd
 api_llamacpp <- new_class("LlamaCpp", api_chat_completions)
 
+#' llama.cpp speaks the ChatCompletions wire format but returns none of OpenAI's
+#' `x-ratelimit-*` headers, so the inherited parser would raise and
+#' `track_rate_limit()` would turn that into a warning on every call.
+#'
+#' @noRd
+method(ratelimit_from_header, list(api_llamacpp, class_any)) <- function(.api, .headers) NULL
+
+
 
 #' Extract metadata from llama.cpp chat responses
 #'
@@ -98,7 +106,7 @@ llamacpp_chat <- function(.llm,
                           .dry_run        = FALSE,
                           .max_tries      = 3,
                           .max_tool_rounds = 10) {
-  built <- do.call(llamacpp_build_chat_request, mget(names(formals())))
+  built <- do.call(llamacpp_build_chat_request, mget(names(formals())), quote = TRUE)
   run_chat_pipeline(built, .dry_run)
 }
 
@@ -219,9 +227,7 @@ llamacpp_build_chat_request <- function(.llm,
     .timeout          = .timeout,
     .max_tries        = .max_tries,
     .max_tool_rounds  = .max_tool_rounds,
-    .verbose          = .verbose,
-    .track_rate_limit = FALSE,
-    .parse_logprobs   = TRUE
+    .verbose          = .verbose
   )
 }
 
