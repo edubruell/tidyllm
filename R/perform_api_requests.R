@@ -55,10 +55,6 @@ perform_chat_request <- function(.request,
     # events rather than a total, so a long generation is not killed for being
     # long. Before 0.6.0 the streaming path had no timeout backstop at all.
     stream_response <- handle_stream(.api, response, .idle_timeout = .timeout)
-    assistant_reply <- stream_response$reply
-    metadata <- extract_metadata_stream(.api,stream_response$raw_data)
-    # Capture response headers for rate limiting information
-    response_headers <- httr2::resp_headers(response)
 
     # `raw` carries the same shape a blocking request produces, so that
     # everything downstream of the transport reads one shape. The tool loop is
@@ -72,21 +68,27 @@ perform_chat_request <- function(.request,
     # first place.
     response_data <- list(
       content = assemble_stream_response(.api, stream_response$raw_data),
-      headers = response_headers,
+      headers = httr2::resp_headers(response),
       status  = httr2::resp_status(response)
     )
 
-  } else {
-    return(interpret_chat_response(
-      .api,
-      perform_generic_request(.request, .timeout, .max_tries)
-    ))
+    # Once the events are a response body, a stream needs no interpretation of
+    # its own: the reply and the metadata come out of the same two generics the
+    # blocking path uses. `stream_response$reply` is what the sink already
+    # printed and is deliberately *not* used here. Reading the reply back out of
+    # the assembled body is what makes a lossy assembler visible; while the two
+    # accumulators ran side by side, an assembler could drop content and every
+    # plain streaming test would still pass, because the reply came from the
+    # other one.
+    interpreted <- interpret_chat_response(.api, response_data)
+    interpreted$meta$stream <- TRUE
+    return(interpreted)
   }
 
-  list(assistant_reply  = assistant_reply,
-       headers          = response_headers,
-       meta             = metadata,
-       raw              = response_data)
+  interpret_chat_response(
+    .api,
+    perform_generic_request(.request, .timeout, .max_tries)
+  )
 }
 
 

@@ -20,7 +20,6 @@ ratelimit_from_header      <- new_generic("ratelimit_from_header",c(".api", ".he
 get_api_key                <- new_generic("get_api_key",".api")
 prepare_llms_for_batch     <- new_generic("prepare_llms_for_batch",".api")
 extract_metadata           <- new_generic("extract_metadata",c(".api", ".response"))
-extract_metadata_stream    <- new_generic("extract_metadata_stream",c(".api", ".stream_raw_data"))
 parse_logprobs             <- new_generic("parse_logprobs", c(".api", ".input"))
 assemble_stream_response   <- new_generic("assemble_stream_response", c(".api", ".events"))
 
@@ -75,24 +74,6 @@ method(extract_metadata, list(APIProvider,class_list))<- function(.api,.response
     specific_metadata = list() 
   )
 }  
-
-#Default method for metadata extraction
-#'
-#' @noRd
-method(extract_metadata_stream, list(APIProvider,class_list))<- function(.api,.stream_raw_data) {
-  list(
-    model             = NA_character_,
-    timestamp         = lubridate::as_datetime(lubridate::now()),
-    prompt_tokens     = NA_integer_,
-    completion_tokens = NA_integer_,
-    total_tokens      = NA_integer_,
-    cached_tokens         = NA_integer_,
-    cache_creation_tokens = NA_integer_,
-    stream            = TRUE,
-    specific_metadata = list() 
-  )
-}  
-
 
 #Default method for the API key checks
 #'

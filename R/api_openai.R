@@ -125,37 +125,6 @@ method(extract_metadata, list(api_openai, class_list)) <- function(.api, .respon
   )
 }
 
-#' Extract metadata from OpenAI Responses API streaming data
-#'
-#' @noRd
-method(extract_metadata_stream, list(api_openai, class_list)) <- function(.api, .stream_raw_data) {
-  # The response.completed event contains the full response object
-  completed <- purrr::keep(.stream_raw_data, ~ !is.null(.x$type) && .x$type == "response.completed")
-
-  if (length(completed) == 0) {
-    return(callNextMethod())
-  }
-
-  resp <- completed[[1]]$response
-  usage <- resp$usage %||% list()
-
-  list(
-    model             = resp$model,
-    timestamp         = lubridate::as_datetime(lubridate::now()),
-    prompt_tokens     = usage$input_tokens,
-    completion_tokens = usage$output_tokens,
-    total_tokens      = (usage$input_tokens %||% 0L) + (usage$output_tokens %||% 0L),
-    cached_tokens         = as_token_count(usage$input_tokens_details$cached_tokens),
-    cache_creation_tokens = NA_integer_,
-    stream            = TRUE,
-    specific_metadata = list(
-      response_id      = resp$id,
-      reasoning_tokens = usage$output_tokens_details$reasoning_tokens,
-      cached_tokens    = usage$input_tokens_details$cached_tokens
-    )
-  )
-}
-
 #' Parse one Responses API SSE event
 #'
 #' The Responses API embeds the event type as `type` inside the JSON data field

@@ -123,12 +123,22 @@ replay_fixture <- function(.server, .name, .chunks = NULL) {
   resp <- replay_stream_response(.server, .name, .chunks)
 
   out  <- handle_stream(api, resp)
-  meta <- tryCatch(extract_metadata_stream(api, out$raw_data),
+
+  # Mirrors `perform_chat_request()`: the events become a body, and the reply
+  # and metadata are read back out of it. `out$reply` is kept alongside because
+  # the two now have to agree, and a disagreement means the assembler lost
+  # something the sink had already shown the user.
+  body <- assemble_stream_response(api, out$raw_data)
+  meta <- tryCatch(extract_metadata(api, body),
                    error = function(e) list(error = conditionMessage(e)))
+  reply <- tryCatch(parse_chat_response(api, body),
+                    error = function(e) NULL)
+  if (is.null(meta$error)) meta$stream <- TRUE
 
   list(
-    reply    = out$reply,
-    n_events = length(out$raw_data),
-    metadata = meta
+    reply        = reply %||% "",
+    sink_reply   = out$reply,
+    n_events     = length(out$raw_data),
+    metadata     = meta
   )
 }

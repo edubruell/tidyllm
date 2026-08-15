@@ -198,63 +198,6 @@ method(extract_metadata, list(api_claude,class_list))<- function(.api,.response)
   )
 }
 
-#' A function to get metadata from claude streaming responses
-#'
-#' @noRd
-method(extract_metadata_stream, list(api_claude,class_list))<- function(.api,.stream_raw_data) {
-  start_message <- .stream_raw_data |>
-    purrr::keep(~.x$type=="message_start") |>
-    unlist(recursive = FALSE)
-
-  # select message_delta by type rather than by position: a ping event can arrive
-  # between the last delta and message_stop
-  delta_messages <- .stream_raw_data |>
-    purrr::keep(~ identical(.x$type, "message_delta"))
-
-  last_message <- if (length(delta_messages) > 0) {
-    delta_messages[[length(delta_messages)]] |> unlist(recursive = FALSE)
-  } else {
-    .stream_raw_data[[length(.stream_raw_data) - 1]] |> unlist(recursive = FALSE)
-  }
-
-  start_usage <- start_message$message$usage
-  output_tokens <- as_token_count(last_message$usage.output_tokens)
-  input_tokens  <- as_token_count(start_usage$input_tokens)
-
-  thinking_text <- .stream_raw_data |>
-    purrr::keep(~ identical(.x$type, "content_block_delta") &&
-                  identical(.x$delta$type, "thinking_delta")) |>
-    purrr::map_chr(~ .x$delta$thinking %||% "") |>
-    paste(collapse = "")
-
-  thinking_signature <- .stream_raw_data |>
-    purrr::keep(~ identical(.x$type, "content_block_delta") &&
-                  identical(.x$delta$type, "signature_delta")) |>
-    purrr::map_chr(~ .x$delta$signature %||% "") |>
-    paste(collapse = "")
-
-  list(
-    model             = start_message$message$model,
-    timestamp         = lubridate::as_datetime(lubridate::now()),
-    prompt_tokens     = input_tokens,
-    completion_tokens = output_tokens,
-    total_tokens      = sum(c(input_tokens, output_tokens), na.rm = TRUE),
-    cached_tokens         = as_token_count(start_usage$cache_read_input_tokens),
-    cache_creation_tokens = as_token_count(start_usage$cache_creation_input_tokens),
-    stream            = TRUE,
-    specific_metadata = list(
-      stop_reason        = last_message$delta.stop_reason,
-      id                 = start_message$message$id,
-      stop_sequence      = last_message$delta.stop_sequence,
-      cache_creation_input_tokens = start_usage$cache_creation_input_tokens,
-      cache_read_input_tokens     = start_usage$cache_read_input_tokens,
-      thinking           = if (nzchar(thinking_text)) thinking_text else NULL,
-      signature          = if (nzchar(thinking_signature)) thinking_signature else NULL
-    )
-  )
-}
-
-
 #Claude-specific method to format tool calls for the API
 method(tools_to_api, list(api_claude, class_list)) <- function(.api, .tools) {
   purrr::map(.tools, function(tool) {
@@ -337,7 +280,7 @@ method(run_tool_calls, list(api_claude, class_list, class_list)) <- function(.ap
 #' Parse one Anthropic SSE event
 #'
 #' Claude emits typed events; `message_stop` is the terminal one and is itself
-#' kept, because `extract_metadata_stream()` walks the whole event list. Thinking
+#' kept, because the assembler folds every event back into one body. Thinking
 #' deltas arrive as their own delta type at any content position, so they are
 #' classified rather than mistaken for output text.
 #'
@@ -419,9 +362,8 @@ method(assemble_stream_response, list(api_claude, class_list)) <- function(.api,
         text_delta       = blocks[[key]]$text <- c(blocks[[key]]$text, delta$text %||% ""),
         thinking_delta   = blocks[[key]]$text <- c(blocks[[key]]$text, delta$thinking %||% ""),
         input_json_delta = blocks[[key]]$json <- c(blocks[[key]]$json, delta$partial_json %||% ""),
-        # Concatenated rather than overwritten, matching what
-        # `extract_metadata_stream()` does with the same deltas. A signature that
-        # kept only its last fragment is rejected when the turn continues.
+        # Concatenated rather than overwritten: a signature that kept only its
+        # last fragment is rejected when the turn continues.
         signature_delta  = blocks[[key]]$sig <- c(blocks[[key]]$sig, delta$signature %||% ""),
         NULL
       )

@@ -130,31 +130,6 @@ method(extract_metadata, list(api_chat_completions, class_list)) <- function(.ap
   )
 }
 
-#' A function to get metadata from Openai streaming responses
-#'
-#' @noRd
-method(extract_metadata_stream, list(api_chat_completions,class_list))<- function(.api,.stream_raw_data) {
-  final_stream_chunk <- .stream_raw_data |> 
-    purrr::keep(~!is.null(.x$usage))|>
-    unlist(recursive = FALSE)
-  
-  list(
-    model             = final_stream_chunk$model,
-    timestamp         = lubridate::as_datetime(final_stream_chunk$created),
-    prompt_tokens     = final_stream_chunk$usage$prompt_tokens,
-    completion_tokens = final_stream_chunk$usage$completion_tokens,
-    total_tokens      = final_stream_chunk$usage$total_tokens,
-    cached_tokens         = as_token_count(final_stream_chunk$usage$prompt_tokens_details$cached_tokens),
-    cache_creation_tokens = NA_integer_,
-    stream            = TRUE,
-    specific_metadata = list(
-      system_fingerprint = final_stream_chunk$system_fingerprint,
-      completion_tokens_details = final_stream_chunk$usage$completion_tokens_details,
-      prompt_tokens_details = final_stream_chunk$usage$prompt_tokens_details
-    ) 
-  )
-}  
-
 #' A function to get loprobs from Openai responses
 #'
 #' @noRd
@@ -261,7 +236,8 @@ method(append_tool_messages, list(api_chat_completions, class_any, class_any, cl
 #'
 #' The terminal marker is the literal string `[DONE]`, which is not JSON. Every
 #' JSON event is kept, including the final usage-only chunk that carries no
-#' choices: `extract_metadata_stream()` looks for `usage` there.
+#' choices: that is where `usage` arrives, and the assembler merges it into the
+#' body the metadata is read from.
 #'
 #' @noRd
 method(parse_stream_event, api_chat_completions) <- function(.api, .chunk) {

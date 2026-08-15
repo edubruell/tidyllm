@@ -16,11 +16,11 @@ NULL
 #' event is stored; providers differ (OpenAI's Responses API keeps only the
 #' terminal event, Claude keeps all of them).
 #'
-#' Kept events have two consumers, not one. Besides
-#' `extract_metadata_stream()`, `assemble_stream_response()` rebuilds the
-#' response body out of them, so an event dropped here is a tool call that will
-#' never be seen. Narrowing what a provider keeps is therefore not the local
-#' memory optimisation it looks like.
+#' Kept events are the entire response. `assemble_stream_response()` rebuilds
+#' the body out of them, and the reply, the metadata and the tool calls are all
+#' read back from that body, so an event dropped here is content that will never
+#' be seen. Narrowing what a provider keeps is therefore not the local memory
+#' optimisation it looks like.
 #'
 #' @noRd
 stream_event <- function(kind  = "noop",
@@ -104,9 +104,10 @@ parse_stream_json <- function(.data) {
 #'   being long.
 #' @param .verbose Whether to print the "Stream finished" banner.
 #'
-#' @return `list(reply, raw_data)`, the same shape the per-provider
-#'   `handle_stream()` methods returned before, so `extract_metadata_stream()`
-#'   and `perform_chat_request()` are unaffected.
+#' @return `list(reply, raw_data)`. `raw_data` is what the response is rebuilt
+#'   from. `reply` is only what the sink was fed as it arrived: it is the live
+#'   view, not the record, and `perform_chat_request()` deliberately reads the
+#'   final reply back out of the assembled body instead.
 #' @noRd
 run_stream_pump <- function(.api,
                             .response,

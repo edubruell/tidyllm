@@ -212,43 +212,6 @@ method(extract_metadata, list(api_gemini,class_list))<- function(.api,.response)
   )
 }  
 
-#' A function to get metadata from Openai streaming responses
-#'
-#' @noRd
-method(extract_metadata_stream, list(api_gemini,class_list))<- function(.api,.stream_raw_data) {
-  # Under alt=sse the accumulator is a list of parsed events, like every other
-  # provider's, rather than the single data.frame the buffer-and-match parser
-  # produced. Gemini repeats usageMetadata on later events and only the final
-  # one is complete, so take the last event that carries it.
-  final_stream_chunk <- .stream_raw_data |>
-    purrr::keep(~ !is.null(.x$usageMetadata)) |>
-    utils::tail(1) |>
-    purrr::pluck(1)
-
-  if (is.null(final_stream_chunk)) {
-    final_stream_chunk <- .stream_raw_data[[length(.stream_raw_data)]] %||% list()
-  }
-
-  usage <- final_stream_chunk$usageMetadata
-
-  list(
-    model             = final_stream_chunk$modelVersion,
-    timestamp         = lubridate::as_datetime(lubridate::now()),
-    prompt_tokens     = usage$promptTokenCount,
-    completion_tokens = usage$candidatesTokenCount,
-    total_tokens      = usage$totalTokenCount,
-    cached_tokens         = as_token_count(usage$cachedContentTokenCount),
-    cache_creation_tokens = NA_integer_,
-    stream            = TRUE,
-    specific_metadata = list(
-      finishReason    = final_stream_chunk$candidates[[1]]$finishReason,
-      thinking_tokens = usage$thoughtsTokenCount,
-      token_details   = usage
-    )
-  )
-}
-
-
 #' Method to convert a tidyllm TOOL definition to the expected input for Gemini
 #'
 #' @noRd

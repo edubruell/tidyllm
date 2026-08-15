@@ -37,33 +37,13 @@ method(extract_metadata, list(api_perplexity,class_list))<- function(.api,.respo
   )
 }  
 
-#' A function to get metadata from Openai streaming responses
-#'
-#' @noRd
-method(extract_metadata_stream, list(api_perplexity,class_list))<- function(.api,.stream_raw_data) {
-  final_stream_chunk <- .stream_raw_data[[length(.stream_raw_data)]]
-  list(
-    model             = final_stream_chunk$model,
-    timestamp         = lubridate::as_datetime(final_stream_chunk$created),
-    prompt_tokens     = final_stream_chunk$usage$prompt_tokens,
-    completion_tokens = final_stream_chunk$usage$completion_tokens,
-    total_tokens      = final_stream_chunk$usage$total_tokens,
-    stream            = TRUE,
-    specific_metadata = list(
-      id        = final_stream_chunk$id,
-      citations = final_stream_chunk$citations
-    ) 
-  )
-}  
-
-
 #' Parse one Perplexity SSE event
 #'
 #' Perplexity speaks the Chat Completions event shape but terminates on
 #' `finish_reason` rather than on `[DONE]`, and its terminal event carries both
 #' the usage block and the citations. Events without choices are dropped, as
-#' they were before 0.6.0, because `extract_metadata_stream()` reads the last
-#' kept event.
+#' they were before 0.6.0; the assembler merges the response-level fields of
+#' every kept event, so the terminal one still supplies them.
 #'
 #' @noRd
 method(parse_stream_event, api_perplexity) <- function(.api, .chunk) {

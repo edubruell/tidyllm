@@ -76,6 +76,30 @@ for (nm in setdiff(names(server$fixtures), SKIP_PARITY)) {
   })
 }
 
+# ── The sink and the assembled body tell the same story ───────────────────────
+
+# The reply a user reads is now parsed back out of the assembled body, while the
+# text they *watched* came from the pump's sink. Nothing forces the two to agree,
+# so this asserts it fixture by fixture. It is what makes a lossy assembler
+# visible: before the two paths were joined, an assembler could silently drop
+# content and every plain streaming test still passed, because the reply came
+# from the other accumulator.
+#
+# The tool-call fixtures are excluded because their turn is a tool call with no
+# prose: the sink saw "" and the body parser returns NULL, which is what the
+# blocking path returns for the same response.
+for (nm in setdiff(names(server$fixtures), c(GEMINI_LEGACY, grep("tools_stream", names(server$fixtures), value = TRUE)))) {
+  local({
+    fixture_name <- nm
+    llt_test(sprintf("%s assembles to the text the sink printed", fixture_name), {
+      res <- replay_fixture(server, fixture_name)
+      llt_expect_true(identical(res$reply, res$sink_reply),
+                      sprintf("assembled body and sink disagree\n  sink: %s\n  body: %s",
+                              res$sink_reply, res$reply))
+    })
+  })
+}
+
 # ── Multibyte across chunk boundaries ─────────────────────────────────────────
 
 # The recorded chunks are replayed at their original boundaries, so a parser

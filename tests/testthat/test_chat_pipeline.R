@@ -593,8 +593,8 @@ test_that("claude assembly accumulates thinking text and its signature", {
   body <- assemble_stream_response(api, events)
 
   expect_identical(body$content[[1]]$thinking, "Two cities, so two calls.")
-  # Concatenated, matching what extract_metadata_stream() does with the same
-  # deltas; keeping only the last fragment would send back an invalid signature.
+  # Concatenated: keeping only the last fragment would send back an invalid
+  # signature when the turn continues.
   expect_identical(body$content[[1]]$signature, "sig-part-1sig-part-2")
 })
 

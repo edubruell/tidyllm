@@ -75,28 +75,6 @@ method(extract_metadata, list(api_ollama,class_list))<- function(.api,.response)
   )
 }  
 
-#' A function to get metadata from Openai streaming responses
-#'
-#' @noRd
-method(extract_metadata_stream, list(api_ollama,class_list))<- function(.api,.stream_raw_data) {
-  final_stream_chunk <- .stream_raw_data[[length(.stream_raw_data)]]
-  
-  list(
-    model             = final_stream_chunk$model,
-    timestamp         = lubridate::as_datetime(final_stream_chunk$created),
-    prompt_tokens     = final_stream_chunk$prompt_eval_count,
-    completion_tokens = final_stream_chunk$eval_count,
-    total_tokens      = final_stream_chunk$prompt_eval_count + final_stream_chunk$eval_count,
-    stream            = TRUE,
-    specific_metadata = list(
-      done_reason     = final_stream_chunk$done_reason,
-      total_duration_ns  = final_stream_chunk$total_duration,
-      load_duration_ns   = final_stream_chunk$load_duration,
-      eval_duration_ns   = final_stream_chunk$eval_duration
-    ) 
-  )
-}  
-
 #' Parse one Ollama stream line
 #'
 #' Ollama sends newline-delimited JSON rather than SSE; one complete object per

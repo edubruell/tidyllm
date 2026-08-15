@@ -73,6 +73,20 @@ meant nothing but `*_chat()` itself could reach the middle of it.
 * `interpret_chat_response()` splits response interpretation away from transport,
   so a driver holding a response from `req_perform_promise()` or
   `req_perform_parallel()` can reach the same handling the blocking path uses.
+* A streamed response is now interpreted by exactly the same code as a blocking
+  one. `extract_metadata_stream()`, a generic with six methods, is gone: once
+  `assemble_stream_response()` turns the events into a response body, the reply
+  comes from `parse_chat_response()` and the metadata from `extract_metadata()`,
+  and the streaming branch ends in `interpret_chat_response()` like every other
+  path. Beyond deleting the duplicate, this is what makes an incomplete
+  assembler detectable: the reply used to come from the pump's own text
+  accumulator, so an assembler could drop content and no plain streaming test
+  would notice.
+* Streamed `gemini()` metadata therefore reports the same `api_specific` fields
+  as a blocking call: `cachedContentTokenCount`, `avgLogprobs` and
+  `groundingMetadata` appear, and the streaming-only `token_details` entry (a
+  copy of the raw `usageMetadata`) is gone. Token counts, `finishReason` and
+  `thinking_tokens` are unchanged.
 
 ## Bug fixes (this development cycle)
 
