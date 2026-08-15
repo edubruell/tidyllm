@@ -21,7 +21,7 @@ get_api_key                <- new_generic("get_api_key",".api")
 prepare_llms_for_batch     <- new_generic("prepare_llms_for_batch",".api")
 extract_metadata           <- new_generic("extract_metadata",c(".api", ".response"))
 parse_logprobs             <- new_generic("parse_logprobs", c(".api", ".input"))
-assemble_stream_response   <- new_generic("assemble_stream_response", c(".api", ".events"))
+assemble_stream_body   <- new_generic("assemble_stream_body", c(".api", ".events"))
 
 #' Defaults: a provider reports no rate limits and no logprobs
 #'
@@ -43,7 +43,7 @@ method(parse_logprobs, list(APIProvider, class_any)) <- function(.api, .input) N
 
 #' Default: a provider's stream does not reassemble into a response body
 #'
-#' `assemble_stream_response()` folds the events a stream produced back into the
+#' `assemble_stream_body()` folds the events a stream produced back into the
 #' body shape a blocking request would have returned, so that everything
 #' downstream of the transport, above all the tool loop, reads one shape and
 #' does not care how the response arrived.
@@ -56,7 +56,7 @@ method(parse_logprobs, list(APIProvider, class_any)) <- function(.api, .input) N
 #' final answer.
 #'
 #' @noRd
-method(assemble_stream_response, list(APIProvider, class_any)) <- function(.api, .events) NULL
+method(assemble_stream_body, list(APIProvider, class_any)) <- function(.api, .events) NULL
 
 #Default method for metadata extraction
 #'

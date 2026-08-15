@@ -2,7 +2,7 @@
 #
 # Three jobs:
 #
-#   1. It locks in the wire facts `assemble_stream_response()` has to handle, per
+#   1. It locks in the wire facts `assemble_stream_body()` has to handle, per
 #      provider, as executable statements rather than prose in a design note.
 #   2. It asserts that the shared pump still RETAINS the events the assembler
 #      needs. Each provider's `parse_stream_event()` decides what to keep, and a
@@ -49,7 +49,7 @@ kept_events <- function(name) {
 replayed_response <- function(name) {
   api <- stream_fixture_api(server$fixtures[[name]])
   list(api = api,
-       response = list(raw = list(content = assemble_stream_response(api, kept_events(name)))))
+       response = list(raw = list(content = assemble_stream_body(api, kept_events(name)))))
 }
 
 llt_test("all six tool-call fixtures are present", {
@@ -383,7 +383,7 @@ llt_test("the base-class default is silent rather than an error", {
   # provider still inherits it: perplexity, the one provider with no tool
   # support, is a ChatCompletions subclass and gets that family's assembler.
   api <- tidyllm:::APIProvider(short_name = "x", long_name = "X", api_key_env_var = "K")
-  llt_expect_true(is.null(assemble_stream_response(api, list())),
+  llt_expect_true(is.null(assemble_stream_body(api, list())),
                   "the APIProvider default no longer returns NULL")
 })
 
@@ -409,11 +409,16 @@ loop_error <- function(name, stream, rounds = 2) {
   req  <- httr2::request(server$url(name)) |>
     httr2::req_body_json(list(model = "replay", stream = TRUE))
 
+  # The loop performs through a closure now, which is also how it learns whether
+  # a round streams: the caller decides, once, for every round.
+  perform <- function(.request, .body) {
+    perform_chat_request(.request, api, stream, 30, 1)
+  }
+
   tryCatch({
     resp <- perform_chat_request(req, api, stream, 30, 1)
     process_tool_loop(api, resp, list(tool), list(model = "replay"), req,
-                      .timeout = 30, .max_tries = 1, .max_tool_rounds = rounds,
-                      .stream = stream)
+                      .perform = perform, .max_tool_rounds = rounds)
     NA_character_
   }, error = function(e) conditionMessage(e))
 }
@@ -432,10 +437,10 @@ for (nm in TOOL_FIXTURES) {
 }
 
 llt_test("a streamed round performed as a blocking one fails loudly", {
-  # The counterpart to the test above: if `process_tool_loop()` stopped passing
-  # .stream through, the follow-up round would read a text/event-stream body as
-  # JSON. Asserting which error comes back is what distinguishes the two, since
-  # both paths error.
+  # The counterpart to the test above: if the performer the loop is given reads
+  # blocking, the follow-up round parses a text/event-stream body as JSON.
+  # Asserting which error comes back is what distinguishes the two, since both
+  # paths error.
   err <- loop_error("claude_tools_stream", stream = FALSE)
 
   llt_expect_true(grepl("content type|event-stream|parse", err %||% "", ignore.case = TRUE),

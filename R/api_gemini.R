@@ -150,7 +150,7 @@ method(parse_stream_event, api_gemini) <- function(.api, .chunk) {
 #' chunk.
 #'
 #' @noRd
-method(assemble_stream_response, list(api_gemini, class_list)) <- function(.api, .events) {
+method(assemble_stream_body, list(api_gemini, class_list)) <- function(.api, .events) {
   parts     <- list()
   candidate <- list()
   envelope  <- list()

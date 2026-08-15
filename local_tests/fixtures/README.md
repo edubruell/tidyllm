@@ -91,7 +91,7 @@ crashed on the empty read instead.
 Recorded 2026-08-15, after Phase A, and now the offline test bed for the
 streaming tool loop. Replayed by `local_tests/features/stream_tools_replay.R`,
 which characterizes the wire shapes and then runs each provider's
-`assemble_stream_response()` over them, asserting that the unchanged tool
+`assemble_stream_body()` over them, asserting that the unchanged tool
 generics find the calls in the result.
 
 They have **no baseline entry** and are excluded from the parity block in

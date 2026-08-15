@@ -67,7 +67,7 @@ perform_chat_request <- function(.request,
     # same response is what let the streaming and blocking paths diverge in the
     # first place.
     response_data <- list(
-      content = assemble_stream_response(.api, stream_response$raw_data),
+      content = assemble_stream_body(.api, stream_response$raw_data),
       headers = httr2::resp_headers(response),
       status  = httr2::resp_status(response)
     )

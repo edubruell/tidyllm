@@ -324,7 +324,7 @@ method(parse_stream_event, api_claude) <- function(.api, .chunk) {
 #' invalid JSON, which `local_tests/features/stream_tools_replay.R` asserts.
 #'
 #' @noRd
-method(assemble_stream_response, list(api_claude, class_list)) <- function(.api, .events) {
+method(assemble_stream_body, list(api_claude, class_list)) <- function(.api, .events) {
   blocks  <- list()
   indices <- character()
   message <- list(role = "assistant", type = "message", content = list())

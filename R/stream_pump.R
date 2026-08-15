@@ -16,7 +16,7 @@ NULL
 #' event is stored; providers differ (OpenAI's Responses API keeps only the
 #' terminal event, Claude keeps all of them).
 #'
-#' Kept events are the entire response. `assemble_stream_response()` rebuilds
+#' Kept events are the entire response. `assemble_stream_body()` rebuilds
 #' the body out of them, and the reply, the metadata and the tool calls are all
 #' read back from that body, so an event dropped here is content that will never
 #' be seen. Narrowing what a provider keeps is therefore not the local memory
@@ -35,7 +35,7 @@ stream_event <- function(kind  = "noop",
 
 #' Carry the response-level fields of a stream chunk into an accumulator
 #'
-#' Used by `assemble_stream_response()` methods, which rebuild a response body
+#' Used by `assemble_stream_body()` methods, which rebuild a response body
 #' out of chunks that each repeat some of its top-level fields.
 #'
 #' `purrr::compact()` is the point of the helper. `jsonlite` keeps a JSON `null`

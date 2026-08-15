@@ -128,7 +128,7 @@ replay_fixture <- function(.server, .name, .chunks = NULL) {
   # and metadata are read back out of it. `out$reply` is kept alongside because
   # the two now have to agree, and a disagreement means the assembler lost
   # something the sink had already shown the user.
-  body <- assemble_stream_response(api, out$raw_data)
+  body <- assemble_stream_body(api, out$raw_data)
   meta <- tryCatch(extract_metadata(api, body),
                    error = function(e) list(error = conditionMessage(e)))
   reply <- tryCatch(parse_chat_response(api, body),

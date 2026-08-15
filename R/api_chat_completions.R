@@ -153,7 +153,7 @@ method(parse_logprobs, list(api_chat_completions, class_list)) <- function(.api,
   
   # One branch for both transports. Streams used to need their own, walking the
   # per-chunk deltas, because `raw` held the raw event list; since 0.6.0
-  # `assemble_stream_response()` collects the streamed logprob entries into the
+  # `assemble_stream_body()` collects the streamed logprob entries into the
   # same `choices[[1]]$logprobs$content` a blocking response carries.
   if(!is.null(.input$content$choices)){
     input <- .input$content$choices[[1]]
@@ -271,7 +271,7 @@ method(parse_stream_event, api_chat_completions) <- function(.api, .chunk) {
 #' regardless costs nothing and is the only version that is right in both cases.
 #'
 #' @noRd
-method(assemble_stream_response, list(api_chat_completions, class_list)) <- function(.api, .events) {
+method(assemble_stream_body, list(api_chat_completions, class_list)) <- function(.api, .events) {
   text      <- character()
   reasoning <- character()
   calls     <- list()

@@ -329,16 +329,17 @@ method(tools_to_api, list(APIProvider, class_list)) <- function(.api, .tools) {
 
 #' Run tool calls until the model stops asking for them
 #'
-#' @param .stream Whether the follow-up rounds stream. It follows the original
-#'   request rather than being a choice: the request body already carries the
-#'   provider's stream flag, so a round performed the other way would either
-#'   block on a streaming response or hand a stream to a blocking reader. The
-#'   rounds read tool calls out of `.response$raw$content`, which
-#'   `assemble_stream_response()` fills in for streams.
+#' @param .perform How a follow-up round is performed: a function of the `httr2`
+#'   request and the body it was built from, returning the same response shape
+#'   `perform_chat_request()` returns. The loop must not decide this for itself.
+#'   Whether a round streams already follows from the request body, and *how* it
+#'   is performed is the caller's business: `openai_chat(.stateful = TRUE)`
+#'   wraps every round in a retry against a rebuilt body, and the event-loop
+#'   driver will hand in a non-blocking performer. While the loop called
+#'   `perform_chat_request()` itself, neither applied past the first round.
 #' @noRd
 process_tool_loop <- function(.api, .response, .tools_def, .request_body,
-                               .request, .timeout, .max_tries, .max_tool_rounds = 10,
-                               .stream = FALSE) {
+                               .request, .perform, .max_tool_rounds = 10) {
   round <- 0
   while (has_tool_calls(.api, .response) && round < .max_tool_rounds) {
     round <- round + 1
@@ -346,9 +347,18 @@ process_tool_loop <- function(.api, .response, .tools_def, .request_body,
     tool_results <- run_tool_calls(.api, tool_calls, .tools_def)
     .request_body <- append_tool_messages(.api, .request_body, .response, tool_results)
     .request  <- httr2::req_body_json(.request, data = .request_body)
-    .response <- perform_chat_request(.request = .request, .api = .api,
-                                      .stream = .stream, .timeout = .timeout,
-                                      .max_tries = .max_tries)
+    .response <- .perform(.request, .request_body)
+
+    # A performer that had to fall back onto a different request says so, and
+    # the loop continues from what was actually sent. Without this the next
+    # round would append its tool results to the body the fallback abandoned:
+    # for OpenAI stateful mode that is the one carrying the expired
+    # `previous_response_id`, so every later round would fail the same way.
+    continued <- attr(.response, "tidyllm_continue", exact = TRUE)
+    if (!is.null(continued)) {
+      .request      <- continued$request
+      .request_body <- continued$body
+    }
   }
   if (round >= .max_tool_rounds && has_tool_calls(.api, .response)) {
     stop(sprintf("Maximum tool rounds (%d) reached with pending tool calls", .max_tool_rounds))

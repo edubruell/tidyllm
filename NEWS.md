@@ -20,7 +20,7 @@ llm_message("What is the weather in Berlin and Reykjavik?") |>
 
 The reason it was blocked is that the tool loop reads tool calls out of a
 complete response body, which a stream never produced; it produced a list of
-events instead. A new `assemble_stream_response()` generic folds those events
+events instead. A new `assemble_stream_body()` generic folds those events
 back into the body shape, so `has_tool_calls()`, `extract_tool_calls()`,
 `run_tool_calls()` and `append_tool_messages()` are reused without a single
 streaming-specific branch. Streamed and blocking responses now carry the same
@@ -75,13 +75,19 @@ meant nothing but `*_chat()` itself could reach the middle of it.
   `req_perform_parallel()` can reach the same handling the blocking path uses.
 * A streamed response is now interpreted by exactly the same code as a blocking
   one. `extract_metadata_stream()`, a generic with six methods, is gone: once
-  `assemble_stream_response()` turns the events into a response body, the reply
+  `assemble_stream_body()` turns the events into a response body, the reply
   comes from `parse_chat_response()` and the metadata from `extract_metadata()`,
   and the streaming branch ends in `interpret_chat_response()` like every other
   path. Beyond deleting the duplicate, this is what makes an incomplete
   assembler detectable: the reply used to come from the pump's own text
   accumulator, so an assembler could drop content and no plain streaming test
   would notice.
+* `process_tool_loop()` performs its follow-up rounds through a closure the
+  caller supplies rather than by calling `perform_chat_request()` itself. It had
+  no business deciding how a round is performed, and deciding it twice is what
+  made `openai_chat(.stateful = TRUE)` apply its retry to the opening request
+  only (see the bug fixes below). It is also the seam the event-loop driver
+  needs, which will hand in a non-blocking performer.
 * Streamed `gemini()` metadata therefore reports the same `api_specific` fields
   as a blocking call: `cachedContentTokenCount`, `avgLogprobs` and
   `groundingMetadata` appear, and the streaming-only `token_details` entry (a
@@ -94,6 +100,15 @@ meant nothing but `*_chat()` itself could reach the middle of it.
   tell the user the feature "was likely used in the tidyllm package" and ask them
   to file an issue. The pipeline split moved these calls one frame deeper, which
   changed how `lifecycle` resolved the calling environment.
+
+* `openai_chat(.stateful = TRUE)` recovers from an expired server-side context
+  on any request of the turn, not just the first. Each round of the tool loop
+  used to bypass the retry entirely, so a context that expired mid-conversation
+  failed outright. The rebuild itself is still attempted only on the opening
+  request, and now says why: the body it reconstructs is the conversation as it
+  stood before the turn began, so using it later would discard the tool calls
+  and results exchanged since. A round that falls back also tells the loop which
+  request it actually sent, so the next round builds on that one.
 
 * `perplexity()` attaches its search results to the metadata again. The hook
   read them from the response object rather than from the parsed body inside it,

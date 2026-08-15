@@ -101,6 +101,23 @@ perform_built_request <- function(.built) {
   )
 }
 
+#' How this built request performs one more round trip
+#'
+#' The tool loop needs to send follow-up requests, and it must send them the way
+#' the first one was sent. Handing it a closure rather than a `.stream` flag is
+#' what makes that true of everything the build step decided, not just of
+#' streaming: a provider's own `perform_fn` now applies to every round.
+#'
+#' @noRd
+chat_performer <- function(.built) {
+  function(.request, .body = NULL) {
+    round <- .built
+    round$request <- .request
+    round$body    <- .body
+    perform_built_request(round)
+  }
+}
+
 #' Turn a performed response into the updated LLMMessage
 #'
 #' This is not a pure terminal step: `process_tool_loop()` inside it performs up
@@ -113,17 +130,17 @@ finish_chat_response <- function(.built, .response) {
   api      <- .built$api
   streams  <- chat_request_streams(.built)
 
-  # Streaming runs the same loop as everything else. `assemble_stream_response()`
+  # Streaming runs the same loop as everything else. `assemble_stream_body()`
   # folds the stream's events back into the body shape the tool generics read,
   # so `has_tool_calls()` and friends are reused unchanged, and each follow-up
   # round streams too.
   if (!is.null(.built$tools_def)) {
-    # A provider with no `assemble_stream_response()` method streams into an
+    # A provider with no `assemble_stream_body()` method streams into an
     # empty body, where `has_tool_calls()` is FALSE and the tool calls simply
     # vanish. Saying so is the only way that failure is ever visible.
     if (streams && is.null(.response$raw$content)) {
       stop(sprintf(
-        "%s cannot stream and call tools in the same request: it has no assemble_stream_response() method.",
+        "%s cannot stream and call tools in the same request: it has no assemble_stream_body() method.",
         api@long_name
       ), call. = FALSE)
     }
@@ -134,10 +151,8 @@ finish_chat_response <- function(.built, .response) {
       .tools_def       = .built$tools_def,
       .request_body    = .built$body,
       .request         = .built$request,
-      .timeout         = .built$timeout,
-      .max_tries       = .built$max_tries,
-      .max_tool_rounds = .built$max_tool_rounds,
-      .stream          = streams
+      .perform         = chat_performer(.built),
+      .max_tool_rounds = .built$max_tool_rounds
     )
   }
 

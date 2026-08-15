@@ -164,7 +164,7 @@ method(parse_stream_event, api_openai) <- function(.api, .chunk) {
 #' deltas, so this is a projection rather than an assembly.
 #'
 #' @noRd
-method(assemble_stream_response, list(api_openai, class_list)) <- function(.api, .events) {
+method(assemble_stream_body, list(api_openai, class_list)) <- function(.api, .events) {
   completed <- Filter(function(e) identical(e$type, "response.completed"), .events)
   if (length(completed) == 0) return(NULL)
   completed[[length(completed)]]$response
@@ -491,14 +491,21 @@ openai_build_chat_request <- function(
     .verbose          = .verbose,
     # Stateful mode sends only the new turn and lets the server supply the
     # history. When the stored context has expired the request fails, and the
-    # only recovery is to resend the full history against a rebuilt body. Note
-    # that a subsequent tool loop still runs against the stateful request, as it
-    # did before the split.
+    # only recovery is to resend the full history against a rebuilt body.
+    #
+    # Every round of the tool loop comes through here, since `chat_performer()`
+    # hands the loop this function rather than calling `perform_chat_request()`
+    # itself. The rebuild is still only attempted on the opening request: the
+    # full body reconstructed below is the conversation as it stood before the
+    # turn began, so using it on a later round would silently discard the tool
+    # calls and results exchanged since. `built$body` is what tells the two
+    # apart, being the loop's accumulated body from round two onwards.
     .perform_fn = if (!stateful_active) NULL else function(built) {
       tryCatch(
         perform_chat_request(built$request, built$api, isTRUE(.stream),
                              built$timeout, built$max_tries),
         error = function(e) {
+          if (!identical(built$body, request_body)) stop(e)
           warning(
             "OpenAI stateful mode failed (stored context may have expired); ",
             "retrying with full message history. Original error: ", conditionMessage(e),
@@ -516,8 +523,13 @@ openai_build_chat_request <- function(
               `Content-Type` = "application/json"
             ) |>
             httr2::req_body_json(data = full_body)
-          perform_chat_request(fallback_req, built$api, isTRUE(.stream),
-                               built$timeout, built$max_tries)
+          response <- perform_chat_request(fallback_req, built$api, isTRUE(.stream),
+                                           built$timeout, built$max_tries)
+          # The tool loop appends its results to whatever was actually sent, not
+          # to the stateful body that just failed.
+          attr(response, "tidyllm_continue") <- list(request = fallback_req,
+                                                     body    = full_body)
+          response
         }
       )
     }

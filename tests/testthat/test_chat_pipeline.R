@@ -192,7 +192,7 @@ test_that("perplexity search results survive the streaming assembler", {
          choices = list(list(delta = list(content = "swer"),
                              finish_reason = "stop")))
   )
-  assembled <- assemble_stream_response(tidyllm:::api_perplexity(
+  assembled <- assemble_stream_body(tidyllm:::api_perplexity(
     short_name = "perplexity", long_name = "Perplexity",
     api_key_env_var = "PERPLEXITY_API_KEY"
   ), events)
@@ -277,11 +277,11 @@ test_that("a stream that assembled to nothing refuses to run tools", {
 
   expect_error(
     tidyllm:::finish_chat_response(built, fake_response("preamble", raw = NULL)),
-    "assemble_stream_response"
+    "assemble_stream_body"
   )
 })
 
-# `assemble_stream_response()` is what lets a streamed response reach the tool
+# `assemble_stream_body()` is what lets a streamed response reach the tool
 # loop. The fixtures that exercise it against real recorded wire bytes live in
 # local_tests/, but the accumulation rules are worth pinning here too: they are
 # pure functions of a list, and the failure they guard against (a silently
@@ -310,7 +310,7 @@ test_that("an absent body reads as no tool calls on every provider", {
 test_that("the base-class assembler returns NULL rather than erroring", {
   # Called on every stream, including providers that never see a tool call.
   api <- tidyllm:::APIProvider(short_name = "x", long_name = "X", api_key_env_var = "K")
-  expect_null(assemble_stream_response(api, list()))
+  expect_null(assemble_stream_body(api, list()))
 })
 
 test_that("every provider accepting streamed tools has its own assembler", {
@@ -320,7 +320,7 @@ test_that("every provider accepting streamed tools has its own assembler", {
   # return the model's preamble as the final answer.
   llm  <- llm_message("hello")
   tool <- tidyllm_tool(function(city) "x", "Get weather", city = field_chr("City"))
-  default <- S7::method(assemble_stream_response,
+  default <- S7::method(assemble_stream_body,
                         list(tidyllm:::APIProvider, S7::class_list))
   extra <- list(azure_openai = list(.deployment = "x",
                                     .endpoint_url = "https://x.openai.azure.com"))
@@ -330,10 +330,10 @@ test_that("every provider accepting streamed tools has its own assembler", {
     built <- do.call(b, c(list(llm, .tools = tool, .stream = TRUE, .dry_run = TRUE),
                           extra[[p]]))
 
-    resolved <- S7::method(assemble_stream_response,
+    resolved <- S7::method(assemble_stream_body,
                            list(S7::S7_class(built$api), S7::class_list))
     expect_false(identical(resolved, default),
-                 label = paste0(p, " has its own assemble_stream_response()"))
+                 label = paste0(p, " has its own assemble_stream_body()"))
   }
 })
 
@@ -358,7 +358,7 @@ test_that("chat completions assembly accumulates split tool arguments by index",
 
   api  <- tidyllm:::api_chat_completions(short_name = "x", long_name = "X",
                                          api_key_env_var = "K")
-  body <- assemble_stream_response(api, events)
+  body <- assemble_stream_body(api, events)
   msg  <- body$choices[[1]]$message
 
   expect_identical(msg$content, "Let me check. ")
@@ -388,7 +388,7 @@ test_that("chat completions assembly rescues a lone index-less tool call", {
   api <- tidyllm:::api_chat_completions(short_name = "x", long_name = "X",
                                         api_key_env_var = "K")
 
-  lone <- assemble_stream_response(api, list(list(choices = list(list(
+  lone <- assemble_stream_body(api, list(list(choices = list(list(
     delta = list(tool_calls = list(list(id = "c1", type = "function",
                                         `function` = list(name = "get_weather",
                                                           arguments = "{\"city\": \"Bern\"}")))),
@@ -398,7 +398,7 @@ test_that("chat completions assembly rescues a lone index-less tool call", {
 
   # Two in one chunk, neither with an index: not attributable, so skipped
   # rather than merged into one call with concatenated arguments.
-  ambiguous <- assemble_stream_response(api, list(list(choices = list(list(
+  ambiguous <- assemble_stream_body(api, list(list(choices = list(list(
     delta = list(tool_calls = list(
       list(id = "c1", `function` = list(name = "f", arguments = "{\"a\": 1}")),
       list(id = "c2", `function` = list(name = "f", arguments = "{\"a\": 2}"))
@@ -412,7 +412,7 @@ test_that("chat completions assembly gives an argument-less call an empty object
   # a tool_calls entry with no matching tool message, which endpoints reject.
   api <- tidyllm:::api_chat_completions(short_name = "x", long_name = "X",
                                         api_key_env_var = "K")
-  body <- assemble_stream_response(api, list(list(choices = list(list(
+  body <- assemble_stream_body(api, list(list(choices = list(list(
     delta = list(tool_calls = list(list(index = 0L, id = "c1", type = "function",
                                         `function` = list(name = "now")))),
     finish_reason = "tool_calls")))))
@@ -432,7 +432,7 @@ test_that("stream envelope merging survives a null-valued field", {
     list(model = "m", usage = NULL,
          choices = list(list(delta = list(), finish_reason = "stop")))
   )
-  body <- assemble_stream_response(api, events)
+  body <- assemble_stream_body(api, events)
 
   expect_identical(body$usage$total_tokens, 7L)
 })
@@ -440,7 +440,7 @@ test_that("stream envelope merging survives a null-valued field", {
 test_that("ollama assembly accumulates thinking text", {
   api <- tidyllm:::api_ollama(short_name = "ollama", long_name = "Ollama",
                               api_key_env_var = "")
-  body <- assemble_stream_response(api, list(
+  body <- assemble_stream_body(api, list(
     list(model = "m", message = list(role = "assistant", thinking = "Let me ")),
     list(model = "m", message = list(role = "assistant", thinking = "think.")),
     list(model = "m", message = list(role = "assistant", content = "Done."),
@@ -467,7 +467,7 @@ test_that("chat completions assembly keeps streamed logprobs where the parser lo
 
   api  <- tidyllm:::api_chat_completions(short_name = "x", long_name = "X",
                                          api_key_env_var = "K")
-  body <- assemble_stream_response(api, events)
+  body <- assemble_stream_body(api, events)
 
   expect_length(body$choices[[1]]$logprobs$content, 2)
   parsed <- parse_logprobs(api, list(content = body))
@@ -506,7 +506,7 @@ test_that("claude assembly accumulates tool arguments per content block", {
 
   api  <- tidyllm:::api_claude(short_name = "claude", long_name = "Claude",
                               api_key_env_var = "ANTHROPIC_API_KEY")
-  body <- assemble_stream_response(api, events)
+  body <- assemble_stream_body(api, events)
 
   expect_identical(body$stop_reason, "tool_use")
   expect_identical(body$content[[1]]$text, "Checking both.")
@@ -535,7 +535,7 @@ test_that("claude assembly keeps an empty tool input serialising as an object", 
   )
   api  <- tidyllm:::api_claude(short_name = "claude", long_name = "Claude",
                               api_key_env_var = "ANTHROPIC_API_KEY")
-  body <- assemble_stream_response(api, events)
+  body <- assemble_stream_body(api, events)
 
   expect_identical(
     as.character(jsonlite::toJSON(body$content[[1]]$input, auto_unbox = TRUE)),
@@ -562,7 +562,7 @@ test_that("claude assembly survives a tool call truncated mid-arguments", {
   api <- tidyllm:::api_claude(short_name = "claude", long_name = "Claude",
                              api_key_env_var = "ANTHROPIC_API_KEY")
 
-  expect_no_error(body <- assemble_stream_response(api, events))
+  expect_no_error(body <- assemble_stream_body(api, events))
   expect_identical(body$content[[1]]$text, "Looking that up.")
   expect_identical(body$stop_reason, "max_tokens")
   # stop_reason is not "tool_use", so the loop correctly declines to call a tool
@@ -590,7 +590,7 @@ test_that("claude assembly accumulates thinking text and its signature", {
   )
   api  <- tidyllm:::api_claude(short_name = "claude", long_name = "Claude",
                               api_key_env_var = "ANTHROPIC_API_KEY")
-  body <- assemble_stream_response(api, events)
+  body <- assemble_stream_body(api, events)
 
   expect_identical(body$content[[1]]$thinking, "Two cities, so two calls.")
   # Concatenated: keeping only the last fragment would send back an invalid
@@ -616,7 +616,7 @@ test_that("claude assembly ignores events it cannot place", {
   api <- tidyllm:::api_claude(short_name = "claude", long_name = "Claude",
                              api_key_env_var = "ANTHROPIC_API_KEY")
 
-  expect_no_error(body <- assemble_stream_response(api, events))
+  expect_no_error(body <- assemble_stream_body(api, events))
   expect_length(body$content, 1)
   expect_identical(body$content[[1]]$text, "kept")
 })
@@ -638,7 +638,7 @@ test_that("claude assembly fills in built-in server tool arguments", {
   )
   api  <- tidyllm:::api_claude(short_name = "claude", long_name = "Claude",
                               api_key_env_var = "ANTHROPIC_API_KEY")
-  body <- assemble_stream_response(api, events)
+  body <- assemble_stream_body(api, events)
 
   expect_identical(body$content[[1]]$input$query, "weather")
 })
@@ -663,7 +663,7 @@ test_that("gemini assembly merges text parts but never merges function calls", {
 
   api  <- tidyllm:::api_gemini(short_name = "gemini", long_name = "Gemini",
                                api_key_env_var = "GOOGLE_API_KEY")
-  body <- assemble_stream_response(api, events)
+  body <- assemble_stream_body(api, events)
   parts <- body$candidates[[1]]$content$parts
 
   expect_length(parts, 3)
@@ -693,7 +693,7 @@ test_that("ollama assembly joins the text and collects every tool call", {
 
   api  <- tidyllm:::api_ollama(short_name = "ollama", long_name = "Ollama",
                                api_key_env_var = "")
-  body <- assemble_stream_response(api, events)
+  body <- assemble_stream_body(api, events)
 
   expect_identical(body$message$content, "Looking up.")
   expect_true(body$done)
@@ -710,13 +710,13 @@ test_that("openai assembly projects the completed event's response object", {
                               api_key_env_var = "OPENAI_API_KEY")
 
   # No terminal event means no body; the caller must not be handed a half one.
-  expect_null(assemble_stream_response(api, list(list(type = "response.created"))))
+  expect_null(assemble_stream_body(api, list(list(type = "response.created"))))
 
   response <- list(id = "resp_1", output = list(
     list(type = "function_call", name = "get_weather", call_id = "call_1",
          arguments = "{\"city\": \"Bern\"}")
   ))
-  body <- assemble_stream_response(api, list(
+  body <- assemble_stream_body(api, list(
     list(type = "response.output_item.added"),
     list(type = "response.completed", response = response)
   ))
@@ -725,4 +725,94 @@ test_that("openai assembly projects the completed event's response object", {
   resp <- list(raw = list(content = body))
   expect_true(has_tool_calls(api, resp))
   expect_identical(extract_tool_calls(api, resp)[[1]]$call_id, "call_1")
+})
+
+# `process_tool_loop()` performs follow-up rounds through a closure the caller
+# supplies rather than by calling `perform_chat_request()` itself. Everything
+# the build step decided therefore applies to every round, not just the first,
+# which is what these two cover.
+
+cc_api <- function() tidyllm:::api_chat_completions(
+  short_name = "cc", long_name = "Chat Completions", api_key_env_var = "K"
+)
+
+cc_response <- function(tool_calls = NULL) {
+  msg <- list(role = "assistant", content = "")
+  if (!is.null(tool_calls)) msg$tool_calls <- tool_calls
+  list(raw = list(content = list(choices = list(list(message = msg)))))
+}
+
+# Named explicitly: `tidyllm_tool()` derives a name by deparsing its argument,
+# and the tool call below has to carry the same one for the loop to resolve it.
+cc_tool <- function() tidyllm:::TOOL(
+  name = "get_temp", description = "Get the temperature",
+  input_schema = list(city = field_chr("City")),
+  func = function(city) paste0(city, ": 6")
+)
+
+cc_call <- function(city) list(
+  id = "call_1", type = "function",
+  `function` = list(name = "get_temp", arguments = sprintf('{"city":"%s"}', city))
+)
+
+test_that("a provider's own performer runs on every tool round", {
+  # Before this, only the opening request went through `perform_fn`; follow-up
+  # rounds called `perform_chat_request()` directly, so `openai_chat(.stateful =
+  # TRUE)`'s expired-context retry silently did not apply to them.
+  seen <- list()
+  built <- tidyllm:::new_chat_request(
+    .request = httr2::request("https://example.invalid"),
+    .api     = cc_api(),
+    .llm     = llm_message("hi"),
+    .body    = list(messages = list()),
+    .perform_fn = function(b) {
+      seen[[length(seen) + 1L]] <<- b$request$url
+      if (length(seen) == 1L) cc_response(list(cc_call("Bern"))) else cc_response()
+    }
+  )
+
+  tool <- cc_tool()
+
+  out <- tidyllm:::process_tool_loop(
+    .api = built$api, .response = cc_response(list(cc_call("Oslo"))),
+    .tools_def = list(tool), .request_body = built$body, .request = built$request,
+    .perform = tidyllm:::chat_performer(built), .max_tool_rounds = 5
+  )
+
+  expect_length(seen, 2)
+  expect_null(out$raw$content$choices[[1]]$message$tool_calls)
+})
+
+test_that("the loop continues from the request a performer actually sent", {
+  # A performer that falls back onto a different request says so, and the next
+  # round appends its tool results to that one. Without it the loop would keep
+  # replaying the body the fallback abandoned.
+  bodies <- list()
+  fallback_body <- list(messages = list(list(role = "user", content = "full history")))
+
+  perform <- function(.request, .body) {
+    bodies[[length(bodies) + 1L]] <<- .body
+    if (length(bodies) == 1L) {
+      response <- cc_response(list(cc_call("Bern")))
+      attr(response, "tidyllm_continue") <- list(
+        request = httr2::request("https://fallback.invalid"), body = fallback_body
+      )
+      response
+    } else {
+      cc_response()
+    }
+  }
+
+  tool <- cc_tool()
+
+  tidyllm:::process_tool_loop(
+    .api = cc_api(), .response = cc_response(list(cc_call("Oslo"))),
+    .tools_def = list(tool), .request_body = list(messages = list()),
+    .request = httr2::request("https://example.invalid"),
+    .perform = perform, .max_tool_rounds = 5
+  )
+
+  expect_length(bodies, 2)
+  # Round two builds on the fallback's history, not on the abandoned body.
+  expect_identical(bodies[[2]]$messages[[1]]$content, "full history")
 })

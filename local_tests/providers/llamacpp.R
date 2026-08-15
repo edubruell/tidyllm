@@ -108,7 +108,7 @@ llt_test("logprobs are returned and parseable via get_logprobs()", {
 
 llt_test("streamed logprobs come back through the assembled body", {
   # Streams used to carry logprobs down their own per-chunk branch in
-  # parse_logprobs(). That branch is gone; assemble_stream_response() now folds
+  # parse_logprobs(). That branch is gone; assemble_stream_body() now folds
   # them into choices[[1]]$logprobs$content. No recorded fixture carries
   # logprobs, so this is the only end-to-end check that the fold happens, and it
   # is what would catch a keep = FALSE regression in parse_stream_event().

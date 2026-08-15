@@ -113,7 +113,7 @@ method(parse_stream_event, api_ollama) <- function(.api, .chunk) {
 #' order is what the blocking response returns.
 #'
 #' @noRd
-method(assemble_stream_response, list(api_ollama, class_list)) <- function(.api, .events) {
+method(assemble_stream_body, list(api_ollama, class_list)) <- function(.api, .events) {
   text     <- character()
   thinking <- character()
   calls    <- list()
