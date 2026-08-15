@@ -1,7 +1,24 @@
 # tidyllm 0.6.0 (development version)
 
-Work in progress. This section covers the shared stream pump and the maintenance
-backlog, both of which land ahead of the release's async surface.
+Work in progress. This section covers the internal restructuring that the
+release's async surface is built on: the shared stream pump, the chat pipeline
+split, and the maintenance backlog.
+
+## Internal: the chat pipeline
+
+Nothing user-visible changed here, but it is the largest structural change in
+the release. Every `*_chat()` used to be one function body welding request
+construction, the HTTP call, the tool loop and `add_message()` together, which
+meant nothing but `*_chat()` itself could reach the middle of it.
+
+* Twelve providers now split into `<provider>_build_chat_request()` plus a thin
+  wrapper. The builder returns everything the response handling needs; the
+  shared `finish_chat_response()` runs the tool loop, extracts the reply and
+  metadata, tracks rate limits and appends the message.
+* Whether a request streams is decided at build time rather than at perform
+  time, because every provider commits to streaming in the request itself:
+  Gemini in the URL path, the rest in the request body.
+* `.dry_run = TRUE` still returns the bare `httr2` request, unchanged.
 
 ## Streaming
 

@@ -21,9 +21,11 @@ tool and is deliberately absent from `DESCRIPTION`.
 
 ```r
 devtools::load_all(".")
-source("local_tests/record_stream_fixtures.R")   # live; re-record only on purpose
+source("local_tests/record_stream_fixtures.R")       # live; re-record only on purpose
+source("local_tests/record_stream_tool_fixtures.R")  # live; streams that call tools
 source("local_tests/record_stream_baseline.R")   # offline; refuses to overwrite
-source("local_tests/features/stream_replay.R")   # offline; the regression suite
+source("local_tests/features/stream_replay.R")        # offline; the regression suite
+source("local_tests/features/stream_tools_replay.R")  # offline; tool-call characterization
 ```
 
 The replay suite needs no API key and no network beyond localhost: a `webfakes`
@@ -44,6 +46,7 @@ file by hand if the fixtures were genuinely re-recorded.
 | gemini | plain, multibyte × {json-array, sse}; thinking sse | both endpoints |
 | ollama | plain, multibyte, plain-cold | ndjson |
 | perplexity | **none** | no credits on this account |
+| claude, groq, mistral, openai, gemini, ollama | `*_tools_stream` | tool calls, see below |
 
 `perplexity()` is the one streaming provider with no fixture, so its
 `handle_stream()` will be refactored without a net. Verify that path with
@@ -82,3 +85,47 @@ is three; Claude's behaviour depends on where the connection is cut, which is
 worse than a consistent hang because it will not reproduce reliably. Ollama
 raises only because of the completion check added in `7d6a7db`; before that it
 crashed on the empty read instead.
+
+## Tool-call streams
+
+Recorded 2026-08-15, after Phase A, as groundwork for Phase B2 (the streaming
+tool loop). Replayed by `local_tests/features/stream_tools_replay.R`, which
+characterizes the wire shapes an assembler will have to fold back into the body
+shape the existing tool generics already understand.
+
+They have **no baseline entry** and are excluded from the parity block in
+`stream_replay.R`: they were recorded after the refactor, so there is no
+pre-refactor reply to compare against, and the text reply is not the interesting
+part of them. They are still covered by the transport and truncation blocks.
+
+Every provider currently rejects `.stream = TRUE` together with `.tools` in
+`validate_inputs()`, so these requests cannot be built through the public API.
+The recorder goes through `<provider>_build_chat_request()` and sets the stream
+flag on the returned `$body` instead. That is a bypass of a client-side guard
+Phase B2 removes, not of anything a provider enforces.
+
+What the recordings show, per provider:
+
+| provider | tool calls arrive as | grouping key | fragmented? |
+|---|---|---|---|
+| claude | `input_json_delta` fragments | content block index | **yes**, mid-token |
+| groq, mistral | `tool_calls` delta objects | `tool_calls[].index` | not here, but not guaranteed |
+| openai (Responses) | complete items on `response.completed` | `output` array position | no |
+| gemini | `functionCall` parts, args already parsed | part order | no |
+| ollama | complete `tool_calls` per line | `function.index` | no |
+
+Two results worth carrying into Phase B2:
+
+- **Claude is the only provider that forces per-block accumulation.** Its
+  fragments split mid-token (`{"city` / `": "B` / `er` / `lin"}`) and welding
+  them all into one buffer yields `{"city": "Berlin"}{"city": "Reykjavik"}`,
+  which does not parse. The suite asserts both halves of that: the welded string
+  fails to parse and the per-block strings succeed.
+- **OpenAI needs no accumulation at all.** The pump keeps exactly one event for
+  that stream, `response.completed`, and it carries the complete `output` array
+  with fully-formed `function_call` items; the assembler is a projection.
+
+The suite also asserts that the pump still *retains* these events. Each
+provider's `parse_stream_event()` decides what to keep, and a keep flag flipped
+for a plausible-looking reason would strip the tool calls out of `raw_data`
+while every existing streaming test stayed green.

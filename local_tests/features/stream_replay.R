@@ -34,8 +34,14 @@ on.exit(server$stop(), add = TRUE)
 GEMINI_LEGACY <- c("gemini_plain_jsonarray", "gemini_multibyte_jsonarray")
 
 # Fixtures with no baseline entry that predates the refactor, because the code
-# could not read them when the baseline was taken.
-NO_BASELINE <- c("gemini_plain_sse", "gemini_multibyte_sse", "gemini_thinking_sse")
+# could not read them when the baseline was taken. The tool-call streams were
+# recorded after Phase A landed, as groundwork for the streaming tool loop; they
+# have no pre-refactor reply to be compared against, and the text reply is not
+# the interesting part of them anyway. They are still covered by the transport
+# and truncation blocks below, and characterized in
+# local_tests/features/stream_tools_replay.R.
+NO_BASELINE <- c("gemini_plain_sse", "gemini_multibyte_sse", "gemini_thinking_sse",
+                 grep("tools_stream", names(load_stream_fixtures()), value = TRUE))
 
 SKIP_PARITY <- c(GEMINI_LEGACY, NO_BASELINE)
 
