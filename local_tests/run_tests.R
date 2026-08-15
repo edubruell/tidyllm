@@ -18,6 +18,18 @@
 #   check_all_async_jobs()                          # poll until all show "completed"
 #   source("local_tests/batch_fetch.R")             # fetch and assert
 
+# Two providers have no reachable live coverage, by circumstance rather than
+# oversight, so nothing here will ever run them:
+#
+#   azure_openai  no account access; contributed by someone who has since left.
+#                 Only its inherited ChatCompletions paths are exercised, via
+#                 groq, mistral and openai.
+#   perplexity    the account has no quota. providers/perplexity.R probes for it
+#                 and skips the whole suite.
+#
+# Both are covered structurally by tests/testthat/test_chat_pipeline.R. Verify
+# changes to either with .dry_run rather than assuming a live check is possible.
+
 run_all_local_tests <- function(providers = NULL) {
   # Discovered, not listed. The hardcoded list had drifted: it named
   # azure_openai, which has no suite, while chat_completions, openrouter,
