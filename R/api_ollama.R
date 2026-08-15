@@ -107,10 +107,20 @@ method(handle_stream,list(api_ollama,new_S3_class("httr2_response"))) <- functio
     #Sleep for a tiny bit because Ollama often hangs on sending complete lines
     Sys.sleep(0.25)
     stream_chunk   <- httr2::resp_stream_lines(.stream_response)
-  
-    stream_content <- stream_chunk |> 
+
+    # A cold model load makes Ollama send nothing for a while; an empty read is
+    # not an error, but a completed connection with nothing left to read is.
+    if (length(stream_chunk) == 0 || !nzchar(stream_chunk)) {
+      if (httr2::resp_stream_is_complete(.stream_response)) {
+        close(.stream_response)
+        stop("Ollama stream ended before the model reported completion.")
+      }
+      next
+    }
+
+    stream_content <- stream_chunk |>
       jsonlite::fromJSON()
-    
+
     stream_data <- append(stream_data,list(stream_content))
     if (stream_content$done==TRUE) {
       close(.stream_response)
@@ -237,6 +247,7 @@ method(append_tool_messages, list(api_ollama, class_any, class_any, class_any)) 
 #' @param .keep_alive Character; How long should the ollama model be kept in memory after request (default: NULL - 5 Minutes)
 #' @param .ollama_server String; Ollama API endpoint (default: "http://localhost:11434")
 #' @param .timeout Integer; API request timeout in seconds (default: 120)
+#' @param .max_tries Integer; maximum number of retries for the request (default: 3)
 #' @param .dry_run Logical; if TRUE, returns request object without execution (default: FALSE)
 #'
 #' @return A new LLMMessage object containing the original messages plus the model's response
@@ -288,6 +299,7 @@ ollama_chat <- function(.llm,
                    .think = NULL,
                    .ollama_server = "http://localhost:11434",
                    .timeout = 120,
+                   .max_tries = 3,
                    .keep_alive = NULL,
                    .dry_run = FALSE) {
 
@@ -387,7 +399,7 @@ ollama_chat <- function(.llm,
   }
   
   # Perform the API request
-  response <- perform_chat_request(request, api_obj, .stream, .timeout, 3)
+  response <- perform_chat_request(request, api_obj, .stream, .timeout, .max_tries)
   
   if (.stream == FALSE && !is.null(tools_def)) {
     response <- process_tool_loop(
@@ -397,7 +409,7 @@ ollama_chat <- function(.llm,
       .request_body = ollama_request_body,
       .request = request,
       .timeout = .timeout,
-      .max_tries = 3,
+      .max_tries = .max_tries,
       .max_tool_rounds = .max_tool_rounds
     )
   }

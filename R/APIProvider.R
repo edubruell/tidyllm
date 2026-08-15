@@ -9,33 +9,12 @@ APIProvider <- new_class("APIProvider",properties = list(
 
 parse_chat_response        <- new_generic("parse_chat_response",c(".api",".content"))
 handle_stream              <- new_generic("handle_stream",c(".api",".stream_response"))
-generate_callback_function <- new_generic("generate_callback_function",".api")
 ratelimit_from_header      <- new_generic("ratelimit_from_header",c(".api", ".headers"))
 get_api_key                <- new_generic("get_api_key",".api")
 prepare_llms_for_batch     <- new_generic("prepare_llms_for_batch",".api")
 extract_metadata           <- new_generic("extract_metadata",c(".api", ".response"))
 extract_metadata_stream    <- new_generic("extract_metadata_stream",c(".api", ".stream_raw_data"))
 parse_logprobs             <- new_generic("parse_logprobs", c(".api", ".input"))
-
-#Default method for the streaming callback function
-#'
-#' @noRd
-method(generate_callback_function,APIProvider) <- function(.api) {
-  # Default testing callback implementation
-  function(.data) {
-    if (is.null(.tidyllm_stream_env$testing_chunck_list)) {
-      .tidyllm_stream_env$testing_chunck_list <- list()
-    }
-    
-    # Append new data to the buffer
-    new_data <- rawToChar(.data, multiple = FALSE)
-    .tidyllm_stream_env$testing_chunck_list <- append(.tidyllm_stream_env$testing_chunck_list, new_data)
-    length(.tidyllm_stream_env$testing_chunck_list) |> cat("\n")
-    utils::flush.console()
-    TRUE
-  }
-}
-
 
 #Default method for metadata extraction
 #'
@@ -78,7 +57,7 @@ method(extract_metadata_stream, list(APIProvider,class_list))<- function(.api,.s
 method(get_api_key, APIProvider) <- function(.api,.dry_run=FALSE) {
   api_key <- Sys.getenv(.api@api_key_env_var)
   if (api_key == "" & .dry_run==FALSE) {
-    paste0("API key is not set. Please set it with: Sys.setenv(",api@api_key_env_var," = \"YOUR-KEY-GOES-HERE\")." ) |>
+    paste0("API key is not set. Please set it with: Sys.setenv(",.api@api_key_env_var," = \"YOUR-KEY-GOES-HERE\")." ) |>
       rlang::abort()
   }
   return(api_key)

@@ -67,7 +67,7 @@ pdf_page_batch <- function(.pdf,
     # Create an LLMMessage object for the page
     llm_message(
       .llm = llm_prompt, 
-      .imagefile = image_file,
+      .media = img(image_file),
       .role = "user", 
       .system_prompt = .system_prompt
     )

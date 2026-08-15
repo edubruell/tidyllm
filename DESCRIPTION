@@ -1,6 +1,6 @@
 Package: tidyllm
 Title: Tidy Integration of Large Language Models
-Version: 0.5.2
+Version: 0.6.0.9000
 Authors@R: c(
     person("Eduard", "Brüll", NULL, "eduard.bruell@zew.de", role = c("aut", "cre")),
     person("Jia", "Zhang", NULL, NULL, role = "ctb")
@@ -26,6 +26,7 @@ Imports:
     base64enc,
     glue,
     jsonlite,
+    coro,
     curl,
     httr2 (>= 1.1.1),
     lubridate,

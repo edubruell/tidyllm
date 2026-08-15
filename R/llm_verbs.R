@@ -16,13 +16,19 @@ dispatch_to_provider <- function(provider_expr, verb_name, common_args,
   if (validate) {
     meta      <- rlang::call_modify(provider_expr, .called_from = "metadata") |> rlang::eval_tidy()
     supported <- meta$supported_args[[verb_name]]
-    unsupported <- setdiff(names(common_args), supported)
-    if (length(unsupported) > 0) {
-      stop(glue::glue(
-        "The following arguments are not supported by the provider's `{verb_name}()` function: {paste(unsupported, collapse = ', ')}."
-      ))
+    if ("..." %in% supported) {
+      # The provider function forwards through `...`, so it accepts any common
+      # argument; the wrapped function validates them.
+      valid_args <- common_args
+    } else {
+      unsupported <- setdiff(names(common_args), supported)
+      if (length(unsupported) > 0) {
+        stop(glue::glue(
+          "The following arguments are not supported by the provider's `{verb_name}()` function: {paste(unsupported, collapse = ', ')}."
+        ))
+      }
+      valid_args <- common_args[names(common_args) %in% supported]
     }
-    valid_args <- common_args[names(common_args) %in% supported]
   } else {
     valid_args <- common_args
   }

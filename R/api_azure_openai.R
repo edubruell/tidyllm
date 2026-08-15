@@ -208,10 +208,8 @@ azure_openai_chat <- function(
   request <- httr2::request(.endpoint_url) |>
     httr2::req_url_path_append(paste0("openai/deployments/", .deployment, "/chat/completions")) |>
     httr2::req_url_query(`api-version` = .api_version) |>
-    httr2::req_headers(
-      `Content-Type` = "application/json",
-      `api-key` = api_key
-    ) |>
+    httr2::req_headers(`Content-Type` = "application/json") |>
+    httr2::req_headers_redacted(`api-key` = api_key) |>
     httr2::req_body_json(data = request_body)
   
   # Return only the request object in a dry run
@@ -303,10 +301,8 @@ azure_openai_embedding <- function(.input,
   request <- httr2::request(.endpoint_url) |>
     httr2::req_url_path_append(paste0("openai/deployments/", .deployment,"/embeddings")) |>
     httr2::req_url_query(`api-version` = .api_version) |>
-    httr2::req_headers(
-      `Content-Type` = "application/json",
-      `api-key` = api_key,
-    )  |>
+    httr2::req_headers(`Content-Type` = "application/json") |>
+    httr2::req_headers_redacted(`api-key` = api_key)  |>
     httr2::req_body_json(data = request_body)
   
   # Return the request object if it's a dry run
@@ -480,10 +476,8 @@ send_azure_openai_batch <- function(.llms,
   upload_request <- httr2::request(.endpoint_url) |> 
     httr2::req_url_path_append("openai/files") |> 
     httr2::req_url_query(`api-version` = .api_version) |>
-    httr2::req_headers(
-      `Content-Type` = "multipart/form-data",
-      `api-key` = api_key
-    ) |>
+    httr2::req_headers(`Content-Type` = "multipart/form-data") |>
+    httr2::req_headers_redacted(`api-key` = api_key) |>
     httr2::req_body_multipart(
       purpose = "batch",
       file = curl::form_file(temp_file),
@@ -516,10 +510,8 @@ send_azure_openai_batch <- function(.llms,
   batch_request <- httr2::request(.endpoint_url) |> 
     httr2::req_url_path("openai/batches") |>
     httr2::req_url_query(`api-version` = .api_version) |>
-    httr2::req_headers(
-      `Content-Type` = "application/json",
-      `api-key` = api_key
-    ) |>
+    httr2::req_headers(`Content-Type` = "application/json") |>
+    httr2::req_headers_redacted(`api-key` = api_key) |>
     httr2::req_body_json(batch_request_body)
   
   batch_response <- batch_request |>
@@ -592,9 +584,7 @@ check_azure_openai_batch <- function(.llms = NULL,
   request <- httr2::request(.endpoint_url) |> 
     httr2::req_url_path(paste0('openai/batches/', .batch_id)) |> 
     httr2::req_url_query(`api-version` = "2024-10-01-preview") |>
-    httr2::req_headers(
-      `api-key` = api_key,
-    )
+    httr2::req_headers_redacted(`api-key` = api_key)
   
   # If .dry_run is TRUE, return the request object for inspection
   if (.dry_run) {
@@ -656,9 +646,7 @@ list_azure_openai_batches <- function(.endpoint_url = Sys.getenv('AZURE_ENDPOINT
   request <- httr2::request(.endpoint_url) |> 
     httr2::req_url_path('openai/batches') |> 
     httr2::req_url_query(`api-version` = "2024-10-01-preview") |>
-    httr2::req_headers(
-      `api-key` = api_key
-    ) |>
+    httr2::req_headers_redacted(`api-key` = api_key) |>
     httr2::req_url_query(limit = .limit)
   
   # Perform the request with retries and error handling
@@ -745,9 +733,7 @@ fetch_azure_openai_batch <- function(.llms,
   request <- httr2::request(.endpoint_url) |> 
     httr2::req_url_path(paste0('openai/batches/', .batch_id)) |> 
     httr2::req_url_query(`api-version` = "2024-10-01-preview") |>
-    httr2::req_headers(
-      `api-key` = api_key,
-    )
+    httr2::req_headers_redacted(`api-key` = api_key)
   
   # If .dry_run is TRUE, return the request object for inspection
   if (.dry_run) {
@@ -781,9 +767,7 @@ fetch_azure_openai_batch <- function(.llms,
   results_request <- httr2::request(.endpoint_url) |> 
     httr2::req_url_path(paste0('openai/files/', output_file_id, '/content')) |> 
     httr2::req_url_query(`api-version` = "2024-10-01-preview") |>
-    httr2::req_headers(
-      `api-key` = api_key,
-    )
+    httr2::req_headers_redacted(`api-key` = api_key)
   
   results_response <- results_request |>
     httr2::req_timeout(.timeout) |>

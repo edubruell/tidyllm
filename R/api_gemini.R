@@ -548,7 +548,7 @@ gemini_chat <- function(.llm,
   # Build the request
   request <- httr2::request("https://generativelanguage.googleapis.com") |>
     httr2::req_url_path(paste0("/v1beta/models/", .model, request_type)) |>
-    httr2::req_url_query(key = api_key) |>
+    httr2::req_headers_redacted(`x-goog-api-key` = api_key) |>
     httr2::req_headers(`Content-Type` = "application/json") |>
     httr2::req_body_json(request_body)
   
@@ -601,7 +601,7 @@ gemini_upload_file <- function(.file_path) {
   
   # Step 1: Initiate the upload and get the resumable upload URL
   init_response <- httr2::request("https://generativelanguage.googleapis.com/upload/v1beta/files") |>
-    httr2::req_url_query(key = api_key) |>
+    httr2::req_headers_redacted(`x-goog-api-key` = api_key) |>
     httr2::req_headers(
       `X-Goog-Upload-Protocol` = "resumable",
       `X-Goog-Upload-Command` = "start",
@@ -658,7 +658,7 @@ gemini_file_metadata <- function(.file_name) {
   
   # Request to get file metadata
   response <- httr2::request(paste0("https://generativelanguage.googleapis.com/v1beta/", .file_name)) |>
-    httr2::req_url_query(key = api_key) |>
+    httr2::req_headers_redacted(`x-goog-api-key` = api_key) |>
     httr2::req_perform() |>
     httr2::resp_body_json()
   
@@ -697,7 +697,8 @@ gemini_list_files <- function(.page_size = 10,
   
   # Request to list files
   response <- httr2::request("https://generativelanguage.googleapis.com/v1beta/files") |>
-    httr2::req_url_query(key = api_key, pageSize = .page_size, pageToken = .page_token) |>
+    httr2::req_headers_redacted(`x-goog-api-key` = api_key) |>
+    httr2::req_url_query(pageSize = .page_size, pageToken = .page_token) |>
     httr2::req_perform() |>
     httr2::resp_body_json()
   
@@ -733,7 +734,7 @@ gemini_delete_file <- function(.file_name) {
   
   # Request to delete the file
   httr2::request(paste0("https://generativelanguage.googleapis.com/v1beta/", .file_name)) |>
-    httr2::req_url_query(key = api_key) |>
+    httr2::req_headers_redacted(`x-goog-api-key` = api_key) |>
     httr2::req_method("DELETE") |>
     httr2::req_perform()
   
@@ -793,7 +794,7 @@ gemini_embedding <- function(.input,
   # Build the request
   request <-httr2::request("https://generativelanguage.googleapis.com") |>
     httr2::req_url_path(paste0("/v1beta/models/", .model, ":batchEmbedContents")) |>
-    httr2::req_url_query(key = api_key) |>
+    httr2::req_headers_redacted(`x-goog-api-key` = api_key) |>
     httr2::req_headers(`Content-Type` = "application/json") |>
     httr2::req_body_json(request_body)
   
@@ -969,7 +970,7 @@ send_gemini_batch <- function(.llms,
   
   req <- httr2::request("https://generativelanguage.googleapis.com") |>
     httr2::req_url_path(paste0("/v1beta/models/", .model, ":batchGenerateContent")) |>
-    httr2::req_url_query(key = api_key) |>
+    httr2::req_headers_redacted(`x-goog-api-key` = api_key) |>
     httr2::req_body_json(body)
   
   if (.dry_run) return(req)
@@ -1035,7 +1036,7 @@ check_gemini_batch <- function(.llms = NULL,
   op_path <- if (!startsWith(.batch_id, "/v1beta/")) paste0("/v1beta/", .batch_id) else .batch_id
   req <- httr2::request("https://generativelanguage.googleapis.com") |>
     httr2::req_url_path(op_path) |>
-    httr2::req_url_query(key = api_key)
+    httr2::req_headers_redacted(`x-goog-api-key` = api_key)
   if (.dry_run) return(req)
   resp <- perform_generic_request(req, .timeout, .max_tries)
   content <- resp$content
@@ -1070,8 +1071,8 @@ list_gemini_batches <- function(.filter    = NULL,
   if (api_key == "") stop("Google API key is not set (GOOGLE_API_KEY).")
   req <- httr2::request("https://generativelanguage.googleapis.com") |>
     httr2::req_url_path("/v1beta/batches") |>
+    httr2::req_headers_redacted(`x-goog-api-key` = api_key) |>
     httr2::req_url_query(
-      key      = api_key,
       filter   = .filter,
       pageSize = .page_size
     )
@@ -1135,7 +1136,7 @@ fetch_gemini_batch <- function(.llms,
   # Build GET request for batch status
   req <- httr2::request("https://generativelanguage.googleapis.com") |>
     httr2::req_url_path(op_path) |>
-    httr2::req_url_query(key = api_key) |>
+    httr2::req_headers_redacted(`x-goog-api-key` = api_key) |>
     httr2::req_headers(`Content-Type` = "application/json")
   
   if (.dry_run) return(req)
@@ -1168,7 +1169,8 @@ fetch_gemini_batch <- function(.llms,
     file_path <- paste0("/download/v1beta/", response$responsesFile, ":download")
     download_req <- httr2::request("https://generativelanguage.googleapis.com") |>
       httr2::req_url_path(file_path) |>
-      httr2::req_url_query(key = api_key, alt = "media")
+      httr2::req_headers_redacted(`x-goog-api-key` = api_key) |>
+      httr2::req_url_query(alt = "media")
     download_resp <- perform_generic_request(download_req, .timeout, .max_tries)
     responses_lines <- strsplit(httr2::resp_body_string(download_resp$raw_response), "\n")[[1]]
     responses <- lapply(responses_lines, function(line) if (nzchar(line)) jsonlite::fromJSON(line) else NULL)
@@ -1229,7 +1231,7 @@ gemini_list_models <- function(.timeout = 60,
   
   request <- httr2::request("https://generativelanguage.googleapis.com") |>
     httr2::req_url_path("/v1beta/models") |>
-    httr2::req_url_query(key = api_key)
+    httr2::req_headers_redacted(`x-goog-api-key` = api_key)
   
   if (.dry_run) {
     return(request)
@@ -1280,7 +1282,7 @@ gemini_upload_file_verb <- function(.path, .called_from = NULL, ...) {
   display_name <- basename(.path)
 
   init_response <- httr2::request("https://generativelanguage.googleapis.com/upload/v1beta/files") |>
-    httr2::req_url_query(key = api_key) |>
+    httr2::req_headers_redacted(`x-goog-api-key` = api_key) |>
     httr2::req_headers(
       `X-Goog-Upload-Protocol` = "resumable",
       `X-Goog-Upload-Command` = "start",
@@ -1320,7 +1322,8 @@ gemini_list_files_verb <- function(.called_from = NULL, .page_size = 10, .page_t
   api_key <- Sys.getenv("GOOGLE_API_KEY")
   if (api_key == "") stop("GOOGLE_API_KEY is not set.")
   req <- httr2::request("https://generativelanguage.googleapis.com/v1beta/files") |>
-    httr2::req_url_query(key = api_key, pageSize = .page_size)
+    httr2::req_headers_redacted(`x-goog-api-key` = api_key) |>
+    httr2::req_url_query(pageSize = .page_size)
   if (!is.null(.page_token)) req <- httr2::req_url_query(req, pageToken = .page_token)
   resp <- req |> httr2::req_perform() |> httr2::resp_body_json()
   if (is.null(resp$files)) return(tibble::tibble(file_id=character(), filename=character(),
@@ -1343,7 +1346,7 @@ gemini_file_info_verb <- function(.file_id, .called_from = NULL, ...) {
   api_key <- Sys.getenv("GOOGLE_API_KEY")
   if (api_key == "") stop("GOOGLE_API_KEY is not set.")
   resp <- httr2::request(paste0("https://generativelanguage.googleapis.com/v1beta/", .file_id)) |>
-    httr2::req_url_query(key = api_key) |>
+    httr2::req_headers_redacted(`x-goog-api-key` = api_key) |>
     httr2::req_perform() |>
     httr2::resp_body_json()
   tibble::tibble(
@@ -1363,7 +1366,7 @@ gemini_delete_file_verb <- function(.file_id, .called_from = NULL, ...) {
   api_key <- Sys.getenv("GOOGLE_API_KEY")
   if (api_key == "") stop("GOOGLE_API_KEY is not set.")
   httr2::request(paste0("https://generativelanguage.googleapis.com/v1beta/", .file_id)) |>
-    httr2::req_url_query(key = api_key) |>
+    httr2::req_headers_redacted(`x-goog-api-key` = api_key) |>
     httr2::req_method("DELETE") |>
     httr2::req_perform()
   message("File ", .file_id, " has been successfully deleted.")

@@ -1,6 +1,3 @@
-# Skip file if ellmer is not installed
-if (!requireNamespace("ellmer", quietly = TRUE)) return(invisible(NULL))
-
 api_ellmer <- new_class("Ellmer", APIProvider)
 
 method(to_api_format, list(LLMMessage, api_ellmer)) <- function(.llm, 
@@ -55,7 +52,7 @@ method(extract_metadata, list(api_ellmer, class_list)) <- function(.api, .respon
     total_tokens      = as.integer((tokens["input"] %||% 0) + (tokens["output"] %||% 0)),
     cached_tokens         = as_token_count(tokens["cached_input"]),
     cache_creation_tokens = NA_integer_,
-    stream            = FALSE,
+    stream            = .response$stream %||% FALSE,
     specific_metadata = list(
       cost = .response$cost,
       duration = .response$duration
@@ -91,6 +88,8 @@ chat_ellmer <- function(.llm,
                         .dry_run = FALSE,
                         .tools  = NULL,
                         .max_tries = 3) {
+  rlang::check_installed("ellmer", reason = "to use `chat_ellmer()`.")
+
   # Validate inputs
   c(
     "Input .llm must be an LLMMessage object" = S7_inherits(.llm, LLMMessage),
@@ -115,23 +114,39 @@ chat_ellmer <- function(.llm,
   }
   
   turn_data <- to_api_format(.llm, api_obj)
-  
-  cloned_ellmer <- .ellmer_chat$clone()
-  cloned_ellmer[[".__enclos_env__"]][["private"]][[".turns"]] <- turn_data
-  
+
+  # The final user turn is what we send; everything before it is history, so it
+  # must not also be set on the clone or the provider sees it twice.
   last_user_turn <- turn_data[[length(turn_data)]]
   last_user_text <- ellmer::contents_text(last_user_turn)
-  
-  assistant_reply <- cloned_ellmer$chat(last_user_text,echo=FALSE)
-  
+  history        <- turn_data[-length(turn_data)]
+
+  cloned_ellmer <- .ellmer_chat$clone()
+  cloned_ellmer$set_turns(history)
+
+  if (.stream) {
+    message("\n---------\nStart Ellmer streaming: \n---------\n")
+    stream_gen <- cloned_ellmer$stream(last_user_text)
+    chunks <- character(0)
+    coro::loop(for (chunk in stream_gen) {
+      chunks <- c(chunks, chunk)
+      cat(chunk)
+      utils::flush.console()
+    })
+    message("\n---------\nStream finished\n---------\n")
+    assistant_reply <- paste(chunks, collapse = "")
+  } else {
+    assistant_reply <- cloned_ellmer$chat(last_user_text, echo = FALSE)
+  }
+
   last_turn <- cloned_ellmer$last_turn()
-  
-  assistant_reply
+
   metadata <- extract_metadata(api_obj, list(
     model = cloned_ellmer$get_model(),
     tokens = last_turn@tokens,
     cost = last_turn@cost,
-    duration = last_turn@duration
+    duration = last_turn@duration,
+    stream = .stream
   ))
   
   add_message(.llm     = .llm,

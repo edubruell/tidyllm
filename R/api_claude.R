@@ -651,8 +651,8 @@ claude_chat <- function(.llm,
     return(request)  
   }
   
-  response <- perform_chat_request(request, api_obj, .stream, .timeout)
-  
+  response <- perform_chat_request(request, api_obj, .stream, .timeout, .max_tries)
+
   if (.stream == FALSE && !is.null(tools_def)) {
     response <- process_tool_loop(
       .api = api_obj,

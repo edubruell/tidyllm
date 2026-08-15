@@ -1,3 +1,52 @@
+# tidyllm 0.6.0 (development version)
+
+Work in progress. This section covers the maintenance backlog that lands ahead of
+the release's async theme.
+
+## Credential handling
+
+* `gemini()` no longer puts the API key in the URL query string. All fifteen Gemini
+  request builders now send it as a redacted `x-goog-api-key` header, so
+  `.dry_run = TRUE`, `req_verbose()` and any httr2 error carrying the URL no longer
+  print the live key.
+* `azure_openai()` marks its `api-key` header as redacted. It was stored as an
+  ordinary string, so the key survived `print()` and `serialize()` on the request
+  object.
+
+## Bug fixes
+
+* `chat_completions()` could not be reached through `chat()` with any common
+  argument at all; `chat(..., .dry_run = TRUE)` and every other shared argument
+  raised "not supported by the provider's `chat()` function". Provider functions
+  that forward through `...` are now recognised as accepting any common argument.
+* A missing API key raised `object 'api' not found` instead of the intended
+  instruction naming the environment variable to set.
+* `chat_ellmer()` sent the last user message twice. The full history, including the
+  final user turn, was written onto the cloned ellmer `Chat` and then that same turn
+  was sent again by `$chat()`. It now sets only the preceding turns, and it uses
+  ellmer's public `$set_turns()` rather than reaching into the object's private
+  environment.
+* `chat_ellmer()` accepted `.stream = TRUE` and silently performed a non-streaming
+  request. It now streams through ellmer's `$stream()`, and `get_metadata()` reports
+  `stream = TRUE` for those replies.
+* `claude_chat()` ignored `.max_tries` and always used the default of 3.
+* `ollama_chat()` gains `.max_tries`, which was hardcoded to 3.
+* The Ollama stream loop no longer crashes with a JSON lexer error on an empty read,
+  and it raises instead of looping when the connection completes before the model
+  reports `done`.
+* The ChatCompletions stream loop recorded the last event twice. The duplicate is
+  gone and the final usage-only chunk is now recorded where it is produced rather
+  than on the `[DONE]` branch.
+* `pdf_page_batch()` no longer emits one deprecation warning per page; it uses
+  `.media = img()` instead of the deprecated `.imagefile`.
+* Deleted the duplicate `openai` and `chatgpt` bindings in `R/api_chat_completions.R`,
+  which shipped as dead code shadowed by the Responses API definitions.
+* Deleted the `generate_callback_function()` generic, which wrote into an environment
+  that is never created and would have errored if called.
+* `R/api_ellmer.R` no longer short-circuits at the top level when ellmer is absent,
+  which would have broken the NAMESPACE exports; `chat_ellmer()` checks for ellmer at
+  call time instead.
+
 # tidyllm 0.5.2
 
 A bugfix release. No new providers, verbs, or media types.

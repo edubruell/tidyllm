@@ -267,7 +267,6 @@ method(handle_stream,list(api_chat_completions,new_S3_class("httr2_response"))) 
     }
     
     if (stream_chunk$data == "[DONE]") {
-      stream_data <- append(stream_data,list(parsed_event))
       close(.stream_response)
       message("\n---------\nStream finished\n---------\n")
       break
@@ -283,9 +282,11 @@ method(handle_stream,list(api_chat_completions,new_S3_class("httr2_response"))) 
     )
     
     if (!is.null(parsed_event)) {
+      # Every event is recorded, including the final usage-only chunk that
+      # carries no choices; extract_metadata_stream() looks for it there.
+      stream_data <- append(stream_data,list(parsed_event))
+
       if(length(parsed_event$choices) >= 1) {
-        stream_data <- append(stream_data,list(parsed_event))
-        
         delta_content <- parsed_event$choices[[1]]$delta$content
         if (!is.null(delta_content)) {
           stream_text <- paste0(stream_text, delta_content)
@@ -1321,53 +1322,6 @@ openai_list_models <- function(.api_url = "https://api.openai.com",
   }
 }
 
-
-#' OpenAI Provider Function
-#'
-#' The `openai()` function acts as an interface for interacting with the OpenAI API 
-#' through main `tidyllm` verbs such as `chat()`, `embed()`, and 
-#' `send_batch()`. It dynamically routes requests to OpenAI-specific functions 
-#' like `openai_chat()` and `openai_embedding()` based on the context of the call.
-#'
-#' @param ... Parameters to be passed to the appropriate OpenAI-specific function, 
-#'   such as model configuration, input text, or API-specific options.
-#' @param .called_from An internal argument that specifies which action (e.g., 
-#'   `chat`, `embed`, `send_batch`) the function is being invoked from. 
-#'   This argument is automatically managed and should not be modified by the user.
-#'
-#' @return The result of the requested action, depending on the specific function invoked 
-#'   (e.g., an updated `LLMMessage` object for `chat()`, or a matrix for `embed()`).
-#' 
-#' @export
-openai <- create_provider_function(
-  .name = "openai",
-  chat = cc_chat,
-  embed = openai_embedding,
-  send_batch = send_openai_batch,
-  check_batch = check_openai_batch,
-  list_batches = list_openai_batches,
-  fetch_batch = fetch_openai_batch,
-  list_models = openai_list_models
-)
-
-#' Alias for the OpenAI Provider Function
-#'
-#' The `chatgpt` function is an alias for the `openai()` provider function. 
-#' It provides a convenient way to interact with the OpenAI API for tasks such 
-#' as sending chat messages, generating embeddings, and handling batch operations 
-#' using `tidyllm` verbs like `chat()`, `embed()`, and `send_batch()`.
-#'
-#' @param ... Parameters to be passed to the appropriate OpenAI-specific function, 
-#'   such as model configuration, input text, or other API-specific options.
-#' @param .called_from An internal argument that specifies the context (e.g., 
-#'   `chat`, `embed`, `send_batch`) in which the function is being 
-#'   invoked. This is automatically managed and should not be modified by the user.
-#'
-#' @return The result of the requested action, depending on the specific function invoked
-#'   (e.g., an updated `LLMMessage` object for `chat()`, or a matrix for `embed()`).
-#' @keywords internal
-#' @export
-chatgpt <- openai
 
 #' Chat with any OpenAI-Compatible API Endpoint
 #'

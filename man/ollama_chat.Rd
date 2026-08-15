@@ -28,6 +28,7 @@ ollama_chat(
   .think = NULL,
   .ollama_server = "http://localhost:11434",
   .timeout = 120,
+  .max_tries = 3,
   .keep_alive = NULL,
   .dry_run = FALSE
 )
@@ -79,6 +80,8 @@ Set to 1 for single-round tool use, or higher for multi-turn agentic loops.}
 \item{.ollama_server}{String; Ollama API endpoint (default: "http://localhost:11434")}
 
 \item{.timeout}{Integer; API request timeout in seconds (default: 120)}
+
+\item{.max_tries}{Integer; maximum number of retries for the request (default: 3)}
 
 \item{.keep_alive}{Character; How long should the ollama model be kept in memory after request (default: NULL - 5 Minutes)}
 
