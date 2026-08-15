@@ -32,6 +32,22 @@ they are accumulated per content block rather than into one buffer. OpenAI's
 `response.completed` event already carries fully-formed calls, and Gemini and
 Ollama send their calls parsed.
 
+Details worth knowing, all of them cases that only exist because the two can now
+be combined:
+
+* A streamed reply whose tool call is cut off by `max_tokens` mid-arguments no
+  longer raises. The partial arguments are dropped and the turn ends on its own
+  `stop_reason`, so a reply the user has already watched arrive is not thrown
+  away.
+* Claude's `thinking` blocks and their signatures survive assembly, so
+  `.thinking = TRUE` works together with `.stream` and `.tools`. Built-in tools
+  such as `claude_websearch()` keep their arguments too.
+* Streamed logprobs still work. They used to be read by a separate branch that
+  walked the per-chunk deltas; they are now collected into the same place a
+  blocking response carries them, and both transports take one path.
+* A provider that streams but has no assembler raises rather than silently
+  skipping its tools and returning the model's preamble as the answer.
+
 ## Internal: the chat pipeline
 
 Nothing user-visible changed here, but it is the largest structural change in

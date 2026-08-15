@@ -106,6 +106,21 @@ llt_test("logprobs are returned and parseable via get_logprobs()", {
   llt_expect_true("logprob" %in% names(lp), "logprobs tibble should have 'logprob' column")
 })
 
+llt_test("streamed logprobs come back through the assembled body", {
+  # Streams used to carry logprobs down their own per-chunk branch in
+  # parse_logprobs(). That branch is gone; assemble_stream_response() now folds
+  # them into choices[[1]]$logprobs$content. No recorded fixture carries
+  # logprobs, so this is the only end-to-end check that the fold happens, and it
+  # is what would catch a keep = FALSE regression in parse_stream_event().
+  result <- llm_message("Say yes.") |>
+    chat(llamacpp(.logprobs = TRUE, .top_logprobs = 3, .stream = TRUE,
+                  .max_tokens = 256, .thinking = FALSE))
+  lp <- get_logprobs(result)
+  llt_expect_true(nrow(lp) > 0, "streamed logprobs should not be empty")
+  llt_expect_true(all(c("token", "logprob") %in% names(lp)),
+                  "streamed logprobs should have the same columns as blocking ones")
+})
+
 # ── Tool use ──────────────────────────────────────────────────────────────────
 
 llt_test("single tool call returns reply", {
@@ -183,11 +198,18 @@ llt_test("embed similarity: similar texts score higher than dissimilar", {
 
 llt_test("streamed tool use assembles and completes", {
   # The stream has to be folded back into a response body before the tool loop
-  # can read it, and the follow-up round then streams too. Asserting that the
-  # tool's own answer reaches the reply separates a working loop from a model that
-  # guessed: nchar("Berlin") is 6 and nchar("Reykjavik") is 9.
+  # can read it, and the follow-up round then streams too. Both halves are
+  # asserted without reading the model's prose: a counter proves the tool really
+  # ran, and a non-empty reply proves the follow-up streamed round completed.
+  # Matching the tool's answer in the text instead would be model-dependent:
+  # models paraphrase and convert units, and a bare number also matches a token
+  # count or a plausible hallucination.
+  calls <- 0L
   temp_tool <- tidyllm_tool(
-    function(city) paste0(city, ": ", nchar(city), " degrees"),
+    function(city) {
+      calls <<- calls + 1L
+      paste0(city, ": ", nchar(city), " degrees")
+    },
     "Get the current temperature in a city",
     city = field_chr("City name")
   )
@@ -195,12 +217,8 @@ llt_test("streamed tool use assembles and completes", {
     chat(llamacpp(), .tools = temp_tool, .stream = TRUE)
 
   llt_expect_reply(result)
-  reply <- get_reply(result)
-  # One city, not both: the small local model behind this server often calls the
-  # tool once and promises to look up the second. That is a model limitation and
-  # not an assembler one, and one confirmed round trip still proves the loop ran.
-  llt_expect_true(grepl("6", reply) || grepl("9", reply),
-                  paste("streamed tool results did not reach the reply:", reply))
+  llt_expect_true(calls >= 1,
+                  "the streamed response produced no executed tool call")
 })
 
 llt_report()

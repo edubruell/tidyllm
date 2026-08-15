@@ -27,6 +27,22 @@ stream_event <- function(kind  = "noop",
        keep = keep, event = event)
 }
 
+#' Carry the response-level fields of a stream chunk into an accumulator
+#'
+#' Used by `assemble_stream_response()` methods, which rebuild a response body
+#' out of chunks that each repeat some of its top-level fields.
+#'
+#' `purrr::compact()` is the point of the helper. `jsonlite` keeps a JSON `null`
+#' as a named element with a NULL value, and `modifyList()` reads a NULL value as
+#' "delete this key". OpenAI-compatible endpoints send `"usage": null` on every
+#' chunk but the last when usage reporting is on, so merging naively lets a later
+#' chunk delete a field an earlier one supplied.
+#'
+#' @noRd
+merge_stream_envelope <- function(.envelope, .event, .keys) {
+  utils::modifyList(.envelope, purrr::compact(.event[intersect(names(.event), .keys)]))
+}
+
 #' Default per-delta sink: the console, exactly as before 0.6.0.
 #'
 #' @noRd

@@ -156,17 +156,16 @@ method(assemble_stream_response, list(api_gemini, class_list)) <- function(.api,
   envelope  <- list()
 
   for (event in .events) {
-    envelope <- utils::modifyList(
-      envelope,
-      event[intersect(names(event), c("usageMetadata", "modelVersion", "responseId"))]
+    envelope <- merge_stream_envelope(
+      envelope, event, c("usageMetadata", "modelVersion", "responseId")
     )
 
     if (length(event$candidates) == 0) next
     cand <- event$candidates[[1]]
-    candidate <- utils::modifyList(
-      candidate,
-      cand[intersect(names(cand), c("finishReason", "index", "safetyRatings",
-                                    "groundingMetadata", "citationMetadata"))]
+    candidate <- merge_stream_envelope(
+      candidate, cand,
+      c("finishReason", "index", "safetyRatings", "groundingMetadata",
+        "citationMetadata")
     )
 
     for (part in cand$content$parts %||% list()) {

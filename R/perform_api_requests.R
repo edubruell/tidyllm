@@ -66,10 +66,10 @@ perform_chat_request <- function(.request,
     # stream put its bare event list there instead, which is why streaming and
     # tools could not be combined.
     #
-    # The events are deliberately NOT kept alongside. `parse_logprobs()` asks
-    # `r_has_name(.input, "delta")`, which recurses, so a stashed event list
-    # would answer yes for every stream and send a body-shaped response down the
-    # per-chunk path.
+    # The raw events are deliberately not stashed beside the body: nothing
+    # downstream reads them any more, and keeping a second representation of the
+    # same response is what let the streaming and blocking paths diverge in the
+    # first place.
     response_data <- list(
       content = assemble_stream_response(.api, stream_response$raw_data),
       headers = response_headers,

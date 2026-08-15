@@ -387,6 +387,61 @@ llt_test("the base-class default is silent rather than an error", {
                   "the APIProvider default no longer returns NULL")
 })
 
+# ── The loop itself, end to end and offline ──────────────────────────────────
+#
+# Everything above tests the assembler in isolation. This tests the WIRING: that
+# `perform_chat_request()` actually puts the assembled body where the tool loop
+# looks, and that follow-up rounds stream. Both were provably untested before,
+# reverting either one left every offline suite green.
+#
+# The replay server answers each round with the same fixture, so the model never
+# stops asking for tools and the loop runs to its ceiling. Hitting the ceiling
+# is therefore the success condition: it can only happen if every round found
+# tool calls in a streamed response.
+
+loop_error <- function(name, stream, rounds = 2) {
+  fx   <- server$fixtures[[name]]
+  api  <- stream_fixture_api(fx)
+  tool <- tidyllm_tool(function(city) paste0(city, ": 6 degrees"),
+                       "Get the temperature in a city",
+                       city = field_chr("City name"))
+
+  req  <- httr2::request(server$url(name)) |>
+    httr2::req_body_json(list(model = "replay", stream = TRUE))
+
+  tryCatch({
+    resp <- perform_chat_request(req, api, stream, 30, 1)
+    process_tool_loop(api, resp, list(tool), list(model = "replay"), req,
+                      .timeout = 30, .max_tries = 1, .max_tool_rounds = rounds,
+                      .stream = stream)
+    NA_character_
+  }, error = function(e) conditionMessage(e))
+}
+
+for (nm in TOOL_FIXTURES) {
+  local({
+    fixture_name <- nm
+    llt_test(sprintf("%s drives a streamed multi-round tool loop", fixture_name), {
+      err <- loop_error(fixture_name, stream = TRUE)
+
+      llt_expect_true(grepl("Maximum tool rounds", err %||% ""),
+                      sprintf("%s: expected the loop to reach its ceiling, got: %s",
+                              fixture_name, err))
+    })
+  })
+}
+
+llt_test("a streamed round performed as a blocking one fails loudly", {
+  # The counterpart to the test above: if `process_tool_loop()` stopped passing
+  # .stream through, the follow-up round would read a text/event-stream body as
+  # JSON. Asserting which error comes back is what distinguishes the two, since
+  # both paths error.
+  err <- loop_error("claude_tools_stream", stream = FALSE)
+
+  llt_expect_true(grepl("content type|event-stream|parse", err %||% "", ignore.case = TRUE),
+                  sprintf("expected a content-type failure from the blocking read, got: %s", err))
+})
+
 # -- What moved to the CRAN suite --------------------------------------------
 #
 # The two invariants that used to close this file, that no provider still

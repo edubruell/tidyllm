@@ -28,18 +28,27 @@ load_stream_fixtures <- function(.dir = STREAM_FIXTURE_DIR) {
 
 #' Start a webfakes process replaying the fixtures.
 #'
-#' Two routes:
-#'   GET /stream/<name>              replay every recorded chunk
-#'   GET /stream/<name>?chunks=<n>   replay the first n chunks, then close
+#' Routes:
+#'   GET  /stream/<name>              replay every recorded chunk
+#'   GET  /stream/<name>?chunks=<n>   replay the first n chunks, then close
+#'   POST /stream/<name>              the same, for the tool loop
 #'
 #' The truncating route is how abnormal termination gets tested: the connection
 #' ends without the provider's terminal event, which is exactly the case four of
 #' the six `handle_stream()` loops spin on forever today.
+#'
+#' POST exists because `process_tool_loop()` re-performs the real request object,
+#' which carries a JSON body. The same fixture answers every round, so the loop
+#' keeps finding tool calls and runs to its `.max_tool_rounds` ceiling; that is
+#' what makes a streamed multi-round conversation testable without a key.
 start_stream_replay_server <- function(.fixtures = load_stream_fixtures()) {
   rlang::check_installed("webfakes", reason = "to replay recorded streams offline.")
 
-  app <- webfakes::new_app()
-  app$get(webfakes::new_regexp("^/stream/(?<name>[^/?]+)$"), function(req, res) {
+  # `force()` matters: the app is serialised into a subprocess, and a promise
+  # left unevaluated here fails to resolve there.
+  force(.fixtures)
+
+  replay <- function(req, res) {
     fx <- .fixtures[[req$params$name]]
     if (is.null(fx)) {
       res$set_status(404L)$send("no such fixture")
@@ -52,7 +61,11 @@ start_stream_replay_server <- function(.fixtures = load_stream_fixtures()) {
 
     res$set_header("content-type", fx$content_type)
     for (ch in chunks) res$send_chunk(ch)
-  })
+  }
+
+  app <- webfakes::new_app()
+  app$get(webfakes::new_regexp("^/stream/(?<name>[^/?]+)$"), replay)
+  app$post(webfakes::new_regexp("^/stream/(?<name>[^/?]+)$"), replay)
 
   proc <- webfakes::new_app_process(app)
   structure(

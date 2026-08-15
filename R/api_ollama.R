@@ -142,17 +142,16 @@ method(assemble_stream_response, list(api_ollama, class_list)) <- function(.api,
   envelope <- list()
 
   for (event in .events) {
-    envelope <- utils::modifyList(
-      envelope,
-      event[intersect(names(event), c("model", "created_at", "done", "done_reason",
-                                      "total_duration", "load_duration",
-                                      "prompt_eval_count", "prompt_eval_duration",
-                                      "eval_count", "eval_duration"))]
+    envelope <- merge_stream_envelope(
+      envelope, event,
+      c("model", "created_at", "done", "done_reason", "total_duration",
+        "load_duration", "prompt_eval_count", "prompt_eval_duration",
+        "eval_count", "eval_duration")
     )
-    message  <- event$message %||% list()
-    text     <- c(text, message$content %||% character())
-    thinking <- c(thinking, message$thinking %||% character())
-    calls    <- append(calls, message$tool_calls %||% list())
+    msg      <- event$message %||% list()
+    text     <- c(text, msg$content %||% character())
+    thinking <- c(thinking, msg$thinking %||% character())
+    calls    <- append(calls, msg$tool_calls %||% list())
   }
 
   assembled <- list(role = "assistant", content = paste0(text, collapse = ""))

@@ -230,15 +230,31 @@ test_that("finish_chat_response records rate limits for providers that report th
 test_that("finish_chat_response runs the tool loop for streams too", {
   # A streamed response reaches the loop in the same shape a blocking one does,
   # so `has_tool_calls()` decides whether to loop; it is not short-circuited by
-  # the mode. With no tool calls in the body there is nothing to perform, so this
-  # stays offline while still going through the streaming branch.
+  # the mode. With no tool calls in the assembled body there is nothing to
+  # perform, so this stays offline while still going through the branch.
   tool  <- tidyllm_tool(function(city) "x", "Get weather", city = field_chr("City"))
   built <- tidyllm:::claude_build_chat_request(llm_message("hi"), .dry_run = TRUE)
   built$tools_def <- list(tool)
   built$mode <- "stream"
 
-  out <- tidyllm:::finish_chat_response(built, fake_response("streamed"))
+  assembled <- list(content = list(role = "assistant", stop_reason = "end_turn",
+                                   content = list(list(type = "text", text = "streamed"))))
+  out <- tidyllm:::finish_chat_response(built, fake_response("streamed", raw = assembled))
   expect_identical(get_reply(out), "streamed")
+})
+
+test_that("a stream that assembled to nothing refuses to run tools", {
+  # The failure this replaces is silent: an absent body reads as "no tool calls",
+  # so the loop never runs and the model's preamble becomes the final answer.
+  tool  <- tidyllm_tool(function(city) "x", "Get weather", city = field_chr("City"))
+  built <- tidyllm:::claude_build_chat_request(llm_message("hi"), .dry_run = TRUE)
+  built$tools_def <- list(tool)
+  built$mode <- "stream"
+
+  expect_error(
+    tidyllm:::finish_chat_response(built, fake_response("preamble", raw = NULL)),
+    "assemble_stream_response"
+  )
 })
 
 # `assemble_stream_response()` is what lets a streamed response reach the tool
@@ -246,6 +262,26 @@ test_that("finish_chat_response runs the tool loop for streams too", {
 # local_tests/, but the accumulation rules are worth pinning here too: they are
 # pure functions of a list, and the failure they guard against (a silently
 # lossy assembly) does not raise anywhere.
+
+test_that("an absent body reads as no tool calls on every provider", {
+  # The guard in finish_chat_response() exists because this is FALSE rather than
+  # an error: without it a provider lacking an assembler silently skips its
+  # tools. If any provider ever raised here instead, that guard would be
+  # unreachable and the diagnostic would come from the wrong place.
+  apis <- list(
+    claude = api_claude, openai = api_openai, cc = tidyllm:::api_chat_completions,
+    groq = tidyllm:::api_groq, mistral = tidyllm:::api_mistral,
+    azure = tidyllm:::api_azure_openai, gemini = tidyllm:::api_gemini,
+    ollama = tidyllm:::api_ollama, deepseek = tidyllm:::api_deepseek,
+    openrouter = tidyllm:::api_openrouter, llamacpp = tidyllm:::api_llamacpp,
+    perplexity = tidyllm:::api_perplexity, compatible = tidyllm:::api_compatible
+  )
+  for (n in names(apis)) {
+    api <- apis[[n]](short_name = "x", long_name = "X", api_key_env_var = "K")
+    expect_false(has_tool_calls(api, list(raw = list(content = NULL))),
+                 label = paste0(n, " on an absent body"))
+  }
+})
 
 test_that("the base-class assembler returns NULL rather than erroring", {
   # Called on every stream, including providers that never see a tool call.
@@ -320,6 +356,77 @@ test_that("chat completions assembly accumulates split tool arguments by index",
   expect_length(extract_tool_calls(api, resp), 2)
 })
 
+test_that("chat completions assembly rescues a lone index-less tool call", {
+  # Some OpenAI-compatible servers omit `index` when a chunk carries one call.
+  # Dropping it is silent: has_tool_calls() reads FALSE, no loop runs, and the
+  # preamble is returned as the answer. A lone call therefore falls back to
+  # slot 0; an index-less call arriving beside others still cannot be placed.
+  api <- tidyllm:::api_chat_completions(short_name = "x", long_name = "X",
+                                        api_key_env_var = "K")
+
+  lone <- assemble_stream_response(api, list(list(choices = list(list(
+    delta = list(tool_calls = list(list(id = "c1", type = "function",
+                                        `function` = list(name = "get_weather",
+                                                          arguments = "{\"city\": \"Bern\"}")))),
+    finish_reason = "tool_calls")))))
+  expect_length(lone$choices[[1]]$message$tool_calls, 1)
+  expect_true(has_tool_calls(api, list(raw = list(content = lone))))
+
+  # Two in one chunk, neither with an index: not attributable, so skipped
+  # rather than merged into one call with concatenated arguments.
+  ambiguous <- assemble_stream_response(api, list(list(choices = list(list(
+    delta = list(tool_calls = list(
+      list(id = "c1", `function` = list(name = "f", arguments = "{\"a\": 1}")),
+      list(id = "c2", `function` = list(name = "f", arguments = "{\"a\": 2}"))
+    )))))))
+  expect_null(ambiguous$choices[[1]]$message$tool_calls)
+})
+
+test_that("chat completions assembly gives an argument-less call an empty object", {
+  # `""` makes run_tool_calls() fail to parse, warn, and drop the result while
+  # the assistant message still announces the call; the follow-up request is then
+  # a tool_calls entry with no matching tool message, which endpoints reject.
+  api <- tidyllm:::api_chat_completions(short_name = "x", long_name = "X",
+                                        api_key_env_var = "K")
+  body <- assemble_stream_response(api, list(list(choices = list(list(
+    delta = list(tool_calls = list(list(index = 0L, id = "c1", type = "function",
+                                        `function` = list(name = "now")))),
+    finish_reason = "tool_calls")))))
+
+  expect_identical(body$choices[[1]]$message$tool_calls[[1]]$`function`$arguments, "{}")
+})
+
+test_that("stream envelope merging survives a null-valued field", {
+  # jsonlite keeps a JSON null as a named element with a NULL value, and
+  # modifyList() reads that as "delete this key". OpenAI-compatible endpoints
+  # send "usage": null on every chunk but the last when usage reporting is on.
+  api <- tidyllm:::api_chat_completions(short_name = "x", long_name = "X",
+                                        api_key_env_var = "K")
+  events <- list(
+    list(model = "m", usage = list(total_tokens = 7L),
+         choices = list(list(delta = list(content = "hi")))),
+    list(model = "m", usage = NULL,
+         choices = list(list(delta = list(), finish_reason = "stop")))
+  )
+  body <- assemble_stream_response(api, events)
+
+  expect_identical(body$usage$total_tokens, 7L)
+})
+
+test_that("ollama assembly accumulates thinking text", {
+  api <- tidyllm:::api_ollama(short_name = "ollama", long_name = "Ollama",
+                              api_key_env_var = "")
+  body <- assemble_stream_response(api, list(
+    list(model = "m", message = list(role = "assistant", thinking = "Let me ")),
+    list(model = "m", message = list(role = "assistant", thinking = "think.")),
+    list(model = "m", message = list(role = "assistant", content = "Done."),
+         done = TRUE)
+  ))
+
+  expect_identical(body$message$thinking, "Let me think.")
+  expect_identical(body$message$content, "Done.")
+})
+
 test_that("chat completions assembly keeps streamed logprobs where the parser looks", {
   # Streams used to carry their logprobs in a separate per-chunk path. Folding
   # them into the blocking shape is what let that second path be deleted, so a
@@ -390,19 +497,126 @@ test_that("claude assembly accumulates tool arguments per content block", {
                    c("toolu_1", "toolu_2"))
 })
 
-test_that("claude assembly handles a tool that takes no arguments", {
-  # No fragments at all is `{}`, not a parse failure.
+test_that("claude assembly keeps an empty tool input serialising as an object", {
+  # No fragments at all is a call with no arguments. The distinction that matters
+  # is jsonlite's: a NAMED empty list writes `{}`, an unnamed one writes `[]`,
+  # and the API rejects `[]` with "Input should be an object" when the block is
+  # sent back. So the `{}` from content_block_start is kept, not replaced.
+  empty_object <- structure(list(), names = character())
   events <- list(
     list(type = "content_block_start", index = 0L,
          content_block = list(type = "tool_use", id = "toolu_1",
-                              name = "now", input = list())),
+                              name = "now", input = empty_object)),
     list(type = "message_delta", delta = list(stop_reason = "tool_use"))
   )
   api  <- tidyllm:::api_claude(short_name = "claude", long_name = "Claude",
                               api_key_env_var = "ANTHROPIC_API_KEY")
   body <- assemble_stream_response(api, events)
 
-  expect_identical(body$content[[1]]$input, list())
+  expect_identical(
+    as.character(jsonlite::toJSON(body$content[[1]]$input, auto_unbox = TRUE)),
+    "{}"
+  )
+})
+
+test_that("claude assembly survives a tool call truncated mid-arguments", {
+  # Hitting max_tokens during input_json_delta leaves a JSON prefix. Erroring on
+  # it would throw away a reply the user has already watched stream past, so the
+  # partial arguments are dropped and stop_reason ends the turn instead.
+  events <- list(
+    list(type = "content_block_start", index = 0L,
+         content_block = list(type = "text", text = "")),
+    list(type = "content_block_delta", index = 0L,
+         delta = list(type = "text_delta", text = "Looking that up.")),
+    list(type = "content_block_start", index = 1L,
+         content_block = list(type = "tool_use", id = "toolu_1", name = "get_weather",
+                              input = structure(list(), names = character()))),
+    list(type = "content_block_delta", index = 1L,
+         delta = list(type = "input_json_delta", partial_json = "{\"city\": \"Berl")),
+    list(type = "message_delta", delta = list(stop_reason = "max_tokens"))
+  )
+  api <- tidyllm:::api_claude(short_name = "claude", long_name = "Claude",
+                             api_key_env_var = "ANTHROPIC_API_KEY")
+
+  expect_no_error(body <- assemble_stream_response(api, events))
+  expect_identical(body$content[[1]]$text, "Looking that up.")
+  expect_identical(body$stop_reason, "max_tokens")
+  # stop_reason is not "tool_use", so the loop correctly declines to call a tool
+  # whose arguments never finished arriving.
+  expect_false(has_tool_calls(api, list(raw = list(content = body))))
+})
+
+test_that("claude assembly accumulates thinking text and its signature", {
+  # `append_tool_messages()` sends these blocks back verbatim, so a thinking
+  # block that lost its text or kept only the last fragment of its signature
+  # makes Claude reject the continued turn. Reachable since .thinking, .stream
+  # and .tools can now be combined.
+  events <- list(
+    list(type = "content_block_start", index = 0L,
+         content_block = list(type = "thinking", thinking = "")),
+    list(type = "content_block_delta", index = 0L,
+         delta = list(type = "thinking_delta", thinking = "Two cities, ")),
+    list(type = "content_block_delta", index = 0L,
+         delta = list(type = "thinking_delta", thinking = "so two calls.")),
+    list(type = "content_block_delta", index = 0L,
+         delta = list(type = "signature_delta", signature = "sig-part-1")),
+    list(type = "content_block_delta", index = 0L,
+         delta = list(type = "signature_delta", signature = "sig-part-2")),
+    list(type = "message_delta", delta = list(stop_reason = "tool_use"))
+  )
+  api  <- tidyllm:::api_claude(short_name = "claude", long_name = "Claude",
+                              api_key_env_var = "ANTHROPIC_API_KEY")
+  body <- assemble_stream_response(api, events)
+
+  expect_identical(body$content[[1]]$thinking, "Two cities, so two calls.")
+  # Concatenated, matching what extract_metadata_stream() does with the same
+  # deltas; keeping only the last fragment would send back an invalid signature.
+  expect_identical(body$content[[1]]$signature, "sig-part-1sig-part-2")
+})
+
+test_that("claude assembly ignores events it cannot place", {
+  # Malformed wire data must not raise a subscript error in the middle of a
+  # stream the user is already watching.
+  events <- list(
+    list(type = "content_block_start",
+         content_block = list(type = "text", text = "")),
+    list(type = "content_block_delta",
+         delta = list(type = "text_delta", text = "orphan")),
+    list(type = "content_block_start", index = 0L,
+         content_block = list(type = "text", text = "")),
+    list(type = "content_block_delta", index = 7L,
+         delta = list(type = "text_delta", text = "no such block")),
+    list(type = "content_block_delta", index = 0L,
+         delta = list(type = "text_delta", text = "kept"))
+  )
+  api <- tidyllm:::api_claude(short_name = "claude", long_name = "Claude",
+                             api_key_env_var = "ANTHROPIC_API_KEY")
+
+  expect_no_error(body <- assemble_stream_response(api, events))
+  expect_length(body$content, 1)
+  expect_identical(body$content[[1]]$text, "kept")
+})
+
+test_that("claude assembly fills in built-in server tool arguments", {
+  # server_tool_use blocks (claude_websearch()) fragment their input the same way
+  # and are sent back the same way. Dropping their arguments leaves `input: {}`,
+  # which Claude rejects on the continued turn.
+  events <- list(
+    list(type = "content_block_start", index = 0L,
+         content_block = list(type = "server_tool_use", id = "srvtoolu_1",
+                              name = "web_search",
+                              input = structure(list(), names = character()))),
+    list(type = "content_block_delta", index = 0L,
+         delta = list(type = "input_json_delta", partial_json = "{\"query\": ")),
+    list(type = "content_block_delta", index = 0L,
+         delta = list(type = "input_json_delta", partial_json = "\"weather\"}")),
+    list(type = "message_delta", delta = list(stop_reason = "tool_use"))
+  )
+  api  <- tidyllm:::api_claude(short_name = "claude", long_name = "Claude",
+                              api_key_env_var = "ANTHROPIC_API_KEY")
+  body <- assemble_stream_response(api, events)
+
+  expect_identical(body$content[[1]]$input$query, "weather")
 })
 
 test_that("gemini assembly merges text parts but never merges function calls", {

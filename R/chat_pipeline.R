@@ -42,6 +42,11 @@ new_chat_request <- function(.request,
                              .verbose = FALSE,
                              .meta_fn = NULL,
                              .perform_fn = NULL) {
+  # An unrecognised mode reads as non-streaming, which would block on a request
+  # whose body asked to stream. The mode is the one place the two halves are
+  # kept in sync, so a typo has to be an error rather than a silent hang.
+  .mode <- match.arg(.mode, c("value", "stream", "async-stream"))
+
   structure(
     list(
       request          = .request,
@@ -113,6 +118,16 @@ finish_chat_response <- function(.built, .response) {
   # so `has_tool_calls()` and friends are reused unchanged, and each follow-up
   # round streams too.
   if (!is.null(.built$tools_def)) {
+    # A provider with no `assemble_stream_response()` method streams into an
+    # empty body, where `has_tool_calls()` is FALSE and the tool calls simply
+    # vanish. Saying so is the only way that failure is ever visible.
+    if (streams && is.null(.response$raw$content)) {
+      stop(sprintf(
+        "%s cannot stream and call tools in the same request: it has no assemble_stream_response() method.",
+        api@long_name
+      ), call. = FALSE)
+    }
+
     .response <- process_tool_loop(
       .api             = api,
       .response        = .response,

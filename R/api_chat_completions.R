@@ -305,10 +305,9 @@ method(assemble_stream_response, list(api_chat_completions, class_list)) <- func
   envelope  <- list()
 
   for (event in .events) {
-    envelope <- utils::modifyList(
-      envelope,
-      event[intersect(names(event), c("id", "model", "created", "object",
-                                      "system_fingerprint", "usage"))]
+    envelope <- merge_stream_envelope(
+      envelope, event,
+      c("id", "model", "created", "object", "system_fingerprint", "usage")
     )
 
     # The final usage-only chunk carries no choices at all.
@@ -327,10 +326,16 @@ method(assemble_stream_response, list(api_chat_completions, class_list)) <- func
     logprobs <- c(logprobs, choice$logprobs$content %||% list())
 
     for (call in delta$tool_calls %||% list()) {
-      # A delta without an index cannot be attributed to a call; treating it as
-      # index 0 would silently merge two tool calls into one.
-      if (is.null(call$index)) next
-      key <- as.character(call$index)
+      # `index` is what fragments of the same call are accumulated on. Some
+      # OpenAI-compatible servers omit it when the chunk carries a single call,
+      # and dropping that call would be silent: `has_tool_calls()` would return
+      # FALSE, no loop would run, and the model's preamble would be returned as
+      # the final answer. So a lone call falls back to slot 0, and only an
+      # index-less call arriving beside others is skipped, because there it
+      # genuinely cannot be attributed.
+      index <- call$index %||% if (length(delta$tool_calls) == 1) 0L else NULL
+      if (is.null(index)) next
+      key <- as.character(index)
 
       if (is.null(calls[[key]])) {
         calls[[key]] <- list(id = NULL, type = "function",
@@ -347,15 +352,21 @@ method(assemble_stream_response, list(api_chat_completions, class_list)) <- func
 
   assembled <- lapply(indices, function(key) {
     call <- calls[[key]]
-    call$`function`$arguments <- paste0(call$`function`$arguments, collapse = "")
+    args <- paste0(call$`function`$arguments, collapse = "")
+    # A call with no argument fragments is a no-argument call, which is `"{}"`
+    # in this dialect. Leaving it `""` makes `run_tool_calls()` fail to parse,
+    # warn, and drop the result, while the assistant message it builds still
+    # announces the call; the follow-up request is then a tool_calls entry with
+    # no matching tool message, which these endpoints reject.
+    call$`function`$arguments <- if (nzchar(args)) args else "{}"
     call
   })
 
-  message <- list(role = "assistant", content = paste0(text, collapse = ""))
-  if (length(reasoning) > 0) message$reasoning <- paste0(reasoning, collapse = "")
-  if (length(assembled) > 0) message$tool_calls <- assembled
+  msg <- list(role = "assistant", content = paste0(text, collapse = ""))
+  if (length(reasoning) > 0) msg$reasoning <- paste0(reasoning, collapse = "")
+  if (length(assembled) > 0) msg$tool_calls <- assembled
 
-  choice <- list(index = 0L, message = message, finish_reason = finish)
+  choice <- list(index = 0L, message = msg, finish_reason = finish)
   if (length(logprobs) > 0) choice$logprobs <- list(content = logprobs)
 
   utils::modifyList(envelope, list(choices = list(choice)))

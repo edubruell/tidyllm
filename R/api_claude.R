@@ -394,13 +394,22 @@ method(assemble_stream_response, list(api_claude, class_list)) <- function(.api,
       message <- utils::modifyList(message, start[setdiff(names(start), "content")])
 
     } else if (type == "content_block_start") {
+      # Every block is addressed by its index, so an event without one cannot be
+      # placed. `as.character(NULL)` is `character(0)`, and assigning at that key
+      # raises an opaque subscript error in the middle of a stream the user is
+      # already watching, so it is skipped instead.
+      if (length(event$index) != 1) next
       key <- as.character(event$index)
+      # A repeated start for the same index replaces the block rather than
+      # appending a second one; two blocks sharing a tool_use id are rejected
+      # when they are sent back.
+      if (is.null(blocks[[key]])) indices <- c(indices, key)
       blocks[[key]] <- list(block = event$content_block %||% list(),
                             text  = character(),
                             json  = character())
-      indices <- c(indices, key)
 
     } else if (type == "content_block_delta") {
+      if (length(event$index) != 1) next
       key <- as.character(event$index)
       if (is.null(blocks[[key]])) next
       delta <- event$delta %||% list()
@@ -410,14 +419,18 @@ method(assemble_stream_response, list(api_claude, class_list)) <- function(.api,
         text_delta       = blocks[[key]]$text <- c(blocks[[key]]$text, delta$text %||% ""),
         thinking_delta   = blocks[[key]]$text <- c(blocks[[key]]$text, delta$thinking %||% ""),
         input_json_delta = blocks[[key]]$json <- c(blocks[[key]]$json, delta$partial_json %||% ""),
-        signature_delta  = blocks[[key]]$block$signature <- delta$signature,
+        # Concatenated rather than overwritten, matching what
+        # `extract_metadata_stream()` does with the same deltas. A signature that
+        # kept only its last fragment is rejected when the turn continues.
+        signature_delta  = blocks[[key]]$sig <- c(blocks[[key]]$sig, delta$signature %||% ""),
         NULL
       )
 
     } else if (type == "message_delta") {
-      message <- utils::modifyList(message, event$delta %||% list())
+      message <- utils::modifyList(message, purrr::compact(event$delta %||% list()))
       if (!is.null(event$usage)) {
-        message$usage <- utils::modifyList(message$usage %||% list(), event$usage)
+        message$usage <- utils::modifyList(message$usage %||% list(),
+                                           purrr::compact(event$usage))
       }
     }
   }
@@ -426,19 +439,30 @@ method(assemble_stream_response, list(api_claude, class_list)) <- function(.api,
     acc   <- blocks[[key]]
     block <- acc$block
     joined <- paste0(acc$text, collapse = "")
+    if (length(acc$sig) > 0) block$signature <- paste0(acc$sig, collapse = "")
 
     switch(
       block$type %||% "",
       text     = block$text     <- joined,
       thinking = block$thinking <- joined,
+      # Built-in tools such as `claude_websearch()` stream their arguments the
+      # same way and are sent back the same way, so they take the same branch.
+      server_tool_use = ,
       tool_use = {
         args <- paste0(acc$json, collapse = "")
-        # An empty accumulator means a tool that takes no arguments, which is
-        # `{}` rather than a parse failure.
-        block$input <- if (nzchar(args)) {
-          jsonlite::fromJSON(args, simplifyVector = FALSE)
-        } else {
-          list()
+        # No fragments at all means a tool called with no arguments. The `{}`
+        # that `content_block_start` already carries is kept rather than
+        # replaced, because it is a *named* empty list: an unnamed one
+        # serialises as `[]`, which the API rejects as not an object.
+        if (nzchar(args)) {
+          parsed <- tryCatch(jsonlite::fromJSON(args, simplifyVector = FALSE),
+                             error = function(e) NULL)
+          # A stream cut off mid-arguments (`max_tokens` reached during
+          # `input_json_delta`) leaves a JSON prefix. Erroring here would throw
+          # away a reply the user has already watched arrive, so the partial
+          # arguments are dropped and the turn ends on its own stop_reason, the
+          # same way the blocking path handles a truncated tool call.
+          if (!is.null(parsed)) block$input <- parsed
         }
       },
       NULL

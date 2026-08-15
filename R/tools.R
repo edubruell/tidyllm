@@ -346,7 +346,9 @@ process_tool_loop <- function(.api, .response, .tools_def, .request_body,
     tool_results <- run_tool_calls(.api, tool_calls, .tools_def)
     .request_body <- append_tool_messages(.api, .request_body, .response, tool_results)
     .request  <- httr2::req_body_json(.request, data = .request_body)
-    .response <- perform_chat_request(.request, .api, .stream, .timeout, .max_tries)
+    .response <- perform_chat_request(.request = .request, .api = .api,
+                                      .stream = .stream, .timeout = .timeout,
+                                      .max_tries = .max_tries)
   }
   if (round >= .max_tool_rounds && has_tool_calls(.api, .response)) {
     stop(sprintf("Maximum tool rounds (%d) reached with pending tool calls", .max_tool_rounds))

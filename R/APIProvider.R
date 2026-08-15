@@ -50,9 +50,11 @@ method(parse_logprobs, list(APIProvider, class_any)) <- function(.api, .input) N
 #' does not care how the response arrived.
 #'
 #' Providers that implement it can stream and call tools in the same request.
-#' Providers that do not keep the client-side guard against `.stream` with
-#' `.tools`, and returning NULL here leaves `has_tool_calls()` reading an absent
-#' body, which is FALSE for every provider.
+#' No shipped provider inherits this default; a new one that does and accepts
+#' both is caught by an explicit check in `finish_chat_response()`, because the
+#' failure would otherwise be silent: `has_tool_calls()` reads an absent body as
+#' FALSE, so no tool would run and the model's preamble would be returned as the
+#' final answer.
 #'
 #' @noRd
 method(assemble_stream_response, list(APIProvider, class_any)) <- function(.api, .events) NULL
