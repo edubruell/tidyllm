@@ -47,9 +47,14 @@ perform_chat_request <- function(.request,
   api_name <- .api@long_name
   if (.stream == TRUE) {
     message("\n---------\nStart ", api_name, " streaming: \n---------\n")
-    # Perform the streaming request
-    response <- httr2::req_perform_connection(.request, blocking = FALSE)
-    stream_response <- handle_stream(.api,response)
+    # `blocking = TRUE` waits for bytes instead of spinning on empty reads. The
+    # console path has nothing else to do while it waits, and the event-loop
+    # driver (0.6.0 Phase B) is what needs the non-blocking form.
+    response <- httr2::req_perform_connection(.request, blocking = TRUE)
+    # `.timeout` now applies to streaming too, as an idle deadline between
+    # events rather than a total, so a long generation is not killed for being
+    # long. Before 0.6.0 the streaming path had no timeout backstop at all.
+    stream_response <- handle_stream(.api, response, .idle_timeout = .timeout)
     assistant_reply <- stream_response$reply
     response_data   <- stream_response$raw_data 
     metadata <- extract_metadata_stream(.api,stream_response$raw_data)

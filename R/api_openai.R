@@ -156,52 +156,34 @@ method(extract_metadata_stream, list(api_openai, class_list)) <- function(.api, 
   )
 }
 
-#' Handle SSE streaming for OpenAI Responses API
+#' Parse one Responses API SSE event
 #'
 #' The Responses API embeds the event type as `type` inside the JSON data field
-#' rather than using SSE `event:` headers.
+#' rather than using SSE `event:` headers, and its event vocabulary is unrelated
+#' to Chat Completions. Only the terminal `response.completed` event is kept:
+#' it carries the whole response object, so nothing else is needed for metadata.
 #'
 #' @noRd
-method(handle_stream, list(api_openai, new_S3_class("httr2_response"))) <- function(.api, .stream_response) {
-  stream_text <- ""
-  stream_data <- list()
+method(parse_stream_event, api_openai) <- function(.api, .chunk) {
+  parsed <- parse_stream_json(.chunk$data)
+  if (is.null(parsed)) return(stream_event("noop"))
 
-  repeat {
-    stream_chunk <- httr2::resp_stream_sse(.stream_response)
-
-    # NULL means no data available yet — keep reading
-    if (is.null(stream_chunk)) next
-
-    data_str <- stream_chunk$data
-    if (is.null(data_str) || !nzchar(data_str)) next
-
-    parsed <- tryCatch(
-      jsonlite::fromJSON(data_str, simplifyVector = FALSE),
-      error = function(e) NULL
-    )
-    if (is.null(parsed)) next
-
-    event_type <- parsed$type %||% ""
-
-    if (event_type == "response.output_text.delta") {
-      delta <- parsed$delta
-      if (!is.null(delta) && nzchar(delta)) {
-        stream_text <- paste0(stream_text, delta)
-        cat(delta)
-        utils::flush.console()
-      }
-    } else if (event_type == "response.completed") {
-      stream_data <- append(stream_data, list(parsed))
-      close(.stream_response)
-      message("\n---------\nStream finished\n---------\n")
-      break
-    } else if (event_type == "response.failed") {
-      close(.stream_response)
-      stop("OpenAI Responses API stream failed")
-    }
-  }
-
-  list(reply = stream_text, raw_data = stream_data)
+  switch(
+    parsed$type %||% "",
+    "response.output_text.delta" =
+      stream_event("text", text = parsed$delta, event = parsed),
+    "response.completed" =
+      stream_event("meta", done = TRUE, keep = TRUE, event = parsed),
+    "response.failed" = {
+      detail <- parsed$response$error$message %||% "stream failed"
+      stream_event("error", error = detail, event = parsed)
+    },
+    "error" = {
+      detail <- parsed$message %||% parsed$error$message %||% "stream failed"
+      stream_event("error", error = detail, event = parsed)
+    },
+    stream_event("meta", event = parsed)
+  )
 }
 
 #' Convert TOOL list to OpenAI Responses API flat tool schema

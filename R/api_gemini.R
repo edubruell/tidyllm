@@ -100,44 +100,41 @@ method(parse_chat_response, list(api_gemini,class_list)) <- function(.api,.conte
 }
 
 
-#' A method to handle streaming requests for Gemini
+#' Parse one Gemini SSE event
+#'
+#' Gemini streams ordinary SSE only when the request carries `alt=sse`. Without
+#' it the endpoint returns a pretty-printed JSON array streamed in chunks, with
+#' no SSE framing at all, which is why tidyllm buffered the text and pattern
+#' matched it before 0.6.0. The request builder now always sends `alt=sse`, so
+#' the buffer-and-match parser is gone.
+#'
+#' Parts carrying `thought = TRUE` are thinking output, not reply text, and must
+#' be classified rather than concatenated into the reply.
 #'
 #' @noRd
-method(handle_stream,list(api_gemini,new_S3_class("httr2_response"))) <- function(.api,.stream_response) {
-  stream_data <- ""
-  current_buffer <-  ""
-  repeat {
-    stream_chunk   <- httr2::resp_stream_lines(.stream_response)
-    stream_data    <- paste0(stream_data,stream_chunk)
-    current_buffer <- paste0(current_buffer,stream_chunk) 
-    
-    parts_section <- stringr::str_extract(current_buffer, 
-                                          '"parts":\\s*\\[\\s*\\{[^\\}]*\\}\\s*\\]')
-    
-    if(!is.na(parts_section)){
-      current_part <- jsonlite::fromJSON(paste0("{",parts_section,"}"))
-      stream_response <- current_part$parts$text
-      cat(stream_response)
-      utils::flush.console()
-      current_buffer <-  ""
-    }
-    
-    # Skip empty chunks
-    if (httr2::resp_stream_is_complete(.stream_response)) {
-      close(.stream_response)
-      message("\n---------\nStream finished\n---------\n")
-      break
-    }
+method(parse_stream_event, api_gemini) <- function(.api, .chunk) {
+  parsed <- parse_stream_json(.chunk$data)
+  if (is.null(parsed)) return(stream_event("noop"))
+
+  if (!is.null(parsed$error)) {
+    detail <- parsed$error$message %||% "unknown error"
+    return(stream_event("error", error = detail, keep = TRUE, event = parsed))
   }
-  stream_data_parsed <- jsonlite::fromJSON(stream_data)
-  stream_text <- stream_data_parsed$candidates |> 
-    purrr::map_chr(~.x$content$parts[[1]]$text) |>
-    stringr::str_c(collapse = "")
-  
-  list(
-    reply = stream_text,
-    raw_data = list(parsed=stream_data_parsed)
+
+  candidate <- parsed$candidates[[1]] %||% NULL
+  # A finishReason of any kind ends the stream. Gemini sends the usage metadata
+  # on that same event, so it is kept like every other one.
+  done <- !is.null(candidate$finishReason)
+
+  parts    <- candidate$content$parts %||% list()
+  is_think <- vapply(parts, function(p) isTRUE(p$thought), logical(1))
+  text     <- paste0(
+    vapply(parts[!is_think], function(p) p$text %||% "", character(1)),
+    collapse = ""
   )
+
+  kind <- if (nzchar(text)) "text" else if (any(is_think)) "thinking" else "meta"
+  stream_event(kind, text = text, done = done, keep = TRUE, event = parsed)
 }
     
 
@@ -169,24 +166,37 @@ method(extract_metadata, list(api_gemini,class_list))<- function(.api,.response)
 #'
 #' @noRd
 method(extract_metadata_stream, list(api_gemini,class_list))<- function(.api,.stream_raw_data) {
-  parsed_stream_data <- .stream_raw_data$parsed
-  final_stream_chunk <- parsed_stream_data[nrow(parsed_stream_data),]
+  # Under alt=sse the accumulator is a list of parsed events, like every other
+  # provider's, rather than the single data.frame the buffer-and-match parser
+  # produced. Gemini repeats usageMetadata on later events and only the final
+  # one is complete, so take the last event that carries it.
+  final_stream_chunk <- .stream_raw_data |>
+    purrr::keep(~ !is.null(.x$usageMetadata)) |>
+    utils::tail(1) |>
+    purrr::pluck(1)
+
+  if (is.null(final_stream_chunk)) {
+    final_stream_chunk <- .stream_raw_data[[length(.stream_raw_data)]] %||% list()
+  }
+
+  usage <- final_stream_chunk$usageMetadata
 
   list(
     model             = final_stream_chunk$modelVersion,
     timestamp         = lubridate::as_datetime(lubridate::now()),
-    prompt_tokens     = final_stream_chunk$usageMetadata$promptTokenCount,
-    completion_tokens = final_stream_chunk$usageMetadata$candidatesTokenCount,
-    total_tokens      = final_stream_chunk$usageMetadata$totalTokenCount,
-    cached_tokens         = as_token_count(final_stream_chunk$usageMetadata$cachedContentTokenCount),
+    prompt_tokens     = usage$promptTokenCount,
+    completion_tokens = usage$candidatesTokenCount,
+    total_tokens      = usage$totalTokenCount,
+    cached_tokens         = as_token_count(usage$cachedContentTokenCount),
     cache_creation_tokens = NA_integer_,
     stream            = TRUE,
     specific_metadata = list(
-      warning    = "Gemini outputs different metadata for streaming and non-streaming responses",
-      token_details = final_stream_chunk$usageMetadata
-    ) 
+      finishReason    = final_stream_chunk$candidates[[1]]$finishReason,
+      thinking_tokens = usage$thoughtsTokenCount,
+      token_details   = usage
+    )
   )
-}  
+}
 
 
 #' Method to convert a tidyllm TOOL definition to the expected input for Gemini
@@ -544,14 +554,19 @@ gemini_chat <- function(.llm,
   
   if(.stream==FALSE) request_type <- ":generateContent"
   if(.stream==TRUE)  request_type <- ":streamGenerateContent"
-  
+
   # Build the request
   request <- httr2::request("https://generativelanguage.googleapis.com") |>
     httr2::req_url_path(paste0("/v1beta/models/", .model, request_type)) |>
     httr2::req_headers_redacted(`x-goog-api-key` = api_key) |>
     httr2::req_headers(`Content-Type` = "application/json") |>
     httr2::req_body_json(request_body)
-  
+
+  # Without alt=sse the streaming endpoint returns a pretty-printed JSON array
+  # in chunks, with no SSE framing at all; with it, ordinary text/event-stream.
+  # This one query parameter is what lets the shared pump read Gemini.
+  if (.stream) request <- httr2::req_url_query(request, alt = "sse")
+
   if (.dry_run) return(request)
   
   # Perform the API request

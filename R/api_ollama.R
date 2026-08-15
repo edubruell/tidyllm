@@ -97,48 +97,31 @@ method(extract_metadata_stream, list(api_ollama,class_list))<- function(.api,.st
   )
 }  
 
-#' A method to handle streaming requests for ollama
+#' Parse one Ollama stream line
+#'
+#' Ollama sends newline-delimited JSON rather than SSE; one complete object per
+#' line, with `done = TRUE` on the last. Every object is kept, including the
+#' terminal one, which is where the token counts live.
 #'
 #' @noRd
-method(handle_stream,list(api_ollama,new_S3_class("httr2_response"))) <- function(.api,.stream_response) {
-  stream_text <- ""
-  stream_data <- list()
-  repeat {
-    #Sleep for a tiny bit because Ollama often hangs on sending complete lines
-    Sys.sleep(0.25)
-    stream_chunk   <- httr2::resp_stream_lines(.stream_response)
+method(parse_stream_event, api_ollama) <- function(.api, .chunk) {
+  parsed <- parse_stream_json(.chunk[[1]])
+  if (is.null(parsed)) return(stream_event("noop"))
 
-    # A cold model load makes Ollama send nothing for a while; an empty read is
-    # not an error, but a completed connection with nothing left to read is.
-    if (length(stream_chunk) == 0 || !nzchar(stream_chunk)) {
-      if (httr2::resp_stream_is_complete(.stream_response)) {
-        close(.stream_response)
-        stop("Ollama stream ended before the model reported completion.")
-      }
-      next
-    }
-
-    stream_content <- stream_chunk |>
-      jsonlite::fromJSON()
-
-    stream_data <- append(stream_data,list(stream_content))
-    if (stream_content$done==TRUE) {
-      close(.stream_response)
-      message("\n---------\nStream finished\n---------\n")
-      break
-    }
-
-    chunk_text  <- stream_content$message$content
-    stream_text <- paste0(stream_text, chunk_text)
-    cat(chunk_text)
-    utils::flush.console()
-    next
+  if (!is.null(parsed$error)) {
+    return(stream_event("error", error = parsed$error, keep = TRUE, event = parsed))
   }
-  
-  list(
-    reply = stream_text,
-    raw_data = stream_data
-  )
+
+  if (isTRUE(parsed$done)) {
+    return(stream_event("meta", done = TRUE, keep = TRUE, event = parsed))
+  }
+
+  thinking <- parsed$message$thinking
+  if (!is.null(thinking) && nzchar(thinking)) {
+    return(stream_event("thinking", text = thinking, keep = TRUE, event = parsed))
+  }
+
+  stream_event("text", text = parsed$message$content, keep = TRUE, event = parsed)
 }
 
 
@@ -333,7 +316,8 @@ ollama_chat <- function(.llm,
   ) |>
     validate_inputs()
 
-  api_obj <- api_ollama(short_name = "ollama",long_name = "Ollama")
+  api_obj <- api_ollama(short_name = "ollama", long_name = "Ollama",
+                        stream_transport = "lines")
   # Get formatted message list for ollama models
   ollama_messages <-  to_api_format(.llm,api_obj)
   
@@ -575,7 +559,8 @@ send_ollama_batch <- function(.llms,
   ) |>
     validate_inputs()
   
-  api_obj <- api_ollama(short_name = "ollama",long_name = "Ollama")
+  api_obj <- api_ollama(short_name = "ollama", long_name = "Ollama",
+                        stream_transport = "lines")
   
   # Handle JSON schema
   json=FALSE

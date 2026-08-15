@@ -334,52 +334,41 @@ method(run_tool_calls, list(api_claude, class_list, class_list)) <- function(.ap
   )
 }
 
-#' A method to handle streaming requests for Anthropic
-#' request
+#' Parse one Anthropic SSE event
+#'
+#' Claude emits typed events; `message_stop` is the terminal one and is itself
+#' kept, because `extract_metadata_stream()` walks the whole event list. Thinking
+#' deltas arrive as their own delta type at any content position, so they are
+#' classified rather than mistaken for output text.
 #'
 #' @noRd
-method(handle_stream,list(api_claude,new_S3_class("httr2_response"))) <- function(.api,.stream_response) {
-  stream_text <- ""
-  stream_data <- list()
-  repeat {
-    stream_chunk <- httr2::resp_stream_sse(.stream_response)
-    
-    # Skip empty chunks
-    if (is.null(stream_chunk$data) || !nzchar(stream_chunk$data)) {
-      next  
-    }
-    
+method(parse_stream_event, api_claude) <- function(.api, .chunk) {
+  parsed <- parse_stream_json(.chunk$data)
+  if (is.null(parsed)) return(stream_event("noop"))
 
-    # Try to parse the JSON content
-    parsed_event <- tryCatch(
-      jsonlite::fromJSON(stream_chunk$data, simplifyVector = FALSE, simplifyDataFrame = FALSE),
-      error = function(e) {
-        message("Failed to parse JSON: ", e$message)
-        return(NULL)
-      }
-    )
-    
-    if (!is.null(parsed_event)) {
-      stream_data <- append(stream_data,list(parsed_event))
-      if (parsed_event$type == "message_stop") {
-        close(.stream_response)
-        message("\n---------\nStream finished\n---------\n")
-        break
-      }
-      
-      delta_content <- parsed_event$delta$text
-      if (!is.null(delta_content)) {
-          stream_text <- paste0(stream_text, delta_content)
-          cat(delta_content)
-          utils::flush.console()
-        }
-      }
+  type <- parsed$type %||% ""
+
+  if (type == "error") {
+    detail <- parsed$error$message %||% parsed$error$type %||% "unknown error"
+    return(stream_event("error", error = detail, keep = TRUE, event = parsed))
   }
-  
-  list(
-    reply = stream_text,
-    raw_data = stream_data
-  )
+
+  if (type == "message_stop") {
+    return(stream_event("meta", done = TRUE, keep = TRUE, event = parsed))
+  }
+
+  delta_type <- parsed$delta$type %||% ""
+  if (delta_type == "thinking_delta") {
+    return(stream_event("thinking", text = parsed$delta$thinking,
+                        keep = TRUE, event = parsed))
+  }
+
+  text <- parsed$delta$text
+  if (!is.null(text)) {
+    return(stream_event("text", text = text, keep = TRUE, event = parsed))
+  }
+
+  stream_event("meta", keep = TRUE, event = parsed)
 }
 
 

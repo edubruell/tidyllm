@@ -4,11 +4,18 @@
 APIProvider <- new_class("APIProvider",properties = list(
   short_name = class_character,
   long_name  = class_character,
-  api_key_env_var = class_character
+  api_key_env_var = class_character,
+  # Which reader the shared stream pump uses: "sse" for text/event-stream,
+  # "lines" for newline-delimited JSON. Set it at the construction site, never
+  # as a subclass default override: S7 0.2.2 records a subclass override in
+  # @properties but the constructor still returns the parent's value, silently,
+  # and a wrong transport points the SSE reader at an ndjson stream.
+  stream_transport = new_property(class_character, default = "sse")
 ))
 
 parse_chat_response        <- new_generic("parse_chat_response",c(".api",".content"))
 handle_stream              <- new_generic("handle_stream",c(".api",".stream_response"))
+parse_stream_event         <- new_generic("parse_stream_event",".api")
 ratelimit_from_header      <- new_generic("ratelimit_from_header",c(".api", ".headers"))
 get_api_key                <- new_generic("get_api_key",".api")
 prepare_llms_for_batch     <- new_generic("prepare_llms_for_batch",".api")

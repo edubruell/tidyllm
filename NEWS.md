@@ -1,7 +1,35 @@
 # tidyllm 0.6.0 (development version)
 
-Work in progress. This section covers the maintenance backlog that lands ahead of
-the release's async theme.
+Work in progress. This section covers the shared stream pump and the maintenance
+backlog, both of which land ahead of the release's async surface.
+
+## Streaming
+
+* Every provider now streams through one shared pump. The six hand-rolled
+  `repeat` loops are gone; a provider customises streaming by implementing
+  `parse_stream_event()` and declaring its `stream_transport`, never by writing
+  another loop.
+* **A truncated or abnormally terminated stream raises instead of hanging.** The
+  old loops relied solely on a provider-specific terminal event, so a closed
+  connection, a mid-stream provider error or an unrecognised `finish_reason`
+  span forever. The pump checks `resp_stream_is_complete()` on every empty read.
+  Measured before the change, `openai()`, `claude()` and the whole
+  ChatCompletions family hung; all providers now raise.
+* `.timeout` finally applies to streaming, as an idle deadline between events
+  rather than a total, so a long generation is not killed for being long. The
+  streaming path previously had no timeout backstop at all.
+* `perplexity()` streams now terminate on any `finish_reason`, not only
+  `"stop"`; a reply cut short by `"length"` used to spin.
+* `gemini()` streaming moved to the `alt=sse` endpoint. Without that query
+  parameter the endpoint returns a pretty-printed JSON array in chunks with no
+  SSE framing, which is why tidyllm buffered the text and pattern matched it.
+  Gemini streaming metadata now reports `finishReason` and `thinking_tokens`
+  alongside the token counts.
+* Thinking deltas are distinguished from reply text on every provider that emits
+  them, rather than being concatenated into the reply or dropped silently.
+* The console path opens its connection with `blocking = TRUE` instead of
+  spinning on empty reads. Output is unchanged; cadence may differ slightly, and
+  Ollama no longer needs its 0.25s sleep per line.
 
 ## Credential handling
 

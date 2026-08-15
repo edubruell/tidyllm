@@ -45,6 +45,7 @@ Collate:
     'embedding_helpers.R'
     'LLMMessage.R'
     'APIProvider.R'
+    'stream_pump.R'
     'llm_message.R'
     'llm_verbs.R'
     'media.R'

@@ -43,57 +43,36 @@ method(extract_metadata_stream, list(api_perplexity,class_list))<- function(.api
 }  
 
 
-#' A method to handle streaming requests 
-#' Perplixity is different than vanilla openai here. 
+#' Parse one Perplexity SSE event
+#'
+#' Perplexity speaks the Chat Completions event shape but terminates on
+#' `finish_reason` rather than on `[DONE]`, and its terminal event carries both
+#' the usage block and the citations. Events without choices are dropped, as
+#' they were before 0.6.0, because `extract_metadata_stream()` reads the last
+#' kept event.
 #'
 #' @noRd
-method(handle_stream,list(api_perplexity,new_S3_class("httr2_response"))) <- function(.api,.stream_response) {
-  stream_text <- ""
-  stream_data <- list()
-  repeat {
-    stream_chunk <- httr2::resp_stream_sse(.stream_response)
-    # Skip empty chunks
-    if (is.null(stream_chunk$data) || !nzchar(stream_chunk$data)) {
-      next  
-    }
-    
+method(parse_stream_event, api_perplexity) <- function(.api, .chunk) {
+  if (identical(.chunk$data, "[DONE]")) return(stream_event("meta", done = TRUE))
 
-    # Try to parse the JSON content
-    parsed_event <- tryCatch(
-      jsonlite::fromJSON(stream_chunk$data, simplifyVector = FALSE, simplifyDataFrame = FALSE),
-      error = function(e) {
-        message("Failed to parse JSON: ", e$message)
-        return(NULL)
-      }
-    )
-    
-    if (!is.null(parsed_event)) {
-      if(length(parsed_event$choices) >= 1) {
-        stream_data <- append(stream_data,list(parsed_event))
-        if(!is.null(parsed_event$choices[[1]]$finish_reason)){
-          finished <- parsed_event$choices[[1]]$finish_reason
-          if (finished == "stop") {
-            close(.stream_response)
-            message("\n---------\nStream finished\n---------\n")
-            break
-          }
-          
-        }
-        
-        delta_content <- parsed_event$choices[[1]]$delta$content
-        if (!is.null(delta_content)) {
-          stream_text <- paste0(stream_text, delta_content)
-          cat(delta_content)
-          utils::flush.console()
-        }
-      }
-    }
+  parsed <- parse_stream_json(.chunk$data)
+  if (is.null(parsed)) return(stream_event("noop"))
+
+  if (!is.null(parsed$error)) {
+    detail <- parsed$error$message %||% "unknown error"
+    return(stream_event("error", error = detail, event = parsed))
   }
-  
-  list(
-    reply = stream_text,
-    raw_data = stream_data
-  )
+
+  if (length(parsed$choices) < 1) return(stream_event("meta"))
+
+  choice <- parsed$choices[[1]]
+  # Any finish_reason ends the stream. Before 0.6.0 only "stop" did, so a
+  # response cut short by "length" span forever.
+  done <- !is.null(choice$finish_reason)
+  text <- choice$delta$content
+
+  kind <- if (!is.null(text) && nzchar(text)) "text" else "meta"
+  stream_event(kind, text = text, done = done, keep = TRUE, event = parsed)
 }
 
 

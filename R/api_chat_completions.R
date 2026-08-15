@@ -251,56 +251,32 @@ method(append_tool_messages, list(api_chat_completions, class_any, class_any, cl
   }
 
 
-#' A method to handle streaming requests
-#' request
+#' Parse one Chat Completions SSE event
+#'
+#' The terminal marker is the literal string `[DONE]`, which is not JSON. Every
+#' JSON event is kept, including the final usage-only chunk that carries no
+#' choices: `extract_metadata_stream()` looks for `usage` there.
 #'
 #' @noRd
-method(handle_stream,list(api_chat_completions,new_S3_class("httr2_response"))) <- function(.api,.stream_response) {
-  stream_text <- ""
-  stream_data <- list()
-  repeat {
-    stream_chunk <- httr2::resp_stream_sse(.stream_response)
-    
-    # Skip empty chunks
-    if (is.null(stream_chunk$data) || !nzchar(stream_chunk$data)) {
-      next  
-    }
-    
-    if (stream_chunk$data == "[DONE]") {
-      close(.stream_response)
-      message("\n---------\nStream finished\n---------\n")
-      break
-    }
-    
-    # Try to parse the JSON content
-    parsed_event <- tryCatch(
-      jsonlite::fromJSON(stream_chunk$data, simplifyVector = FALSE, simplifyDataFrame = FALSE),
-      error = function(e) {
-        message("Failed to parse JSON: ", e$message)
-        return(NULL)
-      }
-    )
-    
-    if (!is.null(parsed_event)) {
-      # Every event is recorded, including the final usage-only chunk that
-      # carries no choices; extract_metadata_stream() looks for it there.
-      stream_data <- append(stream_data,list(parsed_event))
+method(parse_stream_event, api_chat_completions) <- function(.api, .chunk) {
+  if (identical(.chunk$data, "[DONE]")) return(stream_event("meta", done = TRUE))
 
-      if(length(parsed_event$choices) >= 1) {
-        delta_content <- parsed_event$choices[[1]]$delta$content
-        if (!is.null(delta_content)) {
-          stream_text <- paste0(stream_text, delta_content)
-          cat(delta_content)
-          utils::flush.console()
-        }
-      }
-    }
+  parsed <- parse_stream_json(.chunk$data)
+  if (is.null(parsed)) return(stream_event("noop"))
+
+  if (!is.null(parsed$error)) {
+    detail <- parsed$error$message %||% "unknown error"
+    return(stream_event("error", error = detail, keep = TRUE, event = parsed))
   }
-  
-  list(
-    reply = stream_text,
-    raw_data = stream_data
-  )
+
+  text <- NULL
+  if (length(parsed$choices) >= 1) text <- parsed$choices[[1]]$delta$content
+
+  if (!is.null(text) && nzchar(text)) {
+    stream_event("text", text = text, keep = TRUE, event = parsed)
+  } else {
+    stream_event("meta", keep = TRUE, event = parsed)
+  }
 }
 
 
