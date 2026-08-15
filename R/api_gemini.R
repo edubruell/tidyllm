@@ -418,6 +418,34 @@ gemini_chat <- function(.llm,
                    .verbose = FALSE,
                    .stream = FALSE,
                    .max_tool_rounds = 10) {
+  built <- do.call(gemini_build_chat_request, mget(names(formals())))
+  run_chat_pipeline(built, .dry_run)
+}
+
+#' Build a Gemini chat request without performing it
+#'
+#' @noRd
+gemini_build_chat_request <- function(.llm,
+                   .model = "gemini-3.6-flash",
+                   .fileid = NULL,
+                   .temperature = NULL,
+                   .max_output_tokens = NULL,
+                   .top_p = NULL,
+                   .top_k = NULL,
+                   .grounding_threshold = NULL,
+                   .presence_penalty = NULL,
+                   .frequency_penalty = NULL,
+                   .stop_sequences = NULL,
+                   .safety_settings = NULL,
+                   .json_schema = NULL,
+                   .tools = NULL,
+                   .thinking_budget = NULL,
+                   .timeout = 120,
+                   .dry_run = FALSE,
+                   .max_tries = 3,
+                   .verbose = FALSE,
+                   .stream = FALSE,
+                   .max_tool_rounds = 10) {
 
   # Validate inputs
   c(
@@ -567,29 +595,21 @@ gemini_chat <- function(.llm,
   # This one query parameter is what lets the shared pump read Gemini.
   if (.stream) request <- httr2::req_url_query(request, alt = "sse")
 
-  if (.dry_run) return(request)
-  
-  # Perform the API request
-  response <- perform_chat_request(request,api_obj,.stream,.timeout,.max_tries)
-  
-  if (.stream == FALSE && !is.null(raw_tools_def)) {
-    response <- process_tool_loop(
-      .api = api_obj,
-      .response = response,
-      .tools_def = raw_tools_def,
-      .request_body = request_body,
-      .request = request,
-      .timeout = .timeout,
-      .max_tries = .max_tries,
-      .max_tool_rounds = .max_tool_rounds
-    )
-  }
-  
-  add_message(.llm     = .llm,
-              .role    = "assistant", 
-              .content = response$assistant_reply, 
-              .json    = json,
-              .meta    = response$meta)
+  new_chat_request(
+    .request          = request,
+    .api              = api_obj,
+    .llm              = .llm,
+    .body             = request_body,
+    .tools_def        = raw_tools_def,
+    .json             = json,
+    .mode             = if (isTRUE(.stream)) "stream" else "value",
+    .timeout          = .timeout,
+    .max_tries        = .max_tries,
+    .max_tool_rounds  = .max_tool_rounds,
+    .verbose          = .verbose,
+    .track_rate_limit = FALSE,
+    .parse_logprobs   = FALSE
+  )
 }
 
 

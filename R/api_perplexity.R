@@ -163,6 +163,52 @@ perplexity_chat <- function(
     .max_tries = 3,
     .dry_run = FALSE
 ) {
+  built <- do.call(perplexity_build_chat_request, mget(names(formals())))
+  run_chat_pipeline(built, .dry_run)
+}
+
+#' Build a Perplexity chat request without performing it
+#'
+#' @noRd
+perplexity_build_chat_request <- function(
+    .llm,
+    .model = "sonar",
+    .max_tokens = 1024,
+    .temperature = NULL,
+    .top_p = NULL,
+    .frequency_penalty = NULL,
+    .presence_penalty = NULL,
+    .stop = NULL,
+    .search_domain_filter = NULL,
+    .search_language_filter = NULL,
+    .language_preference = NULL,
+    .return_images = FALSE,
+    .image_domain_filter = NULL,
+    .image_format_filter = NULL,
+    .search_recency_filter = NULL,
+    .search_mode = "web",
+    .search_after_date_filter = NULL,
+    .search_before_date_filter = NULL,
+    .last_updated_after_filter = NULL,
+    .last_updated_before_filter = NULL,
+    .disable_search = FALSE,
+    .enable_search_classifier = FALSE,
+    .reasoning_effort = NULL,
+    .return_related_questions = FALSE,
+    .user_location = NULL,
+    .search_context_size = NULL,
+    .search_type = NULL,
+    .stream_mode = NULL,
+    .json_schema = NULL,
+    .top_k = NULL,
+    .web_search_options = NULL,
+    .api_url = "https://api.perplexity.ai/",
+    .timeout = 60,
+    .stream = FALSE,
+    .verbose = FALSE,
+    .max_tries = 3,
+    .dry_run = FALSE
+) {
   c(
     "Input .llm must be an LLMMessage object" = S7_inherits(.llm, LLMMessage),
     "Input .max_tokens must be a positive integer" = is_integer_valued(.max_tokens) & .max_tokens > 0,
@@ -283,23 +329,27 @@ perplexity_chat <- function(
     httr2::req_body_json(data = request_body)
   
   # Dry run returns request object for inspection
-  if (.dry_run) return(request)
-  
-  # --- Perform Request (may stream) ---
-  response <- perform_chat_request(request, api_obj, .stream, .timeout, .max_tries)
-  assistant_reply <- response$assistant_reply
-  
-  # --- Extract metadata including search_results if present ---
-  meta <- response$meta
-  if (!is.null(response$search_results)) {
-    meta$specific_metadata$search_results <- response$search_results
-  }
-  
-  add_message(.llm     = .llm,
-              .role    = "assistant",
-              .content = assistant_reply,
-              .meta    = meta,
-              .json    = json)
+  new_chat_request(
+    .request   = request,
+    .api       = api_obj,
+    .llm       = .llm,
+    .body      = request_body,
+    # Perplexity supports no tool calls, so there is no loop to run.
+    .tools_def = NULL,
+    .json      = json,
+    .mode      = if (isTRUE(.stream)) "stream" else "value",
+    .timeout   = .timeout,
+    .max_tries = .max_tries,
+    .verbose   = .verbose,
+    # Search results ride alongside the response rather than inside its
+    # metadata, so they are folded in here.
+    .meta_fn = function(meta, response) {
+      if (!is.null(response$search_results)) {
+        meta$specific_metadata$search_results <- response$search_results
+      }
+      meta
+    }
+  )
 }
 
 

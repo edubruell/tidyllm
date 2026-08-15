@@ -98,6 +98,36 @@ llamacpp_chat <- function(.llm,
                           .dry_run        = FALSE,
                           .max_tries      = 3,
                           .max_tool_rounds = 10) {
+  built <- do.call(llamacpp_build_chat_request, mget(names(formals())))
+  run_chat_pipeline(built, .dry_run)
+}
+
+#' Build a llama.cpp chat request without performing it
+#'
+#' @noRd
+llamacpp_build_chat_request <- function(.llm,
+                          .model          = "local-model",
+                          .max_tokens     = 1024,
+                          .temperature    = NULL,
+                          .top_p          = NULL,
+                          .stop           = NULL,
+                          .stream         = FALSE,
+                          .tools          = NULL,
+                          .tool_choice    = NULL,
+                          .json_schema    = NULL,
+                          .grammar        = NULL,
+                          .logprobs        = FALSE,
+                          .top_logprobs    = NULL,
+                          .seed            = NULL,
+                          .thinking        = NULL,
+                          .thinking_budget = NULL,
+                          .server          = Sys.getenv("LLAMACPP_SERVER", "http://localhost:8080"),
+                          .api_key        = Sys.getenv("LLAMACPP_API_KEY", ""),
+                          .timeout        = 120,
+                          .verbose        = FALSE,
+                          .dry_run        = FALSE,
+                          .max_tries      = 3,
+                          .max_tool_rounds = 10) {
 
   c(
     "Input .llm must be an LLMMessage object" = S7_inherits(.llm, LLMMessage),
@@ -178,33 +208,21 @@ llamacpp_chat <- function(.llm,
     httr2::req_headers(!!!auth_header, `Content-Type` = "application/json") |>
     httr2::req_body_json(data = request_body)
 
-  if (.dry_run) {
-    return(request)
-  }
-
-  response <- perform_chat_request(request, api_obj, .stream, .timeout, .max_tries)
-
-  if (.stream == FALSE && !is.null(tools_def)) {
-    response <- process_tool_loop(
-      .api             = api_obj,
-      .response        = response,
-      .tools_def       = tools_def,
-      .request_body    = request_body,
-      .request         = request,
-      .timeout         = .timeout,
-      .max_tries       = .max_tries,
-      .max_tool_rounds = .max_tool_rounds
-    )
-  }
-
-  logprobs <- parse_logprobs(api_obj, response$raw)
-
-  add_message(.llm      = .llm,
-              .role     = "assistant",
-              .content  = response$assistant_reply,
-              .json     = json,
-              .meta     = response$meta,
-              .logprobs = logprobs)
+  new_chat_request(
+    .request          = request,
+    .api              = api_obj,
+    .llm              = .llm,
+    .body             = request_body,
+    .tools_def        = tools_def,
+    .json             = json,
+    .mode             = if (isTRUE(.stream)) "stream" else "value",
+    .timeout          = .timeout,
+    .max_tries        = .max_tries,
+    .max_tool_rounds  = .max_tool_rounds,
+    .verbose          = .verbose,
+    .track_rate_limit = FALSE,
+    .parse_logprobs   = TRUE
+  )
 }
 
 

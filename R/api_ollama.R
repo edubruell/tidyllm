@@ -285,6 +285,39 @@ ollama_chat <- function(.llm,
                    .max_tries = 3,
                    .keep_alive = NULL,
                    .dry_run = FALSE) {
+  built <- do.call(ollama_build_chat_request, mget(names(formals())))
+  run_chat_pipeline(built, .dry_run)
+}
+
+#' Build a Ollama chat request without performing it
+#'
+#' @noRd
+ollama_build_chat_request <- function(.llm,
+                   .model = "qwen3.5:4b",
+                   .stream = FALSE,
+                   .seed = NULL,
+                   .json_schema = NULL,
+                   .temperature = NULL,
+                   .num_ctx = 32768,
+                   .num_predict = NULL,
+                   .top_k = NULL,
+                   .top_p = NULL,
+                   .min_p = NULL,
+                   .mirostat = NULL,
+                   .mirostat_eta = NULL,
+                   .mirostat_tau = NULL,
+                   .repeat_last_n = NULL,
+                   .repeat_penalty = NULL,
+                   .tools = NULL,
+                   .max_tool_rounds = 10,
+                   .tfs_z = NULL,
+                   .stop = NULL,
+                   .think = NULL,
+                   .ollama_server = "http://localhost:11434",
+                   .timeout = 120,
+                   .max_tries = 3,
+                   .keep_alive = NULL,
+                   .dry_run = FALSE) {
 
   # Validate the inputs
   c(
@@ -377,32 +410,20 @@ ollama_chat <- function(.llm,
     httr2::req_url_path("/api/chat") |>
     httr2::req_body_json(ollama_request_body)
   
-  # Return only the request object in a dry run.
-  if (.dry_run) {
-    return(request)  
-  }
-  
-  # Perform the API request
-  response <- perform_chat_request(request, api_obj, .stream, .timeout, .max_tries)
-  
-  if (.stream == FALSE && !is.null(tools_def)) {
-    response <- process_tool_loop(
-      .api = api_obj,
-      .response = response,
-      .tools_def = tools_def,
-      .request_body = ollama_request_body,
-      .request = request,
-      .timeout = .timeout,
-      .max_tries = .max_tries,
-      .max_tool_rounds = .max_tool_rounds
-    )
-  }
-  
-  add_message(.llm     = .llm,
-              .role    = "assistant", 
-              .content = response$assistant_reply, 
-              .json    = json,
-              .meta    = response$meta)
+  new_chat_request(
+    .request          = request,
+    .api              = api_obj,
+    .llm              = .llm,
+    .body             = ollama_request_body,
+    .tools_def        = tools_def,
+    .json             = json,
+    .mode             = if (isTRUE(.stream)) "stream" else "value",
+    .timeout          = .timeout,
+    .max_tries        = .max_tries,
+    .max_tool_rounds  = .max_tool_rounds,
+    .track_rate_limit = FALSE,
+    .parse_logprobs   = FALSE
+  )
 }
 
 

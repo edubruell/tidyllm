@@ -374,6 +374,31 @@ openai_chat <- function(
     .max_tool_rounds     = 10,
     .stateful            = FALSE
 ) {
+  built <- do.call(openai_build_chat_request, mget(names(formals())))
+  run_chat_pipeline(built, .dry_run)
+}
+
+#' Build a OpenAI chat request without performing it
+#'
+#' @noRd
+openai_build_chat_request <- function(
+    .llm,
+    .model               = "gpt-5.6-terra",
+    .max_output_tokens   = NULL,
+    .temperature         = NULL,
+    .seed                = NULL,
+    .stream              = FALSE,
+    .timeout             = 60,
+    .verbose             = FALSE,
+    .json_schema         = NULL,
+    .max_tries           = 3,
+    .dry_run             = FALSE,
+    .reasoning_effort    = NULL,
+    .tools               = NULL,
+    .tool_choice         = NULL,
+    .max_tool_rounds     = 10,
+    .stateful            = FALSE
+) {
   c(
     "Input .llm must be an LLMMessage object"                                             = S7_inherits(.llm, LLMMessage),
     "Input .model must be a string"                                                       = is.character(.model),
@@ -469,57 +494,51 @@ openai_chat <- function(
     ) |>
     httr2::req_body_json(data = request_body)
 
-  if (.dry_run) return(request)
-
-  response <- if (stateful_active) {
-    tryCatch(
-      perform_chat_request(request, api_obj, .stream, .timeout, .max_tries),
-      error = function(e) {
-        warning(
-          "OpenAI stateful mode failed (stored context may have expired); ",
-          "retrying with full message history. Original error: ", conditionMessage(e),
-          call. = FALSE
-        )
-        full_body <- request_data$request_body
-        if (!is.null(tools_def)) {
-          full_body$tools       <- tools_to_api(api_obj, tools_def)
-          full_body$tool_choice <- .tool_choice
+  new_chat_request(
+    .request          = request,
+    .api              = api_obj,
+    .llm              = .llm,
+    .body             = request_body,
+    .tools_def        = tools_def,
+    .json             = json,
+    .mode             = if (isTRUE(.stream)) "stream" else "value",
+    .timeout          = .timeout,
+    .max_tries        = .max_tries,
+    .max_tool_rounds  = .max_tool_rounds,
+    .verbose          = .verbose,
+    .track_rate_limit = TRUE,
+    # Stateful mode sends only the new turn and lets the server supply the
+    # history. When the stored context has expired the request fails, and the
+    # only recovery is to resend the full history against a rebuilt body. Note
+    # that a subsequent tool loop still runs against the stateful request, as it
+    # did before the split.
+    .perform_fn = if (!stateful_active) NULL else function(built) {
+      tryCatch(
+        perform_chat_request(built$request, built$api, isTRUE(.stream),
+                             built$timeout, built$max_tries),
+        error = function(e) {
+          warning(
+            "OpenAI stateful mode failed (stored context may have expired); ",
+            "retrying with full message history. Original error: ", conditionMessage(e),
+            call. = FALSE
+          )
+          full_body <- request_data$request_body
+          if (!is.null(tools_def)) {
+            full_body$tools       <- tools_to_api(api_obj, tools_def)
+            full_body$tool_choice <- .tool_choice
+          }
+          if (isTRUE(.stream)) full_body$stream <- TRUE
+          fallback_req <- httr2::request("https://api.openai.com/v1/responses") |>
+            httr2::req_headers(
+              Authorization  = sprintf("Bearer %s", api_key),
+              `Content-Type` = "application/json"
+            ) |>
+            httr2::req_body_json(data = full_body)
+          perform_chat_request(fallback_req, built$api, isTRUE(.stream),
+                               built$timeout, built$max_tries)
         }
-        if (isTRUE(.stream)) full_body$stream <- TRUE
-        fallback_req <- httr2::request("https://api.openai.com/v1/responses") |>
-          httr2::req_headers(
-            Authorization  = sprintf("Bearer %s", api_key),
-            `Content-Type` = "application/json"
-          ) |>
-          httr2::req_body_json(data = full_body)
-        perform_chat_request(fallback_req, api_obj, .stream, .timeout, .max_tries)
-      }
-    )
-  } else {
-    perform_chat_request(request, api_obj, .stream, .timeout, .max_tries)
-  }
-
-  if (!isTRUE(.stream) && !is.null(tools_def)) {
-    response <- process_tool_loop(
-      .api           = api_obj,
-      .response      = response,
-      .tools_def     = tools_def,
-      .request_body  = request_body,
-      .request       = request,
-      .timeout       = .timeout,
-      .max_tries     = .max_tries,
-      .max_tool_rounds = .max_tool_rounds
-    )
-  }
-
-  track_rate_limit(api_obj, response$headers, .verbose)
-
-  add_message(
-    .llm     = .llm,
-    .role    = "assistant",
-    .content = response$assistant_reply,
-    .json    = json,
-    .meta    = response$meta
+      )
+    }
   )
 }
 

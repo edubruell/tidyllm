@@ -447,6 +447,41 @@ cc_chat <- function(
     .tool_choice = NULL,
     .max_tool_rounds = 10
 ) {
+  built <- do.call(cc_build_chat_request, mget(names(formals())))
+  run_chat_pipeline(built, .dry_run)
+}
+
+#' Build a ChatCompletions request without performing it
+#'
+#' @noRd
+cc_build_chat_request <- function(
+    .llm,
+    .model = "gpt-5.6-terra",
+    .max_completion_tokens = NULL,
+    .reasoning_effort = NULL,
+    .frequency_penalty = NULL,
+    .logit_bias = NULL,
+    .presence_penalty = NULL,
+    .seed = NULL,
+    .stop = NULL,
+    .stream = FALSE,
+    .temperature = NULL,
+    .top_p = NULL,
+    .api_url = "https://api.openai.com/",
+    .timeout = 60,
+    .verbose = FALSE,
+    .json_schema = NULL,
+    .max_tries = 3,
+    .dry_run = FALSE,
+    .compatible = FALSE,
+    .api_path = "/v1/chat/completions",
+    .api_key_env_var = "OPENAI_API_KEY",
+    .logprobs = NULL,
+    .top_logprobs = NULL,
+    .tools = NULL,
+    .tool_choice = NULL,
+    .max_tool_rounds = 10
+) {
   # Validate inputs
   c(
     "Input .llm must be an LLMMessage object" = S7_inherits(.llm, LLMMessage),
@@ -551,46 +586,22 @@ cc_chat <- function(
     request <- request |> httr2::req_headers(`Content-Type` = "application/json")
   }
   
-  # Return only the request object in a dry run
-  if (.dry_run) {
-    return(request)
-  }
-  
-  # Perform the request
-  response <- perform_chat_request(request, api_obj, .stream, .timeout, .max_tries)
-  
-  if (.stream == FALSE && !is.null(tools_def)) {
-    response <- process_tool_loop(
-      .api = api_obj,
-      .response = response,
-      .tools_def = tools_def,
-      .request_body = request_body,
-      .request = request,
-      .timeout = .timeout,
-      .max_tries = .max_tries,
-      .max_tool_rounds = .max_tool_rounds
-    )
-  }
-  
-  # Extract assistant reply
-  assistant_reply <- response$assistant_reply
-  
-  # Check for log probabilities
-  logprobs <- parse_logprobs(api_obj, response$raw)
-  
-  # Track rate limit if not using a compatible API
-  if (!.compatible) {
-    track_rate_limit(api_obj, response$headers, .verbose)
-  }
-  
-  # Update the LLMMessage with the assistant's response
-  add_message(
-    .llm = .llm,
-    .role = "assistant",
-    .content = assistant_reply,
-    .json = json,
-    .meta = response$meta,
-    .logprobs = logprobs
+  new_chat_request(
+    .request          = request,
+    .api              = api_obj,
+    .llm              = .llm,
+    .body             = request_body,
+    .tools_def        = tools_def,
+    .json             = json,
+    .mode             = if (isTRUE(.stream)) "stream" else "value",
+    .timeout          = .timeout,
+    .max_tries        = .max_tries,
+    .max_tool_rounds  = .max_tool_rounds,
+    .verbose          = .verbose,
+    # A compatible endpoint is some third party speaking the OpenAI dialect; its
+    # headers carry no OpenAI rate limits to track.
+    .track_rate_limit = !.compatible,
+    .parse_logprobs   = TRUE
   )
 }
 

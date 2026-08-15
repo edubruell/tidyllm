@@ -214,6 +214,35 @@ mistral_chat <- function(.llm,
                          .tools = NULL,
                          .tool_choice = NULL,
                          .max_tool_rounds = 10) {
+  built <- do.call(mistral_build_chat_request, mget(names(formals())))
+  run_chat_pipeline(built, .dry_run)
+}
+
+#' Build a Mistral chat request without performing it
+#'
+#' @noRd
+mistral_build_chat_request <- function(.llm,
+                         .model = "mistral-large-latest",
+                         .frequency_penalty = NULL,
+                         .logit_bias = NULL,
+                         .presence_penalty = NULL,
+                         .seed = NULL,
+                         .stop = NULL,
+                         .stream = FALSE,
+                         .temperature = 0.7,
+                         .top_p = 1,
+                         .min_tokens = NULL,
+                         .max_tokens = NULL,
+                         .json_schema = NULL,
+                         .safe_prompt = FALSE,
+                         .reasoning_effort = NULL,
+                         .timeout = 120,
+                         .max_tries = 3,
+                         .dry_run = FALSE,
+                         .verbose = FALSE,
+                         .tools = NULL,
+                         .tool_choice = NULL,
+                         .max_tool_rounds = 10) {
   
   # Validate the inputs
   c(
@@ -308,42 +337,20 @@ mistral_chat <- function(.llm,
     ) |>
     httr2::req_body_json(request_body)
   
-  # Return only the request object in a dry run
-  if (.dry_run) {
-    return(request)  
-  }
-  
-  # Perform the request
-  response <- perform_chat_request(request, api_obj, .stream, .timeout, .max_tries)
-  
-  # Handle tool calls with multi-turn support
-  if (.stream == FALSE && !is.null(tools_def)) {
-    response <- process_tool_loop(
-      .api = api_obj,
-      .response = response,
-      .tools_def = tools_def,
-      .request_body = request_body,
-      .request = request,
-      .timeout = .timeout,
-      .max_tries = .max_tries,
-      .max_tool_rounds = .max_tool_rounds
-    )
-  }
-  
-  # Extract assistant reply
-  assistant_reply <- response$assistant_reply
-  
-  # Track rate limit
-  track_rate_limit(api_obj, response$headers, .verbose)
-  
-  # Add model's message to the history of the LLMMessage object
-  add_message(
-    .llm = .llm,
-    .role = "assistant", 
-    .content = assistant_reply,
-    .json = json,
-    .meta = response$meta,
-    .logprobs = NULL
+  new_chat_request(
+    .request          = request,
+    .api              = api_obj,
+    .llm              = .llm,
+    .body             = request_body,
+    .tools_def        = tools_def,
+    .json             = json,
+    .mode             = if (isTRUE(.stream)) "stream" else "value",
+    .timeout          = .timeout,
+    .max_tries        = .max_tries,
+    .max_tool_rounds  = .max_tool_rounds,
+    .verbose          = .verbose,
+    .track_rate_limit = TRUE,
+    .parse_logprobs   = FALSE
   )
 }
 

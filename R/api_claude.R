@@ -519,6 +519,35 @@ claude_chat <- function(.llm,
                         .effort = NULL,
                         .cache = FALSE,
                         .max_tool_rounds = 10) {
+  built <- do.call(claude_build_chat_request, mget(names(formals())))
+  run_chat_pipeline(built, .dry_run)
+}
+
+#' Build a Claude chat request without performing it
+#'
+#' @noRd
+claude_build_chat_request <- function(.llm,
+                        .model = "claude-sonnet-5",
+                        .max_tokens = 2048,
+                        .temperature = NULL,
+                        .top_k = NULL,
+                        .top_p = NULL,
+                        .metadata = NULL,
+                        .stop_sequences = NULL,
+                        .tools = NULL,
+                        .json_schema = NULL,
+                        .file_ids = NULL,
+                        .api_url = "https://api.anthropic.com/",
+                        .verbose = FALSE,
+                        .max_tries = 3,
+                        .timeout = 60,
+                        .stream = FALSE,
+                        .dry_run = FALSE,
+                        .thinking = FALSE,
+                        .thinking_budget = 1024,
+                        .effort = NULL,
+                        .cache = FALSE,
+                        .max_tool_rounds = 10) {
   # Validate inputs to the Claude function
   c(
     ".llm must be an LLMMessage object" = S7_inherits(.llm, LLMMessage),
@@ -633,44 +662,33 @@ claude_chat <- function(.llm,
       `content-type` = "application/json; charset=utf-8",
       .redact = "x-api-key"
     ) |>
-    httr2::req_body_json(data = request_body)  
-  
-  # Return only the request object 
-  if (.dry_run) {
-    return(request)  
-  }
-  
-  response <- perform_chat_request(request, api_obj, .stream, .timeout, .max_tries)
+    httr2::req_body_json(data = request_body)
 
-  if (.stream == FALSE && !is.null(tools_def)) {
-    response <- process_tool_loop(
-      .api = api_obj,
-      .response = response,
-      .tools_def = tools_def,
-      .request_body = request_body,
-      .request = request,
-      .timeout = .timeout,
-      .max_tries = .max_tries,
-      .max_tool_rounds = .max_tool_rounds
-    )
-  }
-  
-  assistant_reply <- if (.stream) {
-    response$assistant_reply
-  } else {
-    collapse_claude_blocks(response$raw$content$content)
-  }
-  
-  track_rate_limit(api_obj, response$headers, .verbose)
-  
-  add_message(
-    .llm     = .llm,
-    .role    = "assistant",
-    .content = assistant_reply,
-    .json    = json,
-    .meta    = response$meta
+  new_chat_request(
+    .request          = request,
+    .api              = api_obj,
+    .llm              = .llm,
+    .body             = request_body,
+    .tools_def        = tools_def,
+    .json             = json,
+    .mode             = if (isTRUE(.stream)) "stream" else "value",
+    .timeout          = .timeout,
+    .max_tries        = .max_tries,
+    .max_tool_rounds  = .max_tool_rounds,
+    .verbose          = .verbose,
+    .track_rate_limit = TRUE,
+    # Claude re-derives the reply from the raw body rather than reusing
+    # `assistant_reply`, so that the value survives a tool loop that replaced
+    # the response. `collapse_claude_blocks()` is what `parse_chat_response()`
+    # returns for Claude, minus its error and empty-body guards, which have
+    # already fired by this point.
+    .reply_fn = if (isTRUE(.stream)) {
+      NULL
+    } else {
+      function(response) collapse_claude_blocks(response$raw$content$content)
+    }
   )
-}  
+}
 
 #' Send a Batch of Messages to Claude API
 #'

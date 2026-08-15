@@ -78,6 +78,33 @@ deepseek_chat <- function(.llm,
                           .dry_run = FALSE,
                           .max_tries = 3,
                           .max_tool_rounds = 10) {
+  built <- do.call(deepseek_build_chat_request, mget(names(formals())))
+  run_chat_pipeline(built, .dry_run)
+}
+
+#' Build a DeepSeek chat request without performing it
+#'
+#' @noRd
+deepseek_build_chat_request <- function(.llm,
+                          .model = "deepseek-v4-pro",
+                          .thinking = NULL,
+                          .max_tokens = 2048,
+                          .temperature = NULL,
+                          .top_p = NULL,
+                          .frequency_penalty = NULL,
+                          .presence_penalty = NULL,
+                          .stop = NULL,
+                          .stream = FALSE,
+                          .logprobs = NULL,
+                          .top_logprobs = NULL,
+                          .tools = NULL,
+                          .tool_choice = NULL,
+                          .api_url = "https://api.deepseek.com/",
+                          .timeout = 60,
+                          .verbose = FALSE,
+                          .dry_run = FALSE,
+                          .max_tries = 3,
+                          .max_tool_rounds = 10) {
 
   # Validate inputs
   c(
@@ -147,37 +174,21 @@ deepseek_chat <- function(.llm,
     ) |>
     httr2::req_body_json(data = request_body)
   
-  if (.dry_run) {
-    return(request)
-  }
-  
-  response <- perform_chat_request(request, api_obj, .stream, .timeout, .max_tries)
-  
-  # Handle tool calls with multi-turn support
-  if (.stream == FALSE && !is.null(tools_def)) {
-    response <- process_tool_loop(
-      .api = api_obj,
-      .response = response,
-      .tools_def = tools_def,
-      .request_body = request_body,
-      .request = request,
-      .timeout = .timeout,
-      .max_tries = .max_tries,
-      .max_tool_rounds = .max_tool_rounds
-    )
-  }
-  
-  assistant_reply <- response$assistant_reply
-
-  logprobs  <- parse_logprobs(api_obj, response$raw)
-  
-  
-  add_message(.llm     = .llm,
-              .role    = "assistant", 
-              .content = assistant_reply , 
-              .json    = FALSE,
-              .meta    = response$meta,
-              .logprobs = logprobs)
+  new_chat_request(
+    .request          = request,
+    .api              = api_obj,
+    .llm              = .llm,
+    .body             = request_body,
+    .tools_def        = tools_def,
+    .json             = FALSE,
+    .mode             = if (isTRUE(.stream)) "stream" else "value",
+    .timeout          = .timeout,
+    .max_tries        = .max_tries,
+    .max_tool_rounds  = .max_tool_rounds,
+    .verbose          = .verbose,
+    .track_rate_limit = FALSE,
+    .parse_logprobs   = TRUE
+  )
 }
 
 #' Deepseek Provider Function

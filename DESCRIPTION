@@ -46,6 +46,7 @@ Collate:
     'LLMMessage.R'
     'APIProvider.R'
     'stream_pump.R'
+    'chat_pipeline.R'
     'llm_message.R'
     'llm_verbs.R'
     'media.R'
