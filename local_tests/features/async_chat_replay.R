@@ -200,4 +200,67 @@ llt_test("every provider with a builder registers it for send_chat", {
   }
 })
 
+# -- get_stream() and as.promise() --------------------------------------------
+
+llt_test("get_stream yields every delta, buffer first then live", {
+  job <- replay_job("claude_plain")
+
+  collected <- character()
+  consume <- coro::async(function() {
+    for (delta in coro::await_each(get_stream(job))) collected <<- c(collected, delta)
+  })
+  consume()
+
+  deadline <- Sys.time() + 10
+  while (identical(job$env$status, "running") && Sys.time() < deadline) later::run_now(0.05)
+  # The generator needs a few more turns after the job ends to drain its buffer.
+  for (i in 1:50) later::run_now(0.02)
+
+  llt_expect_true(length(collected) > 1,
+                  sprintf("expected several deltas, got %d", length(collected)))
+  llt_expect_true(identical(paste0(collected, collapse = ""), get_partial(job)),
+                  "the streamed deltas do not reassemble into the job's text")
+})
+
+llt_test("get_stream on a finished job replays the whole reply", {
+  # The buffer-first half of the contract: asking late must not lose what has
+  # already arrived, or a Shiny app that attaches after the first token would
+  # render a truncated reply.
+  job <- replay_job("claude_plain")
+  drive(job)
+
+  collected <- character()
+  consume <- coro::async(function() {
+    for (delta in coro::await_each(get_stream(job))) collected <<- c(collected, delta)
+  })
+  consume()
+  for (i in 1:50) later::run_now(0.02)
+
+  llt_expect_true(identical(paste0(collected, collapse = ""), get_reply(fetch_job(job))),
+                  "a stream taken after completion did not replay the reply")
+})
+
+llt_test("get_stream refuses a non-streaming job", {
+  job <- replay_job("claude_plain", mode = "value")
+  err <- tryCatch({ get_stream(job); NA_character_ }, error = function(e) conditionMessage(e))
+  llt_expect_true(grepl("stream = FALSE|no deltas", err %||% ""),
+                  paste0("unclear error for a non-streaming job: ", err))
+  drive(job)
+})
+
+llt_test("a job can be used as a promise", {
+  # What Shiny's ExtendedTask consumes. Registered at load time rather than in
+  # NAMESPACE, so this also checks that the registration actually happened.
+  job <- replay_job("claude_plain")
+
+  resolved <- NULL
+  promises::then(promises::as.promise(job), function(value) resolved <<- value)
+
+  deadline <- Sys.time() + 10
+  while (is.null(resolved) && Sys.time() < deadline) later::run_now(0.05)
+
+  llt_expect_true(!is.null(resolved), "the job's promise never resolved")
+  llt_expect_s7(resolved, LLMMessage)
+})
+
 llt_report("async_chat_replay")

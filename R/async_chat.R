@@ -470,3 +470,93 @@ fetch_job.tidyllm_chat_job <- function(.job, .provider = NULL, ...) {
     stop("Unknown job status: ", env$status)
   )
 }
+
+#' A running chat's deltas, as a stream
+#'
+#' Returns a `coro` async generator over the text deltas: the pull form of
+#' `.on_chunk`. It replays whatever has already arrived and then continues live,
+#' so it is safe to ask for at any point in a job's life and always tells the
+#' same story as [get_partial()].
+#'
+#' This is what `shinychat::chat_append()` consumes directly, because
+#' shinychat's whole extensibility contract is
+#' `inherits(x, "coro_generator_instance")`. The generator is asynchronous
+#' rather than synchronous on purpose: shinychat's consumer only yields the
+#' event loop at an `await()`, so a synchronous generator would drain in one
+#' tick and the reply would appear all at once instead of token by token.
+#'
+#' In a plain script this is rarely what you want. An async generator hands a
+#' `coro::loop()` promises rather than text, so consuming it takes
+#' `coro::async()` and `coro::await_each()`; `.on_chunk` or a `get_partial()`
+#' loop says the same thing with less ceremony.
+#'
+#' @param .job A streaming `tidyllm_chat_job` from [send_chat()].
+#' @return A `coro` async generator instance yielding character deltas.
+#'
+#' @examples
+#' \dontrun{
+#' job <- llm_message("Tell me a story") |> send_chat(claude(), .stream = TRUE)
+#' shinychat::chat_append("chat", get_stream(job))
+#' }
+#'
+#' @export
+get_stream <- function(.job) {
+  if (!inherits(.job, "tidyllm_chat_job")) {
+    stop("get_stream() expects a tidyllm_chat_job from send_chat().")
+  }
+  env <- .job$env
+  if (!env$streams) {
+    stop("This job was sent with .stream = FALSE, so it has no deltas to stream. ",
+         "Use fetch_job() for its reply, or send it again with .stream = TRUE.",
+         call. = FALSE)
+  }
+  rlang::check_installed("promises", reason = "to consume a chat job as a stream.")
+
+  generator <- coro::async_generator(function() {
+    sent <- 0L
+    repeat {
+      parts <- env$state$text_parts
+      while (sent < length(parts)) {
+        sent <- sent + 1L
+        yield(parts[[sent]])
+      }
+      # Everything buffered has been handed over. Stop only once the job is
+      # finished *and* nothing new appeared, so a delta that lands between the
+      # two checks is not dropped.
+      if (!identical(env$status, "running")) {
+        if (length(env$state$text_parts) > sent) next
+        break
+      }
+      # The await is what returns control to the event loop, which is what lets
+      # the job advance at all. Without it this loop would spin against a job
+      # that can never make progress while it holds the interpreter.
+      coro::await(coro::async_sleep(0.02))
+    }
+    if (identical(env$status, "error")) stop(env$error)
+  })
+
+  generator()
+}
+
+#' Adapt a job to a promise, for Shiny's ExtendedTask
+#'
+#' Registered in `.onLoad()` rather than declared as an S3 method, because
+#' `promises` is a suggested package: `S3method()` in NAMESPACE would make it a
+#' hard requirement.
+#'
+#' @noRd
+as_promise_chat_job <- function(x, ...) {
+  env <- x$env
+  promises::promise(function(resolve, reject) {
+    poll <- function() {
+      switch(
+        env$status,
+        running = later::later(poll, delay = 0.05),
+        done    = resolve(env$result),
+        error   = reject(env$error),
+        reject(simpleError("This chat job was cancelled; there is no reply to fetch."))
+      )
+    }
+    poll()
+  })
+}

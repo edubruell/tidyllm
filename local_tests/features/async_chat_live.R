@@ -142,4 +142,30 @@ llt_test("cancelling a live job stops it", {
                   "a cancelled job changed status after further event loop turns")
 })
 
+llt_test("get_stream delivers deltas while the job is still running", {
+  # The offline suite can only show that every delta arrives; the replay server
+  # answers instantly, so it cannot show that they arrive *early*. That is the
+  # whole point of an async generator for shinychat, so it is asserted here.
+  job <- llm_message(LONG) |> send_chat(claude(), .stream = TRUE)
+
+  collected <- character()
+  seen_while_running <- FALSE
+  consume <- coro::async(function() {
+    for (delta in coro::await_each(get_stream(job))) {
+      collected <<- c(collected, delta)
+      if (identical(check_job(job), "running")) seen_while_running <<- TRUE
+    }
+  })
+  consume()
+
+  deadline <- Sys.time() + 60
+  while (identical(check_job(job), "running") && Sys.time() < deadline) later::run_now(0.05)
+  for (i in 1:100) later::run_now(0.02)
+
+  llt_expect_true(seen_while_running,
+                  "every delta arrived only after the job had finished; the generator is not streaming")
+  llt_expect_true(identical(paste0(collected, collapse = ""), get_reply(fetch_job(job))),
+                  "the streamed deltas do not reassemble into the reply")
+})
+
 llt_report("async_chat_live")
