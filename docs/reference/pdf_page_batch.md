@@ -47,5 +47,8 @@ pdf_page_batch(
 
 ## Value
 
-A list of LLMMessage objects, each containing the text and image for a
-page.
+A named list of LLMMessage objects, each containing the text and image
+for a page. Names are `page_<n>`, with `<n>` the page number in the
+original document, so they survive
+[`parallel_chat()`](https://edubruell.github.io/tidyllm/reference/parallel_chat.md)
+and identify rows in its output.

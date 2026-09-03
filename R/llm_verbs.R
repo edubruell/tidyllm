@@ -1,21 +1,31 @@
-#' Create a Provider Function for Routing LLM Actions
-#'
-#' This function generates a provider-specific function that dynamically routes 
-#' different LLM-related actions (e.g., chat, generate embeddings, batch operations) 
-#' based on the `.called_from` argument or the presence of an `LLMMessage` object.
-#'
-#' @param .name A string representing the name of the provider (e.g., "openai").
-#' @param ... Named functions corresponding to the various actions the provider supports 
-#'   (e.g., `chat`, `embed`, `send_batch`).
-#'
-#' @return A function that dynamically routes to the appropriate action based on its 
-#'   inputs.
-#' @noRd 
+#' The message a provider gets when it cannot do a verb at all
+#' @noRd
+unsupported_verb_message <- function(provider_name, verb_label) {
+  base <- glue::glue("`{verb_label}()` is not available for the `{provider_name}()` provider.")
+  hint <- if (identical(provider_name, "ellmer")) {
+    paste(
+      "`chat_ellmer()` hands the conversation to an ellmer `Chat` object instead of",
+      "building an HTTP request, so tidyllm has nothing to send or stream on its own.",
+      "Use ellmer's own async interface for that, or any other tidyllm provider."
+    )
+  } else {
+    "Use `chat()` with this provider, or pick a provider that supports this verb."
+  }
+  paste(base, hint)
+}
+
 dispatch_to_provider <- function(provider_expr, verb_name, common_args,
-                                  validate = TRUE, env = rlang::caller_env()) {
+                                  validate = TRUE, env = rlang::caller_env(),
+                                  verb_label = verb_name) {
   if (validate) {
     meta      <- rlang::call_modify(provider_expr, .called_from = "metadata") |> rlang::eval_tidy()
     supported <- meta$supported_args[[verb_name]]
+    # A provider that registered no function for this verb cannot do it at all.
+    # Said plainly here, because the argument-level message below would otherwise
+    # list every argument as unsupported and explain nothing.
+    if (is.null(supported)) {
+      stop(unsupported_verb_message(meta$provider_name, verb_label), call. = FALSE)
+    }
     if ("..." %in% supported) {
       # The provider function forwards through `...`, so it accepts any common
       # argument; the wrapped function validates them.
@@ -36,6 +46,19 @@ dispatch_to_provider <- function(provider_expr, verb_name, common_args,
   rlang::eval_tidy(rlang::call_modify(provider_expr, !!!valid_args), env = env)
 }
 
+#' Create a Provider Function for Routing LLM Actions
+#'
+#' This function generates a provider-specific function that dynamically routes
+#' different LLM-related actions (e.g., chat, generate embeddings, batch operations)
+#' based on the `.called_from` argument or the presence of an `LLMMessage` object.
+#'
+#' @param .name A string representing the name of the provider (e.g., "openai").
+#' @param ... Named functions corresponding to the various actions the provider supports
+#'   (e.g., `chat`, `embed`, `send_batch`).
+#'
+#' @return A function that dynamically routes to the appropriate action based on its
+#'   inputs.
+#' @noRd
 create_provider_function <- function(.name, ...) {
   function_map <- list(...)
   

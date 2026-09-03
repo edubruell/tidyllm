@@ -13,7 +13,9 @@
 #' @param .prompt_fn An optional custom function that generates a prompt for each page. The function takes the page text as input 
 #' and returns a string. If NULL, `.general_prompt` is used for all pages.
 #' 
-#' @return A list of LLMMessage objects, each containing the text and image for a page.
+#' @return A named list of LLMMessage objects, each containing the text and image
+#'   for a page. Names are `page_<n>`, with `<n>` the page number in the original
+#'   document, so they survive [parallel_chat()] and identify rows in its output.
 #' @import pdftools
 #' @import base64enc
 #' @export
@@ -43,12 +45,18 @@ pdf_page_batch <- function(.pdf,
   pdf_text <- pdftools::pdf_text(.pdf)
   num_pages <- length(pdf_text)
   
-  # Limit to specified page range
-  if (!is.null(.page_range)) {
-    pdf_text <- pdf_text[.page_range[1]:min(.page_range[2], num_pages)]
+  # Limit to specified page range. The page numbers are carried along rather than
+  # re-derived from the position in the subset: rendering used to take the index
+  # within the subset, so a .page_range starting after page one rendered the
+  # wrong pages next to the right text.
+  pages <- if (is.null(.page_range)) {
+    seq_len(num_pages)
+  } else {
+    .page_range[1]:min(.page_range[2], num_pages)
   }
+  pdf_text <- pdf_text[pages]
   
-  message_list <- purrr::imap(pdf_text, function(text, i) {
+  message_list <- purrr::map2(pdf_text, pages, function(text, i) {
     # Render the page as an image
     rendered_page <- pdftools::pdf_render_page(.pdf, page = i)
     
@@ -72,6 +80,10 @@ pdf_page_batch <- function(.pdf,
       .system_prompt = .system_prompt
     )
   })
+  
+  # Named, so that parallel_chat() and any downstream tibble can say which page a
+  # reply belongs to.
+  names(message_list) <- paste0("page_", pages)
   
   # Return the list of LLMMessage objects
   return(message_list)

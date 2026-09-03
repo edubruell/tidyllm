@@ -25,7 +25,9 @@ pdf_page_batch(
 and returns a string. If NULL, \code{.general_prompt} is used for all pages.}
 }
 \value{
-A list of LLMMessage objects, each containing the text and image for a page.
+A named list of LLMMessage objects, each containing the text and image
+for a page. Names are \verb{page_<n>}, with \verb{<n>} the page number in the original
+document, so they survive \code{\link[=parallel_chat]{parallel_chat()}} and identify rows in its output.
 }
 \description{
 This function processes a PDF file page by page. For each page, it extracts the text

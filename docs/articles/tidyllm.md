@@ -741,6 +741,14 @@ Streaming is useful for monitoring long responses interactively. For
 production data-analysis workflows the non-streaming mode is preferred
 because it provides complete metadata and is more reliable.
 
+To stream into a user interface rather than the console, use
+[`send_chat()`](https://edubruell.github.io/tidyllm/reference/send_chat.md),
+which dispatches a request without blocking the session and reports each
+delta through `.on_chunk`. See the article on [using tidyllm in
+Shiny](https://edubruell.github.io/tidyllm/articles/articles/tidyllm_shiny.md),
+and the example app it walks through:
+`tidyllm_example_app("model_explainer")`.
+
 ### Choosing the Right Provider
 
 | Provider | Strengths and tidyllm-specific features |

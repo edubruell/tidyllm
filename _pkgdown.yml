@@ -30,6 +30,8 @@ reference:
       deep research, managing batch requests, and working with provider-hosted files.
     contents:
       - chat
+      - send_chat
+      - parallel_chat
       - embed
       - deep_research
       - check_job
@@ -43,6 +45,16 @@ reference:
       - list_files
       - file_info
       - delete_file
+
+  - title: "Working with a Running Chat"
+    desc: >
+      Accessors for a `send_chat()` job: the text so far, the deltas as a
+      stream, and how to stop one. `check_job()` and `fetch_job()` above work on
+      these jobs too.
+    contents:
+      - get_partial
+      - get_stream
+      - cancel_job
 
   - title: "Schemata, Tools, and Media"
     desc: >
@@ -239,6 +251,12 @@ reference:
       Helpers for batch processing multi-page PDF documents.
     contents:
       - pdf_page_batch
+
+  - title: "Example Apps"
+    desc: >
+      Runnable Shiny apps that ship with the package.
+    contents:
+      - tidyllm_example_app
 
   - title: "Internals"
     desc: >

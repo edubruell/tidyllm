@@ -102,7 +102,8 @@ parallel_chat <- function(
 
   built <- lapply(.llms, function(llm) {
     validate_message_attachments(llm, provider_expr)
-    dispatch_to_provider(provider_expr, "build", c(list(.llm = llm), common_args))
+    dispatch_to_provider(provider_expr, "build", c(list(.llm = llm), common_args),
+                         verb_label = "parallel_chat")
   })
 
   if (!all(vapply(built, inherits, logical(1), "tidyllm_chat_request"))) {

@@ -33,14 +33,18 @@ provider-hosted files.
 
 - [`chat()`](https://edubruell.github.io/tidyllm/reference/chat.md) :
   Chat with a Language Model
+- [`send_chat()`](https://edubruell.github.io/tidyllm/reference/send_chat.md)
+  : Start a chat without waiting for it
+- [`parallel_chat()`](https://edubruell.github.io/tidyllm/reference/parallel_chat.md)
+  : Send many chats at once
 - [`embed()`](https://edubruell.github.io/tidyllm/reference/embed.md) :
   Generate text embeddings
 - [`deep_research()`](https://edubruell.github.io/tidyllm/reference/deep_research.md)
   : Run Deep Research via a Provider
 - [`check_job()`](https://edubruell.github.io/tidyllm/reference/check_job.md)
-  : Check the Status of a Batch or Research Job
+  : Check the Status of a Job
 - [`fetch_job()`](https://edubruell.github.io/tidyllm/reference/fetch_job.md)
-  : Fetch Results from a Batch or Research Job
+  : Fetch the Results of a Job
 - [`send_batch()`](https://edubruell.github.io/tidyllm/reference/send_batch.md)
   : Send a batch of messages to a batch API
 - [`check_batch()`](https://edubruell.github.io/tidyllm/reference/check_batch.md)
@@ -59,6 +63,23 @@ provider-hosted files.
   : Get Metadata for a File Stored on a Provider
 - [`delete_file()`](https://edubruell.github.io/tidyllm/reference/delete_file.md)
   : Delete a File from a Provider's File Store
+
+## Working with a Running Chat
+
+Accessors for a
+[`send_chat()`](https://edubruell.github.io/tidyllm/reference/send_chat.md)
+job: the text so far, the deltas as a stream, and how to stop one.
+[`check_job()`](https://edubruell.github.io/tidyllm/reference/check_job.md)
+and
+[`fetch_job()`](https://edubruell.github.io/tidyllm/reference/fetch_job.md)
+above work on these jobs too.
+
+- [`get_partial()`](https://edubruell.github.io/tidyllm/reference/get_partial.md)
+  : The text a running chat has produced so far
+- [`get_stream()`](https://edubruell.github.io/tidyllm/reference/get_stream.md)
+  : A running chat's deltas, as a stream
+- [`cancel_job()`](https://edubruell.github.io/tidyllm/reference/cancel_job.md)
+  : Stop a running chat
 
 ## Schemata, Tools, and Media
 
@@ -96,29 +117,53 @@ consistent interface — pass to
 etc.
 
 - [`openai()`](https://edubruell.github.io/tidyllm/reference/openai.md)
-  : OpenAI Provider Function
+  :
+
+  The
+  [`openai()`](https://edubruell.github.io/tidyllm/reference/openai.md)
+  function acts as an interface for interacting with the OpenAI API
+  through main `tidyllm` verbs such as
+  [`chat()`](https://edubruell.github.io/tidyllm/reference/chat.md),
+  [`embed()`](https://edubruell.github.io/tidyllm/reference/embed.md),
+  and
+  [`send_batch()`](https://edubruell.github.io/tidyllm/reference/send_batch.md).
+  Chat uses the Responses API (`POST /v1/responses`); embeddings and
+  batch operations use the Chat Completions / Embeddings endpoints
+  unchanged.
+
 - [`claude()`](https://edubruell.github.io/tidyllm/reference/claude.md)
   : Provider Function for Claude models on the Anthropic API
+
 - [`gemini()`](https://edubruell.github.io/tidyllm/reference/gemini.md)
   : Google Gemini Provider Function
+
 - [`groq()`](https://edubruell.github.io/tidyllm/reference/groq.md) :
   Groq API Provider Function
+
 - [`mistral()`](https://edubruell.github.io/tidyllm/reference/mistral.md)
   : Mistral Provider Function
+
 - [`ollama()`](https://edubruell.github.io/tidyllm/reference/ollama.md)
   : Ollama API Provider Function
+
 - [`perplexity()`](https://edubruell.github.io/tidyllm/reference/perplexity.md)
   : Perplexity Provider Function
+
 - [`deepseek()`](https://edubruell.github.io/tidyllm/reference/deepseek.md)
   : Deepseek Provider Function
+
 - [`voyage()`](https://edubruell.github.io/tidyllm/reference/voyage.md)
   : Voyage Provider Function
+
 - [`openrouter()`](https://edubruell.github.io/tidyllm/reference/openrouter.md)
   : OpenRouter Provider Function
+
 - [`llamacpp()`](https://edubruell.github.io/tidyllm/reference/llamacpp.md)
   : llama.cpp Provider Function
+
 - [`azure_openai()`](https://edubruell.github.io/tidyllm/reference/azure_openai.md)
   : Azure OpenAI Endpoint Provider Function
+
 - [`chat_completions_chat()`](https://edubruell.github.io/tidyllm/reference/chat_completions_chat.md)
   [`chat_completions()`](https://edubruell.github.io/tidyllm/reference/chat_completions_chat.md)
   : Chat with any OpenAI-Compatible API Endpoint
@@ -377,6 +422,13 @@ Helpers for batch processing multi-page PDF documents.
 
 - [`pdf_page_batch()`](https://edubruell.github.io/tidyllm/reference/pdf_page_batch.md)
   : Batch Process PDF into LLM Messages
+
+## Example Apps
+
+Runnable Shiny apps that ship with the package.
+
+- [`tidyllm_example_app()`](https://edubruell.github.io/tidyllm/reference/tidyllm_example_app.md)
+  : Run a tidyllm example Shiny app
 
 ## Internals
 

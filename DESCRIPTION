@@ -1,6 +1,6 @@
 Package: tidyllm
 Title: Tidy Integration of Large Language Models
-Version: 0.6.0.9000
+Version: 0.6.0
 Authors@R: c(
     person("Eduard", "Brüll", NULL, "eduard.bruell@zew.de", role = c("aut", "cre")),
     person("Jia", "Zhang", NULL, NULL, role = "ctb")
@@ -13,8 +13,10 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 VignetteBuilder: knitr
-Suggests: 
+Suggests:
     later,
+    shiny,
+    wooldridge,
     promises,
     knitr,
     rmarkdown,
@@ -51,6 +53,7 @@ Collate:
     'chat_pipeline.R'
     'async_chat.R'
     'parallel_chat.R'
+    'example_app.R'
     'llm_message.R'
     'llm_verbs.R'
     'media.R'

@@ -361,7 +361,8 @@ send_chat <- function(
   # builder decides which of the common arguments it accepts. `send_chat()` needs
   # the built request rather than a finished message, which is the whole reason
   # `build_chat_request()` was split out of `*_chat()`.
-  built <- dispatch_to_provider(provider_expr, "build", common_args)
+  built <- dispatch_to_provider(provider_expr, "build", common_args,
+                               verb_label = "send_chat")
 
   if (!inherits(built, "tidyllm_chat_request")) {
     stop("This provider does not support send_chat() yet.", call. = FALSE)

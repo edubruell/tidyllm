@@ -1,8 +1,14 @@
-# tidyllm 0.6.0 (development version)
+# tidyllm 0.6.0
 
-Work in progress. This section covers the internal restructuring that the
-release's async surface is built on: the shared stream pump, the chat pipeline
-split, and the maintenance backlog.
+**tidyllm no longer has to block.** A script can fire a request and keep working,
+several prompts can run at once, and a Shiny app can stream tokens into its UI
+without freezing itself or anyone else's session. The headline verbs are
+`send_chat()` and `parallel_chat()`; underneath them sit a shared streaming pump
+and a chat pipeline split that every provider now goes through. Streaming and
+tool calls also stop being mutually exclusive.
+
+No new required dependency: `later` and `promises` are in `Suggests` and checked
+where they are used, and the Shiny path needs neither `promises` nor `coro`.
 
 ## `send_chat()`: a chat that does not block the session
 
@@ -67,6 +73,31 @@ A failed request is returned in its own slot as the condition that failed,
 rather than as a hole that would silently shorten a downstream `map()`.
 Streaming and tool calls are refused rather than quietly ignored: use
 `send_chat()`, which can hold several conversations at once.
+
+## Shiny: an example app and an article
+
+`tidyllm_example_app("model_explainer")` runs a small Shiny app that ships with
+the package. It fits a linear model to a public dataset and streams two
+explanations of the coefficients side by side, one in plain English and one from
+a sceptical referee, while the app stays responsive. Every number the model sees
+is computed in R and pasted into the prompt verbatim; the model does the
+narrating and none of the arithmetic.
+
+It defaults to a local `ollama()` model, so it runs with no API key and no spend,
+and a dropdown switches it to Claude, OpenAI or Gemini. The source is a single
+file, and it is the reference implementation for the things a real app needs:
+`.on_chunk` into a `reactiveVal`, a status observer for the failures that carry
+no delta, `cancel_job()` on a button and on `session$onSessionEnded()`, and a
+follow-up turn on the immutable `LLMMessage`.
+
+The new article *Using tidyllm in Shiny* walks through those patterns and closes
+with what to watch out for, including one worth knowing before you design a UI: a
+streaming `send_chat()` returns when the response headers arrive, so a server
+that answers one request at a time (a stock Ollama) makes a second concurrent
+job wait, while cloud providers stream both at once.
+
+`shiny` and `wooldridge` are new in `Suggests`, for the app and one of its
+datasets.
 
 ## Streaming and tool calls work together
 
@@ -159,6 +190,23 @@ meant nothing but `*_chat()` itself could reach the middle of it.
   `thinking_tokens` are unchanged.
 
 ## Bug fixes (this development cycle)
+
+* `pdf_page_batch(.page_range=)` rendered the wrong pages. The text was subset to
+  the requested range but the images were rendered from the position within that
+  subset, so `.page_range = c(3, 5)` paired page 3's text with page 1's image.
+  The page numbers are now carried through the whole function.
+
+* `pdf_page_batch()` returns a **named** list, `page_1`, `page_2` and so on, with
+  the numbers from the original document. `parallel_chat()` preserves names, so a
+  reply can now be traced back to its page.
+
+* A verb a provider does not implement at all says so. `send_chat()` on
+  `chat_ellmer()` used to fail with a generic complaint about unsupported
+  arguments; it now names the verb and the provider and explains that
+  `chat_ellmer()` hands the conversation to an ellmer `Chat` object rather than
+  building a request, so there is nothing for tidyllm to stream. The same holds
+  for `parallel_chat()`, and for any other verb/provider pair that was never
+  registered.
 
 * Deprecation warnings for `claude(.file_ids=)` and `gemini(.fileid=)` no longer
   tell the user the feature "was likely used in the tidyllm package" and ask them

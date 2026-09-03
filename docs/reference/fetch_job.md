@@ -1,12 +1,11 @@
-# Fetch Results from a Batch or Research Job
+# Fetch the Results of a Job
 
-`fetch_job()` dispatches to
-[`fetch_batch()`](https://edubruell.github.io/tidyllm/reference/fetch_batch.md)
-for batch objects or
-[`perplexity_fetch_research()`](https://edubruell.github.io/tidyllm/reference/perplexity_fetch_research.md)
-/
-[`openai_fetch_research()`](https://edubruell.github.io/tidyllm/reference/openai_fetch_research.md)
-for `tidyllm_research_job` objects.
+`fetch_job()` collects what
+[`check_job()`](https://edubruell.github.io/tidyllm/reference/check_job.md)
+reports on: the messages of a finished batch, the report of a background
+research job, or the `LLMMessage` of a chat from
+[`send_chat()`](https://edubruell.github.io/tidyllm/reference/send_chat.md).
+On a chat it waits for the reply if it has not arrived yet.
 
 ## Usage
 
@@ -18,15 +17,13 @@ fetch_job(.job, .provider = NULL, ...)
 
 - .job:
 
-  An object with a `batch_id` attribute (from
-  [`send_batch()`](https://edubruell.github.io/tidyllm/reference/send_batch.md))
-  or a `tidyllm_research_job` (from
-  `deep_research(.background = TRUE)`).
+  A `tidyllm_chat_job`, a `tidyllm_research_job`, or a batch object from
+  [`send_batch()`](https://edubruell.github.io/tidyllm/reference/send_batch.md).
 
 - .provider:
 
-  A provider function (required for batch jobs, ignored for research
-  jobs).
+  A provider function; required for batch jobs and ignored by the
+  others.
 
 - ...:
 
@@ -34,4 +31,4 @@ fetch_job(.job, .provider = NULL, ...)
 
 ## Value
 
-Fetched results; type depends on `.job` class.
+Fetched results; type depends on `.job`.

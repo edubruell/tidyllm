@@ -571,21 +571,39 @@ cloud calls, no token costs, and reproducible results.
 Many universities, hospitals, and cloud providers run their own LLM
 servers using tools like [vLLM](https://github.com/vllm-project/vllm) or
 [text-generation-inference](https://github.com/huggingface/text-generation-inference).
-These services typically expose the same API format as OpenAI, so they
-work directly with tidyllm’s
-[`openai()`](https://edubruell.github.io/tidyllm/reference/openai.md)
-provider by pointing it at a different server address:
+These services typically expose the same Chat Completions API format as
+OpenAI. The
+[`chat_completions()`](https://edubruell.github.io/tidyllm/reference/chat_completions_chat.md)
+provider connects to any such endpoint; point it at the server’s base
+URL and name the model the server hosts:
 
 ``` r
 
 llm_message("Summarise this paragraph in one sentence.") |>
-  chat(openai(.api_url = "http://my-internal-server:8000/v1"))
+  chat(chat_completions(
+    .api_url = "http://my-internal-server:8000",
+    .model   = "llama-4-scout"
+  ))
+```
+
+By default no API key is sent, which suits local and internal servers.
+If the endpoint requires authentication, pass the name of the
+environment variable holding the key via `.api_key_env_var`:
+
+``` r
+
+llm_message("Summarise this paragraph in one sentence.") |>
+  chat(chat_completions(
+    .api_url         = "https://llm.my-university.edu",
+    .model           = "qwen3.6-35b-a3b",
+    .api_key_env_var = "MY_UNIVERSITY_API_KEY"
+  ))
 ```
 
 For llama.cpp specifically, using
 [`llamacpp()`](https://edubruell.github.io/tidyllm/reference/llamacpp.md)
 with `LLAMACPP_SERVER` set in `.Renviron` is the cleaner path since it
 also exposes the llama.cpp-specific parameters covered above. The
-[`openai()`](https://edubruell.github.io/tidyllm/reference/openai.md)
+[`chat_completions()`](https://edubruell.github.io/tidyllm/reference/chat_completions_chat.md)
 route is there when you are connecting to a generic institutional
 endpoint that does not need any of those extras.

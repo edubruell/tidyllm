@@ -1,12 +1,11 @@
-# Check the Status of a Batch or Research Job
+# Check the Status of a Job
 
-`check_job()` dispatches to
-[`check_batch()`](https://edubruell.github.io/tidyllm/reference/check_batch.md)
-for batch objects or
-[`perplexity_check_research()`](https://edubruell.github.io/tidyllm/reference/perplexity_check_research.md)
-/
-[`openai_check_research()`](https://edubruell.github.io/tidyllm/reference/openai_check_research.md)
-for `tidyllm_research_job` objects.
+`check_job()` reports on anything tidyllm dispatched and did not wait
+for: a batch from
+[`send_batch()`](https://edubruell.github.io/tidyllm/reference/send_batch.md),
+a background research job from `deep_research(.background = TRUE)`, or a
+chat from
+[`send_chat()`](https://edubruell.github.io/tidyllm/reference/send_chat.md).
 
 ## Usage
 
@@ -18,10 +17,8 @@ check_job(.job, ...)
 
 - .job:
 
-  An object with a `batch_id` attribute (from
-  [`send_batch()`](https://edubruell.github.io/tidyllm/reference/send_batch.md))
-  or a `tidyllm_research_job` (from
-  `deep_research(.background = TRUE)`).
+  A `tidyllm_chat_job`, a `tidyllm_research_job`, or a batch object from
+  [`send_batch()`](https://edubruell.github.io/tidyllm/reference/send_batch.md).
 
 - ...:
 
@@ -29,4 +26,10 @@ check_job(.job, ...)
 
 ## Value
 
-Status information; type depends on `.job` class.
+Status information; type depends on `.job`.
+
+## Details
+
+What it costs differs by job, and knowingly so: on a batch it is an HTTP
+call to the provider, on a chat it is a turn of this session's event
+loop.

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.5.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.6.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -22,6 +22,7 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/tidyllm_classifiers.html">Classifying Texts with tidyllm</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm_embed.html">Embedding Models in tidyllm</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm_local_models.html">Local Models with tidyllm</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_shiny.html">Using tidyllm in Shiny</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm_tools.html">Using Tools with tidyllm</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm_video.html">Working with Files and Media</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm-pdfquestions.html">Structured Question Answering from PDFs</a></li>
@@ -124,6 +125,20 @@
 
         <dt>
 
+          <code><a href="send_chat.html">send_chat()</a></code>
+
+        </dt>
+        <dd>Start a chat without waiting for it</dd>
+
+        <dt>
+
+          <code><a href="parallel_chat.html">parallel_chat()</a></code>
+
+        </dt>
+        <dd>Send many chats at once</dd>
+
+        <dt>
+
           <code><a href="embed.html">embed()</a></code>
 
         </dt>
@@ -141,14 +156,14 @@
           <code><a href="check_job.html">check_job()</a></code>
 
         </dt>
-        <dd>Check the Status of a Batch or Research Job</dd>
+        <dd>Check the Status of a Job</dd>
 
         <dt>
 
           <code><a href="fetch_job.html">fetch_job()</a></code>
 
         </dt>
-        <dd>Fetch Results from a Batch or Research Job</dd>
+        <dd>Fetch the Results of a Job</dd>
 
         <dt>
 
@@ -212,6 +227,36 @@
 
         </dt>
         <dd>Delete a File from a Provider's File Store</dd>
+      </dl></div><div class="section level2">
+      <h2 id="working-with-a-running-chat">Working with a Running Chat<a class="anchor" aria-label="anchor" href="#working-with-a-running-chat"></a></h2>
+
+      <div class="section-desc"><p>Accessors for a <code><a href="../reference/send_chat.html">send_chat()</a></code> job: the text so far, the deltas as a stream, and how to stop one. <code><a href="../reference/check_job.html">check_job()</a></code> and <code><a href="../reference/fetch_job.html">fetch_job()</a></code> above work on these jobs too.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="get_partial.html">get_partial()</a></code>
+
+        </dt>
+        <dd>The text a running chat has produced so far</dd>
+
+        <dt>
+
+          <code><a href="get_stream.html">get_stream()</a></code>
+
+        </dt>
+        <dd>A running chat's deltas, as a stream</dd>
+
+        <dt>
+
+          <code><a href="cancel_job.html">cancel_job()</a></code>
+
+        </dt>
+        <dd>Stop a running chat</dd>
       </dl></div><div class="section level2">
       <h2 id="schemata-tools-and-media">Schemata, Tools, and Media<a class="anchor" aria-label="anchor" href="#schemata-tools-and-media"></a></h2>
 
@@ -299,7 +344,7 @@
           <code><a href="openai.html">openai()</a></code>
 
         </dt>
-        <dd>OpenAI Provider Function</dd>
+        <dd>The <code><a href="../reference/openai.html">openai()</a></code> function acts as an interface for interacting with the OpenAI API through main <code>tidyllm</code> verbs such as <code><a href="../reference/chat.html">chat()</a></code>, <code><a href="../reference/embed.html">embed()</a></code>, and <code><a href="../reference/send_batch.html">send_batch()</a></code>. Chat uses the Responses API (<code>POST /v1/responses</code>); embeddings and batch operations use the Chat Completions / Embeddings endpoints unchanged.</dd>
 
         <dt>
 
@@ -1128,6 +1173,22 @@
 
         </dt>
         <dd>Batch Process PDF into LLM Messages</dd>
+      </dl></div><div class="section level2">
+      <h2 id="example-apps">Example Apps<a class="anchor" aria-label="anchor" href="#example-apps"></a></h2>
+
+      <div class="section-desc"><p>Runnable Shiny apps that ship with the package.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="tidyllm_example_app.html">tidyllm_example_app()</a></code>
+
+        </dt>
+        <dd>Run a tidyllm example Shiny app</dd>
       </dl></div><div class="section level2">
       <h2 id="internals">Internals<a class="anchor" aria-label="anchor" href="#internals"></a></h2>
 

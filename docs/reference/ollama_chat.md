@@ -29,6 +29,7 @@ ollama_chat(
   .think = NULL,
   .ollama_server = "http://localhost:11434",
   .timeout = 120,
+  .max_tries = 3,
   .keep_alive = NULL,
   .dry_run = FALSE
 )
@@ -136,6 +137,10 @@ ollama_chat(
 - .timeout:
 
   Integer; API request timeout in seconds (default: 120)
+
+- .max_tries:
+
+  Integer; maximum number of retries for the request (default: 3)
 
 - .keep_alive:
 

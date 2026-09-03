@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.5.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.6.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -22,6 +22,7 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="articles/tidyllm_classifiers.html">Classifying Texts with tidyllm</a></li>
     <li><a class="dropdown-item" href="articles/tidyllm_embed.html">Embedding Models in tidyllm</a></li>
     <li><a class="dropdown-item" href="articles/tidyllm_local_models.html">Local Models with tidyllm</a></li>
+    <li><a class="dropdown-item" href="articles/tidyllm_shiny.html">Using tidyllm in Shiny</a></li>
     <li><a class="dropdown-item" href="articles/tidyllm_tools.html">Using Tools with tidyllm</a></li>
     <li><a class="dropdown-item" href="articles/tidyllm_video.html">Working with Files and Media</a></li>
     <li><a class="dropdown-item" href="articles/tidyllm-pdfquestions.html">Structured Question Answering from PDFs</a></li>
@@ -66,7 +67,7 @@
 <code class="sourceCode R"><span><span class="fu"><a href="reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Hello"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="reference/openai.html">openai</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"text1"</span>, <span class="st">"text2"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="reference/embed.html">embed</a></span><span class="op">(</span><span class="fu"><a href="reference/openai.html">openai</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">list_of_messages</span> <span class="op">|&gt;</span> <span class="fu"><a href="reference/send_batch.html">send_batch</a></span><span class="op">(</span><span class="fu"><a href="reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><strong>Verbs</strong>: <code><a href="reference/chat.html">chat()</a></code>, <code><a href="reference/embed.html">embed()</a></code>, <code><a href="reference/send_batch.html">send_batch()</a></code>, <code><a href="reference/check_batch.html">check_batch()</a></code>, <code><a href="reference/fetch_batch.html">fetch_batch()</a></code>, <code><a href="reference/list_batches.html">list_batches()</a></code>, <code><a href="reference/list_models.html">list_models()</a></code>, <code><a href="reference/deep_research.html">deep_research()</a></code>, <code><a href="reference/check_job.html">check_job()</a></code>, <code><a href="reference/fetch_job.html">fetch_job()</a></code>, <code><a href="reference/upload_file.html">upload_file()</a></code>, <code><a href="reference/list_files.html">list_files()</a></code>, <code><a href="reference/file_info.html">file_info()</a></code>, <code><a href="reference/delete_file.html">delete_file()</a></code></p>
+<p><strong>Verbs</strong>: <code><a href="reference/chat.html">chat()</a></code>, <code><a href="reference/send_chat.html">send_chat()</a></code>, <code><a href="reference/parallel_chat.html">parallel_chat()</a></code>, <code><a href="reference/embed.html">embed()</a></code>, <code><a href="reference/send_batch.html">send_batch()</a></code>, <code><a href="reference/check_batch.html">check_batch()</a></code>, <code><a href="reference/fetch_batch.html">fetch_batch()</a></code>, <code><a href="reference/list_batches.html">list_batches()</a></code>, <code><a href="reference/list_models.html">list_models()</a></code>, <code><a href="reference/deep_research.html">deep_research()</a></code>, <code><a href="reference/check_job.html">check_job()</a></code>, <code><a href="reference/fetch_job.html">fetch_job()</a></code>, <code><a href="reference/upload_file.html">upload_file()</a></code>, <code><a href="reference/list_files.html">list_files()</a></code>, <code><a href="reference/file_info.html">file_info()</a></code>, <code><a href="reference/delete_file.html">delete_file()</a></code></p>
 <ul><li>
 <code><a href="reference/check_job.html">check_job()</a></code> / <code><a href="reference/fetch_job.html">fetch_job()</a></code>: type-dispatching aliases — delegate to <code><a href="reference/check_batch.html">check_batch()</a></code>/<code><a href="reference/fetch_batch.html">fetch_batch()</a></code> for batch objects (have <code>batch_id</code> attr), or to provider-specific research functions for <code>tidyllm_research_job</code> objects (dispatches on <code>job$provider</code>: <code>"openai"</code> → <code>openai_check_research</code>/<code>openai_fetch_research</code>; <code>"perplexity"</code> → <code>perplexity_check_research</code>/<code>perplexity_fetch_research</code>)</li>
 <li>
@@ -108,6 +109,10 @@
 ├── LLMMessage.R           # LLMMessage class, add/remove message generics
 ├── APIProvider.R          # Provider base class and all generics
 ├── llm_verbs.R            # Verb dispatch (chat, embed, send_batch, etc.) + create_provider_function()
+├── chat_pipeline.R        # build_chat_request / perform_chat / finish_chat_response seam
+├── async_chat.R           # send_chat(): event-loop driven jobs, get_partial(), get_stream(), cancel_job()
+├── parallel_chat.R        # parallel_chat(): req_perform_parallel over built requests
+├── stream_pump.R          # shared streaming pump; parse_stream_event() dispatch
 ├── llm_message.R          # llm_message() constructor
 ├── message_retrieval.R    # get_reply(), get_metadata(), get_reply_data()
 ├── tidyllm_schema.R       # JSON schema system (tidyllm_field, field_*(), tidyllm_schema())
@@ -184,11 +189,11 @@
 <code>.api</code>, <code>.response</code>
 </td>
 <td>Process SSE streaming response</td>
-</tr><tr><td><code>extract_metadata_stream()</code></td>
+</tr><tr><td><code>assemble_stream_body()</code></td>
 <td>
-<code>.api</code>, <code>.raw_data</code>
+<code>.api</code>, <code>.events</code>
 </td>
-<td>Extract metadata from streaming data</td>
+<td>Fold stream events back into a blocking-shaped body; the reply, metadata and tool calls are all read back out of it</td>
 </tr><tr><td><code>tools_to_api()</code></td>
 <td>
 <code>.api</code>, <code>.tools</code>
@@ -270,7 +275,13 @@
 ├── batch_submit.R           # opt-in: submit plain + json_schema batches per provider (idempotent)
 ├── batch_fetch.R            # opt-in: fetch completed batch jobs and assert results
 ├── start_llamacpp_servers.sh  # start chat (8080) + embed (8081) servers; idempotent
+├── stream_capture.R         # shared capture helpers for both stream recorders
+├── record_stream_fixtures.R # live: record raw streaming wire bytes per provider
+├── record_stream_tool_fixtures.R # live: record streams that call tools
+├── record_stream_baseline.R # offline: what the code makes of them; refuses to overwrite
+├── stream_replay.R          # webfakes replay server + replay_fixture() helpers
 ├── media/                   # Test assets (images, PDFs, audio) — tracked in git
+├── fixtures/                # Recorded stream bytes + pre-refactor baseline; see its README
 ├── providers/               # Per-provider suites — source one after changing a provider
 │   ├── claude.R             # chat, stream, tools, thinking (no batch — moved to batch_submit/fetch)
 │   ├── openai.R             # chat, stream, tools, vision, reasoning_effort, stateful, built-in tools
@@ -288,12 +299,15 @@
 │   ├── openai_file_api.R    # same lifecycle for OpenAI Files API
 │   ├── inline_media.R       # img(), audio_file(), pdf_file(), multi-image — cross-provider
 │   ├── perplexity_deep_research.R  # deep_research() blocking + background; slow (5-10 min)
-│   └── openai_deep_research.R      # OpenAI o4-mini-deep-research; slow (5-30 min)
+│   ├── openai_deep_research.R      # OpenAI o4-mini-deep-research; slow (5-30 min)
+│   ├── stream_replay.R      # offline: replays recorded streams; no API key, no network
+│   ├── stream_tools_replay.R # offline: replays tool-call streams through assemble_stream_body()
+│   └── chat_pipeline.R      # offline: asserts the build/perform/finish seam's shape
 ├── async_state/             # Gitignored — live batch job objects (.rds)
 ├── debug_state/             # Gitignored — dump.frames() post-mortem dumps (.rda)
 └── results/                 # Gitignored — JSON results for Claude Code to read
     └── latest_run.json      # Written by llt_report() after each run</code></pre>
-<p><strong>Running tests</strong>: <code>source("local_tests/providers/claude.R")</code> to run a single provider suite. <strong>Feature tests</strong>: <code>source("local_tests/features/gemini_file_api.R")</code> or <code>run_feature_tests()</code>. <strong>Async batch workflow</strong>: <code>source("local_tests/batch_submit.R")</code> → wait → <code>source("local_tests/batch_fetch.R")</code>. <strong>Claude Code reads</strong>: <code>local_tests/results/latest_run.json</code> to see pass/fail state. <strong>llama.cpp servers</strong>: <code>bash local_tests/start_llamacpp_servers.sh</code> — starts chat (port 8080) and embed (port 8081) servers; idempotent, skips ports already in use.</p>
+<p><strong>Running tests</strong>: <code>source("local_tests/providers/claude.R")</code> to run a single provider suite. <strong>Feature tests</strong>: <code>source("local_tests/features/gemini_file_api.R")</code> or <code>run_feature_tests()</code>. <strong>Async batch workflow</strong>: <code>source("local_tests/batch_submit.R")</code> → wait → <code>source("local_tests/batch_fetch.R")</code>. <strong>Claude Code reads</strong>: <code>local_tests/results/latest_run.json</code> to see pass/fail state. <strong>llama.cpp servers</strong>: <code>bash local_tests/start_llamacpp_servers.sh</code> — starts chat (port 8080) and embed (port 8081) servers; idempotent, skips ports already in use. <strong>Streaming regression</strong>: <code>source("local_tests/features/stream_replay.R")</code> — replays recorded wire bytes through the real <code>handle_stream()</code> via a local <code>webfakes</code> server. Needs no API key. Run it after any change to a streaming path. <code>webfakes</code> is a local-only tool and must stay out of <code>DESCRIPTION</code>; streaming fixtures must stay out of <code>tests/testthat/</code>.</p>
 </div>
 <div class="section level3">
 <h3 id="debugging-failed-tests">Debugging failed tests<a class="anchor" aria-label="anchor" href="#debugging-failed-tests"></a></h3>
@@ -490,7 +504,7 @@
 </tr></tbody></table></div>
 <div class="section level2">
 <h2 id="internal-state">Internal State<a class="anchor" aria-label="anchor" href="#internal-state"></a></h2>
-<p>Global state is deliberately minimal: - <code>.tidyllm_rate_limit_env</code>: Per-provider rate limit tracking (updated from response headers) - <code>.tidyllm_stream_env</code>: Buffer for streaming responses</p>
+<p>Global state is deliberately minimal: - <code>.tidyllm_rate_limit_env</code>: Per-provider rate limit tracking (updated from response headers) (<code>.tidyllm_stream_env</code> was removed in 0.6.0 along with the dead <code>generate_callback_function()</code> generic; it was never created anywhere.)</p>
 </div>
 <div class="section level2">
 <h2 id="reference">Reference<a class="anchor" aria-label="anchor" href="#reference"></a></h2>

@@ -5,11 +5,12 @@ articles:
   articles/tidyllm_classifiers: tidyllm_classifiers.html
   articles/tidyllm_embed: tidyllm_embed.html
   articles/tidyllm_local_models: tidyllm_local_models.html
+  articles/tidyllm_shiny: tidyllm_shiny.html
   articles/tidyllm_tools: tidyllm_tools.html
   articles/tidyllm_video: tidyllm_video.html
   articles/tidyllm-pdfquestions: tidyllm-pdfquestions.html
   tidyllm: tidyllm.html
-last_built: 2026-07-30T12:05Z
+last_built: 2026-09-03T14:50Z
 urls:
   reference: https://edubruell.github.io/tidyllm/reference
   article: https://edubruell.github.io/tidyllm/articles
