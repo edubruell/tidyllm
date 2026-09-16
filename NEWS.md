@@ -1,3 +1,74 @@
+# tidyllm 0.7.0 (development version)
+
+Work in progress. This section covers the release's first feature, a provider
+that talks to a locally installed Claude CLI, and the transport work it needed.
+
+## `claude_cli()`: chat through the Claude CLI you already have
+
+`claude_cli()` is a provider that sends nothing over the network itself. It runs
+the `claude` command line tool installed on your own machine and reads its JSON
+output back, using the login that tool already has. There is no API key to set,
+and the usage counts against whatever plan the CLI is signed in to.
+
+```r
+llm_message("Explain R's S7 classes in three sentences.") |>
+  chat(claude_cli())
+```
+
+Everything the CLI reports comes back through the usual accessors:
+`get_metadata()` carries the token counts including cache reads, and its
+`api_specific` column adds the session id, the stop reason, the number of turns
+and `total_cost_usd`, which is the real dollar cost of that one call.
+
+Streaming and `send_chat()` both work, so a CLI call can print as it arrives or
+run in the background of a session that keeps going.
+
+The CLI is an agent rather than a plain completion endpoint: left alone it can
+read files, edit them and run shell commands. tidyllm turns all of that off,
+because a call to `chat()` that quietly edits files in your working directory is
+not what the rest of the package does. Pass `.cli_tools` to allow specific tools
+back, or `.cli_tools = TRUE` to hand over to the CLI's own configuration.
+
+```r
+llm_message("Summarise the DESCRIPTION file here.") |>
+  chat(claude_cli(.cli_tools = c("Read", "Glob")))
+```
+
+`.stateful = TRUE` leaves the conversation on the CLI's side: the first call
+records a session id, and later calls resume it instead of replaying the whole
+history.
+
+`.json_schema` maps onto the CLI's own structured-output flag, so
+`tidyllm_schema()` works here as it does everywhere else.
+
+`claude_cli()` does not take `.tools`. The CLI runs its own tool loop and never
+exposes tool-call blocks to a caller, so tidyllm's tool loop has nothing to act
+on; `chat(claude_cli(), .tools = ...)` says so rather than silently ignoring it.
+
+`claude_cli()` looks for the CLI on the PATH and, failing that, in the places the
+installers write to. A GUI R session does not inherit the PATH from your shell
+profile, so RStudio in particular can miss a perfectly good install in
+`~/.local/bin`. To point at it yourself, set
+
+```r
+options(tidyllm_claude_cli_path = "/path/to/claude")
+```
+
+in your `.Rprofile`, or the `TIDYLLM_CLAUDE_CLI` environment variable, or pass
+`claude_cli(.binary = "/path/to/claude")` for a single call.
+
+The provider needs `processx`, which is in `Suggests` and checked where it is
+used, so nothing changes for anyone who does not call it.
+
+## Streaming is no longer tied to HTTP
+
+The stream pump used to ask httr2 directly whether a connection was finished and
+how to close it. Those two questions now go through the provider, alongside the
+reader that was already there, which is what lets a stream come from a local
+process instead of an HTTP response. `send_chat()` likewise asks the provider how
+to start, rather than always building an httr2 promise. No behaviour changes for
+the twelve HTTP providers.
+
 # tidyllm 0.6.0
 
 **tidyllm no longer has to block.** A script can fire a request and keep working,

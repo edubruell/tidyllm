@@ -1,6 +1,6 @@
 Package: tidyllm
 Title: Tidy Integration of Large Language Models
-Version: 0.6.0
+Version: 0.6.0.9000
 Authors@R: c(
     person("Eduard", "Brüll", NULL, "eduard.bruell@zew.de", role = c("aut", "cre")),
     person("Jia", "Zhang", NULL, NULL, role = "ctb")
@@ -15,6 +15,7 @@ RoxygenNote: 7.3.3
 VignetteBuilder: knitr
 Suggests:
     later,
+    processx,
     shiny,
     wooldridge,
     promises,
@@ -72,6 +73,7 @@ Collate:
     'api_voyage.R'
     'api_ollama.R'
     'api_claude.R'
+    'api_claude_cli.R'
     'api_gemini.R'
     'api_ellmer.R'
     'api_openrouter.R'
