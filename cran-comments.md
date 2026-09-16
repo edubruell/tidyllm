@@ -1,3 +1,7 @@
+# Comments from last Submission
+invalid file URI fixed as per Uwe Ligges comment from 03.09.2026 17:21
+
+# Old CRAN-comments from initial submission
 tidyllm 0.6.0 adds non-blocking chat. `send_chat()` runs a single request against
 R's own event loop instead of blocking the session, and `parallel_chat()` runs a
 list of prompts against one provider concurrently. Streaming and tool calls are
