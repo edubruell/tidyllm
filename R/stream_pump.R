@@ -74,8 +74,42 @@ read_stream_chunk <- function(.api, .response) {
       chunk <- httr2::resp_stream_lines(.response)
       if (length(chunk) == 0 || !nzchar(chunk[[1]])) NULL else chunk
     },
+    process = {
+      chunk <- .response$read_output_lines(1)
+      if (length(chunk) == 0 || !nzchar(chunk[[1]])) NULL else chunk
+    },
     stop("Unknown stream transport '", .api@stream_transport, "' for ", .api@long_name)
   )
+}
+
+#' Has the stream's source finished producing?
+#'
+#' Split out of the pump when the first non-HTTP provider arrived. The pump asks
+#' two questions of its source, "is it finished" and "release it", and both used
+#' to be httr2 calls written inline, which is what tied a transport-agnostic loop
+#' to one transport.
+#'
+#' A process is finished only when it has exited *and* its output buffer is
+#' drained. Checking `is_alive()` alone loses whatever the child wrote just
+#' before exiting, which for a short reply can be the entire answer.
+#'
+#' @noRd
+stream_is_complete <- function(.api, .response) {
+  if (identical(.api@stream_transport, "process")) {
+    return(!.response$is_alive() && !.response$is_incomplete_output())
+  }
+  httr2::resp_stream_is_complete(.response)
+}
+
+#' Release the stream's source.
+#'
+#' @noRd
+stream_close <- function(.api, .response) {
+  if (identical(.api@stream_transport, "process")) {
+    if (.response$is_alive()) .response$kill()
+    return(invisible(NULL))
+  }
+  close(.response)
 }
 
 #' Parse a JSON payload from a stream, returning NULL rather than erroring.
@@ -162,8 +196,8 @@ stream_pump_step <- function(.state) {
   if (is.null(chunk)) {
     # Nothing parseable arrived. Either the connection is done, in which case
     # the provider never sent its terminal event, or we are still waiting.
-    if (httr2::resp_stream_is_complete(.state$response)) {
-      close(.state$response)
+    if (stream_is_complete(.state$api, .state$response)) {
+      stream_close(.state$api, .state$response)
       .state$done <- TRUE
       stop(sprintf(
         "%s stream ended after %d events without a completion signal. The connection was closed or truncated before the response finished.",
@@ -171,7 +205,7 @@ stream_pump_step <- function(.state) {
       ), call. = FALSE)
     }
     if (difftime(Sys.time(), .state$last_event, units = "secs") > .state$idle_timeout) {
-      close(.state$response)
+      stream_close(.state$api, .state$response)
       .state$done <- TRUE
       stop(sprintf(
         "%s stream produced no data for %g seconds; giving up.",
@@ -187,7 +221,7 @@ stream_pump_step <- function(.state) {
   if (isTRUE(parsed$keep)) .state$events <- append(.state$events, list(parsed$event))
 
   if (!is.null(parsed$error)) {
-    close(.state$response)
+    stream_close(.state$api, .state$response)
     .state$done <- TRUE
     stop(sprintf("%s stream error: %s", .state$api@long_name, parsed$error), call. = FALSE)
   }
@@ -199,7 +233,7 @@ stream_pump_step <- function(.state) {
 
   if (isTRUE(parsed$done)) {
     .state$done <- TRUE
-    close(.state$response)
+    stream_close(.state$api, .state$response)
     if (isTRUE(.state$verbose)) message("\n---------\nStream finished\n---------\n")
     return("done")
   }
@@ -222,6 +256,21 @@ stream_pump_result <- function(.state) {
 #'
 #' @noRd
 method(handle_stream, list(APIProvider, new_S3_class("httr2_response"))) <-
+  function(.api, .stream_response, .on_chunk = NULL, .idle_timeout = 60,
+           .verbose = TRUE) {
+    run_stream_pump(.api, .stream_response, .on_chunk = .on_chunk,
+                    .idle_timeout = .idle_timeout, .verbose = .verbose)
+  }
+
+#' A provider whose stream is a local process, not an HTTP connection.
+#'
+#' The pump itself does not change; only the reader and the two lifecycle calls
+#' differ, and those are behind `read_stream_chunk()`, `stream_is_complete()` and
+#' `stream_close()`. This method exists because `handle_stream()` dispatches on
+#' the response's class, and a `processx::process` is not an `httr2_response`.
+#'
+#' @noRd
+method(handle_stream, list(APIProvider, new_S3_class("process"))) <-
   function(.api, .stream_response, .on_chunk = NULL, .idle_timeout = 60,
            .verbose = TRUE) {
     run_stream_pump(.api, .stream_response, .on_chunk = .on_chunk,

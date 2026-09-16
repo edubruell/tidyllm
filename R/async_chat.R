@@ -118,11 +118,15 @@ new_chat_job <- function(.built, .on_chunk = NULL) {
   handle <- structure(list(env = job), class = "tidyllm_chat_job")
 
   if (job$streams) {
-    response <- httr2::req_perform_connection(.built$request, blocking = FALSE)
-    # Read while the response is open; `close()` happens inside the pump, and
-    # the interpretation afterwards still needs both of these.
-    job$headers     <- httr2::resp_headers(response)
-    job$http_status <- httr2::resp_status(response)
+    # How the stream is opened is the provider's business, because it is the
+    # only part of this driver that is transport-specific. The default is a
+    # non-blocking httr2 connection; `claude_cli()` hands back a child process.
+    # Headers and status are read here, while the source is still open, because
+    # the pump closes it and the interpretation afterwards still needs both.
+    opened <- open_chat_stream(.built$api, .built)
+    response        <- opened$response
+    job$headers     <- opened$headers
+    job$http_status <- opened$status
     job$state <- new_stream_state(
       .api          = .built$api,
       .response     = response,
@@ -132,7 +136,7 @@ new_chat_job <- function(.built, .on_chunk = NULL) {
     )
     chat_job_schedule(handle)
   } else {
-    start_promised_request(handle)
+    start_async_request(.built$api, handle)
   }
 
   handle
