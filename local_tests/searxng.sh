@@ -4,7 +4,8 @@
 #
 # Usage: bash local_tests/searxng.sh <command>
 #   start    start the container services and SearXNG, create them if needed
-#   stop     stop SearXNG, then the container services if nothing else runs
+#   stop     stop SearXNG, then the container services if this script started
+#            them and nothing else runs
 #   status   show whether the services and SearXNG are running
 #   test     run one JSON search:  bash local_tests/searxng.sh test "some query"
 #   logs     show the SearXNG log  (logs -f to follow)
@@ -25,10 +26,13 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CONF_DIR="$ROOT/local_context/searxng"
 SETTINGS="$CONF_DIR/settings.yml"
 URL="http://127.0.0.1:$PORT"
+STARTED_MARKER="$CONF_DIR/.services_started_by_script"
 
 die() { echo "ERROR: $*" >&2; exit 1; }
 
-command -v container >/dev/null 2>&1 || die "container not found (brew install container)"
+for tool in container curl python3 openssl; do
+  command -v "$tool" >/dev/null 2>&1 || die "$tool not found"
+done
 
 services_up() { container system status >/dev/null 2>&1; }
 exists()      { services_up && container list --all --quiet 2>/dev/null | grep -qx "$NAME"; }
@@ -36,11 +40,14 @@ running()     { services_up && container list --quiet 2>/dev/null | grep -qx "$N
 
 write_settings() {
   [ -f "$SETTINGS" ] && return
+  local secret
+  secret="$(openssl rand -hex 32)"
+  [ ${#secret} -eq 64 ] || die "could not generate a secret key with openssl"
   mkdir -p "$CONF_DIR"
   cat > "$SETTINGS" <<EOF
 use_default_settings: true
 server:
-  secret_key: "$(openssl rand -hex 32)"
+  secret_key: "$secret"
   limiter: false
   bind_address: "0.0.0.0"
 search:
@@ -66,6 +73,7 @@ cmd_start() {
   if ! services_up; then
     echo "Starting container services ..."
     container system start --enable-kernel-install
+    touch "$STARTED_MARKER"
   fi
   if running; then
     echo "SearXNG already running"
@@ -73,6 +81,9 @@ cmd_start() {
     echo "Starting existing SearXNG container ..."
     container start "$NAME" >/dev/null
   else
+    if lsof -i ":$PORT" -sTCP:LISTEN >/dev/null 2>&1; then
+      die "port $PORT is already in use; set SEARXNG_PORT to another port"
+    fi
     echo "Creating SearXNG container from $IMAGE ..."
     container run -d --name "$NAME" \
       -p "127.0.0.1:$PORT:8080" \
@@ -80,6 +91,7 @@ cmd_start() {
       "$IMAGE" >/dev/null
   fi
   wait_ready
+  curl -s -m 30 "$URL/search?q=warm+up&format=json" >/dev/null 2>&1 || true
   echo "Sys.setenv(SEARXNG_SERVER = \"$URL\")"
 }
 
@@ -89,11 +101,14 @@ cmd_stop() {
     container stop "$NAME" >/dev/null
   fi
   if services_up; then
-    if [ -z "$(container list --quiet 2>/dev/null)" ]; then
+    if [ ! -f "$STARTED_MARKER" ]; then
+      echo "Container services were started outside this script; left on"
+    elif [ -n "$(container list --quiet 2>/dev/null)" ]; then
+      echo "Other containers are running; container services left on"
+    else
       echo "Stopping container services ..."
       container system stop
-    else
-      echo "Other containers are running; container services left on"
+      rm -f "$STARTED_MARKER"
     fi
   fi
   echo "Stopped"
@@ -130,6 +145,7 @@ for r in d["results"][:5]:
 }
 
 cmd_logs() {
+  services_up || die "container services are stopped; run start first"
   exists || die "SearXNG container does not exist"
   container logs "$@" "$NAME"
 }
@@ -164,5 +180,5 @@ case "${1:-}" in
   logs)   shift; cmd_logs "$@" ;;
   update) cmd_update ;;
   remove) cmd_remove ;;
-  *) sed -n '5,13p' "$0" | sed 's/^# \{0,1\}//'; exit 1 ;;
+  *) sed -n '/^# Usage/,/^#$/p' "$0" | sed -e '$d' -e 's/^# \{0,1\}//'; exit 1 ;;
 esac

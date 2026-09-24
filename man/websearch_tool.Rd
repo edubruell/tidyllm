@@ -5,7 +5,8 @@
 \title{Give a Model Web Search}
 \usage{
 websearch_tool(
-  .backend = c("tavily"),
+  .backend = c("tavily", "searxng"),
+  .server = NULL,
   .max_results = 5,
   .include_content = FALSE,
   .max_chars = 4000,
@@ -14,28 +15,30 @@ websearch_tool(
 )
 }
 \arguments{
-\item{.backend}{The search service to use. Currently only \code{"tavily"}, which
-needs a \code{TAVILY_API_KEY} environment variable. Tavily's free plan gives
-1,000 credits per month without a credit card; one basic search costs one
-credit.}
+\item{.backend}{The search service to use: \code{"tavily"} (the default) or
+\code{"searxng"}. See the section on search services below.}
+
+\item{.server}{The address of your SearXNG server, such as
+\code{"http://localhost:8888"}. If \code{NULL}, the \code{SEARXNG_SERVER} environment
+variable is used. Only for \code{.backend = "searxng"}.}
 
 \item{.max_results}{How many results each search returns, between 1 and 20.}
 
 \item{.include_content}{If \code{TRUE}, each result also carries the text of the
 page, cut to \code{.max_chars} characters. This helps with questions a short
-excerpt cannot answer, but it makes every tool result much longer.}
+excerpt cannot answer, but it makes every tool result much longer. Only
+Tavily can do this.}
 
 \item{.max_chars}{The maximum number of characters of page text per result
 when \code{.include_content = TRUE}. Use \code{Inf} to keep the whole page.}
 
-\item{.timeout}{Seconds to wait for the search service before giving up.}
+\item{.timeout}{Seconds to wait for each request to the search service.
+Busy or failing services are asked up to three times, for at most a
+minute in total.}
 
-\item{...}{Further search options passed to the search service by name. For
-Tavily these include \code{search_depth} (\code{"basic"}, \code{"advanced"}, \code{"fast"} or
-\code{"ultra-fast"}; \code{"advanced"} costs two credits), \code{topic} (\code{"general"},
-\code{"news"} or \code{"finance"}), \code{time_range} (\code{"day"}, \code{"week"}, \code{"month"} or
-\code{"year"}), \code{start_date} and \code{end_date} (\code{"YYYY-MM-DD"}), \code{include_domains},
-\code{exclude_domains}, \code{country} and \code{include_answer}.}
+\item{...}{Further search options passed to the search service by name. The
+options each service accepts are listed in the section on search services
+below; a misspelled option is an error.}
 }
 \value{
 A tool object to pass to the \code{.tools} argument of \code{chat()}.
@@ -62,7 +65,39 @@ it relies on.
 If a search fails, for example because the key is wrong or the monthly credits
 are used up, the model receives the error message as the search result instead
 of the conversation stopping. It will usually tell you what went wrong.
+
+The tool is named \code{tidyllm_web_search}, which is the name you will see in
+the tool calls of a conversation. The Tavily key or SearXNG address is read
+once, when the tool is created: set it before calling \code{websearch_tool()},
+and create the tool again after changing it. The key is stored inside the
+tool, so do not save the tool object to a file you share.
 }
+\section{Search services}{
+
+\strong{Tavily} is a paid search API with a free plan of 1,000 credits per month,
+no credit card needed; one basic search costs one credit. It needs a
+\code{TAVILY_API_KEY} environment variable. Options: \code{search_depth} (\code{"basic"},
+\code{"advanced"}, \code{"fast"} or \code{"ultra-fast"}; \code{"advanced"} costs two credits),
+\code{topic} (\code{"general"}, \code{"news"} or \code{"finance"}), \code{time_range} (\code{"day"},
+\code{"week"}, \code{"month"} or \code{"year"}, or the short forms \code{"d"}, \code{"w"}, \code{"m"} and
+\code{"y"}), \code{start_date} and \code{end_date}
+(\code{"YYYY-MM-DD"}), \code{include_domains}, \code{exclude_domains}, \code{country},
+\code{include_answer} and others from Tavily's search API.
+
+\strong{SearXNG} is a free search engine you run yourself, which collects results
+from Google, Brave and other engines. Use your own server: public SearXNG
+servers usually refuse programs. Its \code{settings.yml} must list \code{json} under
+\verb{search: formats:}, and for a server only you use, \code{server: limiter: false}
+stops it from blocking repeated searches. Set the address with \code{.server} or
+the \code{SEARXNG_SERVER} environment variable. SearXNG returns no page text.
+Options: \code{categories} (such as \code{"general"} or \code{"news"}), \code{engines} (such as
+\code{c("google", "brave")}), \code{language} (such as \code{"de"}), \code{time_range} (\code{"day"},
+\code{"week"}, \code{"month"} or \code{"year"}), \code{safesearch} (\code{0}, \code{1} or \code{2}) and
+\code{pageno} (which page of results, for more than one page). A search fails if
+it finds nothing and at least one engine did not answer, for example because
+it asked for a CAPTCHA.
+}
+
 \examples{
 \dontrun{
 llm_message("What changed in the latest R release?") |>

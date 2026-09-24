@@ -79,11 +79,19 @@ search bill. Each search returns numbered results with title, URL, publication
 date and an excerpt, and the tool asks the model to cite the URLs it uses.
 
 The first search service is Tavily. It needs a `TAVILY_API_KEY`; the free plan
-gives 1,000 searches a month without a credit card. Tavily's own options, such
+gives 1,000 credits a month without a credit card, and a basic search costs one. Tavily's own options, such
 as `topic = "news"`, `time_range = "week"` or `include_domains`, pass through
 `...`, and a misspelled option is caught when the tool is created. A search that
 fails, for instance because the monthly credits are used up, comes back to the
 model as a message rather than stopping the conversation.
+
+The second search service is SearXNG, a free search engine you run yourself.
+Choose it with `.backend = "searxng"` and give the address of your server with
+`.server` or the `SEARXNG_SERVER` environment variable. The server's
+`settings.yml` must allow JSON output (and, for a server only you use, turn the
+limiter off). SearXNG returns no page text, so
+`.include_content = TRUE` is an error there. Its options, such as `engines`,
+`language` or `time_range`, pass through `...` like Tavily's.
 
 `websearch()` runs the same search directly and returns a tibble with one row
 per result: query, title, URL, publication date, snippet and, if asked for, the

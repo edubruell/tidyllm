@@ -186,7 +186,7 @@ llm_message("What are the latest developments in R package tooling?") |>
 
 ## Searching the Web
 
-Web search is the tool most people want first, and tidyllm ships one. `websearch_tool()` lets any model that supports tools search the web while it answers, including local models through `ollama()` that have no web access of their own. The search runs through [Tavily](https://tavily.com), which needs a `TAVILY_API_KEY`; the free plan gives 1,000 searches a month without a credit card.
+Web search is the tool most people want first, and tidyllm ships one. `websearch_tool()` lets any model that supports tools search the web while it answers, including local models through `ollama()` that have no web access of their own. The search runs through [Tavily](https://tavily.com), which needs a `TAVILY_API_KEY`; the free plan gives 1,000 credits a month without a credit card, and a basic search costs one.
 
 ```{r websearch_tool, eval = FALSE}
 llm_message("What is the latest R release, and when did it come out?") |>
@@ -211,6 +211,17 @@ llm_message("Summarise this week's news on EU AI regulation.") |>
 ```
 
 If a search fails, for example because the monthly credits are used up, the model receives the error as its search result and can tell you what went wrong; the conversation does not stop.
+
+If you would rather not use a paid service, run your own [SearXNG](https://docs.searxng.org) server, a free search engine that collects results from Google, Brave and others. Its `settings.yml` must list `json` under `search: formats:`, and for a server only you use, `server: limiter: false` stops it from blocking repeated searches. Then point the tool at it:
+
+```{r websearch_searxng, eval = FALSE}
+Sys.setenv(SEARXNG_SERVER = "http://localhost:8888")
+
+llm_message("What is the latest R release, and when did it come out?") |>
+  chat(ollama(), .tools = websearch_tool("searxng", language = "en"))
+```
+
+SearXNG returns short excerpts only, never the full page text.
 
 To see what the model would get, or to collect search results as data, `websearch()` runs the same search directly and returns a tibble. It takes the same arguments as `websearch_tool()`:
 

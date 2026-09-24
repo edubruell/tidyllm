@@ -7,39 +7,69 @@
 #' arguments.
 #'
 #' @param .query The search query, a single string of at least two characters.
-#' @param .backend The search service to use. Currently only `"tavily"`, which
-#'   needs a `TAVILY_API_KEY` environment variable. Tavily's free plan gives
-#'   1,000 credits per month without a credit card; one basic search costs one
-#'   credit.
-#' @param .max_results How many results a search returns, between 1 and 20.
+#' @param .backend The search service to use: `"tavily"` (the default) or
+#'   `"searxng"`. See the section on search services below.
+#' @param .server The address of your SearXNG server, such as
+#'   `"http://localhost:8888"`. If `NULL`, the `SEARXNG_SERVER` environment
+#'   variable is used. Only for `.backend = "searxng"`.
+#' @param .max_results The most results a search returns, between 1 and 20.
+#'   SearXNG returns one page of results, which may hold fewer.
 #' @param .include_content If `TRUE`, each result also carries the text of the
-#'   page, cut to `.max_chars` characters.
+#'   page, cut to `.max_chars` characters. Only Tavily can do this.
 #' @param .max_chars The maximum number of characters of page text per result
 #'   when `.include_content = TRUE`. Use `Inf` to keep the whole page.
-#' @param .timeout Seconds to wait for the search service before giving up.
-#' @param ... Further search options passed to the search service by name. For
-#'   Tavily these include `search_depth` (`"basic"`, `"advanced"`, `"fast"` or
-#'   `"ultra-fast"`; `"advanced"` costs two credits), `topic` (`"general"`,
-#'   `"news"` or `"finance"`), `time_range` (`"day"`, `"week"`, `"month"` or
-#'   `"year"`), `start_date` and `end_date` (`"YYYY-MM-DD"`), `include_domains`,
-#'   `exclude_domains`, `country` and `include_answer`.
+#' @param .timeout Seconds to wait for each request to the search service.
+#'   Busy or failing services are asked up to three times, for at most a
+#'   minute in total.
+#' @param ... Further search options passed to the search service by name. The
+#'   options each service accepts are listed in the section on search services
+#'   below; a misspelled option is an error.
 #'
 #' @return A tibble with one row per result and the columns `query`, `title`,
 #'   `url`, `published` (a date, `NA` where the service does not know it),
-#'   `snippet` and `text` (`NA` unless `.include_content = TRUE`). If you ask
-#'   Tavily for a summary with `include_answer = TRUE`, it is attached as the
-#'   attribute `"answer"`.
+#'   `snippet` and `text` (`NA` unless `.include_content = TRUE`). If the
+#'   service writes a short summary (Tavily with `include_answer = TRUE`, or a
+#'   SearXNG instant answer), it is attached as the attribute `"answer"`. If
+#'   some SearXNG engines did not answer, their names and reasons are attached
+#'   as the attribute `"unresponsive_engines"`.
 #'
 #' @details
-#' A failed search, for example with a wrong key or used-up credits, stops with
-#' an error. To search for many queries, map over them and bind the results; the
+#' A failed search, for example with a wrong Tavily key, used-up credits or an
+#' unreachable SearXNG server, stops with an error. To search for many queries, map over them and bind the results; the
 #' `query` column keeps them apart.
+#'
+#' @section Search services:
+#' **Tavily** is a paid search API with a free plan of 1,000 credits per month,
+#' no credit card needed; one basic search costs one credit. It needs a
+#' `TAVILY_API_KEY` environment variable. Options: `search_depth` (`"basic"`,
+#' `"advanced"`, `"fast"` or `"ultra-fast"`; `"advanced"` costs two credits),
+#' `topic` (`"general"`, `"news"` or `"finance"`), `time_range` (`"day"`,
+#' `"week"`, `"month"` or `"year"`, or the short forms `"d"`, `"w"`, `"m"` and
+#' `"y"`), `start_date` and `end_date`
+#' (`"YYYY-MM-DD"`), `include_domains`, `exclude_domains`, `country`,
+#' `include_answer` and others from Tavily's search API.
+#'
+#' **SearXNG** is a free search engine you run yourself, which collects results
+#' from Google, Brave and other engines. Use your own server: public SearXNG
+#' servers usually refuse programs. Its `settings.yml` must list `json` under
+#' `search: formats:`, and for a server only you use, `server: limiter: false`
+#' stops it from blocking repeated searches. Set the address with `.server` or
+#' the `SEARXNG_SERVER` environment variable. SearXNG returns no page text.
+#' Options: `categories` (such as `"general"` or `"news"`), `engines` (such as
+#' `c("google", "brave")`), `language` (such as `"de"`), `time_range` (`"day"`,
+#' `"week"`, `"month"` or `"year"`), `safesearch` (`0`, `1` or `2`) and
+#' `pageno` (which page of results, for more than one page). A search fails if
+#' it finds nothing and at least one engine did not answer, for example because
+#' it asked for a CAPTCHA.
 #'
 #' @examples
 #' \dontrun{
 #' websearch("tidyllm R package")
 #'
 #' websearch("EU AI Act", .max_results = 10, topic = "news", time_range = "month")
+#'
+#' websearch("EU AI Act", .backend = "searxng", .server = "http://localhost:8888",
+#'           categories = "news", time_range = "week")
 #'
 #' c("ZEW Mannheim", "ifo Institut") |>
 #'   purrr::map(websearch, .max_results = 3) |>
@@ -48,26 +78,17 @@
 #'
 #' @export
 websearch <- function(.query,
-                      .backend = c("tavily"),
+                      .backend = c("tavily", "searxng"),
+                      .server = NULL,
                       .max_results = 5,
                       .include_content = FALSE,
                       .max_chars = 4000,
                       .timeout = 30,
                       ...) {
-  setup  <- websearch_setup(websearch_backends[[match.arg(.backend)]], .max_results,
-                            .include_content, .max_chars, .timeout, list(...))
-  parsed <- websearch_perform(setup$backend, .query, setup$settings)
-
-  results <- tibble::tibble(
-    query     = rep(.query, nrow(parsed$results)),
-    title     = parsed$results$title,
-    url       = parsed$results$url,
-    published = as.Date(parsed$results$published, format = "%Y-%m-%d"),
-    snippet   = parsed$results$snippet,
-    text      = parsed$results$text
-  )
-  if (!is.null(parsed$answer)) attr(results, "answer") <- parsed$answer
-  results
+  setup  <- websearch_setup(websearch_backends[[match.arg(.backend)]], .server,
+                            .max_results, .include_content, .max_chars, .timeout,
+                            list(...))
+  search_results_tibble(.query, websearch_perform(setup$backend, .query, setup$settings))
 }
 
 #' Give a Model Web Search
@@ -89,9 +110,12 @@ websearch <- function(.query,
 #' @param .max_results How many results each search returns, between 1 and 20.
 #' @param .include_content If `TRUE`, each result also carries the text of the
 #'   page, cut to `.max_chars` characters. This helps with questions a short
-#'   excerpt cannot answer, but it makes every tool result much longer.
+#'   excerpt cannot answer, but it makes every tool result much longer. Only
+#'   Tavily can do this.
 #'
 #' @return A tool object to pass to the `.tools` argument of `chat()`.
+#'
+#' @inheritSection websearch Search services
 #'
 #' @details
 #' Each search returns one block of text to the model: the query, the date of the
@@ -102,6 +126,12 @@ websearch <- function(.query,
 #' If a search fails, for example because the key is wrong or the monthly credits
 #' are used up, the model receives the error message as the search result instead
 #' of the conversation stopping. It will usually tell you what went wrong.
+#'
+#' The tool is named `tidyllm_web_search`, which is the name you will see in
+#' the tool calls of a conversation. The Tavily key or SearXNG address is read
+#' once, when the tool is created: set it before calling `websearch_tool()`,
+#' and create the tool again after changing it. The key is stored inside the
+#' tool, so do not save the tool object to a file you share.
 #'
 #' @examples
 #' \dontrun{
@@ -114,14 +144,16 @@ websearch <- function(.query,
 #' }
 #'
 #' @export
-websearch_tool <- function(.backend = c("tavily"),
+websearch_tool <- function(.backend = c("tavily", "searxng"),
+                           .server = NULL,
                            .max_results = 5,
                            .include_content = FALSE,
                            .max_chars = 4000,
                            .timeout = 30,
                            ...) {
-  setup <- websearch_setup(websearch_backends[[match.arg(.backend)]], .max_results,
-                           .include_content, .max_chars, .timeout, list(...))
+  setup <- websearch_setup(websearch_backends[[match.arg(.backend)]], .server,
+                           .max_results, .include_content, .max_chars, .timeout,
+                           list(...))
 
   search <- function(query, ...) {
     tryCatch(
@@ -147,8 +179,8 @@ websearch_tool <- function(.backend = c("tavily"),
   )
 }
 
-websearch_setup <- function(.backend, .max_results, .include_content, .max_chars,
-                            .timeout, .options) {
+websearch_setup <- function(.backend, .server, .max_results, .include_content,
+                            .max_chars, .timeout, .options) {
   is_number <- function(x) is.numeric(x) && length(x) == 1 && !is.na(x)
 
   c(
@@ -164,12 +196,15 @@ websearch_setup <- function(.backend, .max_results, .include_content, .max_chars
       (is.infinite(.max_chars) || is_integer_valued(.max_chars)),
     ".timeout must be a positive number of seconds" =
       is_number(.timeout) && .timeout > 0,
+    ".server must be NULL or a single string" =
+      is.null(.server) || (is.character(.server) && length(.server) == 1 && !is.na(.server)),
     "Search options in ... must all be named" =
       length(.options) == 0 || (!is.null(names(.options)) && all(nzchar(names(.options))))
   ) |> validate_inputs()
 
   if (.include_content && !.backend$supports_content) {
-    stop(sprintf("%s does not return page text, so .include_content must be FALSE", .backend$label))
+    stop(sprintf("%s does not return page text, so .include_content must be FALSE", .backend$label),
+         call. = FALSE)
   }
   check_search_options(.backend, .options)
 
@@ -181,7 +216,7 @@ websearch_setup <- function(.backend, .max_results, .include_content, .max_chars
       max_chars       = .max_chars,
       timeout         = .timeout,
       options         = .options,
-      access          = .backend$resolve()
+      access          = .backend$resolve(.server)
     )
   )
 }
@@ -192,17 +227,32 @@ check_search_options <- function(.backend, .options) {
     stop(sprintf(
       "Unknown %s search option(s): %s. Supported options: %s",
       .backend$label, paste(unknown, collapse = ", "), paste(.backend$options, collapse = ", ")
-    ))
+    ), call. = FALSE)
   }
-  purrr::iwalk(.backend$option_values, function(allowed, name) {
+  for (name in names(.options)) {
     value <- .options[[name]]
-    if (!is.null(value) && !(is.character(value) && length(value) == 1 && value %in% allowed)) {
-      quoted <- sprintf("\"%s\"", allowed)
-      stop(sprintf("%s must be one of %s or %s", name,
-                   paste(utils::head(quoted, -1), collapse = ", "), utils::tail(quoted, 1)))
+    if (is.null(value) || length(value) == 0 || anyNA(value)) {
+      stop(sprintf("Search option %s must not be NULL, empty or NA", name), call. = FALSE)
     }
-  })
+    if (name %in% .backend$single_value_options && length(value) != 1) {
+      stop(sprintf("Search option %s takes a single value", name), call. = FALSE)
+    }
+  }
+  for (name in names(.backend$option_values)) {
+    value   <- .options[[name]]
+    allowed <- .backend$option_values[[name]]
+    if (!is.null(value) && !((is.character(value) || is.numeric(value)) && length(value) == 1 &&
+                             as.character(value) %in% allowed)) {
+      stop(sprintf("%s must be one of %s", name, or_list(sprintf("\"%s\"", allowed))),
+           call. = FALSE)
+    }
+  }
   invisible(TRUE)
+}
+
+or_list <- function(.x) {
+  if (length(.x) == 1) return(.x)
+  paste(paste(utils::head(.x, -1), collapse = ", "), "or", utils::tail(.x, 1))
 }
 
 websearch_perform <- function(.backend, .query, .settings) {
@@ -212,40 +262,80 @@ websearch_perform <- function(.backend, .query, .settings) {
   }
 
   response <- tryCatch(
-    .backend$build_request(.query, .settings) |>
-      httr2::req_user_agent(sprintf("tidyllm/%s", utils::packageVersion("tidyllm"))) |>
-      httr2::req_timeout(.settings$timeout) |>
-      httr2::req_retry(
-        max_tries    = 3,
-        is_transient = function(resp) httr2::resp_status(resp) %in% c(429, 500, 502, 503),
-        max_seconds  = 60
-      ) |>
-      httr2::req_error(is_error = function(resp) FALSE) |>
-      httr2::req_perform(),
+    search_request(.backend, .query, .settings) |> httr2::req_perform(),
     error = function(e) stop(paste("Web search failed:", conditionMessage(e)), call. = FALSE)
   )
 
-  if (httr2::resp_status(response) >= 400) {
-    stop(sprintf("Web search failed (HTTP %d): %s",
-                 httr2::resp_status(response),
-                 .backend$error_message(response)),
-         call. = FALSE)
-  }
-
-  content_type <- httr2::resp_content_type(response)
-  if (!identical(content_type, "application/json")) {
-    stop(sprintf("Web search failed: expected a JSON reply, got %s.",
-                 if (is.na(content_type)) "a reply without a content type" else content_type),
-         call. = FALSE)
-  }
-  body <- tryCatch(
-    httr2::resp_body_json(response),
-    error = function(e) stop("Web search failed: the JSON reply could not be read.", call. = FALSE)
+  body   <- read_search_response(.backend, response)
+  parsed <- tryCatch(
+    .backend$parse_response(body, .settings),
+    error = function(e) stop("Web search failed: the reply had an unexpected shape.", call. = FALSE)
   )
+  finish_search_results(parsed, .settings)
+}
 
-  parsed <- .backend$parse_response(body, .settings)
-  parsed$results <- parsed$results[seq_len(min(nrow(parsed$results), .settings$max_results)), ]
-  parsed
+search_request <- function(.backend, .query, .settings) {
+  .backend$build_request(.query, .settings) |>
+    httr2::req_user_agent(sprintf("tidyllm/%s", utils::packageVersion("tidyllm"))) |>
+    httr2::req_timeout(.settings$timeout) |>
+    httr2::req_retry(
+      max_tries    = 3,
+      is_transient = function(resp) httr2::resp_status(resp) %in% .backend$retry_statuses,
+      max_seconds  = 60
+    ) |>
+    httr2::req_error(is_error = function(resp) FALSE)
+}
+
+search_failure <- function(.message) {
+  stop(paste0("Web search failed", .message), call. = FALSE)
+}
+
+read_search_response <- function(.backend, .response) {
+  status <- httr2::resp_status(.response)
+  if (status >= 400) {
+    search_failure(sprintf(" (HTTP %d): %s", status, .backend$error_message(.response)))
+  }
+  content_type <- httr2::resp_content_type(.response)
+  if (is.na(content_type) || !grepl("^application/([^/]+\\+)?json$", content_type)) {
+    search_failure(sprintf(": expected a JSON reply, got %s.",
+                           if (is.na(content_type)) "a reply without a content type" else content_type))
+  }
+  tryCatch(
+    httr2::resp_body_json(.response),
+    error = function(e) search_failure(": the JSON reply could not be read.")
+  )
+}
+
+finish_search_results <- function(.parsed, .settings) {
+  results <- .parsed$results
+  if (nrow(results) == 0 && length(.parsed$unresponsive) > 0) {
+    stop(sprintf("Web search failed: no results, and these search engines did not answer: %s. Try again or rephrase the query.",
+                 paste(.parsed$unresponsive, collapse = ", ")),
+         call. = FALSE)
+  }
+  results <- results[seq_len(min(nrow(results), .settings$max_results)), ]
+  results$published <- purrr::map_chr(results$published, normalize_published_date)
+  results$text <- if (isTRUE(.settings$include_content)) {
+    purrr::map_chr(results$text, ~ truncate_text(.x, .settings$max_chars))
+  } else {
+    rep(NA_character_, nrow(results))
+  }
+  .parsed$results <- results
+  .parsed
+}
+
+search_results_tibble <- function(.query, .parsed) {
+  results <- tibble::tibble(
+    query     = rep(.query, nrow(.parsed$results)),
+    title     = .parsed$results$title,
+    url       = .parsed$results$url,
+    published = as.Date(.parsed$results$published, format = "%Y-%m-%d"),
+    snippet   = .parsed$results$snippet,
+    text      = .parsed$results$text
+  )
+  if (!is.null(.parsed$answer)) attr(results, "answer") <- .parsed$answer
+  if (length(.parsed$unresponsive) > 0) attr(results, "unresponsive_engines") <- .parsed$unresponsive
+  results
 }
 
 #' Turn parsed search results into the text a model receives
@@ -281,6 +371,30 @@ format_search_results <- function(.query, .parsed, .date) {
         collapse = "\n\n")
 }
 
+#' Search services behind websearch() and websearch_tool()
+#'
+#' Each entry describes one service. Data fields: `label` (the name used in
+#' messages), `max_results_limit`, `supports_content` (can it return page
+#' text), `options` (the names allowed in `...`), `single_value_options`,
+#' `option_values` (allowed values for enumerated options) and
+#' `retry_statuses` (HTTP statuses retried as transient).
+#'
+#' Functions, called in this order:
+#' - `resolve(.server)` runs once at setup and returns the `access` list
+#'   (at least `server`; a key if the service needs one). It stops on missing
+#'   configuration, so errors surface when a tool is created.
+#' - `build_request(.query, .settings)` returns an httr2 request; `.settings`
+#'   holds `max_results`, `include_content`, `max_chars`, `timeout`, `options`
+#'   and `access`.
+#' - `error_message(.response)` turns a reply with status 400 or above into
+#'   one line of text.
+#' - `parse_response(.body, .settings)` returns `list(answer, unresponsive,
+#'   results)`: `answer` a string or `NULL`, `unresponsive` a character vector
+#'   of failed engines (may be empty), `results` a tibble of character columns
+#'   `title`, `url`, `published` (as the service sends it) and `snippet`, and
+#'   `text` (the full page text, or `NA`). `finish_search_results()` then cuts
+#'   to `max_results`, normalises dates and truncates or drops page text.
+#' @noRd
 websearch_backends <- list(
   tavily = list(
     label             = "Tavily",
@@ -292,16 +406,24 @@ websearch_backends <- list(
       "include_domains_mode", "country", "language", "filter_by_language",
       "filter_by_published_date", "auto_parameters", "exact_match", "safe_search"
     ),
+    single_value_options = c("search_depth", "chunks_per_source", "topic", "time_range",
+                             "start_date", "end_date", "country"),
     option_values = list(
       search_depth = c("basic", "advanced", "fast", "ultra-fast"),
       topic        = c("general", "news", "finance"),
       time_range   = c("day", "week", "month", "year", "d", "w", "m", "y")
     ),
+    retry_statuses = c(429, 500, 502, 503),
 
-    resolve = function() {
+    resolve = function(.server) {
+      if (!is.null(.server)) {
+        stop(".server only applies to a self-hosted search service such as SearXNG; Tavily has a fixed address",
+             call. = FALSE)
+      }
       key <- Sys.getenv("TAVILY_API_KEY")
       if (!nzchar(key)) {
-        stop("TAVILY_API_KEY is not set. Please set it with: Sys.setenv(TAVILY_API_KEY = \"YOUR-KEY-GOES-HERE\")")
+        stop("TAVILY_API_KEY is not set. Please set it with: Sys.setenv(TAVILY_API_KEY = \"YOUR-KEY-GOES-HERE\")",
+             call. = FALSE)
       }
       list(server = "https://api.tavily.com", key = key)
     },
@@ -334,30 +456,102 @@ websearch_backends <- list(
           all(purrr::map_lgl(detail, ~ is.list(.x) && is.character(.x$msg)))) {
         return(paste(purrr::map_chr(detail, "msg"), collapse = "; "))
       }
-      status <- httr2::resp_status_desc(.response)
-      if (is.null(status) || is.na(status)) "unknown error" else status
+      http_status_text(.response)
     },
 
     parse_response = function(.body, .settings) {
       results <- .body$results %||% list()
-      field <- function(name) purrr::map_chr(results, ~ as.character(.x[[name]] %||% "")[1])
-      text <- purrr::map_chr(results, function(r) {
-        if (.settings$include_content && !is.null(r$raw_content)) {
-          truncate_text(r$raw_content, .settings$max_chars)
-        } else {
-          NA_character_
-        }
-      })
       list(
         answer  = .body$answer,
         results = tibble::tibble(
-          title     = field("title"),
-          url       = field("url"),
-          published = purrr::map_chr(results, ~ normalize_published_date(.x$published_date)),
-          snippet   = field("content"),
-          text      = text
+          title     = result_field(results, "title"),
+          url       = result_field(results, "url"),
+          published = result_field(results, "published_date", NA_character_),
+          snippet   = result_field(results, "content"),
+          text      = result_field(results, "raw_content", NA_character_)
+        )
+      )
+    }
+  ),
+
+  searxng = list(
+    label                = "SearXNG",
+    max_results_limit    = 20,
+    supports_content     = FALSE,
+    options              = c("categories", "engines", "language", "time_range", "safesearch", "pageno"),
+    single_value_options = c("language", "time_range", "safesearch", "pageno"),
+    option_values        = list(
+      time_range = c("day", "week", "month", "year"),
+      safesearch = c("0", "1", "2")
+    ),
+    retry_statuses = c(500, 502, 503),
+
+    resolve = function(.server) {
+      server <- .server %||% Sys.getenv("SEARXNG_SERVER")
+      if (!nzchar(server)) {
+        stop("No SearXNG server given. Pass .server = \"http://localhost:8888\" or set it with: Sys.setenv(SEARXNG_SERVER = \"http://localhost:8888\")",
+             call. = FALSE)
+      }
+      if (!grepl("^https?://", server)) {
+        stop(sprintf("The SearXNG server address must start with http:// or https://, for example \"http://%s\"", server),
+             call. = FALSE)
+      }
+      list(server = sub("/+$", "", server))
+    },
+
+    build_request = function(.query, .settings) {
+      options <- purrr::map(.settings$options, ~ paste(.x, collapse = ","))
+      httr2::request(.settings$access$server) |>
+        httr2::req_url_path_append("search") |>
+        httr2::req_url_query(q = .query, format = "json", !!!options)
+    },
+
+    error_message = function(.response) {
+      status <- httr2::resp_status(.response)
+      if (status == 403) {
+        return("SearXNG refused JSON output. Add json under search: formats: in its settings.yml")
+      }
+      if (status == 429) {
+        return("SearXNG's limiter blocked the request. For a server only you use, set server: limiter: false in its settings.yml")
+      }
+      body <- tryCatch(httr2::resp_body_json(.response), error = function(e) NULL)
+      if (is.list(body) && is.character(body$error) && length(body$error) == 1) return(body$error)
+      http_status_text(.response)
+    },
+
+    parse_response = function(.body, .settings) {
+      results <- .body$results %||% list()
+      answers <- purrr::map_chr(.body$answers %||% list(), function(a) {
+        value <- if (is.list(a)) a$answer else a
+        if (length(value) == 0) NA_character_ else as.character(value)[1]
+      })
+      answers <- answers[!is.na(answers) & nzchar(answers)]
+      list(
+        answer       = if (length(answers) > 0) paste(answers, collapse = "\n"),
+        unresponsive = purrr::map_chr(.body$unresponsive_engines %||% list(), function(e) {
+          parts <- as.character(unlist(e))
+          if (length(parts) >= 2) sprintf("%s: %s", parts[1], parts[2]) else parts[1]
+        }),
+        results = tibble::tibble(
+          title     = result_field(results, "title"),
+          url       = result_field(results, "url"),
+          published = result_field(results, "publishedDate", NA_character_),
+          snippet   = result_field(results, "content"),
+          text      = rep(NA_character_, length(results))
         )
       )
     }
   )
 )
+
+result_field <- function(.results, .name, .missing = "") {
+  purrr::map_chr(.results, function(r) {
+    value <- r[[.name]]
+    if (length(value) == 0 || is.list(value)) .missing else as.character(value)[1]
+  })
+}
+
+http_status_text <- function(.response) {
+  status <- httr2::resp_status_desc(.response)
+  if (is.null(status) || is.na(status)) "unknown error" else status
+}

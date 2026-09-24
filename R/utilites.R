@@ -229,7 +229,7 @@ api_error_message <- function(.error) {
 #' `strptime()` with `%b` follows the session locale.
 #' @noRd
 normalize_published_date <- function(.x) {
-  if (is.null(.x) || length(.x) == 0 || is.na(.x) || !nzchar(.x)) return(NA_character_)
+  if (!is.character(.x) || length(.x) != 1 || is.na(.x) || !nzchar(.x)) return(NA_character_)
   if (grepl("^\\d{4}-\\d{2}-\\d{2}", .x)) return(substr(.x, 1, 10))
   parts <- regmatches(.x, regexec("(\\d{1,2}) ([A-Za-z]{3}) (\\d{4})", .x))[[1]]
   if (length(parts) != 4) return(.x)
@@ -241,6 +241,7 @@ normalize_published_date <- function(.x) {
 #' Cut a string to a number of characters and mark the cut
 #' @noRd
 truncate_text <- function(.x, .max_chars) {
+  if (length(.x) != 1) return(NA_character_)
   if (is.na(.x) || nchar(.x) <= .max_chars) return(.x)
   paste0(substr(.x, 1, .max_chars), " [truncated]")
 }
