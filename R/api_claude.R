@@ -252,10 +252,7 @@ method(run_tool_calls, list(api_claude, class_list, class_list)) <- function(.ap
     # Get the function for the tool and execute it with the provided arguments
     tool_function <- matching_tool[[1]]@func
     
-    tool_result <-  utils::capture.output(
-                        do.call(tool_function, as.list(tool_args))
-                        , file = NULL) |> 
-      stringr::str_c(collapse = "\n")
+    tool_result <- tool_result_text(tool_function, as.list(tool_args))
     
     
     # Return a content block as required by Claude:

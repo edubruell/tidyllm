@@ -85,6 +85,13 @@ as `topic = "news"`, `time_range = "week"` or `include_domains`, pass through
 fails, for instance because the monthly credits are used up, comes back to the
 model as a message rather than stopping the conversation.
 
+## Tool results reach Claude and Gemini as plain text
+
+A tool that returns text used to reach `claude()` and `gemini()` in R's printed
+form, `[1] "..."`, with every line break and quote escaped. They now get the text
+as it is, the way the other providers already did. Tools that return other
+values, such as a data frame, are still printed, as before.
+
 ## Streaming is no longer tied to HTTP
 
 The stream pump used to ask httr2 directly whether a connection was finished and

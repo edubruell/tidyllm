@@ -273,6 +273,26 @@ convert_ellmer_type_to_field <- function(.ellmer_type) {
   }
 }
 
+#' Run a tool function and return its result as text
+#'
+#' Text results are passed on as they are. Anything else is printed, as is
+#' whatever the function itself prints while it runs. Wrapping a text result in
+#' `capture.output()` would send the model R's printed form, `[1] "..."`, with
+#' every newline and quote escaped.
+#' @noRd
+tool_result_text <- function(.f, .args) {
+  result  <- NULL
+  printed <- utils::capture.output(result <- withVisible(do.call(.f, .args)))
+  value <- if (!result$visible) {
+    character(0)
+  } else if (is.character(result$value)) {
+    result$value
+  } else {
+    utils::capture.output(print(result$value))
+  }
+  paste(c(printed, value), collapse = "\n")
+}
+
 #Generics for tools
 tools_to_api <- new_generic("tools_to_api", c(".api", ".tools"))
 run_tool_calls <- new_generic("run_tool_calls", c(".api",".tool_calls",".tools"))

@@ -293,11 +293,7 @@ method(run_tool_calls, list(api_gemini, class_list, class_list)) <- function(.ap
     tool_function <- matching_tool[[1]]@func
     
     # Execute the tool function with the provided arguments.
-    tool_result <- utils::capture.output(
-      do.call(tool_function, as.list(tool_args)),
-      file = NULL
-    ) |> 
-      stringr::str_c(collapse = "\n")
+    tool_result <- tool_result_text(tool_function, as.list(tool_args))
     
     # Format the tool response as a part for a single user message.
     list(
