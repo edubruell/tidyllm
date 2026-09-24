@@ -85,6 +85,17 @@ as `topic = "news"`, `time_range = "week"` or `include_domains`, pass through
 fails, for instance because the monthly credits are used up, comes back to the
 model as a message rather than stopping the conversation.
 
+`websearch()` runs the same search directly and returns a tibble with one row
+per result: query, title, URL, publication date, snippet and, if asked for, the
+page text. It takes the same arguments as `websearch_tool()`, so you can check
+what a model would see, or collect search results as data:
+
+```r
+c("ZEW Mannheim", "ifo Institut") |>
+  purrr::map(websearch, .max_results = 3) |>
+  purrr::list_rbind()
+```
+
 ## Tool results reach Claude and Gemini as plain text
 
 A tool that returns text used to reach `claude()` and `gemini()` in R's printed

@@ -220,3 +220,27 @@ api_error_message <- function(.error) {
 
   message %||% "No error message returned by the API"
 }
+
+#' Reduce a date string to YYYY-MM-DD where it can be read
+#'
+#' Reads ISO dates and RFC 1123 dates ("Tue, 22 Sep 2026 13:00:00 GMT", as HTTP
+#' headers and Tavily send them); anything else is returned unchanged. Month names are
+#' matched against `month.abb`, which is English in every locale, because
+#' `strptime()` with `%b` follows the session locale.
+#' @noRd
+normalize_published_date <- function(.x) {
+  if (is.null(.x) || length(.x) == 0 || is.na(.x) || !nzchar(.x)) return(NA_character_)
+  if (grepl("^\\d{4}-\\d{2}-\\d{2}", .x)) return(substr(.x, 1, 10))
+  parts <- regmatches(.x, regexec("(\\d{1,2}) ([A-Za-z]{3}) (\\d{4})", .x))[[1]]
+  if (length(parts) != 4) return(.x)
+  month <- match(tolower(parts[3]), tolower(month.abb))
+  if (is.na(month)) return(.x)
+  sprintf("%s-%02d-%02d", parts[4], month, as.integer(parts[2]))
+}
+
+#' Cut a string to a number of characters and mark the cut
+#' @noRd
+truncate_text <- function(.x, .max_chars) {
+  if (is.na(.x) || nchar(.x) <= .max_chars) return(.x)
+  paste0(substr(.x, 1, .max_chars), " [truncated]")
+}

@@ -26,7 +26,7 @@ page, cut to \code{.max_chars} characters. This helps with questions a short
 excerpt cannot answer, but it makes every tool result much longer.}
 
 \item{.max_chars}{The maximum number of characters of page text per result
-when \code{.include_content = TRUE}.}
+when \code{.include_content = TRUE}. Use \code{Inf} to keep the whole page.}
 
 \item{.timeout}{Seconds to wait for the search service before giving up.}
 
@@ -50,6 +50,8 @@ own.
 The model only chooses the search query. Everything else, such as how many
 results come back and whether full page text is included, is fixed when you
 create the tool, so a model cannot run up your search bill by asking for more.
+The arguments are the same as for \code{\link[=websearch]{websearch()}}, which runs a single search
+directly and returns the results as a tibble.
 }
 \details{
 Each search returns one block of text to the model: the query, the date of the

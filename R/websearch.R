@@ -1,3 +1,75 @@
+#' Search the Web
+#'
+#' @description
+#' Runs one web search and returns the results as a tibble. Use it to collect
+#' search results as data, for example sources for a list of companies, or to see
+#' exactly what a model would receive from [websearch_tool()], which takes the same
+#' arguments.
+#'
+#' @param .query The search query, a single string of at least two characters.
+#' @param .backend The search service to use. Currently only `"tavily"`, which
+#'   needs a `TAVILY_API_KEY` environment variable. Tavily's free plan gives
+#'   1,000 credits per month without a credit card; one basic search costs one
+#'   credit.
+#' @param .max_results How many results a search returns, between 1 and 20.
+#' @param .include_content If `TRUE`, each result also carries the text of the
+#'   page, cut to `.max_chars` characters.
+#' @param .max_chars The maximum number of characters of page text per result
+#'   when `.include_content = TRUE`. Use `Inf` to keep the whole page.
+#' @param .timeout Seconds to wait for the search service before giving up.
+#' @param ... Further search options passed to the search service by name. For
+#'   Tavily these include `search_depth` (`"basic"`, `"advanced"`, `"fast"` or
+#'   `"ultra-fast"`; `"advanced"` costs two credits), `topic` (`"general"`,
+#'   `"news"` or `"finance"`), `time_range` (`"day"`, `"week"`, `"month"` or
+#'   `"year"`), `start_date` and `end_date` (`"YYYY-MM-DD"`), `include_domains`,
+#'   `exclude_domains`, `country` and `include_answer`.
+#'
+#' @return A tibble with one row per result and the columns `query`, `title`,
+#'   `url`, `published` (a date, `NA` where the service does not know it),
+#'   `snippet` and `text` (`NA` unless `.include_content = TRUE`). If you ask
+#'   Tavily for a summary with `include_answer = TRUE`, it is attached as the
+#'   attribute `"answer"`.
+#'
+#' @details
+#' A failed search, for example with a wrong key or used-up credits, stops with
+#' an error. To search for many queries, map over them and bind the results; the
+#' `query` column keeps them apart.
+#'
+#' @examples
+#' \dontrun{
+#' websearch("tidyllm R package")
+#'
+#' websearch("EU AI Act", .max_results = 10, topic = "news", time_range = "month")
+#'
+#' c("ZEW Mannheim", "ifo Institut") |>
+#'   purrr::map(websearch, .max_results = 3) |>
+#'   purrr::list_rbind()
+#' }
+#'
+#' @export
+websearch <- function(.query,
+                      .backend = c("tavily"),
+                      .max_results = 5,
+                      .include_content = FALSE,
+                      .max_chars = 4000,
+                      .timeout = 30,
+                      ...) {
+  setup  <- websearch_setup(match.arg(.backend), .max_results, .include_content,
+                            .max_chars, .timeout, list(...))
+  parsed <- websearch_perform(setup$backend, .query, setup$settings)
+
+  results <- tibble::tibble(
+    query     = rep(.query, nrow(parsed$results)),
+    title     = parsed$results$title,
+    url       = parsed$results$url,
+    published = as.Date(parsed$results$published, format = "%Y-%m-%d"),
+    snippet   = parsed$results$snippet,
+    text      = parsed$results$text
+  )
+  if (!is.null(parsed$answer)) attr(results, "answer") <- parsed$answer
+  results
+}
+
 #' Give a Model Web Search
 #'
 #' @description
@@ -10,24 +82,14 @@
 #' The model only chooses the search query. Everything else, such as how many
 #' results come back and whether full page text is included, is fixed when you
 #' create the tool, so a model cannot run up your search bill by asking for more.
+#' The arguments are the same as for [websearch()], which runs a single search
+#' directly and returns the results as a tibble.
 #'
-#' @param .backend The search service to use. Currently only `"tavily"`, which
-#'   needs a `TAVILY_API_KEY` environment variable. Tavily's free plan gives
-#'   1,000 credits per month without a credit card; one basic search costs one
-#'   credit.
+#' @inheritParams websearch
 #' @param .max_results How many results each search returns, between 1 and 20.
 #' @param .include_content If `TRUE`, each result also carries the text of the
 #'   page, cut to `.max_chars` characters. This helps with questions a short
 #'   excerpt cannot answer, but it makes every tool result much longer.
-#' @param .max_chars The maximum number of characters of page text per result
-#'   when `.include_content = TRUE`.
-#' @param .timeout Seconds to wait for the search service before giving up.
-#' @param ... Further search options passed to the search service by name. For
-#'   Tavily these include `search_depth` (`"basic"`, `"advanced"`, `"fast"` or
-#'   `"ultra-fast"`; `"advanced"` costs two credits), `topic` (`"general"`,
-#'   `"news"` or `"finance"`), `time_range` (`"day"`, `"week"`, `"month"` or
-#'   `"year"`), `start_date` and `end_date` (`"YYYY-MM-DD"`), `include_domains`,
-#'   `exclude_domains`, `country` and `include_answer`.
 #'
 #' @return A tool object to pass to the `.tools` argument of `chat()`.
 #'
@@ -58,43 +120,14 @@ websearch_tool <- function(.backend = c("tavily"),
                            .max_chars = 4000,
                            .timeout = 30,
                            ...) {
-  .backend <- match.arg(.backend)
-  backend  <- websearch_backends[[.backend]]
-  options  <- list(...)
+  setup <- websearch_setup(match.arg(.backend), .max_results, .include_content,
+                           .max_chars, .timeout, list(...))
 
-  c(
-    ".max_results must be a whole number between 1 and 20" =
-      is.numeric(.max_results) && length(.max_results) == 1 &&
-      .max_results >= 1 && .max_results <= 20 && .max_results == round(.max_results),
-    ".include_content must be TRUE or FALSE" =
-      is.logical(.include_content) && length(.include_content) == 1 && !is.na(.include_content),
-    ".max_chars must be a positive number" =
-      is.numeric(.max_chars) && length(.max_chars) == 1 && .max_chars > 0,
-    ".timeout must be a positive number of seconds" =
-      is.numeric(.timeout) && length(.timeout) == 1 && .timeout > 0,
-    "Search options in ... must all be named" =
-      length(options) == 0 || (!is.null(names(options)) && all(nzchar(names(options))))
-  ) |> validate_inputs()
-
-  backend$check_options(options)
-
-  if (!nzchar(Sys.getenv(backend$key_env))) {
-    stop(sprintf(
-      "%s is not set. Please set it with: Sys.setenv(%s = \"YOUR-KEY-GOES-HERE\")",
-      backend$key_env, backend$key_env
-    ))
-  }
-
-  settings <- list(
-    max_results     = as.integer(.max_results),
-    include_content = .include_content,
-    max_chars       = as.integer(.max_chars),
-    timeout         = .timeout,
-    options         = options
-  )
-
-  search <- function(query) {
-    websearch_run(backend, query, settings)
+  search <- function(query, ...) {
+    tryCatch(
+      format_search_results(query, websearch_perform(setup$backend, query, setup$settings), Sys.Date()),
+      error = function(e) conditionMessage(e)
+    )
   }
 
   TOOL(
@@ -114,9 +147,52 @@ websearch_tool <- function(.backend = c("tavily"),
   )
 }
 
-websearch_run <- function(.backend, .query, .settings) {
-  if (!is.character(.query) || length(.query) != 1 || nchar(trimws(.query)) < 2) {
-    return("Web search failed: the query must be a single string of at least two characters.")
+websearch_setup <- function(.backend, .max_results, .include_content, .max_chars,
+                            .timeout, .options) {
+  backend <- websearch_backends[[.backend]]
+
+  is_number <- function(x) is.numeric(x) && length(x) == 1 && !is.na(x)
+
+  c(
+    ".max_results must be a whole number between 1 and 20" =
+      is_number(.max_results) && .max_results >= 1 && .max_results <= 20 &&
+      is_integer_valued(.max_results),
+    ".include_content must be TRUE or FALSE" =
+      is.logical(.include_content) && length(.include_content) == 1 && !is.na(.include_content),
+    ".max_chars must be a whole number of at least 1, or Inf for no limit" =
+      is_number(.max_chars) && .max_chars >= 1 &&
+      (is.infinite(.max_chars) || is_integer_valued(.max_chars)),
+    ".timeout must be a positive number of seconds" =
+      is_number(.timeout) && .timeout > 0,
+    "Search options in ... must all be named" =
+      length(.options) == 0 || (!is.null(names(.options)) && all(nzchar(names(.options))))
+  ) |> validate_inputs()
+
+  backend$check_options(.options)
+
+  if (!nzchar(Sys.getenv(backend$key_env))) {
+    stop(sprintf(
+      "%s is not set. Please set it with: Sys.setenv(%s = \"YOUR-KEY-GOES-HERE\")",
+      backend$key_env, backend$key_env
+    ))
+  }
+
+  list(
+    backend  = backend,
+    settings = list(
+      max_results     = as.integer(.max_results),
+      include_content = .include_content,
+      max_chars       = .max_chars,
+      timeout         = .timeout,
+      options         = .options
+    )
+  )
+}
+
+websearch_perform <- function(.backend, .query, .settings) {
+  if (!is.character(.query) || length(.query) != 1 || is.na(.query) || nchar(trimws(.query)) < 2) {
+    stop("Web search failed: the query must be a single string of at least two characters.",
+         call. = FALSE)
   }
 
   response <- tryCatch(
@@ -124,24 +200,31 @@ websearch_run <- function(.backend, .query, .settings) {
       httr2::req_timeout(.settings$timeout) |>
       httr2::req_retry(
         max_tries    = 3,
-        is_transient = function(resp) httr2::resp_status(resp) %in% c(429, 500, 502, 503)
+        is_transient = function(resp) httr2::resp_status(resp) %in% c(429, 500, 502, 503),
+        max_seconds  = 60
       ) |>
       httr2::req_error(is_error = function(resp) FALSE) |>
       httr2::req_perform(),
-    error = function(e) e
+    error = function(e) stop(paste("Web search failed:", conditionMessage(e)), call. = FALSE)
   )
 
-  if (inherits(response, "error")) {
-    return(paste("Web search failed:", conditionMessage(response)))
-  }
   if (httr2::resp_status(response) >= 400) {
-    return(sprintf("Web search failed (HTTP %d): %s",
-                   httr2::resp_status(response),
-                   .backend$error_message(response)))
+    stop(sprintf("Web search failed (HTTP %d): %s",
+                 httr2::resp_status(response),
+                 .backend$error_message(response)),
+         call. = FALSE)
   }
 
-  parsed <- .backend$parse_response(httr2::resp_body_json(response), .settings)
-  format_search_results(.query, parsed, Sys.Date())
+  body <- tryCatch(
+    httr2::resp_body_json(response),
+    error = function(e) {
+      stop(sprintf("Web search failed: expected a JSON reply, got %s.",
+                   httr2::resp_content_type(response) %||% "an unreadable reply"),
+           call. = FALSE)
+    }
+  )
+
+  .backend$parse_response(body, .settings)
 }
 
 #' Turn parsed search results into the text a model receives
@@ -175,27 +258,6 @@ format_search_results <- function(.query, .parsed, .date) {
 
   paste(c(header, "Cite the URLs of the results you use.", answer, blocks),
         collapse = "\n\n")
-}
-
-#' Reduce a publication date to YYYY-MM-DD where it can be read
-#'
-#' Tavily sends RFC 1123 dates ("Tue, 22 Sep 2026 13:00:00 GMT"). Month names are
-#' matched against `month.abb`, which is English in every locale, because
-#' `strptime()` with `%b` follows the session locale.
-#' @noRd
-normalize_published_date <- function(.x) {
-  if (is.null(.x) || length(.x) == 0 || is.na(.x) || !nzchar(.x)) return(NA_character_)
-  if (grepl("^\\d{4}-\\d{2}-\\d{2}", .x)) return(substr(.x, 1, 10))
-  parts <- regmatches(.x, regexec("(\\d{1,2}) ([A-Za-z]{3}) (\\d{4})", .x))[[1]]
-  if (length(parts) != 4) return(.x)
-  month <- match(tolower(parts[3]), tolower(month.abb))
-  if (is.na(month)) return(.x)
-  sprintf("%s-%02d-%02d", parts[4], month, as.integer(parts[2]))
-}
-
-truncate_text <- function(.x, .max_chars) {
-  if (is.na(.x) || nchar(.x) <= .max_chars) return(.x)
-  paste0(substr(.x, 1, .max_chars), " [truncated]")
 }
 
 tavily_options <- c(
@@ -250,17 +312,20 @@ websearch_backends <- list(
 
     error_message = function(.response) {
       body <- tryCatch(httr2::resp_body_json(.response), error = function(e) NULL)
-      detail <- body$detail
-      if (is.list(detail) && !is.null(detail$error)) return(detail$error)
-      if (is.list(detail) && length(detail) > 0 && !is.null(detail[[1]]$msg)) {
-        return(paste(purrr::map_chr(detail, ~ .x$msg %||% ""), collapse = "; "))
+      detail <- if (is.list(body)) body$detail
+      if (is.character(detail) && length(detail) == 1) return(detail)
+      if (is.list(detail) && is.character(detail$error)) return(detail$error)
+      if (is.list(detail) && is.null(names(detail)) && length(detail) > 0 &&
+          all(purrr::map_lgl(detail, ~ is.list(.x) && is.character(.x$msg)))) {
+        return(paste(purrr::map_chr(detail, "msg"), collapse = "; "))
       }
-      httr2::resp_status_desc(.response) %||% "unknown error"
+      status <- httr2::resp_status_desc(.response)
+      if (is.null(status) || is.na(status)) "unknown error" else status
     },
 
     parse_response = function(.body, .settings) {
       results <- .body$results %||% list()
-      field <- function(name) purrr::map_chr(results, ~ .x[[name]] %||% "")
+      field <- function(name) purrr::map_chr(results, ~ as.character(.x[[name]] %||% "")[1])
       text <- purrr::map_chr(results, function(r) {
         if (.settings$include_content && !is.null(r$raw_content)) {
           truncate_text(r$raw_content, .settings$max_chars)

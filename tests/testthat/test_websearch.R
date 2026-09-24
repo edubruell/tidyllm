@@ -10,7 +10,7 @@ test_that("websearch_tool builds a tool that only exposes a query", {
   expect_true(S7::S7_inherits(ws, TOOL))
   expect_equal(ws@name, "tidyllm_web_search")
   expect_named(ws@input_schema, "query")
-  expect_equal(names(formals(ws@func)), "query")
+  expect_equal(names(formals(ws@func)), c("query", "..."))
   expect_match(ws@description, format(Sys.Date(), "%Y-%m-%d"), fixed = TRUE)
 })
 
@@ -36,7 +36,85 @@ test_that("websearch_tool needs a Tavily key", {
 
 test_that("a too-short query returns a message instead of calling the API", {
   ws <- with_tavily_key(websearch_tool())
-  expect_match(ws@func(query = "x"), "^Web search failed")
+  expect_match(ws@func(query = "x"), "at least two characters", fixed = TRUE)
+})
+
+test_that("websearch() checks the same arguments and stops on a bad query", {
+  with_tavily_key({
+    expect_error(websearch("tidyllm", .max_results = 21), "between 1 and 20")
+    expect_error(websearch("tidyllm", serch_depth = "advanced"), "Unknown Tavily search option")
+    expect_error(websearch("x"), "at least two characters")
+    expect_error(websearch(c("one query", "two queries")), "single string")
+  })
+  old <- Sys.getenv("TAVILY_API_KEY", unset = NA)
+  Sys.unsetenv("TAVILY_API_KEY")
+  on.exit(if (!is.na(old)) Sys.setenv(TAVILY_API_KEY = old))
+  expect_error(websearch("tidyllm"), "TAVILY_API_KEY is not set")
+})
+
+test_that("numeric arguments reject missing values, fractions and bad limits", {
+  with_tavily_key({
+    expect_error(websearch_tool(.max_results = NA), "between 1 and 20")
+    expect_error(websearch_tool(.max_results = 2.5), "between 1 and 20")
+    expect_error(websearch_tool(.max_chars = 0.5), "at least 1")
+    expect_error(websearch_tool(.max_chars = NA), "at least 1")
+    expect_error(websearch_tool(.timeout = NA), "positive number of seconds")
+    expect_error(websearch_tool(.timeout = 0), "positive number of seconds")
+    expect_no_error(websearch_tool(.max_chars = Inf))
+  })
+})
+
+test_that("the tool ignores extra arguments a model sends", {
+  ws <- with_tavily_key(websearch_tool())
+  expect_match(ws@func(query = "x", max_results = 50), "at least two characters", fixed = TRUE)
+})
+
+test_that("Tavily error bodies are turned into a readable message", {
+  em <- websearch_backends$tavily$error_message
+  reply <- function(code, body, type = "application/json") {
+    httr2::response(status_code = code, headers = list(`Content-Type` = type),
+                    body = charToRaw(body))
+  }
+  expect_equal(em(reply(401, '{"detail":{"error":"bad key"}}')), "bad key")
+  expect_equal(em(reply(422, '{"detail":[{"msg":"a"},{"msg":"b"}]}')), "a; b")
+  expect_equal(em(reply(403, '{"detail":"Forbidden plan"}')), "Forbidden plan")
+  expect_equal(em(reply(403, '{"detail":{"message":"x"}}')), "Forbidden")
+  expect_equal(em(reply(502, "<html></html>", "text/html")), "Bad Gateway")
+  expect_equal(em(reply(599, "x", "text/plain")), "unknown error")
+})
+
+test_that("page text is kept only when asked for, and Inf keeps all of it", {
+  body <- list(results = list(list(title = "T", url = "https://a.org", content = "S",
+                                   raw_content = strrep("x", 50))))
+  off <- websearch_backends$tavily$parse_response(body, list(include_content = FALSE, max_chars = 10))
+  expect_equal(off$results$text, NA_character_)
+  all <- websearch_backends$tavily$parse_response(body, list(include_content = TRUE, max_chars = Inf))
+  expect_equal(all$results$text, strrep("x", 50))
+})
+
+test_that("a non-string field from the service does not break parsing", {
+  body <- list(results = list(list(title = 5, url = "https://a.org", content = "S")))
+  parsed <- websearch_backends$tavily$parse_response(body, list(include_content = FALSE, max_chars = 10))
+  expect_equal(parsed$results$title, "5")
+})
+
+test_that("the answer and page text appear in the text for the model", {
+  parsed <- list(
+    answer  = "Ans",
+    results = tibble::tibble(title = "T", url = "https://a.org", published = NA_character_,
+                             snippet = "S", text = "PAGE")
+  )
+  out <- format_search_results("q", parsed, as.Date("2026-09-24"))
+  expect_match(out, "Summary written by the search service: Ans", fixed = TRUE)
+  expect_match(out, "Page text:\nPAGE", fixed = TRUE)
+  parsed$answer <- ""
+  expect_no_match(format_search_results("q", parsed, as.Date("2026-09-24")), "Summary written by", fixed = TRUE)
+})
+
+test_that("truncate_text cuts only past the limit", {
+  expect_equal(truncate_text("abcde", 5), "abcde")
+  expect_equal(truncate_text("abcdef", 5), "abcde [truncated]")
+  expect_equal(truncate_text(NA_character_, 5), NA_character_)
 })
 
 test_that("publication dates are reduced to YYYY-MM-DD in any locale", {

@@ -65,6 +65,7 @@ reference:
       - tidyllm_tool
       - ellmer_tool
       - websearch_tool
+      - websearch
       - img
       - audio_file
       - video_file
