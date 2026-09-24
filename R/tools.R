@@ -275,7 +275,8 @@ convert_ellmer_type_to_field <- function(.ellmer_type) {
 
 #' Run a tool function and return its result as text
 #'
-#' Text results are passed on as they are. Anything else is printed, as is
+#' Text results are passed on as they are. Anything else, including a named
+#' character vector or a character matrix, is printed, as is
 #' whatever the function itself prints while it runs. Wrapping a text result in
 #' `capture.output()` would send the model R's printed form, `[1] "..."`, with
 #' every newline and quote escaped.
@@ -285,7 +286,8 @@ tool_result_text <- function(.f, .args) {
   printed <- utils::capture.output(result <- withVisible(do.call(.f, .args)))
   value <- if (!result$visible) {
     character(0)
-  } else if (is.character(result$value)) {
+  } else if (is.character(result$value) && is.null(names(result$value)) &&
+             is.null(dim(result$value))) {
     result$value
   } else {
     utils::capture.output(print(result$value))

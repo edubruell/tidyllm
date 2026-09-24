@@ -96,3 +96,25 @@ test_that("tool parameter schemas set additionalProperties on nested objects", {
   expect_false(converted$parameters$additionalProperties)
   expect_false(converted$parameters$properties$loc$additionalProperties)
 })
+
+test_that("tool results are turned into text for the model", {
+  expect_equal(tool_result_text(function() "a\n\"b\"", list()), "a\n\"b\"")
+  expect_equal(tool_result_text(function() c("a", "b"), list()), "a\nb")
+  expect_equal(tool_result_text(function() 42, list()), "[1] 42")
+  expect_equal(tool_result_text(function() invisible("x"), list()), "")
+  expect_equal(tool_result_text(function() { cat("progress\n"); "done" }, list()), "progress\ndone")
+  expect_match(tool_result_text(function() c(temp = "20"), list()), "temp", fixed = TRUE)
+  expect_match(tool_result_text(function(n) data.frame(a = seq_len(n)), list(n = 2)), "a\n1 1\n2 2", fixed = TRUE)
+})
+
+test_that("Claude and Gemini receive a text tool result unchanged", {
+  text_tool <- tidyllm_tool(function(q) paste0("line 1\n\"", q, "\""), "Returns text", q = field_chr("q"))
+
+  claude_out <- run_tool_calls(api_claude(), list(list(name = text_tool@name, input = list(q = "x"), id = "1")),
+                               list(text_tool))
+  expect_identical(claude_out$content[[1]]$content, "line 1\n\"x\"")
+
+  gemini_out <- run_tool_calls(api_gemini(), list(list(name = text_tool@name, args = list(q = "x"))),
+                               list(text_tool))
+  expect_identical(unlist(gemini_out)[grep("content$", names(unlist(gemini_out)))][[1]], "line 1\n\"x\"")
+})

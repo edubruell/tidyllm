@@ -256,11 +256,11 @@ method(run_tool_calls, list(api_claude, class_list, class_list)) <- function(.ap
     
     
     # Return a content block as required by Claude:
-    # type "tool_result", the tool_use_id, and the output (as a JSON string)
+    # type "tool_result", the tool_use_id, and the output as text
     list(
       type = "tool_result",
       tool_use_id = tool_call_id,
-      content = jsonlite::toJSON(tool_result, auto_unbox = TRUE)
+      content = tool_result
     )
   })
   

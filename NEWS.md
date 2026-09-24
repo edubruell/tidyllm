@@ -89,8 +89,8 @@ model as a message rather than stopping the conversation.
 
 A tool that returns text used to reach `claude()` and `gemini()` in R's printed
 form, `[1] "..."`, with every line break and quote escaped. They now get the text
-as it is, the way the other providers already did. Tools that return other
-values, such as a data frame, are still printed, as before.
+as it is. Tools that return other values, such as a data frame or a named
+vector, are still printed, as before.
 
 ## Streaming is no longer tied to HTTP
 
