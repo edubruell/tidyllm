@@ -172,9 +172,10 @@ test_that("search results are formatted as numbered text for the model", {
 
 test_that("the Tavily request carries the fixed settings and the options", {
   settings <- list(max_results = 3L, include_content = FALSE, max_chars = 4000L,
-                   timeout = 30, options = list(topic = "news", include_domains = "cran.r-project.org"))
-  req <- with_tavily_key(websearch_backends$tavily$build_request("some query", settings))
-  body <- req$body$data
+                   timeout = 30, options = list(topic = "news", include_domains = "cran.r-project.org"),
+                   access = list(server = "https://api.tavily.com", key = "tvly-test"))
+  req  <- websearch_backends$tavily$build_request("some query", settings)
+  body <- httr2::req_get_body(req)
 
   expect_equal(req$url, "https://api.tavily.com/search")
   expect_equal(body$query, "some query")
@@ -183,4 +184,37 @@ test_that("the Tavily request carries the fixed settings and the options", {
   expect_false(body$include_raw_content)
   expect_equal(body$topic, "news")
   expect_equal(body$include_domains, list("cran.r-project.org"))
+
+  settings$options <- list(include_domains = c("cran.r-project.org", "github.com"),
+                           exclude_domains = c("a.org", "b.org"))
+  body <- httr2::req_get_body(websearch_backends$tavily$build_request("some query", settings))
+  expect_equal(body$include_domains, list("cran.r-project.org", "github.com"))
+  expect_equal(body$exclude_domains, list("a.org", "b.org"))
+})
+
+test_that("the Tavily key is read once, when the search is set up", {
+  setup <- with_tavily_key(websearch_setup(websearch_backends$tavily, 5, FALSE, 4000, 30, list()))
+  expect_equal(setup$settings$access$key, "tvly-test")
+  req <- websearch_backends$tavily$build_request("some query", setup$settings)
+  expect_equal(httr2::req_get_headers(req, "reveal")$Authorization, "Bearer tvly-test")
+})
+
+test_that("each backend's limits and options are checked from its description", {
+  toy <- list(
+    label             = "Toy",
+    max_results_limit = 10,
+    supports_content  = FALSE,
+    options           = c("language", "time_range"),
+    option_values     = list(time_range = c("day", "month", "year")),
+    resolve           = function() list(server = "http://localhost:1")
+  )
+  expect_error(websearch_setup(toy, 11, FALSE, 4000, 30, list()), "between 1 and 10")
+  expect_error(websearch_setup(toy, 5, TRUE, 4000, 30, list()),
+               "Toy does not return page text")
+  expect_error(websearch_setup(toy, 5, FALSE, 4000, 30, list(safesearch = 1)),
+               "Unknown Toy search option(s): safesearch", fixed = TRUE)
+  expect_error(websearch_setup(toy, 5, FALSE, 4000, 30, list(time_range = "week")),
+               "time_range must be one of \"day\", \"month\" or \"year\"", fixed = TRUE)
+  setup <- websearch_setup(toy, 5, FALSE, 4000, 30, list(language = "de", time_range = "day"))
+  expect_equal(setup$settings$access$server, "http://localhost:1")
 })

@@ -54,8 +54,8 @@ websearch <- function(.query,
                       .max_chars = 4000,
                       .timeout = 30,
                       ...) {
-  setup  <- websearch_setup(match.arg(.backend), .max_results, .include_content,
-                            .max_chars, .timeout, list(...))
+  setup  <- websearch_setup(websearch_backends[[match.arg(.backend)]], .max_results,
+                            .include_content, .max_chars, .timeout, list(...))
   parsed <- websearch_perform(setup$backend, .query, setup$settings)
 
   results <- tibble::tibble(
@@ -120,8 +120,8 @@ websearch_tool <- function(.backend = c("tavily"),
                            .max_chars = 4000,
                            .timeout = 30,
                            ...) {
-  setup <- websearch_setup(match.arg(.backend), .max_results, .include_content,
-                           .max_chars, .timeout, list(...))
+  setup <- websearch_setup(websearch_backends[[match.arg(.backend)]], .max_results,
+                           .include_content, .max_chars, .timeout, list(...))
 
   search <- function(query, ...) {
     tryCatch(
@@ -149,14 +149,14 @@ websearch_tool <- function(.backend = c("tavily"),
 
 websearch_setup <- function(.backend, .max_results, .include_content, .max_chars,
                             .timeout, .options) {
-  backend <- websearch_backends[[.backend]]
-
   is_number <- function(x) is.numeric(x) && length(x) == 1 && !is.na(x)
 
   c(
-    ".max_results must be a whole number between 1 and 20" =
-      is_number(.max_results) && .max_results >= 1 && .max_results <= 20 &&
-      is_integer_valued(.max_results),
+    stats::setNames(
+      is_number(.max_results) && .max_results >= 1 &&
+        .max_results <= .backend$max_results_limit && is_integer_valued(.max_results),
+      sprintf(".max_results must be a whole number between 1 and %d", .backend$max_results_limit)
+    ),
     ".include_content must be TRUE or FALSE" =
       is.logical(.include_content) && length(.include_content) == 1 && !is.na(.include_content),
     ".max_chars must be a whole number of at least 1, or Inf for no limit" =
@@ -168,25 +168,41 @@ websearch_setup <- function(.backend, .max_results, .include_content, .max_chars
       length(.options) == 0 || (!is.null(names(.options)) && all(nzchar(names(.options))))
   ) |> validate_inputs()
 
-  backend$check_options(.options)
-
-  if (!nzchar(Sys.getenv(backend$key_env))) {
-    stop(sprintf(
-      "%s is not set. Please set it with: Sys.setenv(%s = \"YOUR-KEY-GOES-HERE\")",
-      backend$key_env, backend$key_env
-    ))
+  if (.include_content && !.backend$supports_content) {
+    stop(sprintf("%s does not return page text, so .include_content must be FALSE", .backend$label))
   }
+  check_search_options(.backend, .options)
 
   list(
-    backend  = backend,
+    backend  = .backend,
     settings = list(
       max_results     = as.integer(.max_results),
       include_content = .include_content,
       max_chars       = .max_chars,
       timeout         = .timeout,
-      options         = .options
+      options         = .options,
+      access          = .backend$resolve()
     )
   )
+}
+
+check_search_options <- function(.backend, .options) {
+  unknown <- setdiff(names(.options), .backend$options)
+  if (length(unknown) > 0) {
+    stop(sprintf(
+      "Unknown %s search option(s): %s. Supported options: %s",
+      .backend$label, paste(unknown, collapse = ", "), paste(.backend$options, collapse = ", ")
+    ))
+  }
+  purrr::iwalk(.backend$option_values, function(allowed, name) {
+    value <- .options[[name]]
+    if (!is.null(value) && !(is.character(value) && length(value) == 1 && value %in% allowed)) {
+      quoted <- sprintf("\"%s\"", allowed)
+      stop(sprintf("%s must be one of %s or %s", name,
+                   paste(utils::head(quoted, -1), collapse = ", "), utils::tail(quoted, 1)))
+    }
+  })
+  invisible(TRUE)
 }
 
 websearch_perform <- function(.backend, .query, .settings) {
@@ -197,6 +213,7 @@ websearch_perform <- function(.backend, .query, .settings) {
 
   response <- tryCatch(
     .backend$build_request(.query, .settings) |>
+      httr2::req_user_agent(sprintf("tidyllm/%s", utils::packageVersion("tidyllm"))) |>
       httr2::req_timeout(.settings$timeout) |>
       httr2::req_retry(
         max_tries    = 3,
@@ -215,16 +232,20 @@ websearch_perform <- function(.backend, .query, .settings) {
          call. = FALSE)
   }
 
+  content_type <- httr2::resp_content_type(response)
+  if (!identical(content_type, "application/json")) {
+    stop(sprintf("Web search failed: expected a JSON reply, got %s.",
+                 if (is.na(content_type)) "a reply without a content type" else content_type),
+         call. = FALSE)
+  }
   body <- tryCatch(
     httr2::resp_body_json(response),
-    error = function(e) {
-      stop(sprintf("Web search failed: expected a JSON reply, got %s.",
-                   httr2::resp_content_type(response) %||% "an unreadable reply"),
-           call. = FALSE)
-    }
+    error = function(e) stop("Web search failed: the JSON reply could not be read.", call. = FALSE)
   )
 
-  .backend$parse_response(body, .settings)
+  parsed <- .backend$parse_response(body, .settings)
+  parsed$results <- parsed$results[seq_len(min(nrow(parsed$results), .settings$max_results)), ]
+  parsed
 }
 
 #' Turn parsed search results into the text a model receives
@@ -260,36 +281,29 @@ format_search_results <- function(.query, .parsed, .date) {
         collapse = "\n\n")
 }
 
-tavily_options <- c(
-  "search_depth", "chunks_per_source", "topic", "time_range", "start_date",
-  "end_date", "include_answer", "include_domains", "exclude_domains",
-  "include_domains_mode", "country", "language", "filter_by_language",
-  "filter_by_published_date", "auto_parameters", "exact_match", "safe_search"
-)
-
 websearch_backends <- list(
   tavily = list(
-    key_env = "TAVILY_API_KEY",
+    label             = "Tavily",
+    max_results_limit = 20,
+    supports_content  = TRUE,
+    options = c(
+      "search_depth", "chunks_per_source", "topic", "time_range", "start_date",
+      "end_date", "include_answer", "include_domains", "exclude_domains",
+      "include_domains_mode", "country", "language", "filter_by_language",
+      "filter_by_published_date", "auto_parameters", "exact_match", "safe_search"
+    ),
+    option_values = list(
+      search_depth = c("basic", "advanced", "fast", "ultra-fast"),
+      topic        = c("general", "news", "finance"),
+      time_range   = c("day", "week", "month", "year", "d", "w", "m", "y")
+    ),
 
-    check_options = function(.options) {
-      unknown <- setdiff(names(.options), tavily_options)
-      if (length(unknown) > 0) {
-        stop(sprintf(
-          "Unknown Tavily search option(s): %s. Supported options: %s",
-          paste(unknown, collapse = ", "), paste(tavily_options, collapse = ", ")
-        ))
+    resolve = function() {
+      key <- Sys.getenv("TAVILY_API_KEY")
+      if (!nzchar(key)) {
+        stop("TAVILY_API_KEY is not set. Please set it with: Sys.setenv(TAVILY_API_KEY = \"YOUR-KEY-GOES-HERE\")")
       }
-      enum_ok <- function(value, allowed) {
-        is.null(value) || (is.character(value) && length(value) == 1 && value %in% allowed)
-      }
-      c(
-        "search_depth must be one of \"basic\", \"advanced\", \"fast\" or \"ultra-fast\"" =
-          enum_ok(.options$search_depth, c("basic", "advanced", "fast", "ultra-fast")),
-        "topic must be one of \"general\", \"news\" or \"finance\"" =
-          enum_ok(.options$topic, c("general", "news", "finance")),
-        "time_range must be one of \"day\", \"week\", \"month\" or \"year\"" =
-          enum_ok(.options$time_range, c("day", "week", "month", "year", "d", "w", "m", "y"))
-      ) |> validate_inputs()
+      list(server = "https://api.tavily.com", key = key)
     },
 
     build_request = function(.query, .settings) {
@@ -305,8 +319,9 @@ websearch_backends <- list(
       if (!is.null(body$include_domains)) body$include_domains <- as.list(body$include_domains)
       if (!is.null(body$exclude_domains)) body$exclude_domains <- as.list(body$exclude_domains)
 
-      httr2::request("https://api.tavily.com/search") |>
-        httr2::req_auth_bearer_token(Sys.getenv("TAVILY_API_KEY")) |>
+      httr2::request(.settings$access$server) |>
+        httr2::req_url_path_append("search") |>
+        httr2::req_auth_bearer_token(.settings$access$key) |>
         httr2::req_body_json(body)
     },
 

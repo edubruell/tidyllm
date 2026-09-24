@@ -3,7 +3,8 @@
 #
 # What this tests:
 #   - A direct search returns numbered results with URLs and readable dates
-#   - Tavily options passed through ... reach the API
+#   - Tavily options passed through ... reach the API (a bad value is rejected)
+#   - A timeout comes back as text for the model
 #   - .include_content cuts page text to .max_chars
 #   - A failing search comes back as text for the model instead of an error
 #   - websearch() returns the same results as a tibble, with dates and an answer
@@ -41,11 +42,14 @@ llt_test("websearch direct search returns numbered results", {
 })
 
 llt_test("websearch passes Tavily options through", {
-  out <- websearch_tool(.max_results = 3, topic = "news", time_range = "week")@func(
-    query = "central bank interest rate decision"
-  )
-  llt_expect_true(grepl("Published: \\d{4}-\\d{2}-\\d{2}", out),
-                  "news results should carry ISO publication dates")
+  out <- websearch_tool(.max_results = 1, country = "narnia")@func(query = "central bank interest rate")
+  llt_expect_true(grepl("^Web search failed \\(HTTP (400|422)\\)", out),
+                  paste("an invalid country was not rejected by Tavily:", out))
+})
+
+llt_test("websearch returns a timeout as text", {
+  out <- websearch_tool(.max_results = 1, .timeout = 0.001)@func(query = "weather Mannheim")
+  llt_expect_true(grepl("^Web search failed:", out), paste("unexpected result for a timeout:", out))
 })
 
 llt_test("websearch cuts page text to .max_chars", {
@@ -63,10 +67,10 @@ llt_test("websearch cuts page text to .max_chars", {
 })
 
 llt_test("websearch returns a failed search as text", {
-  ws  <- websearch_tool(.max_results = 1)
   key <- Sys.getenv("TAVILY_API_KEY")
   Sys.setenv(TAVILY_API_KEY = "tvly-invalid")
-  out <- tryCatch(ws@func(query = "weather Mannheim"), finally = Sys.setenv(TAVILY_API_KEY = key))
+  ws  <- tryCatch(websearch_tool(.max_results = 1), finally = Sys.setenv(TAVILY_API_KEY = key))
+  out <- ws@func(query = "weather Mannheim")
   llt_expect_true(grepl("^Web search failed \\(HTTP 401\\)", out),
                   paste("unexpected result for a bad key:", out))
 })
