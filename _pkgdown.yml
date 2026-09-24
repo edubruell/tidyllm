@@ -76,6 +76,7 @@ reference:
     contents:
       - openai
       - claude
+      - claude_cli
       - gemini
       - groq
       - mistral
@@ -128,6 +129,7 @@ reference:
       - claude_file_metadata
       - claude_list_files
       - claude_websearch
+      - claude_cli_chat
 
   - title: "Gemini-Specific Functions"
     desc: >
