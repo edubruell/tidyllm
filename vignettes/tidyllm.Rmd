@@ -52,6 +52,7 @@ Sys.setenv(OPENAI_API_KEY = "your-key-here")
 | **Voyage AI** | `VOYAGE_API_KEY` | [Voyage AI Dashboard](https://dashboard.voyageai.com/api-keys) |
 | **OpenRouter** | `OPENROUTER_API_KEY` | [OpenRouter Dashboard](https://openrouter.ai/keys) |
 | **Azure OpenAI** | `AZURE_OPENAI_API_KEY` | [Azure Portal](https://portal.azure.com/) |
+| **Tavily** (web search for `websearch_tool()`) | `TAVILY_API_KEY` | [Tavily](https://app.tavily.com) |
 
 ### Running Local Models
 

@@ -184,6 +184,57 @@ llm_message("What are the latest developments in R package tooling?") |>
   chat(claude(), .tools = web_search)
 ```
 
+## Searching the Web
+
+Web search is the tool most people want first, and tidyllm ships one. `websearch_tool()` lets any model that supports tools search the web while it answers, including local models through `ollama()` that have no web access of their own. The search runs through [Tavily](https://tavily.com), which needs a `TAVILY_API_KEY`; the free plan gives 1,000 searches a month without a credit card.
+
+```{r websearch_tool, eval = FALSE}
+llm_message("What is the latest R release, and when did it come out?") |>
+  chat(claude(), .tools = websearch_tool())
+```
+
+```{r websearch_tool_output, eval = TRUE, echo = FALSE}
+llm_message("What is the latest R release, and when did it come out?") |>
+  llm_message(
+    "The latest release of R is **R 4.6.1**, codenamed *\"Happy Hop\"*, which was released on **June 24, 2026**.\n\nFor context on recent history:\n- R 4.6.0 (\"Because it was There\") came out on April 24, 2026\n- R 4.5.3 (\"Reassured Reassurer\") came out March 11, 2026\n\nYou can check the current version and news at the official R Project site: [r-project.org](https://www.r-project.org).",
+    .role = "assistant"
+  )
+```
+
+The model only chooses what to search for. How many results come back, whether the full page text is included and how long it may be are fixed when you create the tool, so a model cannot run up your search bill. Tavily's own options pass through, for example to search only recent news:
+
+```{r websearch_news, eval = FALSE}
+news_search <- websearch_tool(.max_results = 8, topic = "news", time_range = "week")
+
+llm_message("Summarise this week's news on EU AI regulation.") |>
+  chat(ollama(), .tools = news_search)
+```
+
+If a search fails, for example because the monthly credits are used up, the model receives the error as its search result and can tell you what went wrong; the conversation does not stop.
+
+To see what the model would get, or to collect search results as data, `websearch()` runs the same search directly and returns a tibble. It takes the same arguments as `websearch_tool()`:
+
+```{r websearch_direct, eval = FALSE}
+websearch("R 4.5 release", .max_results = 3)
+```
+
+```{r websearch_direct_output, eval = TRUE, echo = FALSE}
+tibble::tibble(
+  query = "R 4.5 release",
+  title = c("What\u2019s new in R 4.5.0? | R-bloggers", "R 4.5.3 is released", "R Developer Page"),
+  url = c("https://www.r-bloggers.com/2025/04/whats-new-in-r-4-5-0",
+          "https://stat.ethz.ch/pipermail/r-announce/2026/000718.html",
+          "https://developer.r-project.org"),
+  published = as.Date(c("2025-04-10", "2026-03-11", NA)),
+  snippet = c("R 4.5.0 (\u201cHow About a Twenty-Six\u201d) was released on 11th April, 2025. ...",
+              "The build system rolled up R-4.5.3.tar.gz and .xz (codename \u201cReassured Reassurer\u201d) ...",
+              "The site also includes a collection of technical papers about R and its ..."),
+  text = NA_character_
+)
+```
+
+Claude and OpenAI also have web search built into their own services, available as `claude_websearch()` and `openai_websearch()`. Those work only with their own provider; `websearch_tool()` works with all of them.
+
 ## Multi-Step Tool Chains
 
 When solving a problem requires more than one tool call, the model will make them in sequence. Each round, tidyllm executes the requested function, returns the result, and the model decides whether another call is needed before it can answer.
@@ -276,6 +327,7 @@ Instead of three sequential rounds (call, return, call, return, call, return), t
 - `tidyllm_tool()` wraps any R function into a tool definition the model can discover and call.
 - `field_chr()`, `field_dbl()`, `field_lgl()`, and `field_fct()` describe parameter types; `field_fct()` with `.levels` constrains the model to valid values.
 - Tools can access anything in your R session: in-memory data, databases, APIs, or the file system.
+- `websearch_tool()` gives any model web search; `websearch()` runs the same search directly and returns a tibble.
 - `ellmer_tool()` converts ellmer `ToolDef` objects and provider-native builtin tools to tidyllm format, so tools from packages like `btw` work without modification.
 - Multi-step chains are handled automatically; `.max_tool_rounds` prevents runaway loops.
 - Models that support parallel tool calls will batch independent lookups into a single round; tidyllm handles the execution transparently.
