@@ -1,7 +1,8 @@
 # tidyllm 0.7.0 (development version)
 
-Work in progress. This section covers the release's first feature, a provider
-that talks to a locally installed Claude CLI, and the transport work it needed.
+Work in progress. This section covers the release's first two features: a
+provider that talks to a locally installed Claude CLI, with the transport work it
+needed, and a web search tool that works with every provider.
 
 ## `claude_cli()`: chat through the Claude CLI you already have
 
@@ -59,6 +60,30 @@ in your `.Rprofile`, or the `TIDYLLM_CLAUDE_CLI` environment variable, or pass
 
 The provider needs `processx`, which is in `Suggests` and checked where it is
 used, so nothing changes for anyone who does not call it.
+
+## `websearch_tool()`: web search for any model
+
+Until now only some providers could search the web, each through its own
+built-in tool. `websearch_tool()` gives the same ability to every provider that
+supports tools, including local models through `ollama()` and `llamacpp()`:
+
+```r
+llm_message("Which central banks changed interest rates this week?") |>
+  chat(ollama(), .tools = websearch_tool())
+```
+
+The model decides when to search and chooses the query; nothing else is up to
+it. The number of results, whether full page text is included and how long that
+text may be are fixed when you create the tool, so a model cannot run up the
+search bill. Each search returns numbered results with title, URL, publication
+date and an excerpt, and the tool asks the model to cite the URLs it uses.
+
+The first search service is Tavily. It needs a `TAVILY_API_KEY`; the free plan
+gives 1,000 searches a month without a credit card. Tavily's own options, such
+as `topic = "news"`, `time_range = "week"` or `include_domains`, pass through
+`...`, and a misspelled option is caught when the tool is created. A search that
+fails, for instance because the monthly credits are used up, comes back to the
+model as a message rather than stopping the conversation.
 
 ## Streaming is no longer tied to HTTP
 

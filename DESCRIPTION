@@ -63,6 +63,7 @@ Collate:
     'rate_limits.R'
     'tidyllm_schema.R'
     'tools.R'
+    'websearch.R'
     'api_chat_completions.R'
     'api_openai.R'
     'api_azure_openai.R'

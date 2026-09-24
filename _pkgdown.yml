@@ -64,6 +64,7 @@ reference:
       - starts_with("field_")
       - tidyllm_tool
       - ellmer_tool
+      - websearch_tool
       - img
       - audio_file
       - video_file
