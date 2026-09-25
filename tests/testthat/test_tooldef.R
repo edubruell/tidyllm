@@ -118,3 +118,17 @@ test_that("Claude and Gemini receive a text tool result unchanged", {
                                list(text_tool))
   expect_identical(unlist(gemini_out)[grep("content$", names(unlist(gemini_out)))][[1]], "line 1\n\"x\"")
 })
+
+test_that("a tool description given as a function is computed each time it is read", {
+  n <- 0
+  counter_tool <- TOOL(
+    description  = function() { n <<- n + 1; paste("read", n) },
+    input_schema = list(), func = function() NULL, name = "counter", builtin = list()
+  )
+  expect_equal(counter_tool@description, "read 1")
+  expect_equal(counter_tool@description, "read 2")
+  counter_tool@description <- "fixed"
+  expect_equal(counter_tool@description, "fixed")
+  expect_error(TOOL(description = 5, input_schema = list(), func = function() NULL,
+                    name = "bad", builtin = list()), "description_source")
+})

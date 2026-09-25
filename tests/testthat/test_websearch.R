@@ -404,3 +404,9 @@ test_that("option errors name the option, not an internal call", {
   })
   expect_equal(or_list("\"a\""), "\"a\"")
 })
+
+test_that("the tool description carries the date of each request, not of creation", {
+  ws <- with_tavily_key(websearch_tool())
+  expect_true(is.function(ws@description_source))
+  expect_match(ws@description, format(Sys.Date(), "%Y-%m-%d"), fixed = TRUE)
+})

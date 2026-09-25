@@ -163,13 +163,15 @@ websearch_tool <- function(.backend = c("tavily", "searxng"),
   }
 
   TOOL(
-    description = paste(
-      "Search the web for current information.",
-      sprintf("Today's date is %s.", format(Sys.Date(), "%Y-%m-%d")),
-      "Returns numbered results with title, URL, publication date where known,",
-      "and a text excerpt. Search again with a different query if the results",
-      "do not answer the question. Cite the URLs of the results you use."
-    ),
+    description = function() {
+      paste(
+        "Search the web for current information.",
+        sprintf("Today's date is %s.", format(Sys.Date(), "%Y-%m-%d")),
+        "Returns numbered results with title, URL, publication date where known,",
+        "and a text excerpt. Search again with a different query if the results",
+        "do not answer the question. Cite the URLs of the results you use."
+      )
+    },
     input_schema = list(
       query = field_chr("The search query, phrased the way you would type it into a search engine")
     ),

@@ -1,7 +1,10 @@
 #' @title TOOL Class
 #' @description A class representing a tool for Language Model function calling
 #' 
-#' @slot description Character string describing what the tool does
+#' @slot description Character string describing what the tool does. It can be
+#'   set to a function returning that string, which is then called each time the
+#'   description is read, so a request always carries its current text.
+#' @slot description_source The stored string or function behind `description`
 #' @slot input_schema List of parameter schemas for the tool (empty for builtin tools)
 #' @slot func Function to be called by the LLM (dummy function for builtin tools that raises an error)
 #' @slot name Character string name of the tool
@@ -9,7 +12,18 @@
 #'
 #' @noRd 
 TOOL <- new_class("TOOL", properties = list(
-  description  = class_character,
+  description_source = new_property(class_character | class_function),
+  description  = new_property(
+    class_character,
+    getter = function(self) {
+      source <- self@description_source
+      if (is.function(source)) source() else source
+    },
+    setter = function(self, value) {
+      self@description_source <- value
+      self
+    }
+  ),
   input_schema = class_list,
   func         = class_function,
   name         = class_character,
