@@ -25,7 +25,7 @@ claude_cli_chat(
 \item{.llm}{An \code{LLMMessage} object.}
 
 \item{.model}{Character; the model the CLI should use, for example
-"claude-sonnet-5" or "claude-haiku-4-5-20251001". Default NULL uses whatever
+"claude-sonnet-5-5" or "claude-haiku-4-5-20251001". Default NULL uses whatever
 the CLI is configured to use.}
 
 \item{.system_prompt_mode}{One of "append" or "ignore". With "append" the

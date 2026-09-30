@@ -7,7 +7,7 @@
 voyage_rerank(
   .query,
   .documents,
-  .model = "rerank-2",
+  .model = "rerank-3",
   .top_k = NULL,
   .api_key = Sys.getenv("VOYAGE_API_KEY"),
   .timeout = 60,
@@ -19,7 +19,7 @@ voyage_rerank(
 
 \item{.documents}{A character vector of documents to rerank.}
 
-\item{.model}{The reranking model identifier (default: "rerank-2").}
+\item{.model}{The reranking model identifier (default: "rerank-3").}
 
 \item{.top_k}{Integer; return only the top-k results (default: NULL, returns all).}
 

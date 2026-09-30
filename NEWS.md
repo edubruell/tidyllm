@@ -120,6 +120,19 @@ process instead of an HTTP response. `send_chat()` likewise asks the provider ho
 to start, rather than always building an httr2 promise. No behaviour changes for
 the twelve HTTP providers.
 
+## New default models
+
+Several providers retired or replaced models over the summer, so the defaults moved.
+
+- `claude()` and `send_claude_batch()` use `claude-sonnet-5-5`; `openrouter()` uses
+  `anthropic/claude-sonnet-5.5`.
+- `openai()`, `send_openai_batch()` and the chat completions helpers use `gpt-6.1-sol`.
+- `openai_deep_research()` uses `gpt-6-sol` with web search. OpenAI no longer accepts
+  requests for `o3-deep-research` and `o4-mini-deep-research`.
+- `voyage_rerank()` uses `rerank-3`.
+- `groq_transcribe()` used a text-to-speech model as its default; it now uses
+  `whisper-large-v3`.
+
 # tidyllm 0.6.0
 
 **tidyllm no longer has to block.** A script can fire a request and keep working,

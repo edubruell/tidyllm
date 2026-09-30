@@ -6,7 +6,7 @@
 \usage{
 openrouter_chat(
   .llm,
-  .model = "anthropic/claude-sonnet-5",
+  .model = "anthropic/claude-sonnet-5.5",
   .max_tokens = 2048,
   .temperature = NULL,
   .top_p = NULL,

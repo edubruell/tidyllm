@@ -187,7 +187,7 @@ candidates <- top10_similar$abstract
 voyage_rerank(
   .query     = target_abstract,
   .documents = candidates,
-  .model     = "rerank-2",
+  .model     = "rerank-3",
   .top_k     = 5
 )
 ```

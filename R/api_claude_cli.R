@@ -414,7 +414,7 @@ method(start_async_request, api_claude_cli) <- function(.api, .job) {
 #'
 #' @param .llm An `LLMMessage` object.
 #' @param .model Character; the model the CLI should use, for example
-#'   "claude-sonnet-5" or "claude-haiku-4-5-20251001". Default NULL uses whatever
+#'   "claude-sonnet-5-5" or "claude-haiku-4-5-20251001". Default NULL uses whatever
 #'   the CLI is configured to use.
 #' @param .system_prompt_mode One of "append" or "ignore". With "append" the
 #'   message's system prompt is added to the CLI's own system prompt, which is

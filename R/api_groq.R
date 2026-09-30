@@ -256,7 +256,7 @@ groq_build_chat_request <- function(.llm,
 #' @export
 groq_transcribe <- function(
     .audio_file,
-    .model = "playai-tts",
+    .model = "whisper-large-v3",
     .language = NULL,
     .prompt = NULL,
     .temperature = 0,

@@ -207,7 +207,7 @@ voyage_embedding <- function(.input,
 #'
 #' @param .query A single character string representing the search query.
 #' @param .documents A character vector of documents to rerank.
-#' @param .model The reranking model identifier (default: "rerank-2").
+#' @param .model The reranking model identifier (default: "rerank-3").
 #' @param .top_k Integer; return only the top-k results (default: NULL, returns all).
 #' @param .api_key Character; Voyage API key (default: from environment).
 #' @param .timeout Integer; request timeout in seconds (default: 60).
@@ -217,7 +217,7 @@ voyage_embedding <- function(.input,
 #' @export
 voyage_rerank <- function(.query,
                           .documents,
-                          .model = "rerank-2",
+                          .model = "rerank-3",
                           .top_k = NULL,
                           .api_key = Sys.getenv("VOYAGE_API_KEY"),
                           .timeout = 60,

@@ -6,7 +6,7 @@
 \usage{
 openai_deep_research(
   .llm,
-  .model = "o4-mini-deep-research",
+  .model = "gpt-6-sol",
   .background = FALSE,
   .reasoning_effort = "medium",
   .json_schema = NULL,
@@ -18,7 +18,7 @@ openai_deep_research(
 \arguments{
 \item{.llm}{An \code{LLMMessage} object containing the research question.}
 
-\item{.model}{The deep research model to use (default: \code{"o4-mini-deep-research"}).}
+\item{.model}{The model to use (default: \code{"gpt-6-sol"}).}
 
 \item{.background}{Logical; if \code{TRUE}, returns a \code{tidyllm_research_job} immediately
 without waiting for completion (default: \code{FALSE}).}
@@ -39,8 +39,9 @@ If \code{.background = FALSE}, an updated \code{LLMMessage} with the research re
 If \code{.background = TRUE}, a \code{tidyllm_research_job} for use with \code{check_job()}/\code{fetch_job()}.
 }
 \description{
-Sends a research request to OpenAI using the deep research models
-(\code{o3-deep-research} or \code{o4-mini-deep-research}) via the Responses API with
-\code{background: true}. The model autonomously searches the web and synthesises
-a long-form answer, which can take 5-30 minutes.
+Sends a research request to OpenAI via the Responses API with
+\code{background: true} and the web search tool. The model autonomously searches
+the web and synthesises a long-form answer, which can take 5-30 minutes.
+OpenAI has retired its dedicated deep research models (\code{o3-deep-research},
+\code{o4-mini-deep-research}); a GPT-6 model with web search does the job now.
 }

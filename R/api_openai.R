@@ -263,7 +263,7 @@ last_openai_response_id <- function(.llm) {
 
 prepare_responses_request <- function(.llm,
                                       .api,
-                                      .model         = "gpt-5.6-terra",
+                                      .model         = "gpt-6.1-sol",
                                       .max_output_tokens = NULL,
                                       .temperature   = NULL,
                                       .reasoning_effort = NULL,
@@ -318,7 +318,7 @@ prepare_responses_request <- function(.llm,
 #' and reasoning models (o-series) via `.reasoning_effort`.
 #'
 #' @param .llm An `LLMMessage` object containing the conversation history.
-#' @param .model The model identifier (default: `"gpt-5.6-terra"`).
+#' @param .model The model identifier (default: `"gpt-6.1-sol"`).
 #' @param .max_output_tokens Maximum tokens to generate (caps reasoning + completion).
 #' @param .temperature Sampling temperature (0-2).
 #' @param .seed Seed for deterministic sampling.
@@ -342,7 +342,7 @@ prepare_responses_request <- function(.llm,
 #' @export
 openai_chat <- function(
     .llm,
-    .model               = "gpt-5.6-terra",
+    .model               = "gpt-6.1-sol",
     .max_output_tokens   = NULL,
     .temperature         = NULL,
     .seed                = NULL,
@@ -367,7 +367,7 @@ openai_chat <- function(
 #' @noRd
 openai_build_chat_request <- function(
     .llm,
-    .model               = "gpt-5.6-terra",
+    .model               = "gpt-6.1-sol",
     .max_output_tokens   = NULL,
     .temperature         = NULL,
     .seed                = NULL,
@@ -576,13 +576,14 @@ openai_code_interpreter <- function() {
 
 #' Submit a Deep Research Request to OpenAI
 #'
-#' Sends a research request to OpenAI using the deep research models
-#' (`o3-deep-research` or `o4-mini-deep-research`) via the Responses API with
-#' `background: true`. The model autonomously searches the web and synthesises
-#' a long-form answer, which can take 5-30 minutes.
+#' Sends a research request to OpenAI via the Responses API with
+#' `background: true` and the web search tool. The model autonomously searches
+#' the web and synthesises a long-form answer, which can take 5-30 minutes.
+#' OpenAI has retired its dedicated deep research models (`o3-deep-research`,
+#' `o4-mini-deep-research`); a GPT-6 model with web search does the job now.
 #'
 #' @param .llm An `LLMMessage` object containing the research question.
-#' @param .model The deep research model to use (default: `"o4-mini-deep-research"`).
+#' @param .model The model to use (default: `"gpt-6-sol"`).
 #' @param .background Logical; if `TRUE`, returns a `tidyllm_research_job` immediately
 #'   without waiting for completion (default: `FALSE`).
 #' @param .reasoning_effort Reasoning level for the model: `"low"`, `"medium"` (default),
@@ -596,7 +597,7 @@ openai_code_interpreter <- function() {
 #'   If `.background = TRUE`, a `tidyllm_research_job` for use with `check_job()`/`fetch_job()`.
 #' @export
 openai_deep_research <- function(.llm,
-                                 .model              = "o4-mini-deep-research",
+                                 .model              = "gpt-6-sol",
                                  .background         = FALSE,
                                  .reasoning_effort   = "medium",
                                  .json_schema        = NULL,
