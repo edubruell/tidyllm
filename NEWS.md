@@ -129,9 +129,20 @@ Several providers retired or replaced models over the summer, so the defaults mo
 - `openai()`, `send_openai_batch()` and the chat completions helpers use `gpt-6.1-sol`.
 - `openai_deep_research()` uses `gpt-6-sol` with web search. OpenAI no longer accepts
   requests for `o3-deep-research` and `o4-mini-deep-research`.
+- `mistral()` uses `zai-glm-5-3`, Z.ai's GLM 5.3 served by Mistral: a 1M-token context,
+  tool use and structured output. Pass `.model = "mistral-large-latest"` for the
+  previous default.
 - `voyage_rerank()` uses `rerank-3`.
 - `groq_transcribe()` used a text-to-speech model as its default; it now uses
   `whisper-large-v3`.
+
+## Mistral reasoning models
+
+Models that think before they answer (Magistral, Mistral Medium 3.5, GLM on Mistral)
+send their reply as separate thinking and text pieces. `get_reply()` now returns the
+text alone, streaming works, and the thinking is kept under `thinking` in the
+`api_specific` metadata. Streamed tool calls also survive servers that repeat an empty
+function name on later fragments of the same call.
 
 # tidyllm 0.6.0
 

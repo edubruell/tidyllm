@@ -323,7 +323,10 @@ method(assemble_stream_body, list(api_chat_completions, class_list)) <- function
       }
       calls[[key]]$id   <- call$id   %||% calls[[key]]$id
       calls[[key]]$type <- call$type %||% calls[[key]]$type
-      calls[[key]]$`function`$name <- call$`function`$name %||% calls[[key]]$`function`$name
+      fragment_name <- call$`function`$name
+      if (!is.null(fragment_name) && nzchar(fragment_name)) {
+        calls[[key]]$`function`$name <- fragment_name
+      }
       calls[[key]]$`function`$arguments <-
         c(calls[[key]]$`function`$arguments, call$`function`$arguments %||% character())
     }
