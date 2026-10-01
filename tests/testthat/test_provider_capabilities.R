@@ -49,6 +49,7 @@ test_that("media rows list every media type per provider", {
   expect_true(supported("gemini", "video"))
   expect_false(supported("claude", "audio"))
   expect_true(supported("claude", "files"))
+  expect_true(supported("chat_completions", "audio"))
   expect_error(provider_capabilities(.what = "media", .verb = "chat"), "apply to")
 })
 

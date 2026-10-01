@@ -362,7 +362,7 @@ llm_message("Hello") |>
   chat(ollama(.ollama_server = "http://my-server:11434"), .temperature = 0)
 ```
 
-When an argument appears in both `chat()` and the provider function, `chat()` takes precedence. If a common argument is not supported by the chosen provider, `chat()` raises an error rather than silently ignoring it.
+When an argument appears in both `chat()` and the provider function, `chat()` takes precedence. If a common argument is not supported by the chosen provider, `chat()` raises an error rather than silently ignoring it. `provider_capabilities()` (see "Checking What a Provider Supports" below) lists which arguments each provider accepts.
 
 ## Tool Use
 

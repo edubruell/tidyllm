@@ -1443,5 +1443,5 @@ chat_completions <- create_provider_function(
   .name = "chat_completions",
   chat = chat_completions_chat,
   build = chat_completions_build_chat_request,
-  .media = c("image")
+  .media = c("image", "audio")
 )
