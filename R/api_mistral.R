@@ -892,7 +892,7 @@ fetch_mistral_batch <- function(.llms,
   # Parse JSONL response and map results by custom_id
   results_lines <- strsplit(httr2::resp_body_string(results_response), "\n")[[1]]
   results_list <- lapply(results_lines, function(line) {
-    if (nzchar(line)) jsonlite::fromJSON(line) else NULL
+    if (nzchar(line)) jsonlite::fromJSON(line, simplifyVector = FALSE) else NULL
   })
   results_list <- Filter(Negate(is.null), results_list)
   
@@ -903,7 +903,8 @@ fetch_mistral_batch <- function(.llms,
     result <- results_by_custom_id[[custom_id]]
     
     if (!is.null(result) && is.null(result$error) && result$response$status_code == 200) {
-      assistant_reply <- result$response$body$choices$message$content
+      reply_message <- mistral_normalise_message(result$response$body$choices[[1]]$message)
+      assistant_reply <- reply_message$content
       meta_data <- extract_metadata(api_obj,result$response$body)
       llm <- add_message(.llm = .llms[[custom_id]],
                          .role = "assistant", 
