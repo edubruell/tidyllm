@@ -120,13 +120,22 @@ process instead of an HTTP response. `send_chat()` likewise asks the provider ho
 to start, rather than always building an httr2 promise. No behaviour changes for
 the twelve HTTP providers.
 
+## Tools without arguments
+
+A tool with no arguments made `claude()` reject the whole request, because the empty
+argument list was sent as `[]` where the API needs `{}`. All three tool schema builders
+(Claude, OpenAI and the chat completions providers) now send `{}`. This also makes MCP
+servers usable: `mcptools::mcp_tools() |> lapply(ellmer_tool)` hands their tools to any
+provider, and the `mcptools` helper tools that take no arguments no longer break Claude.
+
 ## New default models
 
 Several providers retired or replaced models over the summer, so the defaults moved.
 
 - `claude()` and `send_claude_batch()` use `claude-sonnet-5-5`; `openrouter()` uses
   `anthropic/claude-sonnet-5.5`.
-- `openai()`, `send_openai_batch()` and the chat completions helpers use `gpt-6.1-sol`.
+- `openai()`, `send_openai_batch()` and the chat completions helpers use `gpt-6-luna`.
+- `gemini()` and `send_gemini_batch()` use `gemini-3.8-flash`.
 - `openai_deep_research()` uses `gpt-6-sol` with web search. OpenAI no longer accepts
   requests for `o3-deep-research` and `o4-mini-deep-research`.
 - `mistral()` uses `zai-glm-5-3`, Z.ai's GLM 5.3 served by Mistral: a 1M-token context,

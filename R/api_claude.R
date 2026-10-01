@@ -209,7 +209,7 @@ method(tools_to_api, list(api_claude, class_list)) <- function(.api, .tools) {
         description = tool@description,
         input_schema = list(
           type = "object",
-          properties = purrr::map(tool@input_schema, field_to_param_schema),
+          properties = tool_properties(tool),
           required = as.list(names(tool@input_schema))
         )
       )

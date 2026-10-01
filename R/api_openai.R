@@ -184,7 +184,7 @@ method(tools_to_api, list(api_openai, class_list)) <- function(.api, .tools) {
       description = tool@description,
       parameters  = add_no_extra_fields(list(
         type                 = "object",
-        properties           = purrr::map(tool@input_schema, field_to_param_schema),
+        properties           = tool_properties(tool),
         required             = as.list(names(tool@input_schema))
       )),
       strict      = TRUE
@@ -263,7 +263,7 @@ last_openai_response_id <- function(.llm) {
 
 prepare_responses_request <- function(.llm,
                                       .api,
-                                      .model         = "gpt-6.1-sol",
+                                      .model         = "gpt-6-luna",
                                       .max_output_tokens = NULL,
                                       .temperature   = NULL,
                                       .reasoning_effort = NULL,
@@ -318,7 +318,7 @@ prepare_responses_request <- function(.llm,
 #' and reasoning models (o-series) via `.reasoning_effort`.
 #'
 #' @param .llm An `LLMMessage` object containing the conversation history.
-#' @param .model The model identifier (default: `"gpt-6.1-sol"`).
+#' @param .model The model identifier (default: `"gpt-6-luna"`).
 #' @param .max_output_tokens Maximum tokens to generate (caps reasoning + completion).
 #' @param .temperature Sampling temperature (0-2).
 #' @param .seed Seed for deterministic sampling.
@@ -342,7 +342,7 @@ prepare_responses_request <- function(.llm,
 #' @export
 openai_chat <- function(
     .llm,
-    .model               = "gpt-6.1-sol",
+    .model               = "gpt-6-luna",
     .max_output_tokens   = NULL,
     .temperature         = NULL,
     .seed                = NULL,
@@ -367,7 +367,7 @@ openai_chat <- function(
 #' @noRd
 openai_build_chat_request <- function(
     .llm,
-    .model               = "gpt-6.1-sol",
+    .model               = "gpt-6-luna",
     .max_output_tokens   = NULL,
     .temperature         = NULL,
     .seed                = NULL,

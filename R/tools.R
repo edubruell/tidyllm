@@ -332,6 +332,14 @@ method(print.TOOL,TOOL) <- function(x, ...){
   purrr::iwalk(x@input_schema, ~ cat("    -", .y, ": ", .x@type, "\n"))
 }
 
+tool_properties <- function(tool) {
+  props <- purrr::map(tool@input_schema, field_to_param_schema)
+  if (length(props) == 0) {
+    return(structure(list(), names = character(0)))
+  }
+  props
+}
+
 field_to_param_schema <- function(param) {
   schema <- parse_field(param)
   if (length(param@description) > 0) {
@@ -354,7 +362,7 @@ method(tools_to_api, list(APIProvider, class_list)) <- function(.api, .tools) {
           description = tool@description,
           parameters = add_no_extra_fields(list(
             type = "object",
-            properties = purrr::map(tool@input_schema, field_to_param_schema),
+            properties = tool_properties(tool),
             required = as.list(names(tool@input_schema))
           ))
         )
