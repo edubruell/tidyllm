@@ -184,7 +184,7 @@ reference:
       - ollama_delete_model
       - send_ollama_batch
 
-  - title: "Perplexity-Specific Functions"
+  - title: "Perplexity-Specific Functions (deprecated)"
     desc: >
       Functions for Perplexity AI chat and asynchronous deep research.
     contents:

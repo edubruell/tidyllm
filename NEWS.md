@@ -120,6 +120,15 @@ process instead of an HTTP response. `send_chat()` likewise asks the provider ho
 to start, rather than always building an httr2 promise. No behaviour changes for
 the twelve HTTP providers.
 
+## Perplexity is deprecated
+
+`perplexity()` and the `perplexity_*()` functions warn since 0.7.0 and are removed in
+0.8.0. The maintainer cannot test them against a funded account, and Perplexity is
+moving its Sonar models to a new Agent API. The same models are available as
+`openrouter(.model = "perplexity/sonar")` (also `perplexity/sonar-pro` and
+`perplexity/sonar-deep-research`), and `websearch_tool()` gives any provider web
+search.
+
 ## Tools without arguments
 
 A tool with no arguments made `claude()` reject the whole request, because the empty

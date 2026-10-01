@@ -47,7 +47,7 @@ Sys.setenv(OPENAI_API_KEY = "your-key-here")
 | **Google Gemini** | `GOOGLE_API_KEY` | [Google AI Studio](https://aistudio.google.com/app/apikey) |
 | **Mistral** | `MISTRAL_API_KEY` | [Mistral Console](https://console.mistral.ai/api-keys/) |
 | **Groq** | `GROQ_API_KEY` | [Groq Console](https://console.groq.com/playground) |
-| **Perplexity** | `PERPLEXITY_API_KEY` | [Perplexity API Settings](https://www.perplexity.ai/settings/api) |
+| **Perplexity** (deprecated) | `PERPLEXITY_API_KEY` | [Perplexity API Settings](https://www.perplexity.ai/settings/api) |
 | **DeepSeek** | `DEEPSEEK_API_KEY` | [DeepSeek Platform](https://platform.deepseek.com/api_keys) |
 | **Voyage AI** | `VOYAGE_API_KEY` | [Voyage AI Dashboard](https://dashboard.voyageai.com/api-keys) |
 | **OpenRouter** | `OPENROUTER_API_KEY` | [OpenRouter Dashboard](https://openrouter.ai/keys) |
@@ -103,7 +103,7 @@ c("A famous landmark in Paris is the Eiffel Tower.")
 All API interactions follow the **verb + provider** pattern:
 
 - **Verbs** define the action: `chat()`, `embed()`, `send_batch()`, `check_batch()`, `fetch_batch()`, `list_batches()`, `list_models()`, `deep_research()`, `check_job()`, `fetch_job()`, `upload_file()`, `list_files()`, `file_info()`, `delete_file()`
-- **Providers** specify the API: `openai()`, `claude()`, `gemini()`, `ollama()`, `mistral()`, `groq()`, `perplexity()`, `deepseek()`, `voyage()`, `openrouter()`, `llamacpp()`, `azure_openai()`
+- **Providers** specify the API: `openai()`, `claude()`, `gemini()`, `ollama()`, `mistral()`, `groq()`, `deepseek()`, `voyage()`, `openrouter()`, `llamacpp()`, `azure_openai()`
 
 Provider-specific functions like `openai_chat()` or `claude_chat()` also work directly and expose the full range of parameters for each API.
 
@@ -473,7 +473,7 @@ poems <- purrr::map_chr(conversations, get_reply)
 
 ## Deep Research
 
-For long-horizon research tasks, `deep_research()` runs an extended web search and synthesis. Perplexity's `sonar-deep-research` model is currently supported:
+For long-horizon research tasks, `deep_research()` runs an extended web search and synthesis. Perplexity's `sonar-deep-research` model is supported through the deprecated `perplexity()`, which is removed in 0.8.0:
 
 ```{r, eval=FALSE}
 # Blocking: waits for completion, returns an LLMMessage
@@ -515,7 +515,7 @@ To stream into a user interface rather than the console, use `send_chat()`, whic
 | `gemini()` | 1M-token context window; native image, audio, and video via `.media`; search grounding; `.thinking_budget` for reasoning; Files API; batch |
 | `mistral()` | EU-hosted, GDPR-friendly; Magistral reasoning models; Voxtral audio models (`.media = audio_file()`); embeddings; batch |
 | `groq()` | Fastest available inference (300-1200 tokens/s); `groq_transcribe()` for Whisper audio; `.json_schema`; batch |
-| `perplexity()` | Real-time web search with citations in metadata; `deep_research()` for long-horizon research; search domain filter |
+| `perplexity()` (deprecated since 0.7.0, removed in 0.8.0; use `openrouter(.model = "perplexity/sonar")`) | Real-time web search with citations in metadata; `deep_research()` for long-horizon research; search domain filter |
 | `deepseek()` | Top math and reasoning benchmarks at very low cost; `.thinking = TRUE` auto-switches to `deepseek-reasoner` |
 | `voyage()` | State-of-the-art retrieval embeddings; `voyage_rerank()`; multimodal embeddings (text + images); `.output_dimension` |
 | `openrouter()` | 500+ models via one API key; audio and video support on Gemini, Qwen 3.6, and other multimodal routes; automatic fallback routing |

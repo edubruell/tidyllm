@@ -4,7 +4,7 @@
 [![CRAN Status](https://www.r-pkg.org/badges/version/tidyllm)](https://cran.r-project.org/package=tidyllm)
 
 
-**tidyllm** is an R package for working with large language model APIs in data analysis workflows. It supports **Anthropic Claude**, **OpenAI**, **Google Gemini**, **Mistral**, **Groq**, **Perplexity**, **DeepSeek**, **OpenRouter**, local models via **Ollama** and **llama.cpp**, and more — all through a single consistent interface.
+**tidyllm** is an R package for working with large language model APIs in data analysis workflows. It supports **Anthropic Claude**, **OpenAI**, **Google Gemini**, **Mistral**, **Groq**, **DeepSeek**, **OpenRouter**, local models via **Ollama** and **llama.cpp**, and more — all through a single consistent interface.
 
 ## Features
 

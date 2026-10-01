@@ -23,3 +23,10 @@ An updated \code{tidyllm_research_job} with a \verb{$status} field and \verb{$re
 \description{
 Check the Status of a Perplexity Deep Research Job
 }
+\section{Deprecated}{
+
+Perplexity support is deprecated since tidyllm 0.7.0 and ends in 0.8.0. Use
+\code{openrouter(.model = "perplexity/sonar")} for the same models, or
+\code{\link[=websearch_tool]{websearch_tool()}} to give any provider web search.
+}
+

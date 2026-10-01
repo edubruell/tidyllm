@@ -117,6 +117,11 @@ method(parse_stream_event, api_perplexity) <- function(.api, .chunk) {
 #' @param .dry_run If TRUE, returns constructed request instead of sending.
 #'
 #' @return An updated `LLMMessage` object with the assistant's reply and metadata, including citations and search_results.
+#' @section Deprecated:
+#' Perplexity support is deprecated since tidyllm 0.7.0 and ends in 0.8.0. Use
+#' `openrouter(.model = "perplexity/sonar")` for the same models, or
+#' [websearch_tool()] to give any provider web search.
+#'
 #' @export
 perplexity_chat <- function(
     .llm,
@@ -157,6 +162,9 @@ perplexity_chat <- function(
     .max_tries = 3,
     .dry_run = FALSE
 ) {
+  lifecycle::deprecate_warn("0.7.0", "perplexity()",
+    details = "Perplexity support ends in tidyllm 0.8.0. Use openrouter(.model = \"perplexity/sonar\") for the same models, or websearch_tool() to give any provider web search.",
+    user_env = globalenv())
   built <- do.call(perplexity_build_chat_request, mget(names(formals())), quote = TRUE)
   run_chat_pipeline(built, .dry_run)
 }
@@ -203,6 +211,9 @@ perplexity_build_chat_request <- function(
     .max_tries = 3,
     .dry_run = FALSE
 ) {
+  lifecycle::deprecate_warn("0.7.0", "perplexity()",
+    details = "Perplexity support ends in tidyllm 0.8.0. Use openrouter(.model = \"perplexity/sonar\") for the same models, or websearch_tool() to give any provider web search.",
+    user_env = globalenv())
   c(
     "Input .llm must be an LLMMessage object" = S7_inherits(.llm, LLMMessage),
     "Input .max_tokens must be a positive integer" = is_integer_valued(.max_tokens) & .max_tokens > 0,
@@ -373,6 +384,11 @@ perplexity_build_chat_request <- function(
 #'
 #' @return If `.background = FALSE`, an updated `LLMMessage` with the research reply.
 #'   If `.background = TRUE`, a `tidyllm_research_job` object.
+#' @section Deprecated:
+#' Perplexity support is deprecated since tidyllm 0.7.0 and ends in 0.8.0. Use
+#' `openrouter(.model = "perplexity/sonar")` for the same models, or
+#' [websearch_tool()] to give any provider web search.
+#'
 #' @export
 perplexity_deep_research <- function(.llm,
                                      .background = FALSE,
@@ -393,6 +409,9 @@ perplexity_deep_research <- function(.llm,
                                      .api_key = Sys.getenv("PERPLEXITY_API_KEY"),
                                      .timeout = 300,
                                      .max_tries = 3) {
+  lifecycle::deprecate_warn("0.7.0", "perplexity()",
+    details = "Perplexity support ends in tidyllm 0.8.0. Use openrouter(.model = \"perplexity/sonar\") for the same models, or websearch_tool() to give any provider web search.",
+    user_env = globalenv())
   c(
     "Input .llm must be an LLMMessage object" = S7_inherits(.llm, LLMMessage),
     "Input .background must be logical" = is.logical(.background),
@@ -526,10 +545,18 @@ perplexity_poll_research <- function(.job, .api_key = Sys.getenv("PERPLEXITY_API
 #' @param .api_key Character; Perplexity API key (default: from environment).
 #' @param .max_tries Integer; maximum retries (default: 3).
 #' @return An updated `tidyllm_research_job` with a `$status` field and `$response` if completed.
+#' @section Deprecated:
+#' Perplexity support is deprecated since tidyllm 0.7.0 and ends in 0.8.0. Use
+#' `openrouter(.model = "perplexity/sonar")` for the same models, or
+#' [websearch_tool()] to give any provider web search.
+#'
 #' @export
 perplexity_check_research <- function(.job,
                                       .api_key = Sys.getenv("PERPLEXITY_API_KEY"),
                                       .max_tries = 3) {
+  lifecycle::deprecate_warn("0.7.0", "perplexity()",
+    details = "Perplexity support ends in tidyllm 0.8.0. Use openrouter(.model = \"perplexity/sonar\") for the same models, or websearch_tool() to give any provider web search.",
+    user_env = globalenv())
   c(
     "Input .job must be a tidyllm_research_job" = inherits(.job, "tidyllm_research_job"),
     "Input .api_key must be non-empty" = nzchar(.api_key)
@@ -556,10 +583,18 @@ perplexity_check_research <- function(.job,
 #' @param .api_key Character; Perplexity API key (default: from environment).
 #' @param .max_tries Integer; maximum retries (default: 3).
 #' @return An updated `LLMMessage` with the research reply appended.
+#' @section Deprecated:
+#' Perplexity support is deprecated since tidyllm 0.7.0 and ends in 0.8.0. Use
+#' `openrouter(.model = "perplexity/sonar")` for the same models, or
+#' [websearch_tool()] to give any provider web search.
+#'
 #' @export
 perplexity_fetch_research <- function(.job,
                                       .api_key = Sys.getenv("PERPLEXITY_API_KEY"),
                                       .max_tries = 3) {
+  lifecycle::deprecate_warn("0.7.0", "perplexity()",
+    details = "Perplexity support ends in tidyllm 0.8.0. Use openrouter(.model = \"perplexity/sonar\") for the same models, or websearch_tool() to give any provider web search.",
+    user_env = globalenv())
   c(
     "Input .job must be a tidyllm_research_job" = inherits(.job, "tidyllm_research_job"),
     "Input .api_key must be non-empty" = nzchar(.api_key)
@@ -603,6 +638,11 @@ perplexity_fetch_research <- function(.job,
 #'
 #' @return The result of the requested action, depending on the specific function invoked 
 #'   (e.g., an updated `LLMMessage` object for `chat()`).
+#'
+#' @section Deprecated:
+#' Perplexity support is deprecated since tidyllm 0.7.0 and ends in 0.8.0. Use
+#' `openrouter(.model = "perplexity/sonar")` for the same models, or
+#' [websearch_tool()] to give any provider web search.
 #'
 #' @export
 perplexity <- create_provider_function(
