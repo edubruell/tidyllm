@@ -433,15 +433,16 @@ openai_build_chat_request <- function(
       if (length(user_msgs) > 0) {
         last_user <- utils::tail(user_msgs, 1)[[1]]
         formatted <- format_message(last_user)
-        last_input <- if (!is.null(formatted$image)) {
+        last_input <- if (length(formatted$images) > 0) {
+          image_parts <- lapply(formatted$images, function(img) {
+            list(type = "input_image",
+                 image_url = as.character(glue::glue(
+                   "data:{img$media_type};base64,{img$data}")))
+          })
           list(list(
             role    = "user",
-            content = list(
-              list(type = "input_text", text = formatted$content),
-              list(type = "input_image",
-                   image_url = glue::glue(
-                     "data:{formatted$image$media_type};base64,{formatted$image$data}"))
-            )
+            content = c(list(list(type = "input_text", text = formatted$content)),
+                        image_parts)
           ))
         } else {
           list(list(role = "user", content = formatted$content))
