@@ -694,5 +694,6 @@ claude_cli_performer <- function() {
 claude_cli <- create_provider_function(
   .name = "claude_cli",
   chat  = claude_cli_chat,
-  build = claude_cli_build_chat_request
+  build = claude_cli_build_chat_request,
+  .media = character()
 )

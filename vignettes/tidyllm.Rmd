@@ -525,6 +525,25 @@ To stream into a user interface rather than the console, use `send_chat()`, whic
 
 For getting started with local models (Ollama and llama.cpp), see the Local Models article on the tidyllm website.
 
+### Checking What a Provider Supports
+
+`provider_capabilities()` answers "can this provider do that?" without reading each help page. With a provider call it lists every verb the provider implements, each verb's arguments, the default of each argument as R code, and the function (`fn`) whose help page documents it:
+
+```{r, eval=FALSE}
+provider_capabilities(claude(), .verb = "chat")
+
+# Which providers accept .thinking, and for which verbs?
+provider_capabilities(.argument = ".thinking")
+
+# Default chat model of every provider
+provider_capabilities(.verb = "chat", .argument = ".model")
+
+# Which media types each provider takes in a message
+provider_capabilities(.what = "media")
+```
+
+The result is an ordinary tibble, so filter and reshape it as usual. An argument in the table means the provider's function accepts it; an individual model can still reject a value, for example some reasoning effort levels. The attachment check in `chat()` reads the same media table, so a message with audio sent to a provider that lists no audio support fails before any request is made.
+
 ## Setting a Default Provider
 
 Avoid specifying a provider on every call by setting options:

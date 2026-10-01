@@ -184,6 +184,11 @@ reference:
       - ollama_delete_model
       - send_ollama_batch
 
+  - title: "Provider Capabilities"
+    desc: >
+      Find out which verbs, arguments and media types each provider supports.
+    contents:
+      - provider_capabilities
   - title: "Perplexity-Specific Functions (deprecated)"
     desc: >
       Functions for Perplexity AI chat and asynchronous deep research.

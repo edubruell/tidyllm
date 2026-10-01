@@ -910,5 +910,6 @@ groq <- create_provider_function(
   send_batch = send_groq_batch,
   check_batch = check_groq_batch,
   fetch_batch = fetch_groq_batch,
-  list_batches = list_groq_batches
+  list_batches = list_groq_batches,
+  .media = c("image")
 )

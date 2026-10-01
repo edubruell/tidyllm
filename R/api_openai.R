@@ -872,7 +872,8 @@ openai <- create_provider_function(
   upload_file    = openai_upload_file,
   list_files     = openai_list_files,
   file_info      = openai_file_info,
-  delete_file    = openai_delete_file
+  delete_file    = openai_delete_file,
+  .media = c("image", "files")
 )
 
 #' Alias for the OpenAI Provider Function

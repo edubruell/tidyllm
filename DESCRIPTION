@@ -1,6 +1,6 @@
 Package: tidyllm
 Title: Tidy Integration of Large Language Models
-Version: 0.6.0.9000
+Version: 0.7.0.9000
 Authors@R: c(
     person("Eduard", "Brüll", NULL, "eduard.bruell@zew.de", role = c("aut", "cre")),
     person("Jia", "Zhang", NULL, NULL, role = "ctb")
@@ -57,6 +57,7 @@ Collate:
     'example_app.R'
     'llm_message.R'
     'llm_verbs.R'
+    'provider_capabilities.R'
     'media.R'
     'message_retrieval.R'
     'perform_api_requests.R'

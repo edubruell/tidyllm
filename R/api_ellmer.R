@@ -176,7 +176,8 @@ chat_ellmer <- function(.llm,
 #' @export
 ellmer <- create_provider_function(
   .name = "ellmer",
-  chat = chat_ellmer
+  chat = chat_ellmer,
+  .media = character()
 )
 
 

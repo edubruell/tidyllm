@@ -278,5 +278,6 @@ voyage_rerank <- function(.query,
 #' @export
 voyage <- create_provider_function(
   .name = "voyage",
-  embed = voyage_embedding
+  embed = voyage_embedding,
+  .media = character()
 )  

@@ -548,5 +548,6 @@ openrouter <- create_provider_function(
   chat = openrouter_chat,
   build = openrouter_build_chat_request,
   embed = openrouter_embedding,
-  list_models = openrouter_list_models
+  list_models = openrouter_list_models,
+  .media = c("image", "audio", "video")
 )

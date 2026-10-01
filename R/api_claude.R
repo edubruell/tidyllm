@@ -1715,5 +1715,6 @@ claude <- create_provider_function(
   upload_file = claude_upload_file_verb,
   list_files  = claude_list_files_verb,
   file_info   = claude_file_info_verb,
-  delete_file = claude_delete_file_verb
+  delete_file = claude_delete_file_verb,
+  .media = c("image", "pdf", "files")
 )

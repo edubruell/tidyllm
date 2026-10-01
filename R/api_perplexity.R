@@ -649,5 +649,6 @@ perplexity <- create_provider_function(
   .name = "perplexity",
   chat = perplexity_chat,
   build = perplexity_build_chat_request,
-  deep_research = perplexity_deep_research
+  deep_research = perplexity_deep_research,
+  .media = c("image")
 )

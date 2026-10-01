@@ -120,6 +120,20 @@ process instead of an HTTP response. `send_chat()` likewise asks the provider ho
 to start, rather than always building an httr2 promise. No behaviour changes for
 the twelve HTTP providers.
 
+## `provider_capabilities()`: what each provider supports
+
+`provider_capabilities()` returns a tibble of every verb a provider implements and the
+arguments of each verb, with each argument's default (for `.model`, the provider's
+default model) and the function that implements the verb. `provider_capabilities(claude(),
+.verb = "chat")` shows what `chat(claude())` accepts; `.what = "media"` shows which of
+image, pdf, audio, video and remote files each provider takes in a message. It reads the
+registry the verbs already use, so it cannot drift from the code.
+
+The attachment check in `chat()` now reads the same media registry instead of lists of
+provider names. `send_chat()` and `parallel_chat()` passed a provider call where that
+check expected a name, so a message with audio, video or a file failed there with an
+internal error; it is now checked like in `chat()`.
+
 ## Perplexity is deprecated
 
 `perplexity()` and the `perplexity_*()` functions warn since 0.7.0 and are removed in

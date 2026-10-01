@@ -1025,5 +1025,6 @@ mistral <- create_provider_function(
   check_batch = check_mistral_batch,
   list_batches = list_mistral_batches,
   fetch_batch = fetch_mistral_batch,
-  list_models = mistral_list_models
+  list_models = mistral_list_models,
+  .media = c("image", "audio")
 )

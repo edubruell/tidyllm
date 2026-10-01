@@ -1451,5 +1451,6 @@ gemini <- create_provider_function(
   upload_file = gemini_upload_file_verb,
   list_files  = gemini_list_files_verb,
   file_info   = gemini_file_info_verb,
-  delete_file = gemini_delete_file_verb
+  delete_file = gemini_delete_file_verb,
+  .media = c("image", "pdf", "audio", "video", "files")
 )
