@@ -152,6 +152,7 @@ Model size is measured in *parameters*, the numerical weights learned during tra
 | **Qwen3.6** | Alibaba | 27B dense, 35B-A3B (MoE) | Apache 2.0; no small sizes, so Qwen3.5 (0.8B to 9B) remains tidyllm's Ollama default line |
 | **Gemma 4** | Google | E2B, E4B, 12B, 26B-A4B (MoE), 31B dense | 140+ languages, native audio/video input; the 12B (June 2026) has a 256K context and fits a 16 GB laptop; Apache 2.0 |
 | **GLM-5.3** | Z.ai | about 753B total (MoE); Flash: 320B total / 18B active | Successor to GLM-5.2 (August 2026); GLM-5.3 uses a custom license, GLM-5.3-Flash is MIT with a 1M context |
+| **Muse Glimmer** | Meta | 30B dense | Apache 2.0; multimodal (text and image), 131K context, runs on a single 24 GB GPU (August 2026); Meta's larger Muse Spark models are closed |
 | **Kimi K3** | Moonshot AI | 2.8T total / 104B active (MoE) | Largest open-weight model; weights released July 26, 2026 under a custom Kimi K3 License that requires a deal for hosted services above $20M a year |
 | **MiniMax M3** | MiniMax | about 428B total / 23B active (MoE) | 1M context, multimodal; custom MiniMax Community License |
 | **DeepSeek V4 Pro** | DeepSeek | 1.6T total / 49B active (MoE) | 1M context; MIT license. V4.1 Flash (September 2026) is a cheaper MIT-licensed sibling |

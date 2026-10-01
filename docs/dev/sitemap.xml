@@ -7,6 +7,7 @@
 <url><loc>https://edubruell.github.io/tidyllm/dev/articles/tidyllm_classifiers.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/dev/articles/tidyllm_embed.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/dev/articles/tidyllm_local_models.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/dev/articles/tidyllm_shiny.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/dev/articles/tidyllm_tools.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/dev/articles/tidyllm_video.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/dev/authors.html</loc></url>
@@ -18,6 +19,7 @@
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/azure_openai.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/azure_openai_chat.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/azure_openai_embedding.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/dev/reference/cancel_job.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/cancel_openai_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/chat.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/chat_completions_chat.html</loc></url>
@@ -33,6 +35,8 @@
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/check_openai_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/claude.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/claude_chat.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/dev/reference/claude_cli.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/dev/reference/claude_cli_chat.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/claude_delete_file.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/claude_file_metadata.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/claude_list_files.html</loc></url>
@@ -68,8 +72,10 @@
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/gemini_upload_file.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/get_logprobs.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/get_metadata.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/dev/reference/get_partial.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/get_reply.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/get_reply_data.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/dev/reference/get_stream.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/get_user_message.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/groq.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/groq_chat.html</loc></url>
@@ -122,6 +128,7 @@
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/openrouter_embedding.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/openrouter_generation.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/openrouter_list_models.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/dev/reference/parallel_chat.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/pdf_file.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/pdf_page_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/perplexity.html</loc></url>
@@ -132,6 +139,7 @@
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/rate_limit_info.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/send_azure_openai_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/send_batch.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/dev/reference/send_chat.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/send_claude_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/send_gemini_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/send_groq_batch.html</loc></url>
@@ -139,6 +147,7 @@
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/send_ollama_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/send_openai_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/tidyllm-package.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/dev/reference/tidyllm_example_app.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/tidyllm_schema.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/tidyllm_tool.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/upload_file.html</loc></url>
@@ -146,5 +155,7 @@
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/voyage.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/voyage_embedding.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/dev/reference/voyage_rerank.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/dev/reference/websearch.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/dev/reference/websearch_tool.html</loc></url>
 </urlset>
 

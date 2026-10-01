@@ -1,5 +1,1028 @@
 # Changelog
 
+## tidyllm 0.7.0 (development version)
+
+Work in progress. This section covers the release’s first two features:
+a provider that talks to a locally installed Claude CLI, with the
+transport work it needed, and a web search tool that works with every
+provider.
+
+### `claude_cli()`: chat through the Claude CLI you already have
+
+[`claude_cli()`](https://edubruell.github.io/tidyllm/dev/reference/claude_cli.md)
+is a provider that sends nothing over the network itself. It runs the
+`claude` command line tool installed on your own machine and reads its
+JSON output back, using the login that tool already has. There is no API
+key to set, and the usage counts against whatever plan the CLI is signed
+in to.
+
+``` r
+
+llm_message("Explain R's S7 classes in three sentences.") |>
+  chat(claude_cli())
+```
+
+Everything the CLI reports comes back through the usual accessors:
+[`get_metadata()`](https://edubruell.github.io/tidyllm/dev/reference/get_metadata.md)
+carries the token counts including cache reads, and its `api_specific`
+column adds the session id, the stop reason, the number of turns and
+`total_cost_usd`, which is the real dollar cost of that one call.
+
+Streaming and
+[`send_chat()`](https://edubruell.github.io/tidyllm/dev/reference/send_chat.md)
+both work, so a CLI call can print as it arrives or run in the
+background of a session that keeps going.
+
+The CLI is an agent rather than a plain completion endpoint: left alone
+it can read files, edit them and run shell commands. tidyllm turns all
+of that off, because a call to
+[`chat()`](https://edubruell.github.io/tidyllm/dev/reference/chat.md)
+that quietly edits files in your working directory is not what the rest
+of the package does. Pass `.cli_tools` to allow specific tools back, or
+`.cli_tools = TRUE` to hand over to the CLI’s own configuration.
+
+``` r
+
+llm_message("Summarise the DESCRIPTION file here.") |>
+  chat(claude_cli(.cli_tools = c("Read", "Glob")))
+```
+
+`.stateful = TRUE` leaves the conversation on the CLI’s side: the first
+call records a session id, and later calls resume it instead of
+replaying the whole history.
+
+`.json_schema` maps onto the CLI’s own structured-output flag, so
+[`tidyllm_schema()`](https://edubruell.github.io/tidyllm/dev/reference/tidyllm_schema.md)
+works here as it does everywhere else.
+
+[`claude_cli()`](https://edubruell.github.io/tidyllm/dev/reference/claude_cli.md)
+does not take `.tools`. The CLI runs its own tool loop and never exposes
+tool-call blocks to a caller, so tidyllm’s tool loop has nothing to act
+on; `chat(claude_cli(), .tools = ...)` says so rather than silently
+ignoring it.
+
+[`claude_cli()`](https://edubruell.github.io/tidyllm/dev/reference/claude_cli.md)
+looks for the CLI on the PATH and, failing that, in the places the
+installers write to. A GUI R session does not inherit the PATH from your
+shell profile, so RStudio in particular can miss a perfectly good
+install in `~/.local/bin`. To point at it yourself, set
+
+``` r
+
+options(tidyllm_claude_cli_path = "/path/to/claude")
+```
+
+in your `.Rprofile`, or the `TIDYLLM_CLAUDE_CLI` environment variable,
+or pass `claude_cli(.binary = "/path/to/claude")` for a single call.
+
+The provider needs `processx`, which is in `Suggests` and checked where
+it is used, so nothing changes for anyone who does not call it.
+
+### `websearch_tool()`: web search for any model
+
+Until now only some providers could search the web, each through its own
+built-in tool.
+[`websearch_tool()`](https://edubruell.github.io/tidyllm/dev/reference/websearch_tool.md)
+gives the same ability to every provider that supports tools, including
+local models through
+[`ollama()`](https://edubruell.github.io/tidyllm/dev/reference/ollama.md)
+and
+[`llamacpp()`](https://edubruell.github.io/tidyllm/dev/reference/llamacpp.md):
+
+``` r
+
+llm_message("Which central banks changed interest rates this week?") |>
+  chat(ollama(), .tools = websearch_tool())
+```
+
+The model decides when to search and chooses the query; nothing else is
+up to it. The number of results, whether full page text is included and
+how long that text may be are fixed when you create the tool, so a model
+cannot run up the search bill. Each search returns numbered results with
+title, URL, publication date and an excerpt, and the tool asks the model
+to cite the URLs it uses.
+
+The first search service is Tavily. It needs a `TAVILY_API_KEY`; the
+free plan gives 1,000 credits a month without a credit card, and a basic
+search costs one. Tavily’s own options, such as `topic = "news"`,
+`time_range = "week"` or `include_domains`, pass through `...`, and a
+misspelled option is caught when the tool is created. A search that
+fails, for instance because the monthly credits are used up, comes back
+to the model as a message rather than stopping the conversation.
+
+The second search service is SearXNG, a free search engine you run
+yourself. Choose it with `.backend = "searxng"` and give the address of
+your server with `.server` or the `SEARXNG_SERVER` environment variable.
+The server’s `settings.yml` must allow JSON output (and, for a server
+only you use, turn the limiter off). SearXNG returns no page text, so
+`.include_content = TRUE` is an error there. Its options, such as
+`engines`, `language` or `time_range`, pass through `...` like Tavily’s.
+
+[`websearch()`](https://edubruell.github.io/tidyllm/dev/reference/websearch.md)
+runs the same search directly and returns a tibble with one row per
+result: query, title, URL, publication date, snippet and, if asked for,
+the page text. It takes the same arguments as
+[`websearch_tool()`](https://edubruell.github.io/tidyllm/dev/reference/websearch_tool.md),
+so you can check what a model would see, or collect search results as
+data:
+
+``` r
+
+c("ZEW Mannheim", "ifo Institut") |>
+  purrr::map(websearch, .max_results = 3) |>
+  purrr::list_rbind()
+```
+
+### Tool results reach Claude and Gemini as plain text
+
+A tool that returns text used to reach
+[`claude()`](https://edubruell.github.io/tidyllm/dev/reference/claude.md)
+and
+[`gemini()`](https://edubruell.github.io/tidyllm/dev/reference/gemini.md)
+in R’s printed form, `[1] "..."`, with every line break and quote
+escaped. They now get the text as it is. Tools that return other values,
+such as a data frame or a named vector, are still printed, as before.
+
+### Streaming is no longer tied to HTTP
+
+The stream pump used to ask httr2 directly whether a connection was
+finished and how to close it. Those two questions now go through the
+provider, alongside the reader that was already there, which is what
+lets a stream come from a local process instead of an HTTP response.
+[`send_chat()`](https://edubruell.github.io/tidyllm/dev/reference/send_chat.md)
+likewise asks the provider how to start, rather than always building an
+httr2 promise. No behaviour changes for the twelve HTTP providers.
+
+## tidyllm 0.6.0
+
+CRAN release: 2026-09-08
+
+**tidyllm no longer has to block.** A script can fire a request and keep
+working, several prompts can run at once, and a Shiny app can stream
+tokens into its UI without freezing itself or anyone else’s session. The
+headline verbs are
+[`send_chat()`](https://edubruell.github.io/tidyllm/dev/reference/send_chat.md)
+and
+[`parallel_chat()`](https://edubruell.github.io/tidyllm/dev/reference/parallel_chat.md);
+underneath them sit a shared streaming pump and a chat pipeline split
+that every provider now goes through. Streaming and tool calls also stop
+being mutually exclusive.
+
+No new required dependency: `later` and `promises` are in `Suggests` and
+checked where they are used, and the Shiny path needs neither `promises`
+nor `coro`.
+
+### `send_chat()`: a chat that does not block the session
+
+There are now three ways to run a chat.
+[`chat()`](https://edubruell.github.io/tidyllm/dev/reference/chat.md)
+when you want the answer now.
+[`send_batch()`](https://edubruell.github.io/tidyllm/dev/reference/send_batch.md)
+when you have thousands of prompts and want them at half price
+overnight. And new in 0.6.0,
+[`send_chat()`](https://edubruell.github.io/tidyllm/dev/reference/send_chat.md)
+when you have *one* slow request and a session you would rather keep
+using. All three end in an `LLMMessage`, and the last two share the same
+[`check_job()`](https://edubruell.github.io/tidyllm/dev/reference/check_job.md)
+/
+[`fetch_job()`](https://edubruell.github.io/tidyllm/dev/reference/fetch_job.md)
+vocabulary.
+
+``` r
+
+job <- llm_message("Summarise this 400-page report") |>
+  send_chat(claude(), .stream = TRUE)
+
+while (check_job(job) == "running") {
+  do_something_else()
+  cat("\r", nchar(get_partial(job)), "characters so far")
+}
+
+reply <- fetch_job(job)          # the LLMMessage chat() would have returned
+```
+
+[`get_partial()`](https://edubruell.github.io/tidyllm/dev/reference/get_partial.md)
+is the text so far and
+[`cancel_job()`](https://edubruell.github.io/tidyllm/dev/reference/cancel_job.md)
+stops the request. `.on_chunk` is the push form of the same thing: a
+function called with each delta as it arrives, which is all a Shiny app
+needs to render a reply token-by-token into a `reactiveVal`, with no
+`promises` and no `coro` involved.
+
+Nothing runs on a thread or in a second process. The request is driven
+from R’s own event loop, waiting on curl’s file descriptors rather than
+on a timer, in the gaps between whatever else the session is doing. Two
+consequences follow from that and are worth knowing: several jobs run
+genuinely concurrently, and a blocking call of your own pauses them all
+for its duration.
+
+Requires the `later` package, and `promises` as well for
+`.stream = FALSE`. Neither is a new hard dependency; both are checked at
+the point of use.
+
+Known limits of the first cut: a job with `.tools` performs its tool
+rounds without yielding, so the session pauses for their duration, and a
+streamed job is not retried after a transient 429 the way
+[`chat()`](https://edubruell.github.io/tidyllm/dev/reference/chat.md)
+is.
+
+[`check_job()`](https://edubruell.github.io/tidyllm/dev/reference/check_job.md)
+and
+[`fetch_job()`](https://edubruell.github.io/tidyllm/dev/reference/fetch_job.md)
+are S3 generics now rather than a chain of `if`s, so batch jobs,
+background research jobs and chat jobs are one vocabulary reached by one
+mechanism.
+
+### `parallel_chat()`: many prompts at once
+
+``` r
+
+answers <- parallel_chat(list(physics = llm_message("What is a photon?"),
+                              biology = llm_message("What is a ribosome?")),
+                         claude())
+```
+
+Performs a list of messages concurrently against one provider and
+returns their replies in the same order under the same names. Measured
+on three one-sentence questions to
+[`claude()`](https://edubruell.github.io/tidyllm/dev/reference/claude.md):
+2.1 seconds against 5.4 for the same three in a loop.
+
+`.max_active` bounds how many are in flight and `.throttle` caps
+requests per second; both matter more than they look, because `httr2`
+applies retries across the whole set rather than per request, so a high
+`.max_active` against a rate-limited provider is a good way to collect
+429s.
+
+A failed request is returned in its own slot as the condition that
+failed, rather than as a hole that would silently shorten a downstream
+[`map()`](https://purrr.tidyverse.org/reference/map.html). Streaming and
+tool calls are refused rather than quietly ignored: use
+[`send_chat()`](https://edubruell.github.io/tidyllm/dev/reference/send_chat.md),
+which can hold several conversations at once.
+
+### Shiny: an example app and an article
+
+`tidyllm_example_app("model_explainer")` runs a small Shiny app that
+ships with the package. It fits a linear model to a public dataset and
+streams two explanations of the coefficients side by side, one in plain
+English and one from a sceptical referee, while the app stays
+responsive. Every number the model sees is computed in R and pasted into
+the prompt verbatim; the model does the narrating and none of the
+arithmetic.
+
+It defaults to a local
+[`ollama()`](https://edubruell.github.io/tidyllm/dev/reference/ollama.md)
+model, so it runs with no API key and no spend, and a dropdown switches
+it to Claude, OpenAI or Gemini. The source is a single file, and it is
+the reference implementation for the things a real app needs:
+`.on_chunk` into a `reactiveVal`, a status observer for the failures
+that carry no delta,
+[`cancel_job()`](https://edubruell.github.io/tidyllm/dev/reference/cancel_job.md)
+on a button and on `session$onSessionEnded()`, and a follow-up turn on
+the immutable `LLMMessage`.
+
+The new article *Using tidyllm in Shiny* walks through those patterns
+and closes with what to watch out for, including one worth knowing
+before you design a UI: a streaming
+[`send_chat()`](https://edubruell.github.io/tidyllm/dev/reference/send_chat.md)
+returns when the response headers arrive, so a server that answers one
+request at a time (a stock Ollama) makes a second concurrent job wait,
+while cloud providers stream both at once.
+
+`shiny` and `wooldridge` are new in `Suggests`, for the app and one of
+its datasets.
+
+### Streaming and tool calls work together
+
+`.stream = TRUE` and `.tools` used to be mutually exclusive: every
+provider raised “Streaming is not supported for requests with tool
+calls” if both were given. That restriction is gone for
+[`claude()`](https://edubruell.github.io/tidyllm/dev/reference/claude.md),
+[`openai()`](https://edubruell.github.io/tidyllm/dev/reference/openai.md),
+[`gemini()`](https://edubruell.github.io/tidyllm/dev/reference/gemini.md),
+[`ollama()`](https://edubruell.github.io/tidyllm/dev/reference/ollama.md),
+[`groq()`](https://edubruell.github.io/tidyllm/dev/reference/groq.md),
+[`mistral()`](https://edubruell.github.io/tidyllm/dev/reference/mistral.md),
+[`deepseek()`](https://edubruell.github.io/tidyllm/dev/reference/deepseek.md),
+[`openrouter()`](https://edubruell.github.io/tidyllm/dev/reference/openrouter.md),
+[`llamacpp()`](https://edubruell.github.io/tidyllm/dev/reference/llamacpp.md),
+[`azure_openai()`](https://edubruell.github.io/tidyllm/dev/reference/azure_openai.md)
+and
+[`chat_completions()`](https://edubruell.github.io/tidyllm/dev/reference/chat_completions_chat.md).
+The reply streams to the console, the tool calls run when the stream
+ends, and each follow-up round streams too.
+
+``` r
+
+llm_message("What is the weather in Berlin and Reykjavik?") |>
+  chat(claude(), .tools = weather_tool, .stream = TRUE)
+```
+
+The reason it was blocked is that the tool loop reads tool calls out of
+a complete response body, which a stream never produced; it produced a
+list of events instead. A new `assemble_stream_body()` generic folds
+those events back into the body shape, so `has_tool_calls()`,
+`extract_tool_calls()`, `run_tool_calls()` and `append_tool_messages()`
+are reused without a single streaming-specific branch. Streamed and
+blocking responses now carry the same `raw$content`, which is also what
+the async driver needs.
+
+Only Claude requires real reassembly: it streams tool arguments as JSON
+fragments that split mid-token and interleave between two concurrent
+calls, so they are accumulated per content block rather than into one
+buffer. OpenAI’s `response.completed` event already carries fully-formed
+calls, and Gemini and Ollama send their calls parsed.
+
+Details worth knowing, all of them cases that only exist because the two
+can now be combined:
+
+- A streamed reply whose tool call is cut off by `max_tokens`
+  mid-arguments no longer raises. The partial arguments are dropped and
+  the turn ends on its own `stop_reason`, so a reply the user has
+  already watched arrive is not thrown away.
+- Claude’s `thinking` blocks and their signatures survive assembly, so
+  `.thinking = TRUE` works together with `.stream` and `.tools`.
+  Built-in tools such as
+  [`claude_websearch()`](https://edubruell.github.io/tidyllm/dev/reference/claude_websearch.md)
+  keep their arguments too.
+- Streamed logprobs still work. They used to be read by a separate
+  branch that walked the per-chunk deltas; they are now collected into
+  the same place a blocking response carries them, and both transports
+  take one path.
+- A provider that streams but has no assembler raises rather than
+  silently skipping its tools and returning the model’s preamble as the
+  answer.
+
+### Internal: the chat pipeline
+
+Nothing user-visible changed here, but it is the largest structural
+change in the release. Every `*_chat()` used to be one function body
+welding request construction, the HTTP call, the tool loop and
+`add_message()` together, which meant nothing but `*_chat()` itself
+could reach the middle of it.
+
+- Twelve providers now split into `<provider>_build_chat_request()` plus
+  a thin wrapper. The builder returns everything the response handling
+  needs; the shared `finish_chat_response()` runs the tool loop,
+  extracts the reply and metadata, tracks rate limits and appends the
+  message.
+- Whether a request streams is decided at build time rather than at
+  perform time, because every provider commits to streaming in the
+  request itself: Gemini in the URL path, the rest in the request body.
+- `.dry_run = TRUE` still returns the bare `httr2` request, unchanged.
+- `ratelimit_from_header()` and `parse_logprobs()` gained an
+  `APIProvider` default returning `NULL`, and the providers that inherit
+  a method they should not use override it back. Whether a provider
+  reports rate limits or logprobs is now a property of its class rather
+  than a flag each call site had to set correctly. A new
+  `api_compatible` class covers `chat_completions(.compatible = TRUE)`,
+  which is a third-party endpoint speaking the OpenAI dialect and does
+  not return OpenAI’s rate limit headers.
+- `interpret_chat_response()` splits response interpretation away from
+  transport, so a driver holding a response from `req_perform_promise()`
+  or `req_perform_parallel()` can reach the same handling the blocking
+  path uses.
+- A streamed response is now interpreted by exactly the same code as a
+  blocking one. `extract_metadata_stream()`, a generic with six methods,
+  is gone: once `assemble_stream_body()` turns the events into a
+  response body, the reply comes from `parse_chat_response()` and the
+  metadata from `extract_metadata()`, and the streaming branch ends in
+  `interpret_chat_response()` like every other path. Beyond deleting the
+  duplicate, this is what makes an incomplete assembler detectable: the
+  reply used to come from the pump’s own text accumulator, so an
+  assembler could drop content and no plain streaming test would notice.
+- `process_tool_loop()` performs its follow-up rounds through a closure
+  the caller supplies rather than by calling `perform_chat_request()`
+  itself. It had no business deciding how a round is performed, and
+  deciding it twice is what made `openai_chat(.stateful = TRUE)` apply
+  its retry to the opening request only (see the bug fixes below). It is
+  also the seam the event-loop driver needs, which will hand in a
+  non-blocking performer.
+- Streamed
+  [`gemini()`](https://edubruell.github.io/tidyllm/dev/reference/gemini.md)
+  metadata therefore reports the same `api_specific` fields as a
+  blocking call: `cachedContentTokenCount`, `avgLogprobs` and
+  `groundingMetadata` appear, and the streaming-only `token_details`
+  entry (a copy of the raw `usageMetadata`) is gone. Token counts,
+  `finishReason` and `thinking_tokens` are unchanged.
+
+### Bug fixes (this development cycle)
+
+- `pdf_page_batch(.page_range=)` rendered the wrong pages. The text was
+  subset to the requested range but the images were rendered from the
+  position within that subset, so `.page_range = c(3, 5)` paired page
+  3’s text with page 1’s image. The page numbers are now carried through
+  the whole function.
+
+- [`pdf_page_batch()`](https://edubruell.github.io/tidyllm/dev/reference/pdf_page_batch.md)
+  returns a **named** list, `page_1`, `page_2` and so on, with the
+  numbers from the original document.
+  [`parallel_chat()`](https://edubruell.github.io/tidyllm/dev/reference/parallel_chat.md)
+  preserves names, so a reply can now be traced back to its page.
+
+- A verb a provider does not implement at all says so.
+  [`send_chat()`](https://edubruell.github.io/tidyllm/dev/reference/send_chat.md)
+  on
+  [`chat_ellmer()`](https://edubruell.github.io/tidyllm/dev/reference/chat_ellmer.md)
+  used to fail with a generic complaint about unsupported arguments; it
+  now names the verb and the provider and explains that
+  [`chat_ellmer()`](https://edubruell.github.io/tidyllm/dev/reference/chat_ellmer.md)
+  hands the conversation to an ellmer `Chat` object rather than building
+  a request, so there is nothing for tidyllm to stream. The same holds
+  for
+  [`parallel_chat()`](https://edubruell.github.io/tidyllm/dev/reference/parallel_chat.md),
+  and for any other verb/provider pair that was never registered.
+
+- Deprecation warnings for `claude(.file_ids=)` and `gemini(.fileid=)`
+  no longer tell the user the feature “was likely used in the tidyllm
+  package” and ask them to file an issue. The pipeline split moved these
+  calls one frame deeper, which changed how `lifecycle` resolved the
+  calling environment.
+
+- `openai_chat(.stateful = TRUE)` recovers from an expired server-side
+  context on any request of the turn, not just the first. Each round of
+  the tool loop used to bypass the retry entirely, so a context that
+  expired mid-conversation failed outright. The rebuild itself is still
+  attempted only on the opening request, and now says why: the body it
+  reconstructs is the conversation as it stood before the turn began, so
+  using it later would discard the tool calls and results exchanged
+  since. A round that falls back also tells the loop which request it
+  actually sent, so the next round builds on that one.
+
+- [`perplexity()`](https://edubruell.github.io/tidyllm/dev/reference/perplexity.md)
+  attaches its search results to the metadata again. The hook read them
+  from the response object rather than from the parsed body inside it,
+  so `get_metadata()$api_specific$search_results` had always been
+  `NULL`. Streamed replies carry them too, since the assembler now
+  merges Perplexity’s response-level `search_results` and `citations`
+  fields.
+
+### Streaming
+
+- Every provider now streams through one shared pump. The six
+  hand-rolled `repeat` loops are gone; a provider customises streaming
+  by implementing `parse_stream_event()` and declaring its
+  `stream_transport`, never by writing another loop.
+- **A truncated or abnormally terminated stream raises instead of
+  hanging.** The old loops relied solely on a provider-specific terminal
+  event, so a closed connection, a mid-stream provider error or an
+  unrecognised `finish_reason` span forever. The pump checks
+  `resp_stream_is_complete()` on every empty read. Measured before the
+  change,
+  [`openai()`](https://edubruell.github.io/tidyllm/dev/reference/openai.md),
+  [`claude()`](https://edubruell.github.io/tidyllm/dev/reference/claude.md)
+  and the whole ChatCompletions family hung; all providers now raise.
+- `.timeout` finally applies to streaming, as an idle deadline between
+  events rather than a total, so a long generation is not killed for
+  being long. The streaming path previously had no timeout backstop at
+  all.
+- [`perplexity()`](https://edubruell.github.io/tidyllm/dev/reference/perplexity.md)
+  streams now terminate on any `finish_reason`, not only `"stop"`; a
+  reply cut short by `"length"` used to spin.
+- [`gemini()`](https://edubruell.github.io/tidyllm/dev/reference/gemini.md)
+  streaming moved to the `alt=sse` endpoint. Without that query
+  parameter the endpoint returns a pretty-printed JSON array in chunks
+  with no SSE framing, which is why tidyllm buffered the text and
+  pattern matched it. Gemini streaming metadata now reports
+  `finishReason` and `thinking_tokens` alongside the token counts.
+- Thinking deltas are distinguished from reply text on every provider
+  that emits them, rather than being concatenated into the reply or
+  dropped silently.
+- The console path opens its connection with `blocking = TRUE` instead
+  of spinning on empty reads. Output is unchanged; cadence may differ
+  slightly, and Ollama no longer needs its 0.25s sleep per line.
+
+### Credential handling
+
+- [`gemini()`](https://edubruell.github.io/tidyllm/dev/reference/gemini.md)
+  no longer puts the API key in the URL query string. All fifteen Gemini
+  request builders now send it as a redacted `x-goog-api-key` header, so
+  `.dry_run = TRUE`, `req_verbose()` and any httr2 error carrying the
+  URL no longer print the live key.
+- [`azure_openai()`](https://edubruell.github.io/tidyllm/dev/reference/azure_openai.md)
+  marks its `api-key` header as redacted. It was stored as an ordinary
+  string, so the key survived
+  [`print()`](https://rdrr.io/r/base/print.html) and
+  [`serialize()`](https://rdrr.io/r/base/serialize.html) on the request
+  object.
+
+### Bug fixes
+
+- [`chat_completions()`](https://edubruell.github.io/tidyllm/dev/reference/chat_completions_chat.md)
+  could not be reached through
+  [`chat()`](https://edubruell.github.io/tidyllm/dev/reference/chat.md)
+  with any common argument at all; `chat(..., .dry_run = TRUE)` and
+  every other shared argument raised “not supported by the provider’s
+  [`chat()`](https://edubruell.github.io/tidyllm/dev/reference/chat.md)
+  function”. Provider functions that forward through `...` are now
+  recognised as accepting any common argument.
+- A missing API key raised `object 'api' not found` instead of the
+  intended instruction naming the environment variable to set.
+- [`chat_ellmer()`](https://edubruell.github.io/tidyllm/dev/reference/chat_ellmer.md)
+  sent the last user message twice. The full history, including the
+  final user turn, was written onto the cloned ellmer `Chat` and then
+  that same turn was sent again by `$chat()`. It now sets only the
+  preceding turns, and it uses ellmer’s public `$set_turns()` rather
+  than reaching into the object’s private environment.
+- [`chat_ellmer()`](https://edubruell.github.io/tidyllm/dev/reference/chat_ellmer.md)
+  accepted `.stream = TRUE` and silently performed a non-streaming
+  request. It now streams through ellmer’s `$stream()`, and
+  [`get_metadata()`](https://edubruell.github.io/tidyllm/dev/reference/get_metadata.md)
+  reports `stream = TRUE` for those replies.
+- [`claude_chat()`](https://edubruell.github.io/tidyllm/dev/reference/claude_chat.md)
+  ignored `.max_tries` and always used the default of 3.
+- [`ollama_chat()`](https://edubruell.github.io/tidyllm/dev/reference/ollama_chat.md)
+  gains `.max_tries`, which was hardcoded to 3.
+- The Ollama stream loop no longer crashes with a JSON lexer error on an
+  empty read, and it raises instead of looping when the connection
+  completes before the model reports `done`.
+- The ChatCompletions stream loop recorded the last event twice. The
+  duplicate is gone and the final usage-only chunk is now recorded where
+  it is produced rather than on the `[DONE]` branch.
+- [`pdf_page_batch()`](https://edubruell.github.io/tidyllm/dev/reference/pdf_page_batch.md)
+  no longer emits one deprecation warning per page; it uses
+  `.media = img()` instead of the deprecated `.imagefile`.
+- Deleted the duplicate `openai` and `chatgpt` bindings in
+  `R/api_chat_completions.R`, which shipped as dead code shadowed by the
+  Responses API definitions.
+- Deleted the `generate_callback_function()` generic, which wrote into
+  an environment that is never created and would have errored if called.
+- `R/api_ellmer.R` no longer short-circuits at the top level when ellmer
+  is absent, which would have broken the NAMESPACE exports;
+  [`chat_ellmer()`](https://edubruell.github.io/tidyllm/dev/reference/chat_ellmer.md)
+  checks for ellmer at call time instead.
+
+## tidyllm 0.5.2
+
+CRAN release: 2026-07-30
+
+A bugfix release. No new providers, verbs, or media types.
+
+### JSON schemas (structured output and tool definitions)
+
+- [`tidyllm_schema()`](https://edubruell.github.io/tidyllm/dev/reference/tidyllm_schema.md)
+  now sets `additionalProperties: false` on **every** object node of the
+  assembled schema, not just the root. Schemas containing
+  `field_object(..., .vector = TRUE)`, i.e. an array of objects, were
+  rejected with an HTTP 400 `invalid_json_schema` by every provider
+  enforcing OpenAI strict mode:
+  [`openai()`](https://edubruell.github.io/tidyllm/dev/reference/openai.md)
+  itself and any
+  [`openrouter()`](https://edubruell.github.io/tidyllm/dev/reference/openrouter.md)
+  route to OpenAI or Azure. The same recursive normalization is applied
+  at the provider boundary, so raw list schemas and `ellmer` types are
+  covered as well.
+- [`gemini()`](https://edubruell.github.io/tidyllm/dev/reference/gemini.md)
+  strips `additionalProperties` recursively before sending a schema.
+  Gemini rejects the key on any node, and previously only the root was
+  stripped.
+- Tool definitions get the same treatment. A
+  [`tidyllm_tool()`](https://edubruell.github.io/tidyllm/dev/reference/tidyllm_tool.md)
+  with a
+  [`field_object()`](https://edubruell.github.io/tidyllm/dev/reference/field_object.md)
+  argument produced a nested object node without `additionalProperties`,
+  which
+  [`openai()`](https://edubruell.github.io/tidyllm/dev/reference/openai.md)
+  rejected with a 400 because tidyllm sends `strict = TRUE` on tool
+  schemas.
+- The schema name is now read with `attr(..., exact = TRUE)`. Passing a
+  hand-written list schema without a `name` attribute previously
+  partial-matched the `names` attribute, so the property names went on
+  the wire as the schema name and strict providers rejected the request.
+- Note that an explicit `additionalProperties = TRUE`, for instance from
+  `ellmer::type_object(.additional_properties = TRUE)`, is now
+  normalized to `FALSE`, since that is what strict mode requires.
+
+### Error messages
+
+- Provider errors coming through an OpenAI-compatible gateway are no
+  longer empty.
+  [`openrouter()`](https://edubruell.github.io/tidyllm/dev/reference/openrouter.md)
+  reports a generic `"Provider returned error"` in `error$message` and
+  keeps the real upstream diagnostic in `error$metadata$raw`; tidyllm
+  now unwraps that payload and names the upstream provider in the error
+  it raises. This is what made the schema bug above so hard to diagnose
+  in the field. It applies to the whole ChatCompletions family and to
+  [`azure_openai()`](https://edubruell.github.io/tidyllm/dev/reference/azure_openai.md).
+- The error type falls back to `error$code` when a provider reports no
+  `error$type`, so the error header is no longer `Type: NULL`.
+
+### Token metadata
+
+- [`get_metadata()`](https://edubruell.github.io/tidyllm/dev/reference/get_metadata.md)
+  gains two top-level columns: `cached_tokens` (prompt tokens served
+  from the provider’s cache, the billing-relevant number) and
+  `cache_creation_tokens` (cache writes; Claude only). Providers that do
+  not report cache usage return `NA_integer_`, so “no caching” and
+  “cache miss” stay distinguishable. Raw provider fields remain in
+  `api_specific`, so existing code keeps working.
+- Cache counts are now read where they were previously discarded:
+  [`openai()`](https://edubruell.github.io/tidyllm/dev/reference/openai.md)
+  (Responses API),
+  [`gemini()`](https://edubruell.github.io/tidyllm/dev/reference/gemini.md),
+  [`deepseek()`](https://edubruell.github.io/tidyllm/dev/reference/deepseek.md),
+  [`chat_ellmer()`](https://edubruell.github.io/tidyllm/dev/reference/chat_ellmer.md),
+  and the whole ChatCompletions family including
+  [`openrouter()`](https://edubruell.github.io/tidyllm/dev/reference/openrouter.md).
+  [`openrouter()`](https://edubruell.github.io/tidyllm/dev/reference/openrouter.md)
+  additionally reports `cache_discount` in `api_specific`.
+- [`gemini()`](https://edubruell.github.io/tidyllm/dev/reference/gemini.md)
+  and
+  [`groq()`](https://edubruell.github.io/tidyllm/dev/reference/groq.md)
+  replies now report `stream = FALSE` instead of `NA`, so a metadata
+  tibble mixing providers is consistent.
+- Claude streaming metadata is no longer a stub. Streamed replies now
+  report `stop_reason`, `id`, `stop_sequence`, cache tokens and the
+  thinking trace, matching the non-streaming path.
+
+### Provider fixes
+
+- [`gemini()`](https://edubruell.github.io/tidyllm/dev/reference/gemini.md)
+  tool calls work again. Gemini now rejects a `functionCall` part whose
+  `thoughtSignature` was dropped (“Function call is missing a
+  thought_signature”), which broke every multi-round tool call. tidyllm
+  sends the model’s parts back verbatim.
+- [`claude_websearch()`](https://edubruell.github.io/tidyllm/dev/reference/claude_websearch.md)
+  defaults to the current `web_search_20260318` tool version and gains
+  `.allowed_callers` and `.response_inclusion`. Since
+  `web_search_20260209` the API defaults `allowed_callers` to the code
+  execution tool, which only models with programmatic tool calling
+  support; web search therefore failed with a 400 on Claude Haiku 4.5
+  and other older models. tidyllm now sends `allowed_callers = "direct"`
+  by default, so web search works on every model again. Pass
+  `.allowed_callers = "code_execution_20260120"` for the dynamic
+  filtering path.
+- [`ellmer_tool()`](https://edubruell.github.io/tidyllm/dev/reference/ellmer_tool.md)
+  no longer produces a `tidyllm_field` whose type carries a stray name,
+  and it uses the built-in tool’s own description when `ellmer` provides
+  one. `ellmer` is now declared as `Suggests: ellmer (>= 0.4.0)`, which
+  is the version tidyllm’s tool conversion actually requires.
+- The `.cache` documentation for
+  [`claude_chat()`](https://edubruell.github.io/tidyllm/dev/reference/claude_chat.md)
+  now states the per-model minimum cacheable prompt length. Anthropic
+  silently caches nothing below that floor, and the floor is higher on
+  the cheap models (4096 tokens on Haiku 4.5) than on Sonnet 5 (1024).
+
+## tidyllm 0.5.1
+
+CRAN release: 2026-07-23
+
+### Anthropic API migration
+
+The Anthropic Messages API changed for current-generation models (Claude
+Sonnet 5, Opus 4.7 and newer): the fixed-budget thinking interface and
+the sampling parameters `temperature`, `top_k`, and `top_p` are rejected
+with a 400 error. tidyllm 0.5.1 tracks these changes:
+
+- `.thinking = TRUE` in
+  [`claude_chat()`](https://edubruell.github.io/tidyllm/dev/reference/claude_chat.md)
+  and
+  [`send_claude_batch()`](https://edubruell.github.io/tidyllm/dev/reference/send_claude_batch.md)
+  now maps to adaptive thinking (`thinking: {type: "adaptive"}`) on
+  models that support it (Claude Sonnet 4.6, Opus 4.6 or newer). Older
+  models keep the `budget_tokens` interface; `.thinking_budget` only
+  applies there.
+- New `.effort` argument on
+  [`claude_chat()`](https://edubruell.github.io/tidyllm/dev/reference/claude_chat.md)
+  and
+  [`send_claude_batch()`](https://edubruell.github.io/tidyllm/dev/reference/send_claude_batch.md):
+  one of `"low"`, `"medium"`, `"high"`, `"xhigh"`, `"max"`. Controls
+  thinking depth and token spend on models with adaptive thinking;
+  replaces the thinking budget as the depth control.
+- Sampling parameters passed to a model that rejects them now raise a
+  clear client-side error before any request is sent. Older models
+  accept them as before.
+- Structured output requests moved from the deprecated top-level
+  `output_format` parameter to `output_config.format`; the
+  `structured-outputs` beta header is no longer sent (the feature is
+  generally available).
+- Response parsing and metadata extraction now handle thinking blocks in
+  any position of the response content; batch fetching collapses text
+  blocks correctly when thinking is enabled.
+- [`claude_websearch()`](https://edubruell.github.io/tidyllm/dev/reference/claude_websearch.md)
+  defaults to the `web_search_20260209` tool version with dynamic result
+  filtering, and gains `.max_uses`, `.allowed_domains`,
+  `.blocked_domains`, and `.version` arguments. Pass
+  `.version = "web_search_20250305"` for models older than Claude Sonnet
+  4.6 / Opus 4.6.
+
+### Prompt caching
+
+- New `.cache` argument on
+  [`claude_chat()`](https://edubruell.github.io/tidyllm/dev/reference/claude_chat.md)
+  and
+  [`send_claude_batch()`](https://edubruell.github.io/tidyllm/dev/reference/send_claude_batch.md).
+  `.cache = TRUE` enables Anthropic prompt caching with the default
+  5-minute time to live; `.cache = "1h"` requests a one-hour time to
+  live. In
+  [`claude_chat()`](https://edubruell.github.io/tidyllm/dev/reference/claude_chat.md)
+  the cache breakpoint is placed automatically at the end of the
+  request; in
+  [`send_claude_batch()`](https://edubruell.github.io/tidyllm/dev/reference/send_claude_batch.md)
+  the shared system prompt is cached across all requests in the batch,
+  which is where batch workloads save the most.
+- [`get_metadata()`](https://edubruell.github.io/tidyllm/dev/reference/get_metadata.md)
+  for Claude replies now reports `cache_creation_input_tokens` and
+  `cache_read_input_tokens` in `api_specific`, so cache hits are
+  verifiable.
+
+### Other changes
+
+- [`gemini_embedding()`](https://edubruell.github.io/tidyllm/dev/reference/gemini_embedding.md)
+  default model updated from `gemini-embedding-2-preview` to the
+  generally available `gemini-embedding-2`.
+
+## tidyllm 0.5.0
+
+CRAN release: 2026-04-30
+
+### Unified Media Interface
+
+#### `.media` argument on `llm_message()`
+
+All non-text content now attaches to messages through a single `.media`
+argument that accepts any combination of media types. Pass a single
+object or a list:
+
+``` r
+
+# Single image
+llm_message("What is in this image?",
+            .media = img("photo.jpg")) |>
+  chat(claude())
+
+# Multiple images in one message
+llm_message("Describe the difference between these two images.",
+            .media = list(img("before.jpg"), img("after.jpg"))) |>
+  chat(openai())
+
+# Mixed types: image + PDF together
+llm_message("Does this figure match what is reported in Table 2?",
+            .media = list(img("figure_3.png"),
+                          pdf_file("paper.pdf", pages = 1:8))) |>
+  chat(gemini())
+```
+
+#### New media constructors
+
+Three new constructors join
+[`img()`](https://edubruell.github.io/tidyllm/dev/reference/img.md):
+
+- **`audio_file(path)`**: attach audio inline; supported by
+  [`gemini()`](https://edubruell.github.io/tidyllm/dev/reference/gemini.md),
+  [`openrouter()`](https://edubruell.github.io/tidyllm/dev/reference/openrouter.md),
+  and
+  [`mistral()`](https://edubruell.github.io/tidyllm/dev/reference/mistral.md)
+  (Voxtral models)
+- **`video_file(path)`**: attach video inline; supported by
+  [`gemini()`](https://edubruell.github.io/tidyllm/dev/reference/gemini.md)
+  and
+  [`openrouter()`](https://edubruell.github.io/tidyllm/dev/reference/openrouter.md)
+- **`pdf_file(path, pages, .text_extract)`**: attach a PDF; Claude and
+  Gemini receive the binary file (preserving layout, tables, and scanned
+  content); all other providers receive extracted text automatically
+
+``` r
+
+# Transcribe a recording
+llm_message("Summarise what is discussed in this interview.",
+            .media = audio_file("bosch_interview.mp3")) |>
+  chat(gemini())
+
+# Analyse a video clip with a JSON schema
+video_schema <- tidyllm_schema(
+  title      = field_chr("Title or subject of the clip"),
+  era        = field_chr("Approximate decade or period depicted"),
+  key_people = field_chr("Names mentioned, semicolon-separated")
+)
+
+llm_message("Analyse this video clip.",
+            .media = video_file("documentary.mp4")) |>
+  chat(gemini(), .json_schema = video_schema)
+
+# Extract references from a scanned PDF (binary path, no OCR needed)
+llm_message("Extract all references in APA format.",
+            .media = pdf_file("1995_Neal_Industry_Specific.pdf")) |>
+  chat(claude(), .json_schema = ref_schema)
+
+# Force text extraction for any provider
+llm_message("Summarise this report.",
+            .media = pdf_file("annual_report.pdf", .text_extract = TRUE)) |>
+  chat(openai())
+```
+
+#### Multi-image support
+
+All providers that accept images now handle multiple images per message.
+Pass them as a list inside `.media`. Claude supports up to 600 images
+per message; Gemini up to 3,600.
+
+### Provider Files API
+
+A unified set of verbs manages files stored on provider servers. Upload
+once, reuse across many requests:
+
+``` r
+
+# Upload; returns a tidyllm_file handle
+report <- upload_file(gemini(), .path = "quarterly_report.pdf")
+
+# Attach the handle to any message via .files
+llm_message("What were the key results this quarter?",
+            .files = report) |>
+  chat(gemini())
+
+llm_message("List the top three risks in the document.",
+            .files = report) |>
+  chat(gemini())
+
+# Inspect and manage uploaded files
+list_files(gemini())
+file_info(gemini(), report)      # accepts a tidyllm_file or a plain ID string
+delete_file(gemini(), report)
+```
+
+The same pattern works with
+[`claude()`](https://edubruell.github.io/tidyllm/dev/reference/claude.md)
+and
+[`openai()`](https://edubruell.github.io/tidyllm/dev/reference/openai.md).
+Provider support:
+
+- **Gemini**: PDFs, images, audio, video, plain text, CSV, HTML, and
+  more; files expire after 48 hours
+- **Claude**: PDFs and images; no automatic expiry
+- **OpenAI**: 80+ formats including PDFs, Office documents (DOCX, PPTX,
+  XLSX), source code, ZIP archives, and images; note that images
+  uploaded via the Files API cannot be used for vision tasks in chat;
+  use inline
+  [`img()`](https://edubruell.github.io/tidyllm/dev/reference/img.md)
+  instead
+
+A `tidyllm_file` is provider-specific: a file uploaded to Claude cannot
+be sent to Gemini. tidyllm validates provider match before every
+request.
+
+### OpenAI Provider Rewrite
+
+#### Responses API
+
+[`openai()`](https://edubruell.github.io/tidyllm/dev/reference/openai.md)
+now uses the [Responses
+API](https://developers.openai.com/api/reference/resources/responses)
+(`POST /v1/responses`). All existing workflows continue to work
+unchanged. New capabilities unlocked by the rewrite:
+
+``` r
+
+# Reasoning effort for o-series models
+llm_message("Prove that there are infinitely many primes.") |>
+  chat(openai(.model = "o4-mini"), .reasoning_effort = "high")
+
+# Stateful multi-turn conversations (server retains context by ID)
+first  <- llm_message("My name is Alex.") |>
+  chat(openai(), .stateful = TRUE)
+
+second <- llm_message("What is my name?") |>
+  chat(openai(), .previous_response_id = first)
+```
+
+Batch processing (`send_batch(openai())`) continues to use the Chat
+Completions endpoint internally.
+
+#### Built-in server-executed tools
+
+``` r
+
+# Web search: the server runs the search, results appear in the reply
+llm_message("What happened in AI research this week?") |>
+  chat(openai(), .tools = openai_websearch())
+
+# Code interpreter
+llm_message("Plot a histogram of 1,000 standard-normal samples.") |>
+  chat(openai(), .tools = openai_code_interpreter())
+
+# Mix built-in and custom tools in one call
+llm_message("Find today's EUR/USD rate and convert 500 EUR.") |>
+  chat(openai(), .tools = list(openai_websearch(), my_converter_tool))
+```
+
+#### OpenAI deep research
+
+``` r
+
+# Background research job (slow; typically 5 to 30 minutes)
+job <- llm_message("Survey the literature on causal inference with LLMs.") |>
+  deep_research(openai(.model = "o4-mini-deep-research"), .background = TRUE)
+
+check_job(job)
+result <- fetch_job(job)
+```
+
+### New Provider: `chat_completions()`
+
+A
+[`chat_completions()`](https://edubruell.github.io/tidyllm/dev/reference/chat_completions_chat.md)
+provider for any OpenAI-compatible endpoint (vLLM, LiteLLM, Together AI,
+Anyscale, and others), without having to repurpose
+[`openai()`](https://edubruell.github.io/tidyllm/dev/reference/openai.md):
+
+``` r
+
+llm_message("Hello!") |>
+  chat(chat_completions(
+    .api_url        = "https://api.together.xyz/v1/",
+    .api_key_env_var = "TOGETHER_API_KEY",
+    .model          = "meta-llama/Llama-3-8b-chat-hf"
+  ))
+```
+
+### Provider Enhancements
+
+#### Mistral
+
+- New `.reasoning_effort` parameter for Magistral thinking models
+  (`"low"`, `"medium"`, `"high"`):
+
+  ``` r
+
+  llm_message("Is this argument valid?", .media = pdf_file("proof.pdf")) |>
+    chat(mistral(.model = "magistral-medium-latest"), .reasoning_effort = "high")
+  ```
+
+#### OpenRouter
+
+- Audio and video support:
+  [`audio_file()`](https://edubruell.github.io/tidyllm/dev/reference/audio_file.md)
+  and
+  [`video_file()`](https://edubruell.github.io/tidyllm/dev/reference/video_file.md)
+  now work with OpenRouter and are routed to the underlying model’s
+  audio/video endpoint. Filter for capable models by the `audio`
+  modality at openrouter.ai/models.
+
+### Deprecations
+
+The following are soft-deprecated with warnings in 0.5.0 and will remain
+as permanent aliases:
+
+- **`.imagefile`** on
+  [`llm_message()`](https://edubruell.github.io/tidyllm/dev/reference/llm_message.md):
+  use `.media = img(path)` instead
+- **`.pdf`** on
+  [`llm_message()`](https://edubruell.github.io/tidyllm/dev/reference/llm_message.md):
+  use `.media = pdf_file(path)` instead
+- **[`claude_upload_file()`](https://edubruell.github.io/tidyllm/dev/reference/claude_upload_file.md),
+  [`claude_delete_file()`](https://edubruell.github.io/tidyllm/dev/reference/claude_delete_file.md),
+  [`claude_file_metadata()`](https://edubruell.github.io/tidyllm/dev/reference/claude_file_metadata.md),
+  [`claude_list_files()`](https://edubruell.github.io/tidyllm/dev/reference/claude_list_files.md)**:
+  use `upload_file(claude())`, `delete_file(claude())`,
+  `file_info(claude())`, `list_files(claude())` instead
+- **[`gemini_upload_file()`](https://edubruell.github.io/tidyllm/dev/reference/gemini_upload_file.md),
+  [`gemini_delete_file()`](https://edubruell.github.io/tidyllm/dev/reference/gemini_delete_file.md),
+  [`gemini_file_metadata()`](https://edubruell.github.io/tidyllm/dev/reference/gemini_file_metadata.md),
+  [`gemini_list_files()`](https://edubruell.github.io/tidyllm/dev/reference/gemini_list_files.md)**:
+  use the corresponding `upload_file(gemini())` etc. verbs instead
+- **`.file_ids`** on
+  [`claude_chat()`](https://edubruell.github.io/tidyllm/dev/reference/claude_chat.md)
+  and **`.fileid`** on
+  [`gemini_chat()`](https://edubruell.github.io/tidyllm/dev/reference/gemini_chat.md):
+  upload with
+  [`upload_file()`](https://edubruell.github.io/tidyllm/dev/reference/upload_file.md)
+  and attach with `.files` on
+  [`llm_message()`](https://edubruell.github.io/tidyllm/dev/reference/llm_message.md)
+  instead
+
+### Small Changes
+
+- [`file_info()`](https://edubruell.github.io/tidyllm/dev/reference/file_info.md)
+  and
+  [`delete_file()`](https://edubruell.github.io/tidyllm/dev/reference/delete_file.md)
+  accept a `tidyllm_file` object directly in addition to a plain ID
+  string
+- Default model for
+  [`claude()`](https://edubruell.github.io/tidyllm/dev/reference/claude.md)
+  updated to `claude-sonnet-4-6`; fast model updated to
+  `claude-haiku-4-5`
+- Default model for
+  [`gemini()`](https://edubruell.github.io/tidyllm/dev/reference/gemini.md)
+  updated to `gemini-2.5-flash`; default embedding model updated to
+  `gemini-embedding-2-preview`
+- Default model for
+  [`voyage_embedding()`](https://edubruell.github.io/tidyllm/dev/reference/voyage_embedding.md)
+  updated to `voyage-4`
+- Default model for
+  [`openai()`](https://edubruell.github.io/tidyllm/dev/reference/openai.md)
+  updated to `gpt-5.5` (released April 2026)
+- Default model for
+  [`deepseek()`](https://edubruell.github.io/tidyllm/dev/reference/deepseek.md)
+  updated to `deepseek-v4-pro` (DeepSeek V4, released April 2026);
+  `.thinking = TRUE` now enables thinking mode via the `thinking` body
+  parameter instead of switching to the deprecated `deepseek-reasoner`
+  model name; both `deepseek-v4-pro` and `deepseek-v4-flash` support
+  thinking mode
+
+------------------------------------------------------------------------
+
 ## tidyllm 0.4.0
 
 CRAN release: 2026-03-17

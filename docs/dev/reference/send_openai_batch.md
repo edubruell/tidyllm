@@ -8,7 +8,7 @@ Batch API for asynchronous processing.
 ``` r
 send_openai_batch(
   .llms,
-  .model = "gpt-5.4",
+  .model = "gpt-5.6-terra",
   .max_completion_tokens = NULL,
   .reasoning_effort = NULL,
   .frequency_penalty = NULL,
@@ -39,7 +39,7 @@ send_openai_batch(
 - .model:
 
   Character string specifying the OpenAI model version (default:
-  "gpt-5.1-chat-latest").
+  "gpt-5.6-terra").
 
 - .max_completion_tokens:
 

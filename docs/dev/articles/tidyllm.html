@@ -26,7 +26,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.5.0.9000</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.7.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -43,6 +43,7 @@
 <li><a class="dropdown-item" href="../articles/tidyllm_classifiers.html">Classifying Texts with tidyllm</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm_embed.html">Embedding Models in tidyllm</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm_local_models.html">Local Models with tidyllm</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_shiny.html">Using tidyllm in Shiny</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm_tools.html">Using Tools with tidyllm</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm_video.html">Working with Files and Media</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm-pdfquestions.html">Structured Question Answering from PDFs</a></li>
@@ -119,7 +120,7 @@ to your <code>.Renviron</code> file (run
 <td>
 <strong>Claude</strong> (Anthropic)</td>
 <td><code>ANTHROPIC_API_KEY</code></td>
-<td><a href="https://console.anthropic.com/settings/keys" class="external-link">Anthropic
+<td><a href="https://platform.claude.com/settings/keys" class="external-link">Anthropic
 Console</a></td>
 </tr>
 <tr class="even">
@@ -172,6 +173,21 @@ Dashboard</a></td>
 <td><strong>Azure OpenAI</strong></td>
 <td><code>AZURE_OPENAI_API_KEY</code></td>
 <td><a href="https://portal.azure.com/" class="external-link">Azure Portal</a></td>
+</tr>
+<tr class="odd">
+<td>
+<strong>Tavily</strong> (web search for <code><a href="../reference/websearch.html">websearch()</a></code> and
+<code><a href="../reference/websearch_tool.html">websearch_tool()</a></code>)</td>
+<td><code>TAVILY_API_KEY</code></td>
+<td><a href="https://app.tavily.com" class="external-link">Tavily</a></td>
+</tr>
+<tr class="even">
+<td>
+<strong>SearXNG</strong> (self-hosted web search for
+<code><a href="../reference/websearch.html">websearch()</a></code> and <code><a href="../reference/websearch_tool.html">websearch_tool()</a></code>)</td>
+<td>
+<code>SEARXNG_SERVER</code> (the server address, not a key)</td>
+<td><a href="https://docs.searxng.org" class="external-link">SearXNG</a></td>
 </tr>
 </tbody>
 </table>
@@ -257,7 +273,7 @@ single media object or a list of them:</p>
 <code class="sourceCode R"><span><span class="co"># Single image</span></span>
 <span><span class="va">image_description</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Describe this picture. Can you guess where it was taken?"</span>,</span>
 <span>                                  .media <span class="op">=</span> <span class="fu"><a href="../reference/img.html">img</a></span><span class="op">(</span><span class="st">"picture.jpeg"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-5.4"</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-5.6-terra"</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/get_reply.html">get_reply</a></span><span class="op">(</span><span class="va">image_description</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## [1] "The picture shows a beautiful landscape with a lake, mountains, and a town nestled below. The area appears lush and green, with agricultural fields visible. This scenery is reminiscent of northern Italy, particularly around Lake Garda."</span></span></code></pre>
@@ -439,8 +455,8 @@ API-specific metadata for all assistant replies:</p>
 <pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">##   model  timestamp           prompt_tokens completion_tokens</span></span>
 <span><span class="co">##   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dttm&gt;</span>                      <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">1</span> groq-… 2025-11-08 <span style="color: #949494;">14:25:43</span>            20                45</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">2</span> claud… 2025-11-08 <span style="color: #949494;">14:26:02</span>            80                40</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">1</span> groq-… 2026-07-08 <span style="color: #949494;">14:25:43</span>            20                45</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">2</span> claud… 2026-07-08 <span style="color: #949494;">14:26:02</span>            80                40</span></span>
 <span><span class="co">## <span style="color: #949494;"># ℹ 2 more variables: total_tokens &lt;int&gt;,</span></span></span>
 <span><span class="co">## <span style="color: #949494;">#   api_specific &lt;list&gt;</span></span></span></code></pre>
 <p>The <code>api_specific</code> list column holds provider-only
@@ -607,7 +623,7 @@ handled transparently.</p>
 definitions with <code><a href="../reference/ellmer_tool.html">ellmer_tool()</a></code>:</p>
 <div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ellmer.tidyverse.org" class="external-link">ellmer</a></span><span class="op">)</span></span>
-<span><span class="va">btw_tool</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ellmer_tool.html">ellmer_tool</a></span><span class="op">(</span><span class="fu">btw</span><span class="fu">::</span><span class="va">btw_tool_files_list_files</span><span class="op">)</span></span>
+<span><span class="va">btw_tool</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ellmer_tool.html">ellmer_tool</a></span><span class="op">(</span><span class="fu">btw</span><span class="fu">::</span><span class="va"><a href="https://posit-dev.github.io/btw/reference/deprecated.html" class="external-link">btw_tool_files_list_files</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"List files in the R/ folder."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span>, .tools <span class="op">=</span> <span class="va">btw_tool</span><span class="op">)</span></span></code></pre></div>
 <p>For a detailed guide, see the Tool Use article on the tidyllm
@@ -707,6 +723,12 @@ extended web search and synthesis. Perplexity’s
 <p>Streaming is useful for monitoring long responses interactively. For
 production data-analysis workflows the non-streaming mode is preferred
 because it provides complete metadata and is more reliable.</p>
+<p>To stream into a user interface rather than the console, use
+<code><a href="../reference/send_chat.html">send_chat()</a></code>, which dispatches a request without blocking
+the session and reports each delta through <code>.on_chunk</code>. See
+the article on <a href="https://edubruell.github.io/tidyllm/articles/tidyllm_shiny.html">using
+tidyllm in Shiny</a>, and the example app it walks through:
+<code>tidyllm_example_app("model_explainer")</code>.</p>
 </div>
 <div class="section level3">
 <h3 id="choosing-the-right-provider">Choosing the Right Provider<a class="anchor" aria-label="anchor" href="#choosing-the-right-provider"></a>
@@ -801,7 +823,7 @@ Local Models article on the tidyllm website.</p>
 </h3>
 <p>Avoid specifying a provider on every call by setting options:</p>
 <div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>tidyllm_chat_default   <span class="op">=</span> <span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-5.4"</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>tidyllm_chat_default   <span class="op">=</span> <span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-5.6-terra"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>tidyllm_embed_default  <span class="op">=</span> <span class="fu"><a href="../reference/ollama.html">ollama</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>tidyllm_sbatch_default <span class="op">=</span> <span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span>.temperature <span class="op">=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>tidyllm_cbatch_default <span class="op">=</span> <span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
