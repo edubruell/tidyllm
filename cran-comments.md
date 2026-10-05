@@ -1,19 +1,8 @@
-# Comments from last Submission
-invalid file URI fixed as per Uwe Ligges comment from 03.09.2026 17:21
+tidyllm 0.7.0 adds `claude_cli()`, a provider that runs a locally installed Claude command line tool, and `websearch_tool()` and `websearch()`, which give any provider web search through Tavily or SearXNG. `provider_capabilities()` returns a tibble of what each provider accepts. `perplexity()` is deprecated.
 
-# Old CRAN-comments from initial submission
-tidyllm 0.6.0 adds non-blocking chat. `send_chat()` runs a single request against
-R's own event loop instead of blocking the session, and `parallel_chat()` runs a
-list of prompts against one provider concurrently. Streaming and tool calls are
-no longer mutually exclusive, streaming now runs through one shared pump across
-providers (a truncated stream raises instead of hanging), and several provider
-bugs are fixed (`chat_ellmer()` double-sending the last turn, `openai_chat(.stateful
-= TRUE)` skipping its retry on tool-loop rounds, `claude_chat()` ignoring
-`.max_tries`, and others; see NEWS.md).
+Default models are updated, because several providers retired models this summer. Bug fixes: empty tool schemas are sent as `{}`, Mistral reasoning replies and batch results are parsed correctly, OpenAI stateful mode sends all images, and `.capture_plot` no longer warns. The classifier article is rewritten for models without a temperature setting.
 
-No new required dependency: `later` and `promises` move from unused to
-`Suggests`-and-checked-at-use-site for `send_chat()`; the Shiny example app needs
-neither.
+No new Imports. `withr`, used in tests, is added to `Suggests`.
 
 ## Test environments
 
@@ -21,8 +10,8 @@ neither.
 
 ## R CMD check results
 
-0 errors | 0 warnings | 1 note
+0 errors | 0 warnings | 3 notes
 
-The note is "checking for future file timestamps: unable to verify current time", which is a network condition on the check machine rather than a package issue.
+The notes are environmental: "unable to verify current time", an outdated local HTML Tidy, and 403 responses to scripted requests from `openai.com`, `platform.openai.com` and `portal.azure.com`, which load in a browser.
 
 There are no reverse dependencies.
