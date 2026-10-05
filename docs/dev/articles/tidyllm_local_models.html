@@ -274,8 +274,8 @@ upgrading to Q8_0 on the 7B.</p>
 </h3>
 <p>Model size is measured in <em>parameters</em>, the numerical weights
 learned during training. More parameters generally means more capable,
-but also more memory required and slower inference. As of mid-2026,
-strong open-weight families come from a range of labs:</p>
+but also more memory required and slower inference. As of September
+2026, strong open-weight families come from a range of labs:</p>
 <table class="table">
 <colgroup>
 <col width="29%">
@@ -291,63 +291,81 @@ strong open-weight families come from a range of labs:</p>
 </tr></thead>
 <tbody>
 <tr class="odd">
+<td><strong>Qwen3.8</strong></td>
+<td>Alibaba</td>
+<td>27B dense</td>
+<td>Apache 2.0; newest Qwen open weight (August 2026);
+<code>qwen3.8:27b</code> needs about 18 GB</td>
+</tr>
+<tr class="even">
 <td><strong>Qwen3.6</strong></td>
 <td>Alibaba</td>
 <td>27B dense, 35B-A3B (MoE)</td>
-<td>Flagship-level coding performance; Apache 2.0; supersedes Qwen3.5,
-tidyllm’s Ollama default</td>
+<td>Apache 2.0; no small sizes, so Qwen3.5 (0.8B to 9B) remains
+tidyllm’s Ollama default line</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><strong>Gemma 4</strong></td>
 <td>Google</td>
-<td>26B-A4B (MoE), 31B dense</td>
-<td>140+ languages, native audio/video input; Apache 2.0</td>
-</tr>
-<tr class="odd">
-<td><strong>Llama 5</strong></td>
-<td>Meta</td>
-<td>600B total (MoE)</td>
-<td>5M token context, matches frontier closed models; open weight</td>
+<td>E2B, E4B, 12B, 26B-A4B (MoE), 31B dense</td>
+<td>140+ languages, native audio/video input; the 12B (June 2026) has a
+256K context and fits a 16 GB laptop; Apache 2.0</td>
 </tr>
 <tr class="even">
-<td><strong>GLM-5.2</strong></td>
+<td><strong>GLM-5.3</strong></td>
 <td>Z.ai</td>
-<td>744B total / 40B active (MoE)</td>
-<td>One of the first open weights to seriously rival Fable-tier coding
-quality</td>
+<td>about 753B total (MoE); Flash: 320B total / 18B active</td>
+<td>Successor to GLM-5.2 (August 2026); GLM-5.3 uses a custom license,
+GLM-5.3-Flash is MIT with a 1M context</td>
 </tr>
 <tr class="odd">
+<td><strong>Muse Glimmer</strong></td>
+<td>Meta</td>
+<td>30B dense</td>
+<td>Apache 2.0; multimodal (text and image), 131K context, runs on a
+single 24 GB GPU (August 2026); Meta’s larger Muse Spark models are
+closed</td>
+</tr>
+<tr class="even">
 <td><strong>Kimi K3</strong></td>
 <td>Moonshot AI</td>
-<td>2.8T total (MoE)</td>
-<td>World’s largest open-weight model; weights land July 27, 2026 under
-a Modified MIT license; targets Fable/GPT-5.6-class coding</td>
-</tr>
-<tr class="even">
-<td><strong>MiniMax M3</strong></td>
-<td>MiniMax</td>
-<td>large MoE</td>
-<td>Near-frontier quality at a fraction of proprietary API cost</td>
+<td>2.8T total / 104B active (MoE)</td>
+<td>Largest open-weight model; weights released July 26, 2026 under a
+custom Kimi K3 License that requires a deal for hosted services above
+$20M a year</td>
 </tr>
 <tr class="odd">
+<td><strong>MiniMax M3</strong></td>
+<td>MiniMax</td>
+<td>about 428B total / 23B active (MoE)</td>
+<td>1M context, multimodal; custom MiniMax Community License</td>
+</tr>
+<tr class="even">
 <td><strong>DeepSeek V4 Pro</strong></td>
 <td>DeepSeek</td>
 <td>1.6T total / 49B active (MoE)</td>
-<td>1M context; now MIT licensed, up from DeepSeek’s earlier custom
-terms</td>
+<td>1M context; MIT license. V4.1 Flash (September 2026) is a cheaper
+MIT-licensed sibling</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><strong>Mistral Medium 3.5</strong></td>
 <td>Mistral AI</td>
-<td>Open weight (undisclosed size)</td>
-<td>Unified reasoning, vision, and coding; free for individuals and
-small teams</td>
+<td>128B dense</td>
+<td>256K context, reasoning, vision and coding in one model; modified
+MIT, free below $20M monthly revenue</td>
+</tr>
+<tr class="even">
+<td><strong>Granite 4.2</strong></td>
+<td>IBM</td>
+<td>3B, 8B, 30B</td>
+<td>Apache 2.0, 128K context, thinking mode; <code>granite4.2:3b</code>
+and <code>:8b</code> run on modest laptops</td>
 </tr>
 <tr class="odd">
 <td><strong>Inkling</strong></td>
 <td>Thinking Machines</td>
 <td>975B total / 41B active (MoE)</td>
-<td>First US entrant at this scale; Apache 2.0; built as a base for
+<td>First US entrant at this scale; 1M context; built as a base for
 fine-tuning rather than top-end quality</td>
 </tr>
 </tbody>
@@ -368,8 +386,8 @@ model at Q4_K_M needs around 10 GB of memory; a 70B model needs 40 GB or
 more. Before investing in hardware or reserving compute time, test the
 model via a cloud API first to confirm it works for your task.</p>
 <p><a href="https://openrouter.ai" class="external-link">OpenRouter</a> provides a single API
-key for hundreds of models, including the Qwen, Mistral, Llama, Kimi,
-Gemma, and MiniMax families. Because tidyllm uses the same
+key for hundreds of models, including the Qwen, Mistral, Kimi, Gemma,
+GLM, and MiniMax families. Because tidyllm uses the same
 verb-and-provider pattern for every provider, switching between
 candidates requires only changing the <code>.model</code> argument:</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">

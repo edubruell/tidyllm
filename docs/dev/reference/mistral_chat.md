@@ -7,7 +7,7 @@ Send LLMMessage to Mistral API
 ``` r
 mistral_chat(
   .llm,
-  .model = "mistral-large-latest",
+  .model = "zai-glm-5-3",
   .frequency_penalty = NULL,
   .logit_bias = NULL,
   .presence_penalty = NULL,
@@ -39,7 +39,7 @@ mistral_chat(
 
 - .model:
 
-  The model identifier to use (default: `"mistral-large-latest"`).
+  The model identifier to use (default: `"zai-glm-5-3"`).
 
 - .frequency_penalty:
 

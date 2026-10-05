@@ -239,6 +239,125 @@ llm_message("What are the latest developments in R package tooling?") |>
   chat(claude(), .tools = web_search)
 ```
 
+The same route works for tools served over the Model Context Protocol
+(MCP). The **mcptools** package reads your MCP server configuration and
+returns the servers’ tools as ellmer tools, which
+[`ellmer_tool()`](https://edubruell.github.io/tidyllm/reference/ellmer_tool.md)
+converts:
+
+``` r
+
+mcp_tools <- mcptools::mcp_tools() |>
+  lapply(ellmer_tool)
+
+llm_message("Which files are in my Documents folder?") |>
+  chat(claude(), .tools = mcp_tools)
+```
+
+mcptools waits only a few seconds for each server to answer. A server
+that must first download itself, such as a first run of `npx -y`, can
+return no tools and no error, so start it once beforehand.
+
+## Searching the Web
+
+Web search is the tool most people want first, and tidyllm ships one.
+[`websearch_tool()`](https://edubruell.github.io/tidyllm/reference/websearch_tool.md)
+lets any model that supports tools search the web while it answers,
+including local models through
+[`ollama()`](https://edubruell.github.io/tidyllm/reference/ollama.md)
+that have no web access of their own. The search runs through
+[Tavily](https://www.tavily.com/), which needs a `TAVILY_API_KEY`; the
+free plan gives 1,000 credits a month without a credit card, and a basic
+search costs one.
+
+``` r
+
+llm_message("What is the latest R release, and when did it come out?") |>
+  chat(claude(), .tools = websearch_tool())
+```
+
+    ## Message History:
+    ## system:
+    ## You are a helpful assistant
+    ## --------------------------------------------------------------
+    ## user:
+    ## What is the latest R release, and when did it come out?
+    ## --------------------------------------------------------------
+    ## assistant:
+    ## The latest release of R is **R 4.6.1**, codenamed *"Happy
+    ## Hop"*, which was released on **June 24, 2026**.
+    ## 
+    ## For context on recent history:
+    ## - R 4.6.0 ("Because it was There") came out on April 24,
+    ## 2026
+    ## - R 4.5.3 ("Reassured Reassurer") came out March 11, 2026
+    ## 
+    ## You can check the current version and news at the official R
+    ## Project site: [r-project.org](https://www.r-project.org).
+    ## --------------------------------------------------------------
+
+The model only chooses what to search for. How many results come back,
+whether the full page text is included and how long it may be are fixed
+when you create the tool, so a model cannot run up your search bill.
+Tavily’s own options pass through, for example to search only recent
+news:
+
+``` r
+
+news_search <- websearch_tool(.max_results = 8, topic = "news", time_range = "week")
+
+llm_message("Summarise this week's news on EU AI regulation.") |>
+  chat(ollama(), .tools = news_search)
+```
+
+If a search fails, for example because the monthly credits are used up,
+the model receives the error as its search result and can tell you what
+went wrong; the conversation does not stop.
+
+If you would rather not use a paid service, run your own
+[SearXNG](https://docs.searxng.org) server, a free search engine that
+collects results from Google, Brave and others. Its `settings.yml` must
+list `json` under `search: formats:`, and for a server only you use,
+`server: limiter: false` stops it from blocking repeated searches. Then
+point the tool at it:
+
+``` r
+
+Sys.setenv(SEARXNG_SERVER = "http://localhost:8888")
+
+llm_message("What is the latest R release, and when did it come out?") |>
+  chat(ollama(), .tools = websearch_tool("searxng", language = "en"))
+```
+
+SearXNG returns short excerpts only, never the full page text.
+
+To see what the model would get, or to collect search results as data,
+[`websearch()`](https://edubruell.github.io/tidyllm/reference/websearch.md)
+runs the same search directly and returns a tibble. It takes the same
+arguments as
+[`websearch_tool()`](https://edubruell.github.io/tidyllm/reference/websearch_tool.md):
+
+``` r
+
+websearch("R 4.5 release", .max_results = 3)
+```
+
+    ## # A tibble: 3 × 6
+    ##   query         title                             url   published  snippet text 
+    ##   <chr>         <chr>                             <chr> <date>     <chr>   <chr>
+    ## 1 R 4.5 release What’s new in R 4.5.0? | R-blogg… http… 2025-04-10 R 4.5.… NA   
+    ## 2 R 4.5 release R 4.5.3 is released               http… 2026-03-11 The bu… NA   
+    ## 3 R 4.5 release R Developer Page                  http… NA         The si… NA
+
+Claude and OpenAI also have web search built into their own services,
+available as
+[`claude_websearch()`](https://edubruell.github.io/tidyllm/reference/claude_websearch.md)
+and
+[`openai_websearch()`](https://edubruell.github.io/tidyllm/reference/openai_websearch.md).
+Those work only with their own provider;
+[`websearch_tool()`](https://edubruell.github.io/tidyllm/reference/websearch_tool.md)
+works with all of them.
+
 ## Multi-Step Tool Chains
 
 When solving a problem requires more than one tool call, the model will
@@ -372,6 +491,10 @@ them in a single batch before continuing.
   with `.levels` constrains the model to valid values.
 - Tools can access anything in your R session: in-memory data,
   databases, APIs, or the file system.
+- [`websearch_tool()`](https://edubruell.github.io/tidyllm/reference/websearch_tool.md)
+  gives any model web search;
+  [`websearch()`](https://edubruell.github.io/tidyllm/reference/websearch.md)
+  runs the same search directly and returns a tibble.
 - [`ellmer_tool()`](https://edubruell.github.io/tidyllm/reference/ellmer_tool.md)
   converts ellmer `ToolDef` objects and provider-native builtin tools to
   tidyllm format, so tools from packages like `btw` work without

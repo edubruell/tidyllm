@@ -1,6 +1,278 @@
 # Changelog
 
+## tidyllm 0.7.0
+
+This release adds a provider that talks to a locally installed Claude
+CLI, a web search tool that works with every provider, and
+[`provider_capabilities()`](https://edubruell.github.io/tidyllm/reference/provider_capabilities.md)
+to see what each provider accepts. It also moves the default models to
+the autumn 2026 lineup and rewrites the classifier article for models
+that no longer accept a temperature.
+
+### `claude_cli()`: chat through the Claude CLI you already have
+
+[`claude_cli()`](https://edubruell.github.io/tidyllm/reference/claude_cli.md)
+is a provider that sends nothing over the network itself. It runs the
+`claude` command line tool installed on your own machine and reads its
+JSON output back, using the login that tool already has. There is no API
+key to set, and the usage counts against whatever plan the CLI is signed
+in to.
+
+``` r
+
+llm_message("Explain R's S7 classes in three sentences.") |>
+  chat(claude_cli())
+```
+
+Everything the CLI reports comes back through the usual accessors:
+[`get_metadata()`](https://edubruell.github.io/tidyllm/reference/get_metadata.md)
+carries the token counts including cache reads, and its `api_specific`
+column adds the session id, the stop reason, the number of turns and
+`total_cost_usd`, which is the real dollar cost of that one call.
+
+Streaming and
+[`send_chat()`](https://edubruell.github.io/tidyllm/reference/send_chat.md)
+both work, so a CLI call can print as it arrives or run in the
+background of a session that keeps going.
+
+The CLI is an agent rather than a plain completion endpoint: left alone
+it can read files, edit them and run shell commands. tidyllm turns all
+of that off, because a call to
+[`chat()`](https://edubruell.github.io/tidyllm/reference/chat.md) that
+quietly edits files in your working directory is not what the rest of
+the package does. Pass `.cli_tools` to allow specific tools back, or
+`.cli_tools = TRUE` to hand over to the CLI’s own configuration.
+
+``` r
+
+llm_message("Summarise the DESCRIPTION file here.") |>
+  chat(claude_cli(.cli_tools = c("Read", "Glob")))
+```
+
+`.stateful = TRUE` leaves the conversation on the CLI’s side: the first
+call records a session id, and later calls resume it instead of
+replaying the whole history.
+
+`.json_schema` maps onto the CLI’s own structured-output flag, so
+[`tidyllm_schema()`](https://edubruell.github.io/tidyllm/reference/tidyllm_schema.md)
+works here as it does everywhere else.
+
+[`claude_cli()`](https://edubruell.github.io/tidyllm/reference/claude_cli.md)
+does not take `.tools`. The CLI runs its own tool loop and never exposes
+tool-call blocks to a caller, so tidyllm’s tool loop has nothing to act
+on; `chat(claude_cli(), .tools = ...)` says so rather than silently
+ignoring it.
+
+[`claude_cli()`](https://edubruell.github.io/tidyllm/reference/claude_cli.md)
+looks for the CLI on the PATH and, failing that, in the places the
+installers write to. A GUI R session does not inherit the PATH from your
+shell profile, so RStudio in particular can miss a perfectly good
+install in `~/.local/bin`. To point at it yourself, set
+
+``` r
+
+options(tidyllm_claude_cli_path = "/path/to/claude")
+```
+
+in your `.Rprofile`, or the `TIDYLLM_CLAUDE_CLI` environment variable,
+or pass `claude_cli(.binary = "/path/to/claude")` for a single call.
+
+The provider needs `processx`, which is in `Suggests` and checked where
+it is used, so nothing changes for anyone who does not call it.
+
+### `websearch_tool()`: web search for any model
+
+Until now only some providers could search the web, each through its own
+built-in tool.
+[`websearch_tool()`](https://edubruell.github.io/tidyllm/reference/websearch_tool.md)
+gives the same ability to every provider that supports tools, including
+local models through
+[`ollama()`](https://edubruell.github.io/tidyllm/reference/ollama.md)
+and
+[`llamacpp()`](https://edubruell.github.io/tidyllm/reference/llamacpp.md):
+
+``` r
+
+llm_message("Which central banks changed interest rates this week?") |>
+  chat(ollama(), .tools = websearch_tool())
+```
+
+The model decides when to search and chooses the query; nothing else is
+up to it. The number of results, whether full page text is included and
+how long that text may be are fixed when you create the tool, so a model
+cannot run up the search bill. Each search returns numbered results with
+title, URL, publication date and an excerpt, and the tool asks the model
+to cite the URLs it uses.
+
+The first search service is Tavily. It needs a `TAVILY_API_KEY`; the
+free plan gives 1,000 credits a month without a credit card, and a basic
+search costs one. Tavily’s own options, such as `topic = "news"`,
+`time_range = "week"` or `include_domains`, pass through `...`, and a
+misspelled option is caught when the tool is created. A search that
+fails, for instance because the monthly credits are used up, comes back
+to the model as a message rather than stopping the conversation.
+
+The second search service is SearXNG, a free search engine you run
+yourself. Choose it with `.backend = "searxng"` and give the address of
+your server with `.server` or the `SEARXNG_SERVER` environment variable.
+The server’s `settings.yml` must allow JSON output (and, for a server
+only you use, turn the limiter off). SearXNG returns no page text, so
+`.include_content = TRUE` is an error there. Its options, such as
+`engines`, `language` or `time_range`, pass through `...` like Tavily’s.
+
+[`websearch()`](https://edubruell.github.io/tidyllm/reference/websearch.md)
+runs the same search directly and returns a tibble with one row per
+result: query, title, URL, publication date, snippet and, if asked for,
+the page text. It takes the same arguments as
+[`websearch_tool()`](https://edubruell.github.io/tidyllm/reference/websearch_tool.md),
+so you can check what a model would see, or collect search results as
+data:
+
+``` r
+
+c("ZEW Mannheim", "ifo Institut") |>
+  purrr::map(websearch, .max_results = 3) |>
+  purrr::list_rbind()
+```
+
+### Tool results reach Claude and Gemini as plain text
+
+A tool that returns text used to reach
+[`claude()`](https://edubruell.github.io/tidyllm/reference/claude.md)
+and
+[`gemini()`](https://edubruell.github.io/tidyllm/reference/gemini.md) in
+R’s printed form, `[1] "..."`, with every line break and quote escaped.
+They now get the text as it is. Tools that return other values, such as
+a data frame or a named vector, are still printed, as before.
+
+### Streaming is no longer tied to HTTP
+
+The stream pump used to ask httr2 directly whether a connection was
+finished and how to close it. Those two questions now go through the
+provider, alongside the reader that was already there, which is what
+lets a stream come from a local process instead of an HTTP response.
+[`send_chat()`](https://edubruell.github.io/tidyllm/reference/send_chat.md)
+likewise asks the provider how to start, rather than always building an
+httr2 promise. No behaviour changes for the twelve HTTP providers.
+
+### `provider_capabilities()`: what each provider supports
+
+[`provider_capabilities()`](https://edubruell.github.io/tidyllm/reference/provider_capabilities.md)
+returns a tibble of every verb a provider implements and the arguments
+of each verb, with each argument’s default (for `.model`, the provider’s
+default model) and the function that implements the verb.
+`provider_capabilities(claude(), .verb = "chat")` shows what
+`chat(claude())` accepts; `.what = "media"` shows which of image, pdf,
+audio, video and remote files each provider takes in a message. It reads
+the registry the verbs already use, so it cannot drift from the code.
+
+The attachment check in
+[`chat()`](https://edubruell.github.io/tidyllm/reference/chat.md) now
+reads the same media registry instead of lists of provider names.
+[`send_chat()`](https://edubruell.github.io/tidyllm/reference/send_chat.md)
+and
+[`parallel_chat()`](https://edubruell.github.io/tidyllm/reference/parallel_chat.md)
+passed a provider call where that check expected a name, so a message
+with audio, video or a file failed there with an internal error; it is
+now checked like in
+[`chat()`](https://edubruell.github.io/tidyllm/reference/chat.md).
+
+### Perplexity is deprecated
+
+[`perplexity()`](https://edubruell.github.io/tidyllm/reference/perplexity.md)
+and the `perplexity_*()` functions warn since 0.7.0 and are removed in
+0.8.0. The maintainer cannot test them against a funded account, and
+Perplexity is moving its Sonar models to a new Agent API. The same
+models are available as `openrouter(.model = "perplexity/sonar")` (also
+`perplexity/sonar-pro` and `perplexity/sonar-deep-research`), and
+[`websearch_tool()`](https://edubruell.github.io/tidyllm/reference/websearch_tool.md)
+gives any provider web search.
+
+### Tools without arguments
+
+A tool with no arguments made
+[`claude()`](https://edubruell.github.io/tidyllm/reference/claude.md)
+reject the whole request, because the empty argument list was sent as
+`[]` where the API needs [`{}`](https://rdrr.io/r/base/Paren.html). All
+three tool schema builders (Claude, OpenAI and the chat completions
+providers) now send [`{}`](https://rdrr.io/r/base/Paren.html). This also
+makes MCP servers usable: `mcptools::mcp_tools() |> lapply(ellmer_tool)`
+hands their tools to any provider, and the `mcptools` helper tools that
+take no arguments no longer break Claude.
+
+### `.capture_plot` no longer warns
+
+`llm_message(.capture_plot = TRUE)` shared a code path with the
+deprecated `.imagefile`, so it printed a warning that pointed to
+`.media = img(path)`, advice that cannot capture a plot. It now saves
+the current plot to a temporary PNG and attaches it as an
+[`img()`](https://edubruell.github.io/tidyllm/reference/img.md) in the
+message’s media, with no warning.
+
+### New default models
+
+Several providers retired or replaced models over the summer, so the
+defaults moved.
+
+- [`claude()`](https://edubruell.github.io/tidyllm/reference/claude.md)
+  and
+  [`send_claude_batch()`](https://edubruell.github.io/tidyllm/reference/send_claude_batch.md)
+  use `claude-sonnet-5-5`;
+  [`openrouter()`](https://edubruell.github.io/tidyllm/reference/openrouter.md)
+  uses `anthropic/claude-sonnet-5.5`.
+- [`openai()`](https://edubruell.github.io/tidyllm/reference/openai.md),
+  [`send_openai_batch()`](https://edubruell.github.io/tidyllm/reference/send_openai_batch.md)
+  and the chat completions helpers use `gpt-6-luna`.
+- [`gemini()`](https://edubruell.github.io/tidyllm/reference/gemini.md)
+  and
+  [`send_gemini_batch()`](https://edubruell.github.io/tidyllm/reference/send_gemini_batch.md)
+  use `gemini-3.8-flash`.
+- [`openai_deep_research()`](https://edubruell.github.io/tidyllm/reference/openai_deep_research.md)
+  uses `gpt-6-sol` with web search. OpenAI no longer accepts requests
+  for `o3-deep-research` and `o4-mini-deep-research`.
+- [`mistral()`](https://edubruell.github.io/tidyllm/reference/mistral.md)
+  uses `zai-glm-5-3`, Z.ai’s GLM 5.3 served by Mistral: a 1M-token
+  context, tool use and structured output. Pass
+  `.model = "mistral-large-latest"` for the previous default.
+- [`voyage_rerank()`](https://edubruell.github.io/tidyllm/reference/voyage_rerank.md)
+  uses `rerank-3`.
+- [`groq_transcribe()`](https://edubruell.github.io/tidyllm/reference/groq_transcribe.md)
+  used a text-to-speech model as its default; it now uses
+  `whisper-large-v3`.
+
+### Mistral reasoning models
+
+Models that think before they answer (Magistral, Mistral Medium 3.5, GLM
+on Mistral) send their reply as separate thinking and text pieces.
+[`get_reply()`](https://edubruell.github.io/tidyllm/reference/get_reply.md)
+now returns the text alone, streaming works, and the thinking is kept
+under `thinking` in the `api_specific` metadata. Streamed tool calls
+also survive servers that repeat an empty function name on later
+fragments of the same call.
+
+### Bug fixes
+
+- `openai(.stateful = TRUE)` sent only the first image of the last
+  message; it now sends all of them.
+- [`mistral()`](https://edubruell.github.io/tidyllm/reference/mistral.md)
+  batch results are parsed without flattening, and chunked replies are
+  joined into one string.
+- [`chat_completions()`](https://edubruell.github.io/tidyllm/reference/chat_completions_chat.md)
+  providers accept inline audio.
+
+### Documentation
+
+The classifier article no longer relies on a temperature of zero, which
+most current models reject. It now runs the model several times with a
+fixed answer schema, measures agreement, sends disagreements to a second
+review, validates against hand-checked labels and prices the run, and it
+ships the cached runs so the article builds without an API key. The Get
+Started article, the PDF questions, Shiny, video, local models and tools
+articles use current models and links.
+
 ## tidyllm 0.6.0
+
+CRAN release: 2026-09-08
 
 **tidyllm no longer has to block.** A script can fire a request and keep
 working, several prompts can run at once, and a Shiny app can stream

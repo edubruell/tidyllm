@@ -91,6 +91,47 @@
 <h3 id="streaming-is-no-longer-tied-to-http-0-7-0">Streaming is no longer tied to HTTP<a class="anchor" aria-label="anchor" href="#streaming-is-no-longer-tied-to-http-0-7-0"></a></h3>
 <p>The stream pump used to ask httr2 directly whether a connection was finished and how to close it. Those two questions now go through the provider, alongside the reader that was already there, which is what lets a stream come from a local process instead of an HTTP response. <code><a href="../reference/send_chat.html">send_chat()</a></code> likewise asks the provider how to start, rather than always building an httr2 promise. No behaviour changes for the twelve HTTP providers.</p>
 </div>
+<div class="section level3">
+<h3 id="provider_capabilities-what-each-provider-supports-0-7-0">
+<code>provider_capabilities()</code>: what each provider supports<a class="anchor" aria-label="anchor" href="#provider_capabilities-what-each-provider-supports-0-7-0"></a></h3>
+<p><code><a href="../reference/provider_capabilities.html">provider_capabilities()</a></code> returns a tibble of every verb a provider implements and the arguments of each verb, with each argument’s default (for <code>.model</code>, the provider’s default model) and the function that implements the verb. <code>provider_capabilities(claude(), .verb = "chat")</code> shows what <code>chat(claude())</code> accepts; <code>.what = "media"</code> shows which of image, pdf, audio, video and remote files each provider takes in a message. It reads the registry the verbs already use, so it cannot drift from the code.</p>
+<p>The attachment check in <code><a href="../reference/chat.html">chat()</a></code> now reads the same media registry instead of lists of provider names. <code><a href="../reference/send_chat.html">send_chat()</a></code> and <code><a href="../reference/parallel_chat.html">parallel_chat()</a></code> passed a provider call where that check expected a name, so a message with audio, video or a file failed there with an internal error; it is now checked like in <code><a href="../reference/chat.html">chat()</a></code>.</p>
+</div>
+<div class="section level3">
+<h3 id="perplexity-is-deprecated-0-7-0">Perplexity is deprecated<a class="anchor" aria-label="anchor" href="#perplexity-is-deprecated-0-7-0"></a></h3>
+<p><code><a href="../reference/perplexity.html">perplexity()</a></code> and the <code>perplexity_*()</code> functions warn since 0.7.0 and are removed in 0.8.0. The maintainer cannot test them against a funded account, and Perplexity is moving its Sonar models to a new Agent API. The same models are available as <code>openrouter(.model = "perplexity/sonar")</code> (also <code>perplexity/sonar-pro</code> and <code>perplexity/sonar-deep-research</code>), and <code><a href="../reference/websearch_tool.html">websearch_tool()</a></code> gives any provider web search.</p>
+</div>
+<div class="section level3">
+<h3 id="tools-without-arguments-0-7-0">Tools without arguments<a class="anchor" aria-label="anchor" href="#tools-without-arguments-0-7-0"></a></h3>
+<p>A tool with no arguments made <code><a href="../reference/claude.html">claude()</a></code> reject the whole request, because the empty argument list was sent as <code>[]</code> where the API needs <code><a href="https://rdrr.io/r/base/Paren.html" class="external-link">{}</a></code>. All three tool schema builders (Claude, OpenAI and the chat completions providers) now send <code><a href="https://rdrr.io/r/base/Paren.html" class="external-link">{}</a></code>. This also makes MCP servers usable: <code>mcptools::mcp_tools() |&gt; lapply(ellmer_tool)</code> hands their tools to any provider, and the <code>mcptools</code> helper tools that take no arguments no longer break Claude.</p>
+</div>
+<div class="section level3">
+<h3 id="capture_plot-no-longer-warns-0-7-0">
+<code>.capture_plot</code> no longer warns<a class="anchor" aria-label="anchor" href="#capture_plot-no-longer-warns-0-7-0"></a></h3>
+<p><code>llm_message(.capture_plot = TRUE)</code> shared a code path with the deprecated <code>.imagefile</code>, so it printed a warning that pointed to <code>.media = img(path)</code>, advice that cannot capture a plot. It now saves the current plot to a temporary PNG and attaches it as an <code><a href="../reference/img.html">img()</a></code> in the message’s media, with no warning.</p>
+</div>
+<div class="section level3">
+<h3 id="new-default-models-0-7-0">New default models<a class="anchor" aria-label="anchor" href="#new-default-models-0-7-0"></a></h3>
+<p>Several providers retired or replaced models over the summer, so the defaults moved.</p>
+<ul><li>
+<code><a href="../reference/claude.html">claude()</a></code> and <code><a href="../reference/send_claude_batch.html">send_claude_batch()</a></code> use <code>claude-sonnet-5-5</code>; <code><a href="../reference/openrouter.html">openrouter()</a></code> uses <code>anthropic/claude-sonnet-5.5</code>.</li>
+<li>
+<code><a href="../reference/openai.html">openai()</a></code>, <code><a href="../reference/send_openai_batch.html">send_openai_batch()</a></code> and the chat completions helpers use <code>gpt-6-luna</code>.</li>
+<li>
+<code><a href="../reference/gemini.html">gemini()</a></code> and <code><a href="../reference/send_gemini_batch.html">send_gemini_batch()</a></code> use <code>gemini-3.8-flash</code>.</li>
+<li>
+<code><a href="../reference/openai_deep_research.html">openai_deep_research()</a></code> uses <code>gpt-6-sol</code> with web search. OpenAI no longer accepts requests for <code>o3-deep-research</code> and <code>o4-mini-deep-research</code>.</li>
+<li>
+<code><a href="../reference/mistral.html">mistral()</a></code> uses <code>zai-glm-5-3</code>, Z.ai’s GLM 5.3 served by Mistral: a 1M-token context, tool use and structured output. Pass <code>.model = "mistral-large-latest"</code> for the previous default.</li>
+<li>
+<code><a href="../reference/voyage_rerank.html">voyage_rerank()</a></code> uses <code>rerank-3</code>.</li>
+<li>
+<code><a href="../reference/groq_transcribe.html">groq_transcribe()</a></code> used a text-to-speech model as its default; it now uses <code>whisper-large-v3</code>.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="mistral-reasoning-models-0-7-0">Mistral reasoning models<a class="anchor" aria-label="anchor" href="#mistral-reasoning-models-0-7-0"></a></h3>
+<p>Models that think before they answer (Magistral, Mistral Medium 3.5, GLM on Mistral) send their reply as separate thinking and text pieces. <code><a href="../reference/get_reply.html">get_reply()</a></code> now returns the text alone, streaming works, and the thinking is kept under <code>thinking</code> in the <code>api_specific</code> metadata. Streamed tool calls also survive servers that repeat an empty function name on later fragments of the same call.</p>
+</div>
 </div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.0" id="tidyllm-060">tidyllm 0.6.0<a class="anchor" aria-label="anchor" href="#tidyllm-060"></a></h2><p class="text-muted">CRAN release: 2026-09-08</p>

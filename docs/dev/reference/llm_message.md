@@ -70,8 +70,8 @@ llm_message(
 
 - .capture_plot:
 
-  Boolean to indicate whether a plot should be captured and attached as
-  an image (optional).
+  Boolean to indicate whether the current plot should be captured and
+  attached as an image, the same way as `.media = img(path)` (optional).
 
 - .f:
 

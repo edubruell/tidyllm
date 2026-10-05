@@ -239,6 +239,25 @@ llm_message("What are the latest developments in R package tooling?") |>
   chat(claude(), .tools = web_search)
 ```
 
+The same route works for tools served over the Model Context Protocol
+(MCP). The **mcptools** package reads your MCP server configuration and
+returns the servers’ tools as ellmer tools, which
+[`ellmer_tool()`](https://edubruell.github.io/tidyllm/dev/reference/ellmer_tool.md)
+converts:
+
+``` r
+
+mcp_tools <- mcptools::mcp_tools() |>
+  lapply(ellmer_tool)
+
+llm_message("Which files are in my Documents folder?") |>
+  chat(claude(), .tools = mcp_tools)
+```
+
+mcptools waits only a few seconds for each server to answer. A server
+that must first download itself, such as a first run of `npx -y`, can
+return no tools and no error, so start it once beforehand.
+
 ## Searching the Web
 
 Web search is the tool most people want first, and tidyllm ships one.

@@ -107,7 +107,7 @@ OpenRouter.</p>
 <h3 id="mixing-media-types">Mixing media types<a class="anchor" aria-label="anchor" href="#mixing-media-types"></a>
 </h3>
 <p>The <code>.media</code> list can contain any combination of types.
-Gemini handles mixed content most flexibly — you can send images, PDFs,
+Gemini handles mixed content most flexibly: you can send images, PDFs,
 audio, and video together in a single message. Here we ask a model to
 cross-reference a figure against the paper it came from:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
@@ -233,7 +233,7 @@ Claude Shannon and other early AI researchers.</p>
 <code class="sourceCode R"><span><span class="co"># Route to a Gemini model via OpenRouter</span></span>
 <span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Summarise this recording."</span>,</span>
 <span>            .media <span class="op">=</span> <span class="fu"><a href="../reference/audio_file.html">audio_file</a></span><span class="op">(</span><span class="st">"bosch_interview.mp3"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openrouter.html">openrouter</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"google/gemini-3.6-flash"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openrouter.html">openrouter</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"google/gemini-3.8-flash"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>Video works the same way:</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Give a two-sentence summary of what happens in this video."</span>,</span>

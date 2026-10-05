@@ -37,7 +37,7 @@ llm_message(
 
 \item{.textfile}{Path to a text file to be read and attached (optional).}
 
-\item{.capture_plot}{Boolean to indicate whether a plot should be captured and attached as an image (optional).}
+\item{.capture_plot}{Boolean to indicate whether the current plot should be captured and attached as an image, the same way as \code{.media = img(path)} (optional).}
 
 \item{.f}{An R function or an object coercible to a function via \code{rlang::as_function}, whose output should be captured and attached (optional).}
 }

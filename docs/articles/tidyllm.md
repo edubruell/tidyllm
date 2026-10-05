@@ -46,11 +46,17 @@ Sys.setenv(OPENAI_API_KEY = "your-key-here")
 | **Google Gemini** | `GOOGLE_API_KEY` | [Google AI Studio](https://aistudio.google.com/app/apikey) |
 | **Mistral** | `MISTRAL_API_KEY` | [Mistral Console](https://console.mistral.ai/api-keys/) |
 | **Groq** | `GROQ_API_KEY` | [Groq Console](https://console.groq.com/playground) |
-| **Perplexity** | `PERPLEXITY_API_KEY` | [Perplexity API Settings](https://www.perplexity.ai/settings/api) |
+| **Perplexity** (deprecated) | `PERPLEXITY_API_KEY` | [Perplexity API docs](https://docs.perplexity.ai/docs/getting-started/overview) |
 | **DeepSeek** | `DEEPSEEK_API_KEY` | [DeepSeek Platform](https://platform.deepseek.com/api_keys) |
-| **Voyage AI** | `VOYAGE_API_KEY` | [Voyage AI Dashboard](https://dashboard.voyageai.com/api-keys) |
+| **Voyage AI** | `VOYAGE_API_KEY` | [Voyage AI API key guide](https://docs.voyageai.com/docs/api-key-and-installation) |
 | **OpenRouter** | `OPENROUTER_API_KEY` | [OpenRouter Dashboard](https://openrouter.ai/keys) |
 | **Azure OpenAI** | `AZURE_OPENAI_API_KEY` | [Azure Portal](https://portal.azure.com/) |
+| **Tavily** (web search for [`websearch()`](https://edubruell.github.io/tidyllm/reference/websearch.md) and [`websearch_tool()`](https://edubruell.github.io/tidyllm/reference/websearch_tool.md)) | `TAVILY_API_KEY` | [Tavily](https://app.tavily.com) |
+| **SearXNG** (self-hosted web search for [`websearch()`](https://edubruell.github.io/tidyllm/reference/websearch.md) and [`websearch_tool()`](https://edubruell.github.io/tidyllm/reference/websearch_tool.md)) | `SEARXNG_SERVER` (the server address, not a key) | [SearXNG](https://docs.searxng.org) |
+
+[`claude_cli()`](https://edubruell.github.io/tidyllm/reference/claude_cli.md)
+needs no key: it runs the `claude` command line tool that is already
+installed and signed in on your machine.
 
 #### Running Local Models
 
@@ -130,16 +136,17 @@ All API interactions follow the **verb + provider** pattern:
 - **Providers** specify the API:
   [`openai()`](https://edubruell.github.io/tidyllm/reference/openai.md),
   [`claude()`](https://edubruell.github.io/tidyllm/reference/claude.md),
+  [`claude_cli()`](https://edubruell.github.io/tidyllm/reference/claude_cli.md),
   [`gemini()`](https://edubruell.github.io/tidyllm/reference/gemini.md),
   [`ollama()`](https://edubruell.github.io/tidyllm/reference/ollama.md),
   [`mistral()`](https://edubruell.github.io/tidyllm/reference/mistral.md),
   [`groq()`](https://edubruell.github.io/tidyllm/reference/groq.md),
-  [`perplexity()`](https://edubruell.github.io/tidyllm/reference/perplexity.md),
   [`deepseek()`](https://edubruell.github.io/tidyllm/reference/deepseek.md),
   [`voyage()`](https://edubruell.github.io/tidyllm/reference/voyage.md),
   [`openrouter()`](https://edubruell.github.io/tidyllm/reference/openrouter.md),
   [`llamacpp()`](https://edubruell.github.io/tidyllm/reference/llamacpp.md),
-  [`azure_openai()`](https://edubruell.github.io/tidyllm/reference/azure_openai.md)
+  [`azure_openai()`](https://edubruell.github.io/tidyllm/reference/azure_openai.md),
+  [`ellmer()`](https://edubruell.github.io/tidyllm/reference/ellmer.md)
 
 Provider-specific functions like
 [`openai_chat()`](https://edubruell.github.io/tidyllm/reference/openai_chat.md)
@@ -162,7 +169,7 @@ Italy.](picture.jpeg)
 # Single image
 image_description <- llm_message("Describe this picture. Can you guess where it was taken?",
                                   .media = img("picture.jpeg")) |>
-  chat(openai(.model = "gpt-5.6-terra"))
+  chat(openai(.model = "gpt-6-luna"))
 
 get_reply(image_description)
 ```
@@ -297,13 +304,6 @@ llm_message("Analyze this plot and data summary:",
             .f = ~{summary(mtcars)}) |>
   chat(claude())
 ```
-
-    ## Warning: The `.imagefile` argument of `llm_message()` is deprecated as of tidyllm 0.5.0.
-    ## ℹ Please use the `.media` argument instead.
-    ## ℹ Replace with .media = img(path).
-    ## This warning is displayed once per session.
-    ## Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
-    ## generated.
 
     ## Message History:
     ## system:
@@ -543,7 +543,7 @@ llm_message("Write a haiku about tidyllm.") |>
 
 # Provider-specific args in the provider
 llm_message("Hello") |>
-  chat(ollama(.ollama_server = "http://my-server:11434"), .temperature = 0)
+  chat(ollama(.ollama_server = Sys.getenv("OLLAMA_SERVER")), .temperature = 0)
 ```
 
 When an argument appears in both
@@ -554,6 +554,9 @@ precedence. If a common argument is not supported by the chosen
 provider,
 [`chat()`](https://edubruell.github.io/tidyllm/reference/chat.md) raises
 an error rather than silently ignoring it.
+[`provider_capabilities()`](https://edubruell.github.io/tidyllm/reference/provider_capabilities.md)
+(see “Checking What a Provider Supports” below) lists which arguments
+each provider accepts.
 
 ### Tool Use
 
@@ -594,6 +597,11 @@ When a tool is provided, the model can request its execution, tidyllm
 runs it in your R session, and the result is fed back automatically.
 Multi-turn tool loops (where the model makes several tool calls) are
 handled transparently.
+
+For provider-independent web search with
+[`websearch_tool()`](https://edubruell.github.io/tidyllm/reference/websearch_tool.md)
+and tools served over MCP, see the [tools
+article](https://edubruell.github.io/tidyllm/articles/tidyllm_tools.html).
 
 If you use **ellmer**, convert existing ellmer tool definitions with
 [`ellmer_tool()`](https://edubruell.github.io/tidyllm/reference/ellmer_tool.md):
@@ -695,7 +703,7 @@ poems <- purrr::map_chr(conversations, get_reply)
 and
 [`fetch_job()`](https://edubruell.github.io/tidyllm/reference/fetch_job.md)
 are type-dispatching aliases; they work on both batch objects and
-Perplexity research jobs (see
+background research jobs (see
 [`deep_research()`](https://edubruell.github.io/tidyllm/reference/deep_research.md)
 below).
 
@@ -703,24 +711,25 @@ below).
 
 For long-horizon research tasks,
 [`deep_research()`](https://edubruell.github.io/tidyllm/reference/deep_research.md)
-runs an extended web search and synthesis. Perplexity’s
-`sonar-deep-research` model is currently supported:
+runs an extended web search and synthesis. It is available for
+[`openai()`](https://edubruell.github.io/tidyllm/reference/openai.md),
+which runs the research with web search in the background and returns
+the finished report:
 
 ``` r
 
 # Blocking: waits for completion, returns an LLMMessage
-result <- llm_message("Compare Rust and Go for systems programming in 2025.") |>
-  deep_research(perplexity())
+result <- llm_message("Compare Rust and Go for systems programming in 2026.") |>
+  deep_research(openai())
 
 get_reply(result)
-get_metadata(result)$api_specific[[1]]$citations
 ```
 
 ``` r
 
 # Background mode: returns a job handle immediately
 job <- llm_message("Summarise recent EU AI Act developments.") |>
-  deep_research(perplexity(), .background = TRUE)
+  deep_research(openai(), .background = TRUE)
 
 check_job(job)           # poll status
 result <- fetch_job(job) # retrieve when complete
@@ -745,7 +754,7 @@ To stream into a user interface rather than the console, use
 [`send_chat()`](https://edubruell.github.io/tidyllm/reference/send_chat.md),
 which dispatches a request without blocking the session and reports each
 delta through `.on_chunk`. See the article on [using tidyllm in
-Shiny](https://edubruell.github.io/tidyllm/articles/articles/tidyllm_shiny.md),
+Shiny](https://edubruell.github.io/tidyllm/articles/tidyllm_shiny.html),
 and the example app it walks through:
 `tidyllm_example_app("model_explainer")`.
 
@@ -753,15 +762,17 @@ and the example app it walks through:
 
 | Provider | Strengths and tidyllm-specific features |
 |----|----|
-| [`openai()`](https://edubruell.github.io/tidyllm/reference/openai.md) | Top benchmark performance across coding, math, and reasoning; `o3`/`o4` reasoning models; built-in web search via [`openai_websearch()`](https://edubruell.github.io/tidyllm/reference/openai_websearch.md); Files API |
-| [`claude()`](https://edubruell.github.io/tidyllm/reference/claude.md) | Best-in-class coding (SWE-bench leader); `.thinking = TRUE` for extended reasoning; Files API for document workflows; batch |
+| [`openai()`](https://edubruell.github.io/tidyllm/reference/openai.md) | GPT-6 model line with `.thinking` effort levels; [`deep_research()`](https://edubruell.github.io/tidyllm/reference/deep_research.md); built-in web search via [`openai_websearch()`](https://edubruell.github.io/tidyllm/reference/openai_websearch.md); Files API |
+| [`claude()`](https://edubruell.github.io/tidyllm/reference/claude.md) | Strong at coding and long documents; `.thinking = TRUE` for extended reasoning; Files API for document workflows; batch |
 | [`gemini()`](https://edubruell.github.io/tidyllm/reference/gemini.md) | 1M-token context window; native image, audio, and video via `.media`; search grounding; `.thinking_budget` for reasoning; Files API; batch |
 | [`mistral()`](https://edubruell.github.io/tidyllm/reference/mistral.md) | EU-hosted, GDPR-friendly; Magistral reasoning models; Voxtral audio models (`.media = audio_file()`); embeddings; batch |
 | [`groq()`](https://edubruell.github.io/tidyllm/reference/groq.md) | Fastest available inference (300-1200 tokens/s); [`groq_transcribe()`](https://edubruell.github.io/tidyllm/reference/groq_transcribe.md) for Whisper audio; `.json_schema`; batch |
-| [`perplexity()`](https://edubruell.github.io/tidyllm/reference/perplexity.md) | Real-time web search with citations in metadata; [`deep_research()`](https://edubruell.github.io/tidyllm/reference/deep_research.md) for long-horizon research; search domain filter |
-| [`deepseek()`](https://edubruell.github.io/tidyllm/reference/deepseek.md) | Top math and reasoning benchmarks at very low cost; `.thinking = TRUE` auto-switches to `deepseek-reasoner` |
+| [`perplexity()`](https://edubruell.github.io/tidyllm/reference/perplexity.md) (deprecated since 0.7.0, removed in 0.8.0; use `openrouter(.model = "perplexity/sonar")`) | Real-time web search with citations in metadata; [`deep_research()`](https://edubruell.github.io/tidyllm/reference/deep_research.md) for long-horizon research; search domain filter |
+| [`deepseek()`](https://edubruell.github.io/tidyllm/reference/deepseek.md) | Top math and reasoning benchmarks at very low cost; `.thinking = TRUE` turns on thinking mode and returns the reasoning trace in metadata |
 | [`voyage()`](https://edubruell.github.io/tidyllm/reference/voyage.md) | State-of-the-art retrieval embeddings; [`voyage_rerank()`](https://edubruell.github.io/tidyllm/reference/voyage_rerank.md); multimodal embeddings (text + images); `.output_dimension` |
 | [`openrouter()`](https://edubruell.github.io/tidyllm/reference/openrouter.md) | 500+ models via one API key; audio and video support on Gemini, Qwen 3.6, and other multimodal routes; automatic fallback routing |
+| [`claude_cli()`](https://edubruell.github.io/tidyllm/reference/claude_cli.md) | Runs your own installed and signed-in `claude` command line tool; no API key, usage counts against the CLI’s plan; CLI tools are off unless you allow them with `.cli_tools` |
+| [`ellmer()`](https://edubruell.github.io/tidyllm/reference/ellmer.md) | Use any ellmer chat object as a tidyllm provider |
 | [`ollama()`](https://edubruell.github.io/tidyllm/reference/ollama.md) | Local models with full data privacy; no API costs; [`ollama_download_model()`](https://edubruell.github.io/tidyllm/reference/ollama_download_model.md) for model management |
 | [`llamacpp()`](https://edubruell.github.io/tidyllm/reference/llamacpp.md) | Often the most performant local inference stack; audio input with Ultravox, Qwen2.5-Omni, Qwen3-Omni, and Gemma 4 models; BNF grammar constraints; logprobs; [`llamacpp_rerank()`](https://edubruell.github.io/tidyllm/reference/llamacpp_rerank.md) |
 | [`azure_openai()`](https://edubruell.github.io/tidyllm/reference/azure_openai.md) | Enterprise Azure deployments of OpenAI models; batch support |
@@ -769,15 +780,45 @@ and the example app it walks through:
 For getting started with local models (Ollama and llama.cpp), see the
 Local Models article on the tidyllm website.
 
+#### Checking What a Provider Supports
+
+[`provider_capabilities()`](https://edubruell.github.io/tidyllm/reference/provider_capabilities.md)
+answers “can this provider do that?” without reading each help page.
+With a provider call it lists every verb the provider implements, each
+verb’s arguments, the default of each argument as R code, and the
+function (`fn`) whose help page documents it:
+
+``` r
+
+provider_capabilities(claude(), .verb = "chat")
+
+# Which providers accept .thinking, and for which verbs?
+provider_capabilities(.argument = ".thinking")
+
+# Default chat model of every provider
+provider_capabilities(.verb = "chat", .argument = ".model")
+
+# Which media types each provider takes in a message
+provider_capabilities(.what = "media")
+```
+
+The result is an ordinary tibble, so filter and reshape it as usual. An
+argument in the table means the provider’s function accepts it; an
+individual model can still reject a value, for example some reasoning
+effort levels. The attachment check in
+[`chat()`](https://edubruell.github.io/tidyllm/reference/chat.md) reads
+the same media table, so a message with audio sent to a provider that
+lists no audio support fails before any request is made.
+
 ### Setting a Default Provider
 
 Avoid specifying a provider on every call by setting options:
 
 ``` r
 
-options(tidyllm_chat_default   = openai(.model = "gpt-5.6-terra"))
+options(tidyllm_chat_default   = openai(.model = "gpt-6-luna"))
 options(tidyllm_embed_default  = ollama())
-options(tidyllm_sbatch_default = claude(.temperature = 0))
+options(tidyllm_sbatch_default = claude())
 options(tidyllm_cbatch_default = claude())
 options(tidyllm_fbatch_default = claude())
 options(tidyllm_lbatch_default = claude())

@@ -4,7 +4,7 @@
 [![CRAN Status](https://www.r-pkg.org/badges/version/tidyllm)](https://cran.r-project.org/package=tidyllm)
 
 
-**tidyllm** is an R package for working with large language model APIs in data analysis workflows. It supports **Anthropic Claude**, **OpenAI**, **Google Gemini**, **Mistral**, **Groq**, **DeepSeek**, **OpenRouter**, local models via **Ollama** and **llama.cpp**, and more — all through a single consistent interface.
+**tidyllm** is an R package for working with large language model APIs in data analysis workflows. It supports **Anthropic Claude**, **OpenAI**, **Google Gemini**, **Mistral**, **Groq**, **DeepSeek**, **OpenRouter**, local models via **Ollama** and **llama.cpp**, and more, all through a single consistent interface.
 
 ## Features
 
@@ -47,39 +47,29 @@ For more examples and advanced usage, see the [Get Started vignette](https://edu
 
 Please note: To use **tidyllm** you need either a local Ollama or llama.cpp installation, or an active API key for one of the supported cloud providers. See the [Get Started vignette](https://edubruell.github.io/tidyllm/articles/tidyllm.html) for setup instructions.
 
-## What's new in 0.5.0
+## What's new in 0.7.0
 
-**Unified media and files system.** All non-text content now attaches to messages, not to chat() call arguments:
+**Find out what a provider supports.** `provider_capabilities()` returns a tibble of the verbs, arguments and defaults each provider accepts, or, with `.what = "media"`, which media types it takes:
 
 ```r
-# Inline binary — works with any provider that supports the type
-llm_message("Transcribe this audio.", .media = audio_file("recording.mp3")) |>
-  chat(gemini())
-
-llm_message("Summarize this paper.", .media = pdf_file("paper.pdf")) |>
-  chat(claude())
-
-# Multiple images in one message
-llm_message("Compare these two charts.",
-            .media = list(img("chart_a.png"), img("chart_b.png"))) |>
-  chat(openai())
-
-# Provider Files API — upload once, reuse across requests
-report <- upload_file(claude(), .path = "annual_report.pdf")
-llm_message("What are the key risks?", .files = report) |>
-  chat(claude())
+provider_capabilities(.argument = ".thinking")
+provider_capabilities(.what = "media")
 ```
 
-Audio and video are supported by Gemini, OpenRouter (Gemini, Gemma 4, Qwen 3.6, and other models), Mistral (Voxtral), and llama.cpp (Ultravox, Gemma 4, Qwen2.5-Omni). The `.imagefile` and old provider-specific upload functions still work but now emit deprecation warnings.
-
-OpenAI now uses the Responses API (`POST /v1/responses`) with reasoning effort control, built-in web search, and background deep research:
+**Use your own Claude CLI.** `claude_cli()` runs the `claude` command line tool already installed and signed in on your machine. There is no API key, and the CLI's built-in tools are off unless you allow them with `.cli_tools`:
 
 ```r
-llm_message("What are the latest developments in fusion energy?") |>
-  chat(openai(), .tools = openai_websearch())
+llm_message("Explain what a tibble is in one sentence.") |>
+  chat(claude_cli())
+```
 
-llm_message("Write a detailed report on EU AI regulation.") |>
-  deep_research(openai())
+**Web search for any model.** `websearch_tool()` gives any model that supports tools a search tool, including local Ollama models. It uses Tavily (needs `TAVILY_API_KEY`) or a SearXNG server; `websearch()` runs the same search directly and returns a tibble:
+
+```r
+llm_message("What changed in the latest R release?") |>
+  chat(ollama(), .tools = websearch_tool())
+
+websearch("R release notes", .max_results = 3)
 ```
 
 Read the [Changelog](https://edubruell.github.io/tidyllm/news/) for the full list of changes.
@@ -98,13 +88,13 @@ Read the [Changelog](https://edubruell.github.io/tidyllm/news/) for the full lis
 
 ## Similar packages
 
-- [ellmer](https://ellmer.tidyverse.org/) is especially well-suited for asynchronous chats, chatbots in Shiny, and advanced tool-calling workflows. Its design philosophy differs from tidyllm: ellmer targets interactive agents while tidyllm targets data pipelines and batch operations.
+- [ellmer](https://ellmer.tidyverse.org/) keeps conversation state in objects and concentrates on chat providers, which suits interactive agents, chatbots in Shiny and tool-calling workflows. tidyllm keeps its verbs as stateless as possible, so they fit data pipelines and batch work, and it covers API features beyond chat, such as batch jobs, embeddings, file uploads and web search. The two packages work together: `chat(ellmer(.ellmer_chat = ...))` runs a tidyllm message through any ellmer chat object.
 - [rollama](https://jbgruber.github.io/rollama/) is purpose-built for the Ollama API with specialized model management features not currently in tidyllm.
 
 ## Contributing
 
-We welcome contributions! Feel free to open issues or submit pull requests on [GitHub](https://github.com/edubruell/tidyllm).
+Contributions are welcome. Open an issue or a pull request on [GitHub](https://github.com/edubruell/tidyllm).
 
 ## License
 
-This project is licensed under the MIT License — see the [LICENSE](https://opensource.org/licenses/MIT) file for details.
+This project is licensed under the MIT License; see the [LICENSE](https://opensource.org/licenses/MIT) file for details.

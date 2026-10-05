@@ -153,6 +153,101 @@ lets a stream come from a local process instead of an HTTP response.
 likewise asks the provider how to start, rather than always building an
 httr2 promise. No behaviour changes for the twelve HTTP providers.
 
+### `provider_capabilities()`: what each provider supports
+
+[`provider_capabilities()`](https://edubruell.github.io/tidyllm/dev/reference/provider_capabilities.md)
+returns a tibble of every verb a provider implements and the arguments
+of each verb, with each argument’s default (for `.model`, the provider’s
+default model) and the function that implements the verb.
+`provider_capabilities(claude(), .verb = "chat")` shows what
+`chat(claude())` accepts; `.what = "media"` shows which of image, pdf,
+audio, video and remote files each provider takes in a message. It reads
+the registry the verbs already use, so it cannot drift from the code.
+
+The attachment check in
+[`chat()`](https://edubruell.github.io/tidyllm/dev/reference/chat.md)
+now reads the same media registry instead of lists of provider names.
+[`send_chat()`](https://edubruell.github.io/tidyllm/dev/reference/send_chat.md)
+and
+[`parallel_chat()`](https://edubruell.github.io/tidyllm/dev/reference/parallel_chat.md)
+passed a provider call where that check expected a name, so a message
+with audio, video or a file failed there with an internal error; it is
+now checked like in
+[`chat()`](https://edubruell.github.io/tidyllm/dev/reference/chat.md).
+
+### Perplexity is deprecated
+
+[`perplexity()`](https://edubruell.github.io/tidyllm/dev/reference/perplexity.md)
+and the `perplexity_*()` functions warn since 0.7.0 and are removed in
+0.8.0. The maintainer cannot test them against a funded account, and
+Perplexity is moving its Sonar models to a new Agent API. The same
+models are available as `openrouter(.model = "perplexity/sonar")` (also
+`perplexity/sonar-pro` and `perplexity/sonar-deep-research`), and
+[`websearch_tool()`](https://edubruell.github.io/tidyllm/dev/reference/websearch_tool.md)
+gives any provider web search.
+
+### Tools without arguments
+
+A tool with no arguments made
+[`claude()`](https://edubruell.github.io/tidyllm/dev/reference/claude.md)
+reject the whole request, because the empty argument list was sent as
+`[]` where the API needs [`{}`](https://rdrr.io/r/base/Paren.html). All
+three tool schema builders (Claude, OpenAI and the chat completions
+providers) now send [`{}`](https://rdrr.io/r/base/Paren.html). This also
+makes MCP servers usable: `mcptools::mcp_tools() |> lapply(ellmer_tool)`
+hands their tools to any provider, and the `mcptools` helper tools that
+take no arguments no longer break Claude.
+
+### `.capture_plot` no longer warns
+
+`llm_message(.capture_plot = TRUE)` shared a code path with the
+deprecated `.imagefile`, so it printed a warning that pointed to
+`.media = img(path)`, advice that cannot capture a plot. It now saves
+the current plot to a temporary PNG and attaches it as an
+[`img()`](https://edubruell.github.io/tidyllm/dev/reference/img.md) in
+the message’s media, with no warning.
+
+### New default models
+
+Several providers retired or replaced models over the summer, so the
+defaults moved.
+
+- [`claude()`](https://edubruell.github.io/tidyllm/dev/reference/claude.md)
+  and
+  [`send_claude_batch()`](https://edubruell.github.io/tidyllm/dev/reference/send_claude_batch.md)
+  use `claude-sonnet-5-5`;
+  [`openrouter()`](https://edubruell.github.io/tidyllm/dev/reference/openrouter.md)
+  uses `anthropic/claude-sonnet-5.5`.
+- [`openai()`](https://edubruell.github.io/tidyllm/dev/reference/openai.md),
+  [`send_openai_batch()`](https://edubruell.github.io/tidyllm/dev/reference/send_openai_batch.md)
+  and the chat completions helpers use `gpt-6-luna`.
+- [`gemini()`](https://edubruell.github.io/tidyllm/dev/reference/gemini.md)
+  and
+  [`send_gemini_batch()`](https://edubruell.github.io/tidyllm/dev/reference/send_gemini_batch.md)
+  use `gemini-3.8-flash`.
+- [`openai_deep_research()`](https://edubruell.github.io/tidyllm/dev/reference/openai_deep_research.md)
+  uses `gpt-6-sol` with web search. OpenAI no longer accepts requests
+  for `o3-deep-research` and `o4-mini-deep-research`.
+- [`mistral()`](https://edubruell.github.io/tidyllm/dev/reference/mistral.md)
+  uses `zai-glm-5-3`, Z.ai’s GLM 5.3 served by Mistral: a 1M-token
+  context, tool use and structured output. Pass
+  `.model = "mistral-large-latest"` for the previous default.
+- [`voyage_rerank()`](https://edubruell.github.io/tidyllm/dev/reference/voyage_rerank.md)
+  uses `rerank-3`.
+- [`groq_transcribe()`](https://edubruell.github.io/tidyllm/dev/reference/groq_transcribe.md)
+  used a text-to-speech model as its default; it now uses
+  `whisper-large-v3`.
+
+### Mistral reasoning models
+
+Models that think before they answer (Magistral, Mistral Medium 3.5, GLM
+on Mistral) send their reply as separate thinking and text pieces.
+[`get_reply()`](https://edubruell.github.io/tidyllm/dev/reference/get_reply.md)
+now returns the text alone, streaming works, and the thinking is kept
+under `thinking` in the `api_specific` metadata. Streamed tool calls
+also survive servers that repeat an empty function name on later
+fragments of the same call.
+
 ## tidyllm 0.6.0
 
 CRAN release: 2026-09-08

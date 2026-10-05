@@ -36,9 +36,9 @@ claude_cli_chat(
 
 - .model:
 
-  Character; the model the CLI should use, for example "claude-sonnet-5"
-  or "claude-haiku-4-5-20251001". Default NULL uses whatever the CLI is
-  configured to use.
+  Character; the model the CLI should use, for example
+  "claude-sonnet-5-5" or "claude-haiku-4-5-20251001". Default NULL uses
+  whatever the CLI is configured to use.
 
 - .system_prompt_mode:
 

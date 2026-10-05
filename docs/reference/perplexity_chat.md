@@ -212,3 +212,10 @@ perplexity_chat(
 
 An updated `LLMMessage` object with the assistant's reply and metadata,
 including citations and search_results.
+
+## Deprecated
+
+Perplexity support is deprecated since tidyllm 0.7.0 and ends in 0.8.0.
+Use `openrouter(.model = "perplexity/sonar")` for the same models, or
+[`websearch_tool()`](https://edubruell.github.io/tidyllm/reference/websearch_tool.md)
+to give any provider web search.

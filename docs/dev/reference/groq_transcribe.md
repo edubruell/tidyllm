@@ -8,7 +8,7 @@ API for transcription.
 ``` r
 groq_transcribe(
   .audio_file,
-  .model = "playai-tts",
+  .model = "whisper-large-v3",
   .language = NULL,
   .prompt = NULL,
   .temperature = 0,

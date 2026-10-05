@@ -197,20 +197,22 @@ upgrading to Q8_0 on the 7B.
 
 Model size is measured in *parameters*, the numerical weights learned
 during training. More parameters generally means more capable, but also
-more memory required and slower inference. As of mid-2026, strong
+more memory required and slower inference. As of September 2026, strong
 open-weight families come from a range of labs:
 
 | Family | Lab | Sizes | Notes |
 |----|----|----|----|
-| **Qwen3.6** | Alibaba | 27B dense, 35B-A3B (MoE) | Flagship-level coding performance; Apache 2.0; supersedes Qwen3.5, tidyllm’s Ollama default |
-| **Gemma 4** | Google | 26B-A4B (MoE), 31B dense | 140+ languages, native audio/video input; Apache 2.0 |
-| **Llama 5** | Meta | 600B total (MoE) | 5M token context, matches frontier closed models; open weight |
-| **GLM-5.2** | Z.ai | 744B total / 40B active (MoE) | One of the first open weights to seriously rival Fable-tier coding quality |
-| **Kimi K3** | Moonshot AI | 2.8T total (MoE) | World’s largest open-weight model; weights land July 27, 2026 under a Modified MIT license; targets Fable/GPT-5.6-class coding |
-| **MiniMax M3** | MiniMax | large MoE | Near-frontier quality at a fraction of proprietary API cost |
-| **DeepSeek V4 Pro** | DeepSeek | 1.6T total / 49B active (MoE) | 1M context; now MIT licensed, up from DeepSeek’s earlier custom terms |
-| **Mistral Medium 3.5** | Mistral AI | Open weight (undisclosed size) | Unified reasoning, vision, and coding; free for individuals and small teams |
-| **Inkling** | Thinking Machines | 975B total / 41B active (MoE) | First US entrant at this scale; Apache 2.0; built as a base for fine-tuning rather than top-end quality |
+| **Qwen3.8** | Alibaba | 27B dense | Apache 2.0; newest Qwen open weight (August 2026); `qwen3.8:27b` needs about 18 GB |
+| **Qwen3.6** | Alibaba | 27B dense, 35B-A3B (MoE) | Apache 2.0; no small sizes, so Qwen3.5 (0.8B to 9B) remains tidyllm’s Ollama default line |
+| **Gemma 4** | Google | E2B, E4B, 12B, 26B-A4B (MoE), 31B dense | 140+ languages, native audio/video input; the 12B (June 2026) has a 256K context and fits a 16 GB laptop; Apache 2.0 |
+| **GLM-5.3** | Z.ai | about 753B total (MoE); Flash: 320B total / 18B active | Successor to GLM-5.2 (August 2026); GLM-5.3 uses a custom license, GLM-5.3-Flash is MIT with a 1M context |
+| **Muse Glimmer** | Meta | 30B dense | Apache 2.0; multimodal (text and image), 131K context, runs on a single 24 GB GPU (August 2026); Meta’s larger Muse Spark models are closed |
+| **Kimi K3** | Moonshot AI | 2.8T total / 104B active (MoE) | Largest open-weight model; weights released July 26, 2026 under a custom Kimi K3 License that requires a deal for hosted services above \$20M a year |
+| **MiniMax M3** | MiniMax | about 428B total / 23B active (MoE) | 1M context, multimodal; custom MiniMax Community License |
+| **DeepSeek V4 Pro** | DeepSeek | 1.6T total / 49B active (MoE) | 1M context; MIT license. V4.1 Flash (September 2026) is a cheaper MIT-licensed sibling |
+| **Mistral Medium 3.5** | Mistral AI | 128B dense | 256K context, reasoning, vision and coding in one model; modified MIT, free below \$20M monthly revenue |
+| **Granite 4.2** | IBM | 3B, 8B, 30B | Apache 2.0, 128K context, thinking mode; `granite4.2:3b` and `:8b` run on modest laptops |
+| **Inkling** | Thinking Machines | 975B total / 41B active (MoE) | First US entrant at this scale; 1M context; built as a base for fine-tuning rather than top-end quality |
 
 Several of these are *Mixture-of-Experts* (MoE) models. Instead of
 activating the entire network for every word, MoE models route each step
@@ -228,7 +230,7 @@ Before investing in hardware or reserving compute time, test the model
 via a cloud API first to confirm it works for your task.
 
 [OpenRouter](https://openrouter.ai) provides a single API key for
-hundreds of models, including the Qwen, Mistral, Llama, Kimi, Gemma, and
+hundreds of models, including the Qwen, Mistral, Kimi, Gemma, GLM, and
 MiniMax families. Because tidyllm uses the same verb-and-provider
 pattern for every provider, switching between candidates requires only
 changing the `.model` argument:

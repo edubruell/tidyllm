@@ -198,7 +198,7 @@ mcptools waits only a few seconds for each server to answer. A server that must 
 
 ## Searching the Web
 
-Web search is the tool most people want first, and tidyllm ships one. `websearch_tool()` lets any model that supports tools search the web while it answers, including local models through `ollama()` that have no web access of their own. The search runs through [Tavily](https://tavily.com), which needs a `TAVILY_API_KEY`; the free plan gives 1,000 credits a month without a credit card, and a basic search costs one.
+Web search is the tool most people want first, and tidyllm ships one. `websearch_tool()` lets any model that supports tools search the web while it answers, including local models through `ollama()` that have no web access of their own. The search runs through [Tavily](https://www.tavily.com/), which needs a `TAVILY_API_KEY`; the free plan gives 1,000 credits a month without a credit card, and a basic search costs one.
 
 ```{r websearch_tool, eval = FALSE}
 llm_message("What is the latest R release, and when did it come out?") |>

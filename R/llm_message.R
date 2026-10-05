@@ -12,7 +12,7 @@
 #' @param .imagefile Path to an image file to be attached (optional). Deprecated; use `.media = img(path)` instead.
 #' @param .pdf Path to a PDF file to be attached (optional). Deprecated; use `.media = pdf_file(path)` instead.
 #' @param .textfile Path to a text file to be read and attached (optional).
-#' @param .capture_plot Boolean to indicate whether a plot should be captured and attached as an image (optional).
+#' @param .capture_plot Boolean to indicate whether the current plot should be captured and attached as an image, the same way as `.media = img(path)` (optional).
 #' @param .f An R function or an object coercible to a function via `rlang::as_function`, whose output should be captured and attached (optional).
 #' @return Returns an updated or new LLMMessage object.
 #' @importFrom jsonlite toJSON
@@ -70,14 +70,15 @@ llm_message <- function(.llm = NULL,
     files_list <- if (S7_inherits(.files, tidyllm_file)) list(.files) else .files
   }
 
+  if (.capture_plot) {
+    plot_file <- tempfile(fileext = ".png")
+    dev.copy(png, filename = plot_file)
+    dev.off()
+    media_list <- c(media_list, list(img(plot_file)))
+  }
+
   # Handle .imagefile (deprecated)
-  if (!is.null(.imagefile) || .capture_plot) {
-    if (.capture_plot) {
-      plot_file <- tempfile(fileext = ".png")
-      dev.copy(png, filename = plot_file)
-      dev.off()
-      .imagefile <- plot_file
-    }
+  if (!is.null(.imagefile)) {
     lifecycle::deprecate_warn("0.5.0", "llm_message(.imagefile=)", "llm_message(.media=)",
       details = "Replace with .media = img(path).")
     media_list <- c(media_list, list(img(.imagefile)))

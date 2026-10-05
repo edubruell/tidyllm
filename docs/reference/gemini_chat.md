@@ -7,7 +7,7 @@ Send LLMMessage to Gemini API
 ``` r
 gemini_chat(
   .llm,
-  .model = "gemini-3.6-flash",
+  .model = "gemini-3.8-flash",
   .fileid = NULL,
   .temperature = NULL,
   .max_output_tokens = NULL,
@@ -98,7 +98,7 @@ gemini_chat(
 - .thinking_budget:
 
   Token budget for internal reasoning (default: NULL). Works with
-  `gemini-3.6-flash` and `gemini-3.1-pro`.
+  `gemini-3.8-flash` and `gemini-3.1-pro`.
 
 - .timeout:
 

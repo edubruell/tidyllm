@@ -329,7 +329,14 @@ management.
 - [`send_ollama_batch()`](https://edubruell.github.io/tidyllm/dev/reference/send_ollama_batch.md)
   : Send a Batch of Messages to Ollama API
 
-## Perplexity-Specific Functions
+## Provider Capabilities
+
+Find out which verbs, arguments and media types each provider supports.
+
+- [`provider_capabilities()`](https://edubruell.github.io/tidyllm/dev/reference/provider_capabilities.md)
+  : What each provider supports
+
+## Perplexity-Specific Functions (deprecated)
 
 Functions for Perplexity AI chat and asynchronous deep research.
 

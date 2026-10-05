@@ -15,7 +15,7 @@ library(dplyr)
 
 Running large language models locally has become a practical option for researchers. Modern small models handle most annotation, extraction, and classification tasks that previously required a paid cloud API, while keeping data entirely on your machine. The three concrete advantages are: **privacy**, sensitive data such as patient records, survey responses, or proprietary documents never leaves your infrastructure; **cost at scale**, once a model is running there are no per-request charges, so annotating millions of documents is essentially free; and **reproducibility**, a saved model file produces identical outputs indefinitely, whereas cloud API models are updated or retired without notice.
 
-This article walks through two local inference tools that tidyllm supports: [Ollama](https://ollama.com/), which prioritises ease of setup, and [llama.cpp](https://github.com/ggerganov/llama.cpp), which exposes more control for advanced workflows. It also covers how to use [OpenRouter](https://openrouter.ai/) to test open-source models via a cloud API before committing to running them locally.
+This article walks through two local inference tools that tidyllm supports: [Ollama](https://ollama.com/), which prioritises ease of setup, and [llama.cpp](https://github.com/ggml-org/llama.cpp), which exposes more control for advanced workflows. It also covers how to use [OpenRouter](https://openrouter.ai/) to test open-source models via a cloud API before committing to running them locally.
 
 ## Ollama
 
@@ -121,7 +121,7 @@ The open-source landscape moves fast enough that a model recommended a few month
 
 ### Where to look
 
-**[Chatbot Arena](https://lmarena.ai)** is the most reliable signal for general instruction-following quality. Visitors vote on blind pairwise comparisons between randomly assigned models, using their own prompts. Because models cannot overfit to the prompts, the resulting rankings reflect what people actually prefer. It is the best single answer to "which model should I try first?"
+**[Chatbot Arena](https://arena.ai/)** is the most reliable signal for general instruction-following quality. Visitors vote on blind pairwise comparisons between randomly assigned models, using their own prompts. Because models cannot overfit to the prompts, the resulting rankings reflect what people actually prefer. It is the best single answer to "which model should I try first?"
 
 **[Hugging Face Open LLM Leaderboard](https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard)** tracks automated test scores across a range of academic benchmarks. Useful for filtering clearly weak models and spotting improvements between versions; less reliable as a final verdict because scores can be inflated by training specifically for these tests.
 
@@ -236,7 +236,7 @@ Ollama is built on top of llama.cpp and covers most common use cases well. Going
 brew install llama.cpp
 ```
 
-On Linux, build from source or use a pre-built release from the [llama.cpp GitHub releases page](https://github.com/ggerganov/llama.cpp/releases). On Windows, pre-built binaries are available from the same page; pick the variant that matches your hardware (GPU-accelerated with CUDA for Nvidia or Vulkan for AMD/Intel, or CPU-only if you have no dedicated GPU).
+On Linux, build from source or use a pre-built release from the [llama.cpp GitHub releases page](https://github.com/ggml-org/llama.cpp/releases). On Windows, pre-built binaries are available from the same page; pick the variant that matches your hardware (GPU-accelerated with CUDA for Nvidia or Vulkan for AMD/Intel, or CPU-only if you have no dedicated GPU).
 
 **Starting a server.** Unlike Ollama, llama.cpp does not manage models for you: you point it at a GGUF file on disk and it serves that model until you stop the process. The server command is `llama-server`:
 

@@ -318,6 +318,20 @@ and can be passed directly to <code><a href="../reference/chat.html">chat()</a><
 <span></span>
 <span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"What are the latest developments in R package tooling?"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span>, .tools <span class="op">=</span> <span class="va">web_search</span><span class="op">)</span></span></code></pre></div>
+<p>The same route works for tools served over the Model Context Protocol
+(MCP). The <strong>mcptools</strong> package reads your MCP server
+configuration and returns the servers’ tools as ellmer tools, which
+<code><a href="../reference/ellmer_tool.html">ellmer_tool()</a></code> converts:</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mcp_tools</span> <span class="op">&lt;-</span> <span class="fu">mcptools</span><span class="fu">::</span><span class="fu"><a href="https://posit-dev.github.io/mcptools/reference/client.html" class="external-link">mcp_tools</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">ellmer_tool</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Which files are in my Documents folder?"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span>, .tools <span class="op">=</span> <span class="va">mcp_tools</span><span class="op">)</span></span></code></pre></div>
+<p>mcptools waits only a few seconds for each server to answer. A server
+that must first download itself, such as a first run of
+<code>npx -y</code>, can return no tools and no error, so start it once
+beforehand.</p>
 </div>
 <div class="section level2">
 <h2 id="searching-the-web">Searching the Web<a class="anchor" aria-label="anchor" href="#searching-the-web"></a>
@@ -329,7 +343,7 @@ the web while it answers, including local models through
 runs through <a href="https://tavily.com" class="external-link">Tavily</a>, which needs a
 <code>TAVILY_API_KEY</code>; the free plan gives 1,000 credits a month
 without a credit card, and a basic search costs one.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"What is the latest R release, and when did it come out?"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span>, .tools <span class="op">=</span> <span class="fu"><a href="../reference/websearch_tool.html">websearch_tool</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Message History:</span></span>
@@ -356,7 +370,7 @@ back, whether the full page text is included and how long it may be are
 fixed when you create the tool, so a model cannot run up your search
 bill. Tavily’s own options pass through, for example to search only
 recent news:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">news_search</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/websearch_tool.html">websearch_tool</a></span><span class="op">(</span>.max_results <span class="op">=</span> <span class="fl">8</span>, topic <span class="op">=</span> <span class="st">"news"</span>, time_range <span class="op">=</span> <span class="st">"week"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Summarise this week's news on EU AI regulation."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -370,7 +384,7 @@ that collects results from Google, Brave and others. Its
 <code>search: formats:</code>, and for a server only you use,
 <code>server: limiter: false</code> stops it from blocking repeated
 searches. Then point the tool at it:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Sys.setenv.html" class="external-link">Sys.setenv</a></span><span class="op">(</span>SEARXNG_SERVER <span class="op">=</span> <span class="st">"http://localhost:8888"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"What is the latest R release, and when did it come out?"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -380,7 +394,7 @@ searches. Then point the tool at it:</p>
 data, <code><a href="../reference/websearch.html">websearch()</a></code> runs the same search directly and returns
 a tibble. It takes the same arguments as
 <code><a href="../reference/websearch_tool.html">websearch_tool()</a></code>:</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/websearch.html">websearch</a></span><span class="op">(</span><span class="st">"R 4.5 release"</span>, .max_results <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 3 × 6</span></span></span>
 <span><span class="co">##   query         title                             url   published  snippet text </span></span>
@@ -402,7 +416,7 @@ function, returns the result, and the model decides whether another call
 is needed before it can answer.</p>
 <p>The <code>.max_tool_rounds</code> argument (default <code>10</code>)
 caps the number of rounds to prevent runaway loops:</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">get_country_capital</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">country</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">capitals</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
 <span>    France  <span class="op">=</span> <span class="st">"Paris"</span>,</span>
@@ -462,7 +476,7 @@ lets the model choose which one to call at each step.</p>
 waiting for any results. tidyllm executes all of them and returns all
 results together, which reduces the number of API round-trips for
 independent lookups:</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">get_weather</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">city</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">weather</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
 <span>    Paris  <span class="op">=</span> <span class="st">"15°C, partly cloudy"</span>,</span>

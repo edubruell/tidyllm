@@ -1,16 +1,18 @@
 # Submit a Deep Research Request to OpenAI
 
-Sends a research request to OpenAI using the deep research models
-(`o3-deep-research` or `o4-mini-deep-research`) via the Responses API
-with `background: true`. The model autonomously searches the web and
-synthesises a long-form answer, which can take 5-30 minutes.
+Sends a research request to OpenAI via the Responses API with
+`background: true` and the web search tool. The model autonomously
+searches the web and synthesises a long-form answer, which can take 5-30
+minutes. OpenAI has retired its dedicated deep research models
+(`o3-deep-research`, `o4-mini-deep-research`); a GPT-6 model with web
+search does the job now.
 
 ## Usage
 
 ``` r
 openai_deep_research(
   .llm,
-  .model = "o4-mini-deep-research",
+  .model = "gpt-6-sol",
   .background = FALSE,
   .reasoning_effort = "medium",
   .json_schema = NULL,
@@ -28,7 +30,7 @@ openai_deep_research(
 
 - .model:
 
-  The deep research model to use (default: `"o4-mini-deep-research"`).
+  The model to use (default: `"gpt-6-sol"`).
 
 - .background:
 

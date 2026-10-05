@@ -37,6 +37,8 @@
 <url><loc>https://edubruell.github.io/tidyllm/reference/check_openai_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/claude.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/claude_chat.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/claude_cli.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/claude_cli_chat.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/claude_delete_file.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/claude_file_metadata.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/claude_list_files.html</loc></url>
@@ -136,6 +138,7 @@
 <url><loc>https://edubruell.github.io/tidyllm/reference/perplexity_check_research.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/perplexity_deep_research.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/perplexity_fetch_research.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/provider_capabilities.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/rate_limit_info.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/send_azure_openai_batch.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/send_batch.html</loc></url>
@@ -155,5 +158,7 @@
 <url><loc>https://edubruell.github.io/tidyllm/reference/voyage.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/voyage_embedding.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/voyage_rerank.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/websearch.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/websearch_tool.html</loc></url>
 </urlset>
 

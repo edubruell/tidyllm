@@ -8,7 +8,7 @@ for asynchronous processing.
 ``` r
 send_claude_batch(
   .llms,
-  .model = "claude-sonnet-5",
+  .model = "claude-sonnet-5-5",
   .max_tokens = 1024,
   .temperature = NULL,
   .top_k = NULL,
@@ -38,7 +38,7 @@ send_claude_batch(
 - .model:
 
   Character string specifying the Claude model version (default:
-  "claude-sonnet-5").
+  "claude-sonnet-5-5").
 
 - .max_tokens:
 

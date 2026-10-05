@@ -1,8 +1,9 @@
-# tidyllm 0.7.0 (development version)
+# tidyllm 0.7.0
 
-Work in progress. This section covers the release's first two features: a
-provider that talks to a locally installed Claude CLI, with the transport work it
-needed, and a web search tool that works with every provider.
+This release adds a provider that talks to a locally installed Claude CLI, a web
+search tool that works with every provider, and `provider_capabilities()` to see what
+each provider accepts. It also moves the default models to the autumn 2026 lineup and
+rewrites the classifier article for models that no longer accept a temperature.
 
 ## `claude_cli()`: chat through the Claude CLI you already have
 
@@ -151,6 +152,13 @@ argument list was sent as `[]` where the API needs `{}`. All three tool schema b
 servers usable: `mcptools::mcp_tools() |> lapply(ellmer_tool)` hands their tools to any
 provider, and the `mcptools` helper tools that take no arguments no longer break Claude.
 
+## `.capture_plot` no longer warns
+
+`llm_message(.capture_plot = TRUE)` shared a code path with the deprecated
+`.imagefile`, so it printed a warning that pointed to `.media = img(path)`, advice
+that cannot capture a plot. It now saves the current plot to a temporary PNG and
+attaches it as an `img()` in the message's media, with no warning.
+
 ## New default models
 
 Several providers retired or replaced models over the summer, so the defaults moved.
@@ -175,6 +183,23 @@ send their reply as separate thinking and text pieces. `get_reply()` now returns
 text alone, streaming works, and the thinking is kept under `thinking` in the
 `api_specific` metadata. Streamed tool calls also survive servers that repeat an empty
 function name on later fragments of the same call.
+
+## Bug fixes
+
+- `openai(.stateful = TRUE)` sent only the first image of the last message; it now
+  sends all of them.
+- `mistral()` batch results are parsed without flattening, and chunked replies are
+  joined into one string.
+- `chat_completions()` providers accept inline audio.
+
+## Documentation
+
+The classifier article no longer relies on a temperature of zero, which most current
+models reject. It now runs the model several times with a fixed answer schema, measures
+agreement, sends disagreements to a second review, validates against hand-checked labels
+and prices the run, and it ships the cached runs so the article builds without an API key.
+The Get Started article, the PDF questions, Shiny, video, local models and tools articles
+use current models and links.
 
 # tidyllm 0.6.0
 
