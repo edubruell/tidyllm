@@ -38,9 +38,9 @@ llm_message("Describe the difference between these two images.",
 ### Mixing media types
 
 The `.media` list can contain any combination of types. Gemini handles
-mixed content most flexibly — you can send images, PDFs, audio, and
-video together in a single message. Here we ask a model to
-cross-reference a figure against the paper it came from:
+mixed content most flexibly: you can send images, PDFs, audio, and video
+together in a single message. Here we ask a model to cross-reference a
+figure against the paper it came from:
 
 ``` r
 
@@ -195,7 +195,7 @@ llm_message("Summarise what is discussed in this recording.",
 # Route to a Gemini model via OpenRouter
 llm_message("Summarise this recording.",
             .media = audio_file("bosch_interview.mp3")) |>
-  chat(openrouter(.model = "google/gemini-2.5-flash"))
+  chat(openrouter(.model = "google/gemini-3.8-flash"))
 ```
 
 Video works the same way:

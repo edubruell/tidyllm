@@ -828,5 +828,6 @@ ollama <- create_provider_function(
   build = ollama_build_chat_request,
   embed = ollama_embedding,
   send_batch = send_ollama_batch,
-  list_models = ollama_list_models   
+  list_models = ollama_list_models,
+  .media = c("image")
 )

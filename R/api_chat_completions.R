@@ -323,7 +323,10 @@ method(assemble_stream_body, list(api_chat_completions, class_list)) <- function
       }
       calls[[key]]$id   <- call$id   %||% calls[[key]]$id
       calls[[key]]$type <- call$type %||% calls[[key]]$type
-      calls[[key]]$`function`$name <- call$`function`$name %||% calls[[key]]$`function`$name
+      fragment_name <- call$`function`$name
+      if (!is.null(fragment_name) && nzchar(fragment_name)) {
+        calls[[key]]$`function`$name <- fragment_name
+      }
       calls[[key]]$`function`$arguments <-
         c(calls[[key]]$`function`$arguments, call$`function`$arguments %||% character())
     }
@@ -378,7 +381,7 @@ method(assemble_stream_body, list(api_chat_completions, class_list)) <- function
 prepare_chat_completions_request <- function(
     .llm,
     .api,
-    .model = "gpt-5.6-terra",
+    .model = "gpt-6-luna",
     .max_completion_tokens = NULL,
     .reasoning_effort = NULL,
     .frequency_penalty = NULL,
@@ -462,7 +465,7 @@ prepare_chat_completions_request <- function(
 #' This function sends a message history to the OpenAI Chat Completions API and returns the assistant's reply.
 #'
 #' @param .llm An `LLMMessage` object containing the conversation history.
-#' @param .model The identifier of the model to use (default: "gpt-5.6-terra").
+#' @param .model The identifier of the model to use (default: "gpt-6-luna").
 #' @param .max_completion_tokens An upper bound for the number of tokens that can be generated for a completion.
 #' @param .frequency_penalty Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency.
 #' @param .logit_bias A named list modifying the likelihood of specified tokens appearing in the completion.
@@ -493,7 +496,7 @@ prepare_chat_completions_request <- function(
 #' @noRd
 cc_chat <- function(
     .llm,
-    .model = "gpt-5.6-terra",
+    .model = "gpt-6-luna",
     .max_completion_tokens = NULL,
     .reasoning_effort = NULL,
     .frequency_penalty = NULL,
@@ -528,7 +531,7 @@ cc_chat <- function(
 #' @noRd
 cc_build_chat_request <- function(
     .llm,
-    .model = "gpt-5.6-terra",
+    .model = "gpt-6-luna",
     .max_completion_tokens = NULL,
     .reasoning_effort = NULL,
     .frequency_penalty = NULL,
@@ -760,7 +763,7 @@ openai_embedding <- function(.input,
 #' This function creates and submits a batch of messages to the OpenAI Batch API for asynchronous processing.
 #'
 #' @param .llms A list of LLMMessage objects containing conversation histories.
-#' @param .model Character string specifying the OpenAI model version (default: "gpt-5.6-terra").
+#' @param .model Character string specifying the OpenAI model version (default: "gpt-6-luna").
 #' @param .max_completion_tokens Integer specifying the maximum tokens per response (default: NULL).
 #' @param .reasoning_effort How long should reasoning models reason (can either be "low","medium" or "high")
 #' @param .frequency_penalty Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far.
@@ -783,7 +786,7 @@ openai_embedding <- function(.input,
 #' @return An updated and named list of `.llms` with identifiers that align with batch responses, including a `batch_id` attribute.
 #' @export
 send_openai_batch <- function(.llms,
-                              .model = "gpt-5.6-terra",
+                              .model = "gpt-6-luna",
                               .max_completion_tokens = NULL,
                               .reasoning_effort = NULL,
                               .frequency_penalty = NULL,
@@ -1439,5 +1442,6 @@ chat_completions_build_chat_request <- function(.llm,
 chat_completions <- create_provider_function(
   .name = "chat_completions",
   chat = chat_completions_chat,
-  build = chat_completions_build_chat_request
+  build = chat_completions_build_chat_request,
+  .media = c("image", "audio")
 )

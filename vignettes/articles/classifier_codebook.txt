@@ -1,0 +1,23 @@
+11 Management: directs people, budgets or operations; the job is mainly deciding and supervising, not doing the trade itself. Example: "Ops oversight".
+13 Business and Financial Operations: analysis, accounting, HR, purchasing, consulting. Example: "Handle construction budgets".
+15 Computer and Mathematical: software, IT systems, data analysis, statistics. Example: "Systems administrator".
+17 Architecture and Engineering: design and engineering of structures, machines and systems, and drafting.
+19 Life, Physical, and Social Science: research in natural or social science, lab work.
+21 Community and Social Service: counselling, social work, clergy.
+23 Legal: lawyers, paralegals, judges.
+25 Educational Instruction and Library: teachers, tutors, librarians, trainers.
+27 Arts, Design, Entertainment, Sports, and Media: artists, designers, performers, athletes, journalists.
+29 Healthcare Practitioners and Technical: doctors, nurses, therapists, technicians who diagnose or treat.
+31 Healthcare Support: aides, assistants and orderlies who support practitioners.
+33 Protective Service: police, fire, security, military guards.
+35 Food Preparation and Serving: cooks, servers, bartenders.
+37 Building and Grounds Cleaning and Maintenance: janitors, groundskeepers, cleaners. Example: "Oversee all cleaning operations" is still 37 unless the answer says managing a business.
+39 Personal Care and Service: hair, beauty, child care, fitness, funeral service. Example: "Hair dresser".
+41 Sales and Related: selling goods or services, cashiers, brokers.
+43 Office and Administrative Support: clerks, secretaries, mail handling, data entry. Example: "Sort and deliver mail".
+45 Farming, Fishing, and Forestry: crops, livestock, fishing, logging.
+47 Construction and Extraction: building trades, mining. Example: "Fine Carpentry", "Layin' down shingles".
+49 Installation, Maintenance, and Repair: fixing and installing equipment and vehicles. Example: "Bodyshop guy".
+51 Production: manufacturing, assembly, machine operation, craft production. Example: "Eyeglass makin'".
+53 Transportation and Material Moving: drivers, pilots, warehouse movers.
+99 Missing: the answer names no occupation, or is too vague to place (for example "Doin' the numbers", "stuff"). Prefer 99 over a guess.

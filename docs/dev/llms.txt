@@ -7,9 +7,9 @@ Status](https://www.r-pkg.org/badges/version/tidyllm)](https://cran.r-project.or
 
 **tidyllm** is an R package for working with large language model APIs
 in data analysis workflows. It supports **Anthropic Claude**,
-**OpenAI**, **Google Gemini**, **Mistral**, **Groq**, **Perplexity**,
-**DeepSeek**, **OpenRouter**, local models via **Ollama** and
-**llama.cpp**, and more — all through a single consistent interface.
+**OpenAI**, **Google Gemini**, **Mistral**, **Groq**, **DeepSeek**,
+**OpenRouter**, local models via **Ollama** and **llama.cpp**, and more,
+all through a single consistent interface.
 
 ## Features
 
@@ -67,46 +67,45 @@ cloud providers. See the [Get Started
 vignette](https://edubruell.github.io/tidyllm/articles/tidyllm.html) for
 setup instructions.
 
-## What’s new in 0.5.0
+## What’s new in 0.7.0
 
-**Unified media and files system.** All non-text content now attaches to
-messages, not to chat() call arguments:
+**Find out what a provider supports.**
+[`provider_capabilities()`](https://edubruell.github.io/tidyllm/dev/reference/provider_capabilities.md)
+returns a tibble of the verbs, arguments and defaults each provider
+accepts, or, with `.what = "media"`, which media types it takes:
 
 ``` r
 
-# Inline binary — works with any provider that supports the type
-llm_message("Transcribe this audio.", .media = audio_file("recording.mp3")) |>
-  chat(gemini())
-
-llm_message("Summarize this paper.", .media = pdf_file("paper.pdf")) |>
-  chat(claude())
-
-# Multiple images in one message
-llm_message("Compare these two charts.",
-            .media = list(img("chart_a.png"), img("chart_b.png"))) |>
-  chat(openai())
-
-# Provider Files API — upload once, reuse across requests
-report <- upload_file(claude(), .path = "annual_report.pdf")
-llm_message("What are the key risks?", .files = report) |>
-  chat(claude())
+provider_capabilities(.argument = ".thinking")
+provider_capabilities(.what = "media")
 ```
 
-Audio and video are supported by Gemini, OpenRouter (Gemini, Gemma 4,
-Qwen 3.6, and other models), Mistral (Voxtral), and llama.cpp (Ultravox,
-Gemma 4, Qwen2.5-Omni). The `.imagefile` and old provider-specific
-upload functions still work but now emit deprecation warnings.
-
-OpenAI now uses the Responses API (`POST /v1/responses`) with reasoning
-effort control, built-in web search, and background deep research:
+**Use your own Claude CLI.**
+[`claude_cli()`](https://edubruell.github.io/tidyllm/dev/reference/claude_cli.md)
+runs the `claude` command line tool already installed and signed in on
+your machine. There is no API key, and the CLI’s built-in tools are off
+unless you allow them with `.cli_tools`:
 
 ``` r
 
-llm_message("What are the latest developments in fusion energy?") |>
-  chat(openai(), .tools = openai_websearch())
+llm_message("Explain what a tibble is in one sentence.") |>
+  chat(claude_cli())
+```
 
-llm_message("Write a detailed report on EU AI regulation.") |>
-  deep_research(openai())
+**Web search for any model.**
+[`websearch_tool()`](https://edubruell.github.io/tidyllm/dev/reference/websearch_tool.md)
+gives any model that supports tools a search tool, including local
+Ollama models. It uses Tavily (needs `TAVILY_API_KEY`) or a SearXNG
+server;
+[`websearch()`](https://edubruell.github.io/tidyllm/dev/reference/websearch.md)
+runs the same search directly and returns a tibble:
+
+``` r
+
+llm_message("What changed in the latest R release?") |>
+  chat(ollama(), .tools = websearch_tool())
+
+websearch("R release notes", .max_results = 3)
 ```
 
 Read the [Changelog](https://edubruell.github.io/tidyllm/news/) for the
@@ -132,23 +131,26 @@ full list of changes.
 
 ## Similar packages
 
-- [ellmer](https://ellmer.tidyverse.org/) is especially well-suited for
-  asynchronous chats, chatbots in Shiny, and advanced tool-calling
-  workflows. Its design philosophy differs from tidyllm: ellmer targets
-  interactive agents while tidyllm targets data pipelines and batch
-  operations.
+- [ellmer](https://ellmer.tidyverse.org/) keeps conversation state in
+  objects and concentrates on chat providers, which suits interactive
+  agents, chatbots in Shiny and tool-calling workflows. tidyllm keeps
+  its verbs as stateless as possible, so they fit data pipelines and
+  batch work, and it covers API features beyond chat, such as batch
+  jobs, embeddings, file uploads and web search. The two packages work
+  together: `chat(ellmer(.ellmer_chat = ...))` runs a tidyllm message
+  through any ellmer chat object.
 - [rollama](https://jbgruber.github.io/rollama/) is purpose-built for
   the Ollama API with specialized model management features not
   currently in tidyllm.
 
 ## Contributing
 
-We welcome contributions! Feel free to open issues or submit pull
-requests on [GitHub](https://github.com/edubruell/tidyllm).
+Contributions are welcome. Open an issue or a pull request on
+[GitHub](https://github.com/edubruell/tidyllm).
 
 ## License
 
-This project is licensed under the MIT License — see the
+This project is licensed under the MIT License; see the
 [LICENSE](https://opensource.org/licenses/MIT) file for details.
 
 # Package index
@@ -186,14 +188,18 @@ provider-hosted files.
 
 - [`chat()`](https://edubruell.github.io/tidyllm/dev/reference/chat.md)
   : Chat with a Language Model
+- [`send_chat()`](https://edubruell.github.io/tidyllm/dev/reference/send_chat.md)
+  : Start a chat without waiting for it
+- [`parallel_chat()`](https://edubruell.github.io/tidyllm/dev/reference/parallel_chat.md)
+  : Send many chats at once
 - [`embed()`](https://edubruell.github.io/tidyllm/dev/reference/embed.md)
   : Generate text embeddings
 - [`deep_research()`](https://edubruell.github.io/tidyllm/dev/reference/deep_research.md)
   : Run Deep Research via a Provider
 - [`check_job()`](https://edubruell.github.io/tidyllm/dev/reference/check_job.md)
-  : Check the Status of a Batch or Research Job
+  : Check the Status of a Job
 - [`fetch_job()`](https://edubruell.github.io/tidyllm/dev/reference/fetch_job.md)
-  : Fetch Results from a Batch or Research Job
+  : Fetch the Results of a Job
 - [`send_batch()`](https://edubruell.github.io/tidyllm/dev/reference/send_batch.md)
   : Send a batch of messages to a batch API
 - [`check_batch()`](https://edubruell.github.io/tidyllm/dev/reference/check_batch.md)
@@ -213,6 +219,23 @@ provider-hosted files.
 - [`delete_file()`](https://edubruell.github.io/tidyllm/dev/reference/delete_file.md)
   : Delete a File from a Provider's File Store
 
+## Working with a Running Chat
+
+Accessors for a
+[`send_chat()`](https://edubruell.github.io/tidyllm/dev/reference/send_chat.md)
+job: the text so far, the deltas as a stream, and how to stop one.
+[`check_job()`](https://edubruell.github.io/tidyllm/dev/reference/check_job.md)
+and
+[`fetch_job()`](https://edubruell.github.io/tidyllm/dev/reference/fetch_job.md)
+above work on these jobs too.
+
+- [`get_partial()`](https://edubruell.github.io/tidyllm/dev/reference/get_partial.md)
+  : The text a running chat has produced so far
+- [`get_stream()`](https://edubruell.github.io/tidyllm/dev/reference/get_stream.md)
+  : A running chat's deltas, as a stream
+- [`cancel_job()`](https://edubruell.github.io/tidyllm/dev/reference/cancel_job.md)
+  : Stop a running chat
+
 ## Schemata, Tools, and Media
 
 Functions for JSON schemas, tool definitions, and media attachments.
@@ -230,6 +253,10 @@ Functions for JSON schemas, tool definitions, and media attachments.
   : Create a Tool Definition for tidyllm
 - [`ellmer_tool()`](https://edubruell.github.io/tidyllm/dev/reference/ellmer_tool.md)
   : Convert an ellmer Tool to a tidyllm TOOL
+- [`websearch_tool()`](https://edubruell.github.io/tidyllm/dev/reference/websearch_tool.md)
+  : Give a Model Web Search
+- [`websearch()`](https://edubruell.github.io/tidyllm/dev/reference/websearch.md)
+  : Search the Web
 - [`img()`](https://edubruell.github.io/tidyllm/dev/reference/img.md) :
   Create an Image Object
 - [`audio_file()`](https://edubruell.github.io/tidyllm/dev/reference/audio_file.md)
@@ -249,29 +276,56 @@ consistent interface — pass to
 etc.
 
 - [`openai()`](https://edubruell.github.io/tidyllm/dev/reference/openai.md)
-  : OpenAI Provider Function
+  :
+
+  The
+  [`openai()`](https://edubruell.github.io/tidyllm/dev/reference/openai.md)
+  function acts as an interface for interacting with the OpenAI API
+  through main `tidyllm` verbs such as
+  [`chat()`](https://edubruell.github.io/tidyllm/dev/reference/chat.md),
+  [`embed()`](https://edubruell.github.io/tidyllm/dev/reference/embed.md),
+  and
+  [`send_batch()`](https://edubruell.github.io/tidyllm/dev/reference/send_batch.md).
+  Chat uses the Responses API (`POST /v1/responses`); embeddings and
+  batch operations use the Chat Completions / Embeddings endpoints
+  unchanged.
+
 - [`claude()`](https://edubruell.github.io/tidyllm/dev/reference/claude.md)
   : Provider Function for Claude models on the Anthropic API
+
+- [`claude_cli()`](https://edubruell.github.io/tidyllm/dev/reference/claude_cli.md)
+  : Chat through a locally installed Claude CLI
+
 - [`gemini()`](https://edubruell.github.io/tidyllm/dev/reference/gemini.md)
   : Google Gemini Provider Function
+
 - [`groq()`](https://edubruell.github.io/tidyllm/dev/reference/groq.md)
   : Groq API Provider Function
+
 - [`mistral()`](https://edubruell.github.io/tidyllm/dev/reference/mistral.md)
   : Mistral Provider Function
+
 - [`ollama()`](https://edubruell.github.io/tidyllm/dev/reference/ollama.md)
   : Ollama API Provider Function
+
 - [`perplexity()`](https://edubruell.github.io/tidyllm/dev/reference/perplexity.md)
   : Perplexity Provider Function
+
 - [`deepseek()`](https://edubruell.github.io/tidyllm/dev/reference/deepseek.md)
   : Deepseek Provider Function
+
 - [`voyage()`](https://edubruell.github.io/tidyllm/dev/reference/voyage.md)
   : Voyage Provider Function
+
 - [`openrouter()`](https://edubruell.github.io/tidyllm/dev/reference/openrouter.md)
   : OpenRouter Provider Function
+
 - [`llamacpp()`](https://edubruell.github.io/tidyllm/dev/reference/llamacpp.md)
   : llama.cpp Provider Function
+
 - [`azure_openai()`](https://edubruell.github.io/tidyllm/dev/reference/azure_openai.md)
   : Azure OpenAI Endpoint Provider Function
+
 - [`chat_completions_chat()`](https://edubruell.github.io/tidyllm/dev/reference/chat_completions_chat.md)
   [`chat_completions()`](https://edubruell.github.io/tidyllm/dev/reference/chat_completions_chat.md)
   : Chat with any OpenAI-Compatible API Endpoint
@@ -343,6 +397,8 @@ management.
   : List Files in Claude API
 - [`claude_websearch()`](https://edubruell.github.io/tidyllm/dev/reference/claude_websearch.md)
   : Builtin Claude Web Search Tool
+- [`claude_cli_chat()`](https://edubruell.github.io/tidyllm/dev/reference/claude_cli_chat.md)
+  : Chat with Claude through your own installed Claude CLI
 
 ## Gemini-Specific Functions
 
@@ -428,7 +484,14 @@ management.
 - [`send_ollama_batch()`](https://edubruell.github.io/tidyllm/dev/reference/send_ollama_batch.md)
   : Send a Batch of Messages to Ollama API
 
-## Perplexity-Specific Functions
+## Provider Capabilities
+
+Find out which verbs, arguments and media types each provider supports.
+
+- [`provider_capabilities()`](https://edubruell.github.io/tidyllm/dev/reference/provider_capabilities.md)
+  : What each provider supports
+
+## Perplexity-Specific Functions (deprecated)
 
 Functions for Perplexity AI chat and asynchronous deep research.
 
@@ -531,6 +594,13 @@ Helpers for batch processing multi-page PDF documents.
 - [`pdf_page_batch()`](https://edubruell.github.io/tidyllm/dev/reference/pdf_page_batch.md)
   : Batch Process PDF into LLM Messages
 
+## Example Apps
+
+Runnable Shiny apps that ship with the package.
+
+- [`tidyllm_example_app()`](https://edubruell.github.io/tidyllm/dev/reference/tidyllm_example_app.md)
+  : Run a tidyllm example Shiny app
+
 ## Internals
 
 Core S7 class definitions at the heart of tidyllm.
@@ -548,6 +618,8 @@ Core S7 class definitions at the heart of tidyllm.
   tidyllm](https://edubruell.github.io/tidyllm/dev/articles/tidyllm_embed.md):
 - [Local Models with
   tidyllm](https://edubruell.github.io/tidyllm/dev/articles/tidyllm_local_models.md):
+- [Using tidyllm in
+  Shiny](https://edubruell.github.io/tidyllm/dev/articles/tidyllm_shiny.md):
 - [Using Tools with
   tidyllm](https://edubruell.github.io/tidyllm/dev/articles/tidyllm_tools.md):
 - [Working with Files and

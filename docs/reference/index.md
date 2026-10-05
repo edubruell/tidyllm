@@ -98,6 +98,10 @@ Functions for JSON schemas, tool definitions, and media attachments.
   : Create a Tool Definition for tidyllm
 - [`ellmer_tool()`](https://edubruell.github.io/tidyllm/reference/ellmer_tool.md)
   : Convert an ellmer Tool to a tidyllm TOOL
+- [`websearch_tool()`](https://edubruell.github.io/tidyllm/reference/websearch_tool.md)
+  : Give a Model Web Search
+- [`websearch()`](https://edubruell.github.io/tidyllm/reference/websearch.md)
+  : Search the Web
 - [`img()`](https://edubruell.github.io/tidyllm/reference/img.md) :
   Create an Image Object
 - [`audio_file()`](https://edubruell.github.io/tidyllm/reference/audio_file.md)
@@ -133,6 +137,9 @@ etc.
 
 - [`claude()`](https://edubruell.github.io/tidyllm/reference/claude.md)
   : Provider Function for Claude models on the Anthropic API
+
+- [`claude_cli()`](https://edubruell.github.io/tidyllm/reference/claude_cli.md)
+  : Chat through a locally installed Claude CLI
 
 - [`gemini()`](https://edubruell.github.io/tidyllm/reference/gemini.md)
   : Google Gemini Provider Function
@@ -235,6 +242,8 @@ management.
   : List Files in Claude API
 - [`claude_websearch()`](https://edubruell.github.io/tidyllm/reference/claude_websearch.md)
   : Builtin Claude Web Search Tool
+- [`claude_cli_chat()`](https://edubruell.github.io/tidyllm/reference/claude_cli_chat.md)
+  : Chat with Claude through your own installed Claude CLI
 
 ## Gemini-Specific Functions
 
@@ -320,7 +329,14 @@ management.
 - [`send_ollama_batch()`](https://edubruell.github.io/tidyllm/reference/send_ollama_batch.md)
   : Send a Batch of Messages to Ollama API
 
-## Perplexity-Specific Functions
+## Provider Capabilities
+
+Find out which verbs, arguments and media types each provider supports.
+
+- [`provider_capabilities()`](https://edubruell.github.io/tidyllm/reference/provider_capabilities.md)
+  : What each provider supports
+
+## Perplexity-Specific Functions (deprecated)
 
 Functions for Perplexity AI chat and asynchronous deep research.
 

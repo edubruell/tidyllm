@@ -54,6 +54,7 @@ test_that("builders return a tidyllm_chat_request with the fields finish needs",
 })
 
 test_that("every builder sets a mode the pipeline understands", {
+  withr::local_options(lifecycle_verbosity = "quiet")
   # An unrecognised mode silently reads as non-streaming, which would perform a
   # blocking request against a body that asked to stream and then run the tool
   # loop over a streamed response.
@@ -164,6 +165,7 @@ test_that("finish_chat_response appends the reply and metadata", {
 })
 
 test_that("finish_chat_response folds perplexity search results into metadata", {
+  withr::local_options(lifecycle_verbosity = "quiet")
   built <- tidyllm:::perplexity_build_chat_request(llm_message("hi"), .dry_run = TRUE)
   expect_false(is.null(built$meta_fn))
 

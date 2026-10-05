@@ -216,5 +216,6 @@ deepseek_build_chat_request <- function(.llm,
 deepseek <- create_provider_function(
   .name = "deepseek",
   chat = deepseek_chat,
-  build = deepseek_build_chat_request
+  build = deepseek_build_chat_request,
+  .media = character()
 )

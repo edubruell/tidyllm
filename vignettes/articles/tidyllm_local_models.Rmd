@@ -15,7 +15,7 @@ library(dplyr)
 
 Running large language models locally has become a practical option for researchers. Modern small models handle most annotation, extraction, and classification tasks that previously required a paid cloud API, while keeping data entirely on your machine. The three concrete advantages are: **privacy**, sensitive data such as patient records, survey responses, or proprietary documents never leaves your infrastructure; **cost at scale**, once a model is running there are no per-request charges, so annotating millions of documents is essentially free; and **reproducibility**, a saved model file produces identical outputs indefinitely, whereas cloud API models are updated or retired without notice.
 
-This article walks through two local inference tools that tidyllm supports: [Ollama](https://ollama.com/), which prioritises ease of setup, and [llama.cpp](https://github.com/ggerganov/llama.cpp), which exposes more control for advanced workflows. It also covers how to use [OpenRouter](https://openrouter.ai/) to test open-source models via a cloud API before committing to running them locally.
+This article walks through two local inference tools that tidyllm supports: [Ollama](https://ollama.com/), which prioritises ease of setup, and [llama.cpp](https://github.com/ggml-org/llama.cpp), which exposes more control for advanced workflows. It also covers how to use [OpenRouter](https://openrouter.ai/) to test open-source models via a cloud API before committing to running them locally.
 
 ## Ollama
 
@@ -121,7 +121,7 @@ The open-source landscape moves fast enough that a model recommended a few month
 
 ### Where to look
 
-**[Chatbot Arena](https://lmarena.ai)** is the most reliable signal for general instruction-following quality. Visitors vote on blind pairwise comparisons between randomly assigned models, using their own prompts. Because models cannot overfit to the prompts, the resulting rankings reflect what people actually prefer. It is the best single answer to "which model should I try first?"
+**[Chatbot Arena](https://arena.ai/)** is the most reliable signal for general instruction-following quality. Visitors vote on blind pairwise comparisons between randomly assigned models, using their own prompts. Because models cannot overfit to the prompts, the resulting rankings reflect what people actually prefer. It is the best single answer to "which model should I try first?"
 
 **[Hugging Face Open LLM Leaderboard](https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard)** tracks automated test scores across a range of academic benchmarks. Useful for filtering clearly weak models and spotting improvements between versions; less reliable as a final verdict because scores can be inflated by training specifically for these tests.
 
@@ -144,19 +144,21 @@ For most research tasks, Q4_K_M on a model one size class larger than your first
 
 ### The current model landscape
 
-Model size is measured in *parameters*, the numerical weights learned during training. More parameters generally means more capable, but also more memory required and slower inference. As of mid-2026, strong open-weight families come from a range of labs:
+Model size is measured in *parameters*, the numerical weights learned during training. More parameters generally means more capable, but also more memory required and slower inference. As of September 2026, strong open-weight families come from a range of labs:
 
 | Family | Lab | Sizes | Notes |
 |--------|-----|-------|-------|
-| **Qwen3.6** | Alibaba | 27B dense, 35B-A3B (MoE) | Flagship-level coding performance; Apache 2.0; supersedes Qwen3.5, tidyllm's Ollama default |
-| **Gemma 4** | Google | 26B-A4B (MoE), 31B dense | 140+ languages, native audio/video input; Apache 2.0 |
-| **Llama 5** | Meta | 600B total (MoE) | 5M token context, matches frontier closed models; open weight |
-| **GLM-5.2** | Z.ai | 744B total / 40B active (MoE) | One of the first open weights to seriously rival Fable-tier coding quality |
-| **Kimi K3** | Moonshot AI | 2.8T total (MoE) | World's largest open-weight model; weights land July 27, 2026 under a Modified MIT license; targets Fable/GPT-5.6-class coding |
-| **MiniMax M3** | MiniMax | large MoE | Near-frontier quality at a fraction of proprietary API cost |
-| **DeepSeek V4 Pro** | DeepSeek | 1.6T total / 49B active (MoE) | 1M context; now MIT licensed, up from DeepSeek's earlier custom terms |
-| **Mistral Medium 3.5** | Mistral AI | Open weight (undisclosed size) | Unified reasoning, vision, and coding; free for individuals and small teams |
-| **Inkling** | Thinking Machines | 975B total / 41B active (MoE) | First US entrant at this scale; Apache 2.0; built as a base for fine-tuning rather than top-end quality |
+| **Qwen3.8** | Alibaba | 27B dense | Apache 2.0; newest Qwen open weight (August 2026); `qwen3.8:27b` needs about 18 GB |
+| **Qwen3.6** | Alibaba | 27B dense, 35B-A3B (MoE) | Apache 2.0; no small sizes, so Qwen3.5 (0.8B to 9B) remains tidyllm's Ollama default line |
+| **Gemma 4** | Google | E2B, E4B, 12B, 26B-A4B (MoE), 31B dense | 140+ languages, native audio/video input; the 12B (June 2026) has a 256K context and fits a 16 GB laptop; Apache 2.0 |
+| **GLM-5.3** | Z.ai | about 753B total (MoE); Flash: 320B total / 18B active | Successor to GLM-5.2 (August 2026); GLM-5.3 uses a custom license, GLM-5.3-Flash is MIT with a 1M context |
+| **Muse Glimmer** | Meta | 30B dense | Apache 2.0; multimodal (text and image), 131K context, runs on a single 24 GB GPU (August 2026); Meta's larger Muse Spark models are closed |
+| **Kimi K3** | Moonshot AI | 2.8T total / 104B active (MoE) | Largest open-weight model; weights released July 26, 2026 under a custom Kimi K3 License that requires a deal for hosted services above $20M a year |
+| **MiniMax M3** | MiniMax | about 428B total / 23B active (MoE) | 1M context, multimodal; custom MiniMax Community License |
+| **DeepSeek V4 Pro** | DeepSeek | 1.6T total / 49B active (MoE) | 1M context; MIT license. V4.1 Flash (September 2026) is a cheaper MIT-licensed sibling |
+| **Mistral Medium 3.5** | Mistral AI | 128B dense | 256K context, reasoning, vision and coding in one model; modified MIT, free below $20M monthly revenue |
+| **Granite 4.2** | IBM | 3B, 8B, 30B | Apache 2.0, 128K context, thinking mode; `granite4.2:3b` and `:8b` run on modest laptops |
+| **Inkling** | Thinking Machines | 975B total / 41B active (MoE) | First US entrant at this scale; 1M context; built as a base for fine-tuning rather than top-end quality |
 
 Several of these are *Mixture-of-Experts* (MoE) models. Instead of activating the entire network for every word, MoE models route each step through only a small subset of specialised sub-networks. This means the memory and speed cost depends on the *active* parameter count, not the total. In the table, notation like "35B-A3B" means 35 billion total parameters but only 3 billion active per step; it runs much more like a 3B model than a 35B one.
 
@@ -164,7 +166,7 @@ Several of these are *Mixture-of-Experts* (MoE) models. Instead of activating th
 
 Running a large model locally requires significant hardware: a 13B model at Q4_K_M needs around 10 GB of memory; a 70B model needs 40 GB or more. Before investing in hardware or reserving compute time, test the model via a cloud API first to confirm it works for your task.
 
-[OpenRouter](https://openrouter.ai) provides a single API key for hundreds of models, including the Qwen, Mistral, Llama, Kimi, Gemma, and MiniMax families. Because tidyllm uses the same verb-and-provider pattern for every provider, switching between candidates requires only changing the `.model` argument:
+[OpenRouter](https://openrouter.ai) provides a single API key for hundreds of models, including the Qwen, Mistral, Kimi, Gemma, GLM, and MiniMax families. Because tidyllm uses the same verb-and-provider pattern for every provider, switching between candidates requires only changing the `.model` argument:
 
 ```{r openrouter-pilot, eval=FALSE}
 prompt <- llm_message("Classify this job description into a one-sentence occupation label:
@@ -234,7 +236,7 @@ Ollama is built on top of llama.cpp and covers most common use cases well. Going
 brew install llama.cpp
 ```
 
-On Linux, build from source or use a pre-built release from the [llama.cpp GitHub releases page](https://github.com/ggerganov/llama.cpp/releases). On Windows, pre-built binaries are available from the same page; pick the variant that matches your hardware (GPU-accelerated with CUDA for Nvidia or Vulkan for AMD/Intel, or CPU-only if you have no dedicated GPU).
+On Linux, build from source or use a pre-built release from the [llama.cpp GitHub releases page](https://github.com/ggml-org/llama.cpp/releases). On Windows, pre-built binaries are available from the same page; pick the variant that matches your hardware (GPU-accelerated with CUDA for Nvidia or Vulkan for AMD/Intel, or CPU-only if you have no dedicated GPU).
 
 **Starting a server.** Unlike Ollama, llama.cpp does not manage models for you: you point it at a GGUF file on disk and it serves that model until you stop the process. The server command is `llama-server`:
 

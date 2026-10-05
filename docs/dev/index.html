@@ -29,7 +29,7 @@
 
     <a class="navbar-brand me-2" href="index.html">tidyllm</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.5.0.9000</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">0.7.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -46,6 +46,7 @@
 <li><a class="dropdown-item" href="articles/tidyllm_classifiers.html">Classifying Texts with tidyllm</a></li>
     <li><a class="dropdown-item" href="articles/tidyllm_embed.html">Embedding Models in tidyllm</a></li>
     <li><a class="dropdown-item" href="articles/tidyllm_local_models.html">Local Models with tidyllm</a></li>
+    <li><a class="dropdown-item" href="articles/tidyllm_shiny.html">Using tidyllm in Shiny</a></li>
     <li><a class="dropdown-item" href="articles/tidyllm_tools.html">Using Tools with tidyllm</a></li>
     <li><a class="dropdown-item" href="articles/tidyllm_video.html">Working with Files and Media</a></li>
     <li><a class="dropdown-item" href="articles/tidyllm-pdfquestions.html">Structured Question Answering from PDFs</a></li>
@@ -72,7 +73,7 @@
 </h1>
 </div>
 <p><a href="https://opensource.org/licenses/MIT" class="external-link"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a> <a href="https://cran.r-project.org/package=tidyllm" class="external-link"><img src="https://www.r-pkg.org/badges/version/tidyllm" alt="CRAN Status"></a></p>
-<p><strong>tidyllm</strong> is an R package for working with large language model APIs in data analysis workflows. It supports <strong>Anthropic Claude</strong>, <strong>OpenAI</strong>, <strong>Google Gemini</strong>, <strong>Mistral</strong>, <strong>Groq</strong>, <strong>Perplexity</strong>, <strong>DeepSeek</strong>, <strong>OpenRouter</strong>, local models via <strong>Ollama</strong> and <strong>llama.cpp</strong>, and more — all through a single consistent interface.</p>
+<p><strong>tidyllm</strong> is an R package for working with large language model APIs in data analysis workflows. It supports <strong>Anthropic Claude</strong>, <strong>OpenAI</strong>, <strong>Google Gemini</strong>, <strong>Mistral</strong>, <strong>Groq</strong>, <strong>DeepSeek</strong>, <strong>OpenRouter</strong>, local models via <strong>Ollama</strong> and <strong>llama.cpp</strong>, and more, all through a single consistent interface.</p>
 <div class="section level2">
 <h2 id="features">Features<a class="anchor" aria-label="anchor" href="#features"></a>
 </h2>
@@ -117,34 +118,22 @@
 <p>Please note: To use <strong>tidyllm</strong> you need either a local Ollama or llama.cpp installation, or an active API key for one of the supported cloud providers. See the <a href="https://edubruell.github.io/tidyllm/articles/tidyllm.html">Get Started vignette</a> for setup instructions.</p>
 </div>
 <div class="section level2">
-<h2 id="whats-new-in-050">What’s new in 0.5.0<a class="anchor" aria-label="anchor" href="#whats-new-in-050"></a>
+<h2 id="whats-new-in-070">What’s new in 0.7.0<a class="anchor" aria-label="anchor" href="#whats-new-in-070"></a>
 </h2>
-<p><strong>Unified media and files system.</strong> All non-text content now attaches to messages, not to chat() call arguments:</p>
+<p><strong>Find out what a provider supports.</strong> <code><a href="reference/provider_capabilities.html">provider_capabilities()</a></code> returns a tibble of the verbs, arguments and defaults each provider accepts, or, with <code>.what = "media"</code>, which media types it takes:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Inline binary — works with any provider that supports the type</span></span>
-<span><span class="fu"><a href="reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Transcribe this audio."</span>, .media <span class="op">=</span> <span class="fu"><a href="reference/audio_file.html">audio_file</a></span><span class="op">(</span><span class="st">"recording.mp3"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="reference/gemini.html">gemini</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Summarize this paper."</span>, .media <span class="op">=</span> <span class="fu"><a href="reference/pdf_file.html">pdf_file</a></span><span class="op">(</span><span class="st">"paper.pdf"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Multiple images in one message</span></span>
-<span><span class="fu"><a href="reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Compare these two charts."</span>,</span>
-<span>            .media <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="reference/img.html">img</a></span><span class="op">(</span><span class="st">"chart_a.png"</span><span class="op">)</span>, <span class="fu"><a href="reference/img.html">img</a></span><span class="op">(</span><span class="st">"chart_b.png"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="reference/openai.html">openai</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Provider Files API — upload once, reuse across requests</span></span>
-<span><span class="va">report</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/upload_file.html">upload_file</a></span><span class="op">(</span><span class="fu"><a href="reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span>, .path <span class="op">=</span> <span class="st">"annual_report.pdf"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"What are the key risks?"</span>, .files <span class="op">=</span> <span class="va">report</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p>Audio and video are supported by Gemini, OpenRouter (Gemini, Gemma 4, Qwen 3.6, and other models), Mistral (Voxtral), and llama.cpp (Ultravox, Gemma 4, Qwen2.5-Omni). The <code>.imagefile</code> and old provider-specific upload functions still work but now emit deprecation warnings.</p>
-<p>OpenAI now uses the Responses API (<code>POST /v1/responses</code>) with reasoning effort control, built-in web search, and background deep research:</p>
+<code class="sourceCode R"><span><span class="fu"><a href="reference/provider_capabilities.html">provider_capabilities</a></span><span class="op">(</span>.argument <span class="op">=</span> <span class="st">".thinking"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/provider_capabilities.html">provider_capabilities</a></span><span class="op">(</span>.what <span class="op">=</span> <span class="st">"media"</span><span class="op">)</span></span></code></pre></div>
+<p><strong>Use your own Claude CLI.</strong> <code><a href="reference/claude_cli.html">claude_cli()</a></code> runs the <code>claude</code> command line tool already installed and signed in on your machine. There is no API key, and the CLI’s built-in tools are off unless you allow them with <code>.cli_tools</code>:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"What are the latest developments in fusion energy?"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="reference/openai.html">openai</a></span><span class="op">(</span><span class="op">)</span>, .tools <span class="op">=</span> <span class="fu"><a href="reference/openai_websearch.html">openai_websearch</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Explain what a tibble is in one sentence."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="reference/claude_cli.html">claude_cli</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p><strong>Web search for any model.</strong> <code><a href="reference/websearch_tool.html">websearch_tool()</a></code> gives any model that supports tools a search tool, including local Ollama models. It uses Tavily (needs <code>TAVILY_API_KEY</code>) or a SearXNG server; <code><a href="reference/websearch.html">websearch()</a></code> runs the same search directly and returns a tibble:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"What changed in the latest R release?"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="reference/ollama.html">ollama</a></span><span class="op">(</span><span class="op">)</span>, .tools <span class="op">=</span> <span class="fu"><a href="reference/websearch_tool.html">websearch_tool</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Write a detailed report on EU AI regulation."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="reference/deep_research.html">deep_research</a></span><span class="op">(</span><span class="fu"><a href="reference/openai.html">openai</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="reference/websearch.html">websearch</a></span><span class="op">(</span><span class="st">"R release notes"</span>, .max_results <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
 <p>Read the <a href="https://edubruell.github.io/tidyllm/news/">Changelog</a> for the full list of changes.</p>
 </div>
 <div class="section level2">
@@ -170,7 +159,7 @@
 </h2>
 <ul>
 <li>
-<a href="https://ellmer.tidyverse.org/" class="external-link">ellmer</a> is especially well-suited for asynchronous chats, chatbots in Shiny, and advanced tool-calling workflows. Its design philosophy differs from tidyllm: ellmer targets interactive agents while tidyllm targets data pipelines and batch operations.</li>
+<a href="https://ellmer.tidyverse.org/" class="external-link">ellmer</a> keeps conversation state in objects and concentrates on chat providers, which suits interactive agents, chatbots in Shiny and tool-calling workflows. tidyllm keeps its verbs as stateless as possible, so they fit data pipelines and batch work, and it covers API features beyond chat, such as batch jobs, embeddings, file uploads and web search. The two packages work together: <code>chat(ellmer(.ellmer_chat = ...))</code> runs a tidyllm message through any ellmer chat object.</li>
 <li>
 <a href="https://jbgruber.github.io/rollama/" class="external-link">rollama</a> is purpose-built for the Ollama API with specialized model management features not currently in tidyllm.</li>
 </ul>
@@ -178,12 +167,12 @@
 <div class="section level2">
 <h2 id="contributing">Contributing<a class="anchor" aria-label="anchor" href="#contributing"></a>
 </h2>
-<p>We welcome contributions! Feel free to open issues or submit pull requests on <a href="https://github.com/edubruell/tidyllm" class="external-link">GitHub</a>.</p>
+<p>Contributions are welcome. Open an issue or a pull request on <a href="https://github.com/edubruell/tidyllm" class="external-link">GitHub</a>.</p>
 </div>
 <div class="section level2">
 <h2 id="license">License<a class="anchor" aria-label="anchor" href="#license"></a>
 </h2>
-<p>This project is licensed under the MIT License — see the <a href="https://opensource.org/licenses/MIT" class="external-link">LICENSE</a> file for details.</p>
+<p>This project is licensed under the MIT License; see the <a href="https://opensource.org/licenses/MIT" class="external-link">LICENSE</a> file for details.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">

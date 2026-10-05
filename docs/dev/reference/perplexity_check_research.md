@@ -31,3 +31,10 @@ perplexity_check_research(
 
 An updated `tidyllm_research_job` with a `$status` field and `$response`
 if completed.
+
+## Deprecated
+
+Perplexity support is deprecated since tidyllm 0.7.0 and ends in 0.8.0.
+Use `openrouter(.model = "perplexity/sonar")` for the same models, or
+[`websearch_tool()`](https://edubruell.github.io/tidyllm/dev/reference/websearch_tool.md)
+to give any provider web search.

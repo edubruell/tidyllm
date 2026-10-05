@@ -184,7 +184,7 @@ method(tools_to_api, list(api_openai, class_list)) <- function(.api, .tools) {
       description = tool@description,
       parameters  = add_no_extra_fields(list(
         type                 = "object",
-        properties           = purrr::map(tool@input_schema, field_to_param_schema),
+        properties           = tool_properties(tool),
         required             = as.list(names(tool@input_schema))
       )),
       strict      = TRUE
@@ -263,7 +263,7 @@ last_openai_response_id <- function(.llm) {
 
 prepare_responses_request <- function(.llm,
                                       .api,
-                                      .model         = "gpt-5.6-terra",
+                                      .model         = "gpt-6-luna",
                                       .max_output_tokens = NULL,
                                       .temperature   = NULL,
                                       .reasoning_effort = NULL,
@@ -318,7 +318,7 @@ prepare_responses_request <- function(.llm,
 #' and reasoning models (o-series) via `.reasoning_effort`.
 #'
 #' @param .llm An `LLMMessage` object containing the conversation history.
-#' @param .model The model identifier (default: `"gpt-5.6-terra"`).
+#' @param .model The model identifier (default: `"gpt-6-luna"`).
 #' @param .max_output_tokens Maximum tokens to generate (caps reasoning + completion).
 #' @param .temperature Sampling temperature (0-2).
 #' @param .seed Seed for deterministic sampling.
@@ -342,7 +342,7 @@ prepare_responses_request <- function(.llm,
 #' @export
 openai_chat <- function(
     .llm,
-    .model               = "gpt-5.6-terra",
+    .model               = "gpt-6-luna",
     .max_output_tokens   = NULL,
     .temperature         = NULL,
     .seed                = NULL,
@@ -367,7 +367,7 @@ openai_chat <- function(
 #' @noRd
 openai_build_chat_request <- function(
     .llm,
-    .model               = "gpt-5.6-terra",
+    .model               = "gpt-6-luna",
     .max_output_tokens   = NULL,
     .temperature         = NULL,
     .seed                = NULL,
@@ -433,15 +433,16 @@ openai_build_chat_request <- function(
       if (length(user_msgs) > 0) {
         last_user <- utils::tail(user_msgs, 1)[[1]]
         formatted <- format_message(last_user)
-        last_input <- if (!is.null(formatted$image)) {
+        last_input <- if (length(formatted$images) > 0) {
+          image_parts <- lapply(formatted$images, function(img) {
+            list(type = "input_image",
+                 image_url = as.character(glue::glue(
+                   "data:{img$media_type};base64,{img$data}")))
+          })
           list(list(
             role    = "user",
-            content = list(
-              list(type = "input_text", text = formatted$content),
-              list(type = "input_image",
-                   image_url = glue::glue(
-                     "data:{formatted$image$media_type};base64,{formatted$image$data}"))
-            )
+            content = c(list(list(type = "input_text", text = formatted$content)),
+                        image_parts)
           ))
         } else {
           list(list(role = "user", content = formatted$content))
@@ -576,13 +577,14 @@ openai_code_interpreter <- function() {
 
 #' Submit a Deep Research Request to OpenAI
 #'
-#' Sends a research request to OpenAI using the deep research models
-#' (`o3-deep-research` or `o4-mini-deep-research`) via the Responses API with
-#' `background: true`. The model autonomously searches the web and synthesises
-#' a long-form answer, which can take 5-30 minutes.
+#' Sends a research request to OpenAI via the Responses API with
+#' `background: true` and the web search tool. The model autonomously searches
+#' the web and synthesises a long-form answer, which can take 5-30 minutes.
+#' OpenAI has retired its dedicated deep research models (`o3-deep-research`,
+#' `o4-mini-deep-research`); a GPT-6 model with web search does the job now.
 #'
 #' @param .llm An `LLMMessage` object containing the research question.
-#' @param .model The deep research model to use (default: `"o4-mini-deep-research"`).
+#' @param .model The model to use (default: `"gpt-6-sol"`).
 #' @param .background Logical; if `TRUE`, returns a `tidyllm_research_job` immediately
 #'   without waiting for completion (default: `FALSE`).
 #' @param .reasoning_effort Reasoning level for the model: `"low"`, `"medium"` (default),
@@ -596,7 +598,7 @@ openai_code_interpreter <- function() {
 #'   If `.background = TRUE`, a `tidyllm_research_job` for use with `check_job()`/`fetch_job()`.
 #' @export
 openai_deep_research <- function(.llm,
-                                 .model              = "o4-mini-deep-research",
+                                 .model              = "gpt-6-sol",
                                  .background         = FALSE,
                                  .reasoning_effort   = "medium",
                                  .json_schema        = NULL,
@@ -871,7 +873,8 @@ openai <- create_provider_function(
   upload_file    = openai_upload_file,
   list_files     = openai_list_files,
   file_info      = openai_file_info,
-  delete_file    = openai_delete_file
+  delete_file    = openai_delete_file,
+  .media = c("image", "files")
 )
 
 #' Alias for the OpenAI Provider Function

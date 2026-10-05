@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.6.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.7.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -43,14 +43,118 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.6.0" id="tidyllm-060">tidyllm 0.6.0<a class="anchor" aria-label="anchor" href="#tidyllm-060"></a></h2>
+<h2 class="pkg-version" data-toc-text="0.7.0" id="tidyllm-070">tidyllm 0.7.0<a class="anchor" aria-label="anchor" href="#tidyllm-070"></a></h2>
+<p>This release adds a provider that talks to a locally installed Claude CLI, a web search tool that works with every provider, and <code><a href="../reference/provider_capabilities.html">provider_capabilities()</a></code> to see what each provider accepts. It also moves the default models to the autumn 2026 lineup and rewrites the classifier article for models that no longer accept a temperature.</p>
+<div class="section level3">
+<h3 id="claude_cli-chat-through-the-claude-cli-you-already-have-0-7-0">
+<code>claude_cli()</code>: chat through the Claude CLI you already have<a class="anchor" aria-label="anchor" href="#claude_cli-chat-through-the-claude-cli-you-already-have-0-7-0"></a></h3>
+<p><code><a href="../reference/claude_cli.html">claude_cli()</a></code> is a provider that sends nothing over the network itself. It runs the <code>claude</code> command line tool installed on your own machine and reads its JSON output back, using the login that tool already has. There is no API key to set, and the usage counts against whatever plan the CLI is signed in to.</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Explain R's S7 classes in three sentences."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude_cli.html">claude_cli</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>Everything the CLI reports comes back through the usual accessors: <code><a href="../reference/get_metadata.html">get_metadata()</a></code> carries the token counts including cache reads, and its <code>api_specific</code> column adds the session id, the stop reason, the number of turns and <code>total_cost_usd</code>, which is the real dollar cost of that one call.</p>
+<p>Streaming and <code><a href="../reference/send_chat.html">send_chat()</a></code> both work, so a CLI call can print as it arrives or run in the background of a session that keeps going.</p>
+<p>The CLI is an agent rather than a plain completion endpoint: left alone it can read files, edit them and run shell commands. tidyllm turns all of that off, because a call to <code><a href="../reference/chat.html">chat()</a></code> that quietly edits files in your working directory is not what the rest of the package does. Pass <code>.cli_tools</code> to allow specific tools back, or <code>.cli_tools = TRUE</code> to hand over to the CLI’s own configuration.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Summarise the DESCRIPTION file here."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude_cli.html">claude_cli</a></span><span class="op">(</span>.cli_tools <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Read"</span>, <span class="st">"Glob"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p><code>.stateful = TRUE</code> leaves the conversation on the CLI’s side: the first call records a session id, and later calls resume it instead of replaying the whole history.</p>
+<p><code>.json_schema</code> maps onto the CLI’s own structured-output flag, so <code><a href="../reference/tidyllm_schema.html">tidyllm_schema()</a></code> works here as it does everywhere else.</p>
+<p><code><a href="../reference/claude_cli.html">claude_cli()</a></code> does not take <code>.tools</code>. The CLI runs its own tool loop and never exposes tool-call blocks to a caller, so tidyllm’s tool loop has nothing to act on; <code>chat(claude_cli(), .tools = ...)</code> says so rather than silently ignoring it.</p>
+<p><code><a href="../reference/claude_cli.html">claude_cli()</a></code> looks for the CLI on the PATH and, failing that, in the places the installers write to. A GUI R session does not inherit the PATH from your shell profile, so RStudio in particular can miss a perfectly good install in <code>~/.local/bin</code>. To point at it yourself, set</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>tidyllm_claude_cli_path <span class="op">=</span> <span class="st">"/path/to/claude"</span><span class="op">)</span></span></code></pre></div>
+<p>in your <code>.Rprofile</code>, or the <code>TIDYLLM_CLAUDE_CLI</code> environment variable, or pass <code>claude_cli(.binary = "/path/to/claude")</code> for a single call.</p>
+<p>The provider needs <code>processx</code>, which is in <code>Suggests</code> and checked where it is used, so nothing changes for anyone who does not call it.</p>
+</div>
+<div class="section level3">
+<h3 id="websearch_tool-web-search-for-any-model-0-7-0">
+<code>websearch_tool()</code>: web search for any model<a class="anchor" aria-label="anchor" href="#websearch_tool-web-search-for-any-model-0-7-0"></a></h3>
+<p>Until now only some providers could search the web, each through its own built-in tool. <code><a href="../reference/websearch_tool.html">websearch_tool()</a></code> gives the same ability to every provider that supports tools, including local models through <code><a href="../reference/ollama.html">ollama()</a></code> and <code><a href="../reference/llamacpp.html">llamacpp()</a></code>:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Which central banks changed interest rates this week?"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/ollama.html">ollama</a></span><span class="op">(</span><span class="op">)</span>, .tools <span class="op">=</span> <span class="fu"><a href="../reference/websearch_tool.html">websearch_tool</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>The model decides when to search and chooses the query; nothing else is up to it. The number of results, whether full page text is included and how long that text may be are fixed when you create the tool, so a model cannot run up the search bill. Each search returns numbered results with title, URL, publication date and an excerpt, and the tool asks the model to cite the URLs it uses.</p>
+<p>The first search service is Tavily. It needs a <code>TAVILY_API_KEY</code>; the free plan gives 1,000 credits a month without a credit card, and a basic search costs one. Tavily’s own options, such as <code>topic = "news"</code>, <code>time_range = "week"</code> or <code>include_domains</code>, pass through <code>...</code>, and a misspelled option is caught when the tool is created. A search that fails, for instance because the monthly credits are used up, comes back to the model as a message rather than stopping the conversation.</p>
+<p>The second search service is SearXNG, a free search engine you run yourself. Choose it with <code>.backend = "searxng"</code> and give the address of your server with <code>.server</code> or the <code>SEARXNG_SERVER</code> environment variable. The server’s <code>settings.yml</code> must allow JSON output (and, for a server only you use, turn the limiter off). SearXNG returns no page text, so <code>.include_content = TRUE</code> is an error there. Its options, such as <code>engines</code>, <code>language</code> or <code>time_range</code>, pass through <code>...</code> like Tavily’s.</p>
+<p><code><a href="../reference/websearch.html">websearch()</a></code> runs the same search directly and returns a tibble with one row per result: query, title, URL, publication date, snippet and, if asked for, the page text. It takes the same arguments as <code><a href="../reference/websearch_tool.html">websearch_tool()</a></code>, so you can check what a model would see, or collect search results as data:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ZEW Mannheim"</span>, <span class="st">"ifo Institut"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">purrr</span><span class="fu">::</span><span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="va">websearch</span>, .max_results <span class="op">=</span> <span class="fl">3</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">purrr</span><span class="fu">::</span><span class="fu"><a href="https://purrr.tidyverse.org/reference/list_c.html" class="external-link">list_rbind</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="tool-results-reach-claude-and-gemini-as-plain-text-0-7-0">Tool results reach Claude and Gemini as plain text<a class="anchor" aria-label="anchor" href="#tool-results-reach-claude-and-gemini-as-plain-text-0-7-0"></a></h3>
+<p>A tool that returns text used to reach <code><a href="../reference/claude.html">claude()</a></code> and <code><a href="../reference/gemini.html">gemini()</a></code> in R’s printed form, <code>[1] "..."</code>, with every line break and quote escaped. They now get the text as it is. Tools that return other values, such as a data frame or a named vector, are still printed, as before.</p>
+</div>
+<div class="section level3">
+<h3 id="streaming-is-no-longer-tied-to-http-0-7-0">Streaming is no longer tied to HTTP<a class="anchor" aria-label="anchor" href="#streaming-is-no-longer-tied-to-http-0-7-0"></a></h3>
+<p>The stream pump used to ask httr2 directly whether a connection was finished and how to close it. Those two questions now go through the provider, alongside the reader that was already there, which is what lets a stream come from a local process instead of an HTTP response. <code><a href="../reference/send_chat.html">send_chat()</a></code> likewise asks the provider how to start, rather than always building an httr2 promise. No behaviour changes for the twelve HTTP providers.</p>
+</div>
+<div class="section level3">
+<h3 id="provider_capabilities-what-each-provider-supports-0-7-0">
+<code>provider_capabilities()</code>: what each provider supports<a class="anchor" aria-label="anchor" href="#provider_capabilities-what-each-provider-supports-0-7-0"></a></h3>
+<p><code><a href="../reference/provider_capabilities.html">provider_capabilities()</a></code> returns a tibble of every verb a provider implements and the arguments of each verb, with each argument’s default (for <code>.model</code>, the provider’s default model) and the function that implements the verb. <code>provider_capabilities(claude(), .verb = "chat")</code> shows what <code>chat(claude())</code> accepts; <code>.what = "media"</code> shows which of image, pdf, audio, video and remote files each provider takes in a message. It reads the registry the verbs already use, so it cannot drift from the code.</p>
+<p>The attachment check in <code><a href="../reference/chat.html">chat()</a></code> now reads the same media registry instead of lists of provider names. <code><a href="../reference/send_chat.html">send_chat()</a></code> and <code><a href="../reference/parallel_chat.html">parallel_chat()</a></code> passed a provider call where that check expected a name, so a message with audio, video or a file failed there with an internal error; it is now checked like in <code><a href="../reference/chat.html">chat()</a></code>.</p>
+</div>
+<div class="section level3">
+<h3 id="perplexity-is-deprecated-0-7-0">Perplexity is deprecated<a class="anchor" aria-label="anchor" href="#perplexity-is-deprecated-0-7-0"></a></h3>
+<p><code><a href="../reference/perplexity.html">perplexity()</a></code> and the <code>perplexity_*()</code> functions warn since 0.7.0 and are removed in 0.8.0. The maintainer cannot test them against a funded account, and Perplexity is moving its Sonar models to a new Agent API. The same models are available as <code>openrouter(.model = "perplexity/sonar")</code> (also <code>perplexity/sonar-pro</code> and <code>perplexity/sonar-deep-research</code>), and <code><a href="../reference/websearch_tool.html">websearch_tool()</a></code> gives any provider web search.</p>
+</div>
+<div class="section level3">
+<h3 id="tools-without-arguments-0-7-0">Tools without arguments<a class="anchor" aria-label="anchor" href="#tools-without-arguments-0-7-0"></a></h3>
+<p>A tool with no arguments made <code><a href="../reference/claude.html">claude()</a></code> reject the whole request, because the empty argument list was sent as <code>[]</code> where the API needs <code><a href="https://rdrr.io/r/base/Paren.html" class="external-link">{}</a></code>. All three tool schema builders (Claude, OpenAI and the chat completions providers) now send <code><a href="https://rdrr.io/r/base/Paren.html" class="external-link">{}</a></code>. This also makes MCP servers usable: <code>mcptools::mcp_tools() |&gt; lapply(ellmer_tool)</code> hands their tools to any provider, and the <code>mcptools</code> helper tools that take no arguments no longer break Claude.</p>
+</div>
+<div class="section level3">
+<h3 id="capture_plot-no-longer-warns-0-7-0">
+<code>.capture_plot</code> no longer warns<a class="anchor" aria-label="anchor" href="#capture_plot-no-longer-warns-0-7-0"></a></h3>
+<p><code>llm_message(.capture_plot = TRUE)</code> shared a code path with the deprecated <code>.imagefile</code>, so it printed a warning that pointed to <code>.media = img(path)</code>, advice that cannot capture a plot. It now saves the current plot to a temporary PNG and attaches it as an <code><a href="../reference/img.html">img()</a></code> in the message’s media, with no warning.</p>
+</div>
+<div class="section level3">
+<h3 id="new-default-models-0-7-0">New default models<a class="anchor" aria-label="anchor" href="#new-default-models-0-7-0"></a></h3>
+<p>Several providers retired or replaced models over the summer, so the defaults moved.</p>
+<ul><li>
+<code><a href="../reference/claude.html">claude()</a></code> and <code><a href="../reference/send_claude_batch.html">send_claude_batch()</a></code> use <code>claude-sonnet-5-5</code>; <code><a href="../reference/openrouter.html">openrouter()</a></code> uses <code>anthropic/claude-sonnet-5.5</code>.</li>
+<li>
+<code><a href="../reference/openai.html">openai()</a></code>, <code><a href="../reference/send_openai_batch.html">send_openai_batch()</a></code> and the chat completions helpers use <code>gpt-6-luna</code>.</li>
+<li>
+<code><a href="../reference/gemini.html">gemini()</a></code> and <code><a href="../reference/send_gemini_batch.html">send_gemini_batch()</a></code> use <code>gemini-3.8-flash</code>.</li>
+<li>
+<code><a href="../reference/openai_deep_research.html">openai_deep_research()</a></code> uses <code>gpt-6-sol</code> with web search. OpenAI no longer accepts requests for <code>o3-deep-research</code> and <code>o4-mini-deep-research</code>.</li>
+<li>
+<code><a href="../reference/mistral.html">mistral()</a></code> uses <code>zai-glm-5-3</code>, Z.ai’s GLM 5.3 served by Mistral: a 1M-token context, tool use and structured output. Pass <code>.model = "mistral-large-latest"</code> for the previous default.</li>
+<li>
+<code><a href="../reference/voyage_rerank.html">voyage_rerank()</a></code> uses <code>rerank-3</code>.</li>
+<li>
+<code><a href="../reference/groq_transcribe.html">groq_transcribe()</a></code> used a text-to-speech model as its default; it now uses <code>whisper-large-v3</code>.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="mistral-reasoning-models-0-7-0">Mistral reasoning models<a class="anchor" aria-label="anchor" href="#mistral-reasoning-models-0-7-0"></a></h3>
+<p>Models that think before they answer (Magistral, Mistral Medium 3.5, GLM on Mistral) send their reply as separate thinking and text pieces. <code><a href="../reference/get_reply.html">get_reply()</a></code> now returns the text alone, streaming works, and the thinking is kept under <code>thinking</code> in the <code>api_specific</code> metadata. Streamed tool calls also survive servers that repeat an empty function name on later fragments of the same call.</p>
+</div>
+<div class="section level3">
+<h3 id="bug-fixes-0-7-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-7-0"></a></h3>
+<ul><li>
+<code>openai(.stateful = TRUE)</code> sent only the first image of the last message; it now sends all of them.</li>
+<li>
+<code><a href="../reference/mistral.html">mistral()</a></code> batch results are parsed without flattening, and chunked replies are joined into one string.</li>
+<li>
+<code><a href="../reference/chat_completions_chat.html">chat_completions()</a></code> providers accept inline audio.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="documentation-0-7-0">Documentation<a class="anchor" aria-label="anchor" href="#documentation-0-7-0"></a></h3>
+<p>The classifier article no longer relies on a temperature of zero, which most current models reject. It now runs the model several times with a fixed answer schema, measures agreement, sends disagreements to a second review, validates against hand-checked labels and prices the run, and it ships the cached runs so the article builds without an API key. The Get Started article, the PDF questions, Shiny, video, local models and tools articles use current models and links.</p>
+</div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.0" id="tidyllm-060">tidyllm 0.6.0<a class="anchor" aria-label="anchor" href="#tidyllm-060"></a></h2><p class="text-muted">CRAN release: 2026-09-08</p>
 <p><strong>tidyllm no longer has to block.</strong> A script can fire a request and keep working, several prompts can run at once, and a Shiny app can stream tokens into its UI without freezing itself or anyone else’s session. The headline verbs are <code><a href="../reference/send_chat.html">send_chat()</a></code> and <code><a href="../reference/parallel_chat.html">parallel_chat()</a></code>; underneath them sit a shared streaming pump and a chat pipeline split that every provider now goes through. Streaming and tool calls also stop being mutually exclusive.</p>
 <p>No new required dependency: <code>later</code> and <code>promises</code> are in <code>Suggests</code> and checked where they are used, and the Shiny path needs neither <code>promises</code> nor <code>coro</code>.</p>
 <div class="section level3">
 <h3 id="send_chat-a-chat-that-does-not-block-the-session-0-6-0">
 <code>send_chat()</code>: a chat that does not block the session<a class="anchor" aria-label="anchor" href="#send_chat-a-chat-that-does-not-block-the-session-0-6-0"></a></h3>
 <p>There are now three ways to run a chat. <code><a href="../reference/chat.html">chat()</a></code> when you want the answer now. <code><a href="../reference/send_batch.html">send_batch()</a></code> when you have thousands of prompts and want them at half price overnight. And new in 0.6.0, <code><a href="../reference/send_chat.html">send_chat()</a></code> when you have <em>one</em> slow request and a session you would rather keep using. All three end in an <code>LLMMessage</code>, and the last two share the same <code><a href="../reference/check_job.html">check_job()</a></code> / <code><a href="../reference/fetch_job.html">fetch_job()</a></code> vocabulary.</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">job</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Summarise this 400-page report"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/send_chat.html">send_chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span>, .stream <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
@@ -69,7 +173,7 @@
 <div class="section level3">
 <h3 id="parallel_chat-many-prompts-at-once-0-6-0">
 <code>parallel_chat()</code>: many prompts at once<a class="anchor" aria-label="anchor" href="#parallel_chat-many-prompts-at-once-0-6-0"></a></h3>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">answers</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/parallel_chat.html">parallel_chat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>physics <span class="op">=</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"What is a photon?"</span><span class="op">)</span>,</span>
 <span>                              biology <span class="op">=</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"What is a ribosome?"</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>                         <span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
@@ -87,7 +191,7 @@
 <div class="section level3">
 <h3 id="streaming-and-tool-calls-work-together-0-6-0">Streaming and tool calls work together<a class="anchor" aria-label="anchor" href="#streaming-and-tool-calls-work-together-0-6-0"></a></h3>
 <p><code>.stream = TRUE</code> and <code>.tools</code> used to be mutually exclusive: every provider raised “Streaming is not supported for requests with tool calls” if both were given. That restriction is gone for <code><a href="../reference/claude.html">claude()</a></code>, <code><a href="../reference/openai.html">openai()</a></code>, <code><a href="../reference/gemini.html">gemini()</a></code>, <code><a href="../reference/ollama.html">ollama()</a></code>, <code><a href="../reference/groq.html">groq()</a></code>, <code><a href="../reference/mistral.html">mistral()</a></code>, <code><a href="../reference/deepseek.html">deepseek()</a></code>, <code><a href="../reference/openrouter.html">openrouter()</a></code>, <code><a href="../reference/llamacpp.html">llamacpp()</a></code>, <code><a href="../reference/azure_openai.html">azure_openai()</a></code> and <code><a href="../reference/chat_completions_chat.html">chat_completions()</a></code>. The reply streams to the console, the tool calls run when the stream ends, and each follow-up round streams too.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"What is the weather in Berlin and Reykjavik?"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span>, .tools <span class="op">=</span> <span class="va">weather_tool</span>, .stream <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p>The reason it was blocked is that the tool loop reads tool calls out of a complete response body, which a stream never produced; it produced a list of events instead. A new <code>assemble_stream_body()</code> generic folds those events back into the body shape, so <code>has_tool_calls()</code>, <code>extract_tool_calls()</code>, <code>run_tool_calls()</code> and <code>append_tool_messages()</code> are reused without a single streaming-specific branch. Streamed and blocking responses now carry the same <code>raw$content</code>, which is also what the async driver needs.</p>
@@ -240,7 +344,7 @@
 <code>.media</code> argument on <code>llm_message()</code>
 <a class="anchor" aria-label="anchor" href="#media-argument-on-llm_message-0-5-0"></a></h4>
 <p>All non-text content now attaches to messages through a single <code>.media</code> argument that accepts any combination of media types. Pass a single object or a list:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Single image</span></span>
 <span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"What is in this image?"</span>,</span>
 <span>            .media <span class="op">=</span> <span class="fu"><a href="../reference/img.html">img</a></span><span class="op">(</span><span class="st">"photo.jpg"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -267,7 +371,7 @@
 </li>
 <li>
 <strong><code>pdf_file(path, pages, .text_extract)</code></strong>: attach a PDF; Claude and Gemini receive the binary file (preserving layout, tables, and scanned content); all other providers receive extracted text automatically</li>
-</ul><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+</ul><div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Transcribe a recording</span></span>
 <span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Summarise what is discussed in this interview."</span>,</span>
 <span>            .media <span class="op">=</span> <span class="fu"><a href="../reference/audio_file.html">audio_file</a></span><span class="op">(</span><span class="st">"bosch_interview.mp3"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -302,7 +406,7 @@
 <div class="section level3">
 <h3 id="provider-files-api-0-5-0">Provider Files API<a class="anchor" aria-label="anchor" href="#provider-files-api-0-5-0"></a></h3>
 <p>A unified set of verbs manages files stored on provider servers. Upload once, reuse across many requests:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Upload; returns a tidyllm_file handle</span></span>
 <span><span class="va">report</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/upload_file.html">upload_file</a></span><span class="op">(</span><span class="fu"><a href="../reference/gemini.html">gemini</a></span><span class="op">(</span><span class="op">)</span>, .path <span class="op">=</span> <span class="st">"quarterly_report.pdf"</span><span class="op">)</span></span>
 <span></span>
@@ -333,7 +437,7 @@
 <div class="section level4">
 <h4 id="responses-api-0-5-0">Responses API<a class="anchor" aria-label="anchor" href="#responses-api-0-5-0"></a></h4>
 <p><code><a href="../reference/openai.html">openai()</a></code> now uses the <a href="https://developers.openai.com/api/reference/resources/responses" class="external-link">Responses API</a> (<code>POST /v1/responses</code>). All existing workflows continue to work unchanged. New capabilities unlocked by the rewrite:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Reasoning effort for o-series models</span></span>
 <span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Prove that there are infinitely many primes."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"o4-mini"</span><span class="op">)</span>, .reasoning_effort <span class="op">=</span> <span class="st">"high"</span><span class="op">)</span></span>
@@ -348,7 +452,7 @@
 </div>
 <div class="section level4">
 <h4 id="built-in-server-executed-tools-0-5-0">Built-in server-executed tools<a class="anchor" aria-label="anchor" href="#built-in-server-executed-tools-0-5-0"></a></h4>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Web search: the server runs the search, results appear in the reply</span></span>
 <span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"What happened in AI research this week?"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span><span class="op">)</span>, .tools <span class="op">=</span> <span class="fu"><a href="../reference/openai_websearch.html">openai_websearch</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
@@ -363,7 +467,7 @@
 </div>
 <div class="section level4">
 <h4 id="openai-deep-research-0-5-0">OpenAI deep research<a class="anchor" aria-label="anchor" href="#openai-deep-research-0-5-0"></a></h4>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Background research job (slow; typically 5 to 30 minutes)</span></span>
 <span><span class="va">job</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Survey the literature on causal inference with LLMs."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/deep_research.html">deep_research</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"o4-mini-deep-research"</span><span class="op">)</span>, .background <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
@@ -376,7 +480,7 @@
 <h3 id="new-provider-chat_completions-0-5-0">New Provider: <code>chat_completions()</code>
 <a class="anchor" aria-label="anchor" href="#new-provider-chat_completions-0-5-0"></a></h3>
 <p>A <code><a href="../reference/chat_completions_chat.html">chat_completions()</a></code> provider for any OpenAI-compatible endpoint (vLLM, LiteLLM, Together AI, Anyscale, and others), without having to repurpose <code><a href="../reference/openai.html">openai()</a></code>:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Hello!"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/chat_completions_chat.html">chat_completions</a></span><span class="op">(</span></span>
 <span>    .api_url        <span class="op">=</span> <span class="st">"https://api.together.xyz/v1/"</span>,</span>
@@ -390,7 +494,7 @@
 <h4 id="mistral-0-5-0">Mistral<a class="anchor" aria-label="anchor" href="#mistral-0-5-0"></a></h4>
 <ul><li>
 <p>New <code>.reasoning_effort</code> parameter for Magistral thinking models (<code>"low"</code>, <code>"medium"</code>, <code>"high"</code>):</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Is this argument valid?"</span>, .media <span class="op">=</span> <span class="fu"><a href="../reference/pdf_file.html">pdf_file</a></span><span class="op">(</span><span class="st">"proof.pdf"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/mistral.html">mistral</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"magistral-medium-latest"</span><span class="op">)</span>, .reasoning_effort <span class="op">=</span> <span class="st">"high"</span><span class="op">)</span></span></code></pre></div>
 </li>
@@ -435,7 +539,7 @@
 <div class="section level4">
 <h4 id="openrouter-openrouter-0-4-0">OpenRouter (<code>openrouter()</code>)<a class="anchor" aria-label="anchor" href="#openrouter-openrouter-0-4-0"></a></h4>
 <p>Access to 300+ models from a single API key via OpenRouter. Supports chat, embeddings, model listing, and fallback routing across providers:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Chat with any model on OpenRouter</span></span>
 <span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"What is the capital of France?"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openrouter.html">openrouter</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"anthropic/claude-3.5-sonnet"</span><span class="op">)</span><span class="op">)</span></span>
@@ -453,7 +557,7 @@
 <div class="section level4">
 <h4 id="llamacpp-llamacpp-0-4-0">llama.cpp (<code>llamacpp()</code>)<a class="anchor" aria-label="anchor" href="#llamacpp-llamacpp-0-4-0"></a></h4>
 <p>Full support for local <a href="https://github.com/ggml-org/llama.cpp" class="external-link">llama.cpp</a> servers, including chat, embeddings, reranking, and model management:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Chat with a local llama.cpp server</span></span>
 <span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Explain R to a Python developer"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/llamacpp.html">llamacpp</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
@@ -479,7 +583,7 @@
 <code>deep_research()</code>, <code>check_job()</code>, <code>fetch_job()</code>
 <a class="anchor" aria-label="anchor" href="#deep_research-check_job-fetch_job-0-4-0"></a></h4>
 <p>A new <code><a href="../reference/deep_research.html">deep_research()</a></code> verb for running long-horizon research tasks. Currently supported by <code><a href="../reference/perplexity.html">perplexity()</a></code> via the <code>sonar-deep-research</code> model:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Blocking — waits for completion and returns an LLMMessage</span></span>
 <span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Compare Rust and Go for systems programming"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/deep_research.html">deep_research</a></span><span class="op">(</span><span class="fu"><a href="../reference/perplexity.html">perplexity</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
@@ -527,14 +631,14 @@
 <h4 id="ellmer-compatibility-0-4-0">Ellmer compatibility<a class="anchor" aria-label="anchor" href="#ellmer-compatibility-0-4-0"></a></h4>
 <ul><li>
 <p><code><a href="../reference/ellmer_tool.html">ellmer_tool()</a></code> converts ellmer <code>ToolDef</code> objects to tidyllm <code>TOOL</code> objects, enabling tools defined in ellmer (and packages like <code>btw</code>) to be used directly with tidyllm:</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">btw_tool</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ellmer_tool.html">ellmer_tool</a></span><span class="op">(</span><span class="fu">btw</span><span class="fu">::</span><span class="va"><a href="https://posit-dev.github.io/btw/reference/deprecated.html" class="external-link">btw_tool_files_list_files</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"List files in the R/ folder"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span>, .tools <span class="op">=</span> <span class="va">btw_tool</span><span class="op">)</span></span></code></pre></div>
 </li>
 <li>
 <p><code><a href="../reference/ellmer_tool.html">ellmer_tool()</a></code> also supports provider-native <strong>builtin tools</strong> such as <code><a href="https://ellmer.tidyverse.org/reference/claude_tool_web_search.html" class="external-link">ellmer::claude_tool_web_search()</a></code>:</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">web_search</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ellmer_tool.html">ellmer_tool</a></span><span class="op">(</span><span class="fu">ellmer</span><span class="fu">::</span><span class="fu"><a href="https://ellmer.tidyverse.org/reference/claude_tool_web_search.html" class="external-link">claude_tool_web_search</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Latest AI safety news?"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span>, .tools <span class="op">=</span> <span class="va">web_search</span><span class="op">)</span></span></code></pre></div>
@@ -588,7 +692,7 @@
 <div class="section level3">
 <h3 id="key-improvements-0-3-5">Key Improvements<a class="anchor" aria-label="anchor" href="#key-improvements-0-3-5"></a></h3>
 <ul><li>Rudimentary support for file uploads in <code><a href="../reference/claude.html">claude()</a></code>. At the moment only implemented for the <code><a href="../reference/chat.html">chat()</a></code> verb</li>
-</ul><div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+</ul><div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">example_file</span> <span class="op">&lt;-</span> <span class="fu">here</span><span class="fu">::</span><span class="fu"><a href="https://here.r-lib.org/reference/here.html" class="external-link">here</a></span><span class="op">(</span><span class="st">"vignettes"</span>,<span class="st">"die_verwandlung.pdf"</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
 <span>  <span class="fu"><a href="../reference/claude_upload_file.html">claude_upload_file</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
@@ -674,83 +778,83 @@
 <div class="section level3">
 <h3 id="thinking-support-in-claude-0-3-3">Thinking support in Claude<a class="anchor" aria-label="anchor" href="#thinking-support-in-claude-0-3-3"></a></h3>
 <p>Claude now supports reasoning:</p>
-<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a>conversation <span class="ot">&lt;-</span> <span class="fu">llm_message</span>(<span class="st">"Are there an infinite number of prime numbers such that n mod 4 == 3?"</span>) <span class="sc">|&gt;</span></span>
-<span id="cb18-2"><a href="#cb18-2" tabindex="-1"></a>   <span class="fu">chat</span>(<span class="fu">claude</span>(<span class="at">.thinking=</span><span class="cn">TRUE</span>)) <span class="sc">|&gt;</span></span>
-<span id="cb18-3"><a href="#cb18-3" tabindex="-1"></a>  <span class="fu">print</span>()</span>
-<span id="cb18-4"><a href="#cb18-4" tabindex="-1"></a>   </span>
-<span id="cb18-5"><a href="#cb18-5" tabindex="-1"></a><span class="co">#&gt; Message History:</span></span>
-<span id="cb18-6"><a href="#cb18-6" tabindex="-1"></a><span class="co">#&gt; system:</span></span>
-<span id="cb18-7"><a href="#cb18-7" tabindex="-1"></a><span class="co">#&gt; You are a helpful assistant</span></span>
-<span id="cb18-8"><a href="#cb18-8" tabindex="-1"></a><span class="co">#&gt; --------------------------------------------------------------</span></span>
-<span id="cb18-9"><a href="#cb18-9" tabindex="-1"></a><span class="co">#&gt; user:</span></span>
-<span id="cb18-10"><a href="#cb18-10" tabindex="-1"></a><span class="co">#&gt; Are there an infinite number of prime numbers such that n</span></span>
-<span id="cb18-11"><a href="#cb18-11" tabindex="-1"></a><span class="co">#&gt; mod 4 == 3?</span></span>
-<span id="cb18-12"><a href="#cb18-12" tabindex="-1"></a><span class="co">#&gt; --------------------------------------------------------------</span></span>
-<span id="cb18-13"><a href="#cb18-13" tabindex="-1"></a><span class="co">#&gt; assistant:</span></span>
-<span id="cb18-14"><a href="#cb18-14" tabindex="-1"></a><span class="co">#&gt; # Infinitude of Primes Congruent to 3 mod 4</span></span>
-<span id="cb18-15"><a href="#cb18-15" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb18-16"><a href="#cb18-16" tabindex="-1"></a><span class="co">#&gt; Yes, there are infinitely many prime numbers $p$ such</span></span>
-<span id="cb18-17"><a href="#cb18-17" tabindex="-1"></a><span class="co">#&gt; that $p \equiv 3 \pmod{4}$ (when $p$ divided by 4 leaves</span></span>
-<span id="cb18-18"><a href="#cb18-18" tabindex="-1"></a><span class="co">#&gt; remainder 3).</span></span>
-<span id="cb18-19"><a href="#cb18-19" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb18-20"><a href="#cb18-20" tabindex="-1"></a><span class="co">#&gt; ## Proof by Contradiction</span></span>
-<span id="cb18-21"><a href="#cb18-21" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb18-22"><a href="#cb18-22" tabindex="-1"></a><span class="co">#&gt; I'll use a proof technique similar to Euclid's classic proof</span></span>
-<span id="cb18-23"><a href="#cb18-23" tabindex="-1"></a><span class="co">#&gt; of the infinitude of primes:</span></span>
-<span id="cb18-24"><a href="#cb18-24" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb18-25"><a href="#cb18-25" tabindex="-1"></a><span class="co">#&gt; 1) Assume there are only finitely many primes $p$ such that</span></span>
-<span id="cb18-26"><a href="#cb18-26" tabindex="-1"></a><span class="co">#&gt; $p \equiv 3 \pmod{4}$. Let's call them $p_1, p_2, ..., p_k$.</span></span>
-<span id="cb18-27"><a href="#cb18-27" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb18-28"><a href="#cb18-28" tabindex="-1"></a><span class="co">#&gt; 2) Consider the number $N = 4p_1p_2...p_k - 1$</span></span>
-<span id="cb18-29"><a href="#cb18-29" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb18-30"><a href="#cb18-30" tabindex="-1"></a><span class="co">#&gt; 3) Note that $N \equiv 3 \pmod{4}$ since $4p_1p_2...p_k</span></span>
-<span id="cb18-31"><a href="#cb18-31" tabindex="-1"></a><span class="co">#&gt; \equiv 0 \pmod{4}$ and $4p_1p_2...p_k - 1 \equiv -1 \equiv 3</span></span>
-<span id="cb18-32"><a href="#cb18-32" tabindex="-1"></a><span class="co">#&gt; \pmod{4}$</span></span>
-<span id="cb18-33"><a href="#cb18-33" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb18-34"><a href="#cb18-34" tabindex="-1"></a><span class="co">#&gt; 4) $N$ must have at least one prime factor $q$</span></span>
-<span id="cb18-35"><a href="#cb18-35" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb18-36"><a href="#cb18-36" tabindex="-1"></a><span class="co">#&gt; 5) For any $i$ between 1 and $k$, we have $N \equiv -1</span></span>
-<span id="cb18-37"><a href="#cb18-37" tabindex="-1"></a><span class="co">#&gt; \pmod{p_i}$, so $N$ is not divisible by any of the primes</span></span>
-<span id="cb18-38"><a href="#cb18-38" tabindex="-1"></a><span class="co">#&gt; $p_1, p_2, ..., p_k$</span></span>
-<span id="cb18-39"><a href="#cb18-39" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb18-40"><a href="#cb18-40" tabindex="-1"></a><span class="co">#&gt; 6) Therefore, $q$ is a prime not in our original list</span></span>
-<span id="cb18-41"><a href="#cb18-41" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb18-42"><a href="#cb18-42" tabindex="-1"></a><span class="co">#&gt; 7) Furthermore, $q$ must be congruent to 3 modulo 4:</span></span>
-<span id="cb18-43"><a href="#cb18-43" tabindex="-1"></a><span class="co">#&gt; - $q$ cannot be 2 because $N$ is odd</span></span>
-<span id="cb18-44"><a href="#cb18-44" tabindex="-1"></a><span class="co">#&gt; - If $q \equiv 1 \pmod{4}$, then $\frac{N}{q} \equiv 3</span></span>
-<span id="cb18-45"><a href="#cb18-45" tabindex="-1"></a><span class="co">#&gt; \pmod{4}$ would need another prime factor congruent to 3</span></span>
-<span id="cb18-46"><a href="#cb18-46" tabindex="-1"></a><span class="co">#&gt; modulo 4</span></span>
-<span id="cb18-47"><a href="#cb18-47" tabindex="-1"></a><span class="co">#&gt; - So $q \equiv 3 \pmod{4}$</span></span>
-<span id="cb18-48"><a href="#cb18-48" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb18-49"><a href="#cb18-49" tabindex="-1"></a><span class="co">#&gt; 8) This contradicts our assumption that we listed all primes</span></span>
-<span id="cb18-50"><a href="#cb18-50" tabindex="-1"></a><span class="co">#&gt; of the form $p \equiv 3 \pmod{4}$</span></span>
-<span id="cb18-51"><a href="#cb18-51" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb18-52"><a href="#cb18-52" tabindex="-1"></a><span class="co">#&gt; Therefore, there must be infinitely many primes of the form</span></span>
-<span id="cb18-53"><a href="#cb18-53" tabindex="-1"></a><span class="co">#&gt; $p \equiv 3 \pmod{4}$.</span></span>
-<span id="cb18-54"><a href="#cb18-54" tabindex="-1"></a><span class="co">#&gt; --------------------------------------------------------------</span></span>
-<span id="cb18-55"><a href="#cb18-55" tabindex="-1"></a></span>
-<span id="cb18-56"><a href="#cb18-56" tabindex="-1"></a><span class="co">#Thinking process is stored in API-specific metadata</span></span>
-<span id="cb18-57"><a href="#cb18-57" tabindex="-1"></a>conversation <span class="sc">|&gt;</span> </span>
-<span id="cb18-58"><a href="#cb18-58" tabindex="-1"></a>   <span class="fu">get_metadata</span>() <span class="sc">|&gt;</span></span>
-<span id="cb18-59"><a href="#cb18-59" tabindex="-1"></a>   dplyr<span class="sc">::</span><span class="fu">pull</span>(api_specific) <span class="sc">|&gt;</span></span>
-<span id="cb18-60"><a href="#cb18-60" tabindex="-1"></a>   purrr<span class="sc">::</span><span class="fu">map_chr</span>(<span class="st">"thinking"</span>) <span class="sc">|&gt;</span></span>
-<span id="cb18-61"><a href="#cb18-61" tabindex="-1"></a>   <span class="fu">cat</span>()</span>
-<span id="cb18-62"><a href="#cb18-62" tabindex="-1"></a>   </span>
-<span id="cb18-63"><a href="#cb18-63" tabindex="-1"></a><span class="co">#&gt; The question is asking if there are infinitely many prime numbers $p$ such that $p \equiv 3 \pmod{4}$, i.e., when divided by 4, the remainder is 3.</span></span>
-<span id="cb18-64"><a href="#cb18-64" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb18-65"><a href="#cb18-65" tabindex="-1"></a><span class="co">#&gt; I know that there are infinitely many prime numbers overall. The classic proof is Euclid's proof by contradiction: if there were only finitely many primes, we could multiply them all together, add 1, and get a new number not divisible by any of the existing primes, which gives us a contradiction.</span></span>
-<span id="cb18-66"><a href="#cb18-66" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb18-67"><a href="#cb18-67" tabindex="-1"></a><span class="co">#&gt; For primes of the form $p \equiv 3 \pmod{4}$, we can use a similar proof strategy. </span></span>
-<span id="cb18-68"><a href="#cb18-68" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb18-69"><a href="#cb18-69" tabindex="-1"></a><span class="co">#&gt; Let's assume there are only finitely many primes $p_1, p_2, \ldots, p_k$ such that $p_i \equiv 3 \pmod{4}$ for all $i$. </span></span>
-<span id="cb18-70"><a href="#cb18-70" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb18-71"><a href="#cb18-71" tabindex="-1"></a><span class="co">#&gt; Now, consider the number $N = 4 \cdot p_1 \cdot p_2 \cdot \ldots \cdot p_k - 1$. </span></span>
-<span id="cb18-72"><a href="#cb18-72" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb18-73"><a href="#cb18-73" tabindex="-1"></a><span class="co">#&gt; Note that $N \equiv -1 \equiv 3 \pmod{4}$. </span></span>
-<span id="cb18-74"><a href="#cb18-74" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb18-75"><a href="#cb18-75" tabindex="-1"></a><span class="co">#&gt; Now, let's consider the prime factorization of $N$. If $N$ is itself prime, then we have found a new prime $N$ such that $N \equiv 3 \pmod{4}$, which contradicts our assumption that we enumerated all such primes.</span></span>
-<span id="cb18-76"><a href="#cb18-76" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb18-77"><a href="#cb18-77" tabindex="-1"></a><span class="sc">&gt;</span> ...</span></code></pre></div>
+<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" tabindex="-1"></a>conversation <span class="ot">&lt;-</span> <span class="fu">llm_message</span>(<span class="st">"Are there an infinite number of prime numbers such that n mod 4 == 3?"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb23-2"><a href="#cb23-2" tabindex="-1"></a>   <span class="fu">chat</span>(<span class="fu">claude</span>(<span class="at">.thinking=</span><span class="cn">TRUE</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb23-3"><a href="#cb23-3" tabindex="-1"></a>  <span class="fu">print</span>()</span>
+<span id="cb23-4"><a href="#cb23-4" tabindex="-1"></a>   </span>
+<span id="cb23-5"><a href="#cb23-5" tabindex="-1"></a><span class="co">#&gt; Message History:</span></span>
+<span id="cb23-6"><a href="#cb23-6" tabindex="-1"></a><span class="co">#&gt; system:</span></span>
+<span id="cb23-7"><a href="#cb23-7" tabindex="-1"></a><span class="co">#&gt; You are a helpful assistant</span></span>
+<span id="cb23-8"><a href="#cb23-8" tabindex="-1"></a><span class="co">#&gt; --------------------------------------------------------------</span></span>
+<span id="cb23-9"><a href="#cb23-9" tabindex="-1"></a><span class="co">#&gt; user:</span></span>
+<span id="cb23-10"><a href="#cb23-10" tabindex="-1"></a><span class="co">#&gt; Are there an infinite number of prime numbers such that n</span></span>
+<span id="cb23-11"><a href="#cb23-11" tabindex="-1"></a><span class="co">#&gt; mod 4 == 3?</span></span>
+<span id="cb23-12"><a href="#cb23-12" tabindex="-1"></a><span class="co">#&gt; --------------------------------------------------------------</span></span>
+<span id="cb23-13"><a href="#cb23-13" tabindex="-1"></a><span class="co">#&gt; assistant:</span></span>
+<span id="cb23-14"><a href="#cb23-14" tabindex="-1"></a><span class="co">#&gt; # Infinitude of Primes Congruent to 3 mod 4</span></span>
+<span id="cb23-15"><a href="#cb23-15" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb23-16"><a href="#cb23-16" tabindex="-1"></a><span class="co">#&gt; Yes, there are infinitely many prime numbers $p$ such</span></span>
+<span id="cb23-17"><a href="#cb23-17" tabindex="-1"></a><span class="co">#&gt; that $p \equiv 3 \pmod{4}$ (when $p$ divided by 4 leaves</span></span>
+<span id="cb23-18"><a href="#cb23-18" tabindex="-1"></a><span class="co">#&gt; remainder 3).</span></span>
+<span id="cb23-19"><a href="#cb23-19" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb23-20"><a href="#cb23-20" tabindex="-1"></a><span class="co">#&gt; ## Proof by Contradiction</span></span>
+<span id="cb23-21"><a href="#cb23-21" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb23-22"><a href="#cb23-22" tabindex="-1"></a><span class="co">#&gt; I'll use a proof technique similar to Euclid's classic proof</span></span>
+<span id="cb23-23"><a href="#cb23-23" tabindex="-1"></a><span class="co">#&gt; of the infinitude of primes:</span></span>
+<span id="cb23-24"><a href="#cb23-24" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb23-25"><a href="#cb23-25" tabindex="-1"></a><span class="co">#&gt; 1) Assume there are only finitely many primes $p$ such that</span></span>
+<span id="cb23-26"><a href="#cb23-26" tabindex="-1"></a><span class="co">#&gt; $p \equiv 3 \pmod{4}$. Let's call them $p_1, p_2, ..., p_k$.</span></span>
+<span id="cb23-27"><a href="#cb23-27" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb23-28"><a href="#cb23-28" tabindex="-1"></a><span class="co">#&gt; 2) Consider the number $N = 4p_1p_2...p_k - 1$</span></span>
+<span id="cb23-29"><a href="#cb23-29" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb23-30"><a href="#cb23-30" tabindex="-1"></a><span class="co">#&gt; 3) Note that $N \equiv 3 \pmod{4}$ since $4p_1p_2...p_k</span></span>
+<span id="cb23-31"><a href="#cb23-31" tabindex="-1"></a><span class="co">#&gt; \equiv 0 \pmod{4}$ and $4p_1p_2...p_k - 1 \equiv -1 \equiv 3</span></span>
+<span id="cb23-32"><a href="#cb23-32" tabindex="-1"></a><span class="co">#&gt; \pmod{4}$</span></span>
+<span id="cb23-33"><a href="#cb23-33" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb23-34"><a href="#cb23-34" tabindex="-1"></a><span class="co">#&gt; 4) $N$ must have at least one prime factor $q$</span></span>
+<span id="cb23-35"><a href="#cb23-35" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb23-36"><a href="#cb23-36" tabindex="-1"></a><span class="co">#&gt; 5) For any $i$ between 1 and $k$, we have $N \equiv -1</span></span>
+<span id="cb23-37"><a href="#cb23-37" tabindex="-1"></a><span class="co">#&gt; \pmod{p_i}$, so $N$ is not divisible by any of the primes</span></span>
+<span id="cb23-38"><a href="#cb23-38" tabindex="-1"></a><span class="co">#&gt; $p_1, p_2, ..., p_k$</span></span>
+<span id="cb23-39"><a href="#cb23-39" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb23-40"><a href="#cb23-40" tabindex="-1"></a><span class="co">#&gt; 6) Therefore, $q$ is a prime not in our original list</span></span>
+<span id="cb23-41"><a href="#cb23-41" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb23-42"><a href="#cb23-42" tabindex="-1"></a><span class="co">#&gt; 7) Furthermore, $q$ must be congruent to 3 modulo 4:</span></span>
+<span id="cb23-43"><a href="#cb23-43" tabindex="-1"></a><span class="co">#&gt; - $q$ cannot be 2 because $N$ is odd</span></span>
+<span id="cb23-44"><a href="#cb23-44" tabindex="-1"></a><span class="co">#&gt; - If $q \equiv 1 \pmod{4}$, then $\frac{N}{q} \equiv 3</span></span>
+<span id="cb23-45"><a href="#cb23-45" tabindex="-1"></a><span class="co">#&gt; \pmod{4}$ would need another prime factor congruent to 3</span></span>
+<span id="cb23-46"><a href="#cb23-46" tabindex="-1"></a><span class="co">#&gt; modulo 4</span></span>
+<span id="cb23-47"><a href="#cb23-47" tabindex="-1"></a><span class="co">#&gt; - So $q \equiv 3 \pmod{4}$</span></span>
+<span id="cb23-48"><a href="#cb23-48" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb23-49"><a href="#cb23-49" tabindex="-1"></a><span class="co">#&gt; 8) This contradicts our assumption that we listed all primes</span></span>
+<span id="cb23-50"><a href="#cb23-50" tabindex="-1"></a><span class="co">#&gt; of the form $p \equiv 3 \pmod{4}$</span></span>
+<span id="cb23-51"><a href="#cb23-51" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb23-52"><a href="#cb23-52" tabindex="-1"></a><span class="co">#&gt; Therefore, there must be infinitely many primes of the form</span></span>
+<span id="cb23-53"><a href="#cb23-53" tabindex="-1"></a><span class="co">#&gt; $p \equiv 3 \pmod{4}$.</span></span>
+<span id="cb23-54"><a href="#cb23-54" tabindex="-1"></a><span class="co">#&gt; --------------------------------------------------------------</span></span>
+<span id="cb23-55"><a href="#cb23-55" tabindex="-1"></a></span>
+<span id="cb23-56"><a href="#cb23-56" tabindex="-1"></a><span class="co">#Thinking process is stored in API-specific metadata</span></span>
+<span id="cb23-57"><a href="#cb23-57" tabindex="-1"></a>conversation <span class="sc">|&gt;</span> </span>
+<span id="cb23-58"><a href="#cb23-58" tabindex="-1"></a>   <span class="fu">get_metadata</span>() <span class="sc">|&gt;</span></span>
+<span id="cb23-59"><a href="#cb23-59" tabindex="-1"></a>   dplyr<span class="sc">::</span><span class="fu">pull</span>(api_specific) <span class="sc">|&gt;</span></span>
+<span id="cb23-60"><a href="#cb23-60" tabindex="-1"></a>   purrr<span class="sc">::</span><span class="fu">map_chr</span>(<span class="st">"thinking"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb23-61"><a href="#cb23-61" tabindex="-1"></a>   <span class="fu">cat</span>()</span>
+<span id="cb23-62"><a href="#cb23-62" tabindex="-1"></a>   </span>
+<span id="cb23-63"><a href="#cb23-63" tabindex="-1"></a><span class="co">#&gt; The question is asking if there are infinitely many prime numbers $p$ such that $p \equiv 3 \pmod{4}$, i.e., when divided by 4, the remainder is 3.</span></span>
+<span id="cb23-64"><a href="#cb23-64" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb23-65"><a href="#cb23-65" tabindex="-1"></a><span class="co">#&gt; I know that there are infinitely many prime numbers overall. The classic proof is Euclid's proof by contradiction: if there were only finitely many primes, we could multiply them all together, add 1, and get a new number not divisible by any of the existing primes, which gives us a contradiction.</span></span>
+<span id="cb23-66"><a href="#cb23-66" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb23-67"><a href="#cb23-67" tabindex="-1"></a><span class="co">#&gt; For primes of the form $p \equiv 3 \pmod{4}$, we can use a similar proof strategy. </span></span>
+<span id="cb23-68"><a href="#cb23-68" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb23-69"><a href="#cb23-69" tabindex="-1"></a><span class="co">#&gt; Let's assume there are only finitely many primes $p_1, p_2, \ldots, p_k$ such that $p_i \equiv 3 \pmod{4}$ for all $i$. </span></span>
+<span id="cb23-70"><a href="#cb23-70" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb23-71"><a href="#cb23-71" tabindex="-1"></a><span class="co">#&gt; Now, consider the number $N = 4 \cdot p_1 \cdot p_2 \cdot \ldots \cdot p_k - 1$. </span></span>
+<span id="cb23-72"><a href="#cb23-72" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb23-73"><a href="#cb23-73" tabindex="-1"></a><span class="co">#&gt; Note that $N \equiv -1 \equiv 3 \pmod{4}$. </span></span>
+<span id="cb23-74"><a href="#cb23-74" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb23-75"><a href="#cb23-75" tabindex="-1"></a><span class="co">#&gt; Now, let's consider the prime factorization of $N$. If $N$ is itself prime, then we have found a new prime $N$ such that $N \equiv 3 \pmod{4}$, which contradicts our assumption that we enumerated all such primes.</span></span>
+<span id="cb23-76"><a href="#cb23-76" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb23-77"><a href="#cb23-77" tabindex="-1"></a><span class="sc">&gt;</span> ...</span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="bugfixes-0-3-3">Bugfixes<a class="anchor" aria-label="anchor" href="#bugfixes-0-3-3"></a></h3>
@@ -762,7 +866,7 @@
 <div class="section level3">
 <h3 id="tool-usage-introduced-to-tidyllm-0-3-2">Tool usage introduced to tidyllm<a class="anchor" aria-label="anchor" href="#tool-usage-introduced-to-tidyllm-0-3-2"></a></h3>
 <p>A first tool usage system inspired by a similar system in <code>ellmer</code> has been introduced to tidyllm. At the moment tool use is available for <code><a href="../reference/claude.html">claude()</a></code>, <code><a href="../reference/openai.html">openai()</a></code>, <code><a href="../reference/mistral.html">mistral()</a></code>, <code><a href="../reference/ollama.html">ollama()</a></code>, <code><a href="../reference/gemini.html">gemini()</a></code> and <code><a href="../reference/groq.html">groq()</a></code>:</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">get_current_time</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">tz</span>, <span class="va">format</span> <span class="op">=</span> <span class="st">"%Y-%m-%d %H:%M:%S"</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/format.html" class="external-link">format</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.time</a></span><span class="op">(</span><span class="op">)</span>, tz <span class="op">=</span> <span class="va">tz</span>, format <span class="op">=</span> <span class="va">format</span>, usetz <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
@@ -799,7 +903,7 @@
 <h3 id="support-for-voyageai-and-multimodal-embeddings-added-0-3-2">Support for Voyage.ai and Multimodal Embeddings Added<a class="anchor" aria-label="anchor" href="#support-for-voyageai-and-multimodal-embeddings-added-0-3-2"></a></h3>
 <p>Voyage.ai introduces a <strong>unique multimodal embeddings feature</strong>, allowing you to generate embeddings not only for text but also for images. The new <code><a href="../reference/voyage_embedding.html">voyage_embedding()</a></code> function in <strong>tidyllm</strong> enables this functionality by seamlessly handling different input types, working with both the new feature as well as the same inputs as for other embedding functions.</p>
 <p>The new <code><a href="../reference/img.html">img()</a></code> function lets you create image objects for embedding. You can mix text and <code><a href="../reference/img.html">img()</a></code> objects in a list and send them to Voyage AI for multimodal embeddings:</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"tidyllm"</span>, <span class="fu"><a href="../reference/img.html">img</a></span><span class="op">(</span><span class="fu">here</span><span class="fu">::</span><span class="fu"><a href="https://here.r-lib.org/reference/here.html" class="external-link">here</a></span><span class="op">(</span><span class="st">"docs"</span>, <span class="st">"logo.png"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/embed.html">embed</a></span><span class="op">(</span><span class="va">voyage</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # A tibble: 2 × 2</span></span>
@@ -823,30 +927,30 @@
 <h3 id="changes-compared-to-last-release-0-3-1">Changes compared to last release<a class="anchor" aria-label="anchor" href="#changes-compared-to-last-release-0-3-1"></a></h3>
 <ul><li>
 <strong>New schema field functions inspired by ellmer and more schema compatibility with ellmer:</strong> If you have ellmer installed you can now directly use ellmer type objects in the <code>.json_schema</code> option of api-functions. Moreover, <code><a href="../reference/tidyllm_schema.html">tidyllm_schema()</a></code> now accepts ellmer types as field definitions. In addition four ellmer-inspired type-definition functions<code><a href="../reference/field_chr.html">field_chr()</a></code>, <code><a href="../reference/field_chr.html">field_dbl()</a></code>, <code><a href="../reference/field_chr.html">field_lgl()</a></code> and <code><a href="../reference/field_chr.html">field_fct()</a></code> were added that allow you to set description fields in schemata</li>
-</ul><div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a> ellmer_adress <span class="ot">&lt;-</span>ellmer<span class="sc">::</span><span class="fu">type_object</span>(</span>
-<span id="cb21-2"><a href="#cb21-2" tabindex="-1"></a>    <span class="at">street =</span> ellmer<span class="sc">::</span><span class="fu">type_string</span>(<span class="st">"A famous street"</span>),</span>
-<span id="cb21-3"><a href="#cb21-3" tabindex="-1"></a>    <span class="at">houseNumber =</span> ellmer<span class="sc">::</span><span class="fu">type_number</span>(<span class="st">"a 3 digit number"</span>),</span>
-<span id="cb21-4"><a href="#cb21-4" tabindex="-1"></a>    <span class="at">postcode =</span> ellmer<span class="sc">::</span><span class="fu">type_string</span>(),</span>
-<span id="cb21-5"><a href="#cb21-5" tabindex="-1"></a>    <span class="at">city =</span> ellmer<span class="sc">::</span><span class="fu">type_string</span>(<span class="st">"A large city"</span>),</span>
-<span id="cb21-6"><a href="#cb21-6" tabindex="-1"></a>    <span class="at">region =</span> ellmer<span class="sc">::</span><span class="fu">type_string</span>(),</span>
-<span id="cb21-7"><a href="#cb21-7" tabindex="-1"></a>    <span class="at">country =</span> ellmer<span class="sc">::</span><span class="fu">type_enum</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"Germany"</span>, <span class="st">"France"</span>))</span>
-<span id="cb21-8"><a href="#cb21-8" tabindex="-1"></a>  ) </span>
-<span id="cb21-9"><a href="#cb21-9" tabindex="-1"></a></span>
-<span id="cb21-10"><a href="#cb21-10" tabindex="-1"></a>person_schema <span class="ot">&lt;-</span>  <span class="fu">tidyllm_schema</span>(</span>
-<span id="cb21-11"><a href="#cb21-11" tabindex="-1"></a>                <span class="at">person_name =</span> <span class="st">"string"</span>,</span>
-<span id="cb21-12"><a href="#cb21-12" tabindex="-1"></a>                <span class="at">age =</span> <span class="fu">field_dbl</span>(<span class="st">"An age between 25 and 40"</span>),</span>
-<span id="cb21-13"><a href="#cb21-13" tabindex="-1"></a>                <span class="at">is_employed =</span> <span class="fu">field_lgl</span>(<span class="st">"Employment Status in the last year"</span>)</span>
-<span id="cb21-14"><a href="#cb21-14" tabindex="-1"></a>                <span class="at">occupation =</span> <span class="fu">field_fct</span>(<span class="at">.levels=</span><span class="fu">c</span>(<span class="st">"Lawyer"</span>,<span class="st">"Butcher"</span>)),</span>
-<span id="cb21-15"><a href="#cb21-15" tabindex="-1"></a>                <span class="at">address =</span> ellmer_adress</span>
-<span id="cb21-16"><a href="#cb21-16" tabindex="-1"></a>                )</span>
-<span id="cb21-17"><a href="#cb21-17" tabindex="-1"></a></span>
-<span id="cb21-18"><a href="#cb21-18" tabindex="-1"></a>address_message <span class="ot">&lt;-</span> <span class="fu">llm_message</span>(<span class="st">"imagine an address"</span>) <span class="sc">|&gt;</span></span>
-<span id="cb21-19"><a href="#cb21-19" tabindex="-1"></a>  <span class="fu">chat</span>(openai,<span class="at">.json_schema =</span> ellmer_adress)</span>
-<span id="cb21-20"><a href="#cb21-20" tabindex="-1"></a>  </span>
-<span id="cb21-21"><a href="#cb21-21" tabindex="-1"></a>person_message  <span class="ot">&lt;-</span> <span class="fu">llm_message</span>(<span class="st">"imagine a person profile"</span>) <span class="sc">|&gt;</span></span>
-<span id="cb21-22"><a href="#cb21-22" tabindex="-1"></a>  <span class="fu">chat</span>(openai,<span class="at">.json_schema =</span> person_schema)</span></code></pre></div>
+</ul><div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" tabindex="-1"></a> ellmer_adress <span class="ot">&lt;-</span>ellmer<span class="sc">::</span><span class="fu">type_object</span>(</span>
+<span id="cb26-2"><a href="#cb26-2" tabindex="-1"></a>    <span class="at">street =</span> ellmer<span class="sc">::</span><span class="fu">type_string</span>(<span class="st">"A famous street"</span>),</span>
+<span id="cb26-3"><a href="#cb26-3" tabindex="-1"></a>    <span class="at">houseNumber =</span> ellmer<span class="sc">::</span><span class="fu">type_number</span>(<span class="st">"a 3 digit number"</span>),</span>
+<span id="cb26-4"><a href="#cb26-4" tabindex="-1"></a>    <span class="at">postcode =</span> ellmer<span class="sc">::</span><span class="fu">type_string</span>(),</span>
+<span id="cb26-5"><a href="#cb26-5" tabindex="-1"></a>    <span class="at">city =</span> ellmer<span class="sc">::</span><span class="fu">type_string</span>(<span class="st">"A large city"</span>),</span>
+<span id="cb26-6"><a href="#cb26-6" tabindex="-1"></a>    <span class="at">region =</span> ellmer<span class="sc">::</span><span class="fu">type_string</span>(),</span>
+<span id="cb26-7"><a href="#cb26-7" tabindex="-1"></a>    <span class="at">country =</span> ellmer<span class="sc">::</span><span class="fu">type_enum</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"Germany"</span>, <span class="st">"France"</span>))</span>
+<span id="cb26-8"><a href="#cb26-8" tabindex="-1"></a>  ) </span>
+<span id="cb26-9"><a href="#cb26-9" tabindex="-1"></a></span>
+<span id="cb26-10"><a href="#cb26-10" tabindex="-1"></a>person_schema <span class="ot">&lt;-</span>  <span class="fu">tidyllm_schema</span>(</span>
+<span id="cb26-11"><a href="#cb26-11" tabindex="-1"></a>                <span class="at">person_name =</span> <span class="st">"string"</span>,</span>
+<span id="cb26-12"><a href="#cb26-12" tabindex="-1"></a>                <span class="at">age =</span> <span class="fu">field_dbl</span>(<span class="st">"An age between 25 and 40"</span>),</span>
+<span id="cb26-13"><a href="#cb26-13" tabindex="-1"></a>                <span class="at">is_employed =</span> <span class="fu">field_lgl</span>(<span class="st">"Employment Status in the last year"</span>)</span>
+<span id="cb26-14"><a href="#cb26-14" tabindex="-1"></a>                <span class="at">occupation =</span> <span class="fu">field_fct</span>(<span class="at">.levels=</span><span class="fu">c</span>(<span class="st">"Lawyer"</span>,<span class="st">"Butcher"</span>)),</span>
+<span id="cb26-15"><a href="#cb26-15" tabindex="-1"></a>                <span class="at">address =</span> ellmer_adress</span>
+<span id="cb26-16"><a href="#cb26-16" tabindex="-1"></a>                )</span>
+<span id="cb26-17"><a href="#cb26-17" tabindex="-1"></a></span>
+<span id="cb26-18"><a href="#cb26-18" tabindex="-1"></a>address_message <span class="ot">&lt;-</span> <span class="fu">llm_message</span>(<span class="st">"imagine an address"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb26-19"><a href="#cb26-19" tabindex="-1"></a>  <span class="fu">chat</span>(openai,<span class="at">.json_schema =</span> ellmer_adress)</span>
+<span id="cb26-20"><a href="#cb26-20" tabindex="-1"></a>  </span>
+<span id="cb26-21"><a href="#cb26-21" tabindex="-1"></a>person_message  <span class="ot">&lt;-</span> <span class="fu">llm_message</span>(<span class="st">"imagine a person profile"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb26-22"><a href="#cb26-22" tabindex="-1"></a>  <span class="fu">chat</span>(openai,<span class="at">.json_schema =</span> person_schema)</span></code></pre></div>
 <ul><li>Support for logprobs in <code><a href="../reference/openai_chat.html">openai_chat()</a></code> and <code><a href="../reference/send_openai_batch.html">send_openai_batch()</a></code> and new <code><a href="../reference/get_logprobs.html">get_logprobs()</a></code> function:</li>
-</ul><div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+</ul><div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">badger_poem</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Write a haiku about badgers"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>    <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.logprobs<span class="op">=</span><span class="cn">TRUE</span>,.top_logprobs<span class="op">=</span><span class="fl">5</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
@@ -863,7 +967,7 @@
 <li>New <code><a href="../reference/ollama_delete_model.html">ollama_delete_model()</a></code> function</li>
 <li>
 <code><a href="../reference/list_models.html">list_models()</a></code> is now a verb supporting most providers.</li>
-</ul><div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+</ul><div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/list_models.html">list_models</a></span><span class="op">(</span><span class="va">openai</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # A tibble: 52 × 3</span></span>
 <span><span class="co">#&gt;    id                                   created             owned_by</span></span>
@@ -897,13 +1001,13 @@
 </ul><p>Each verb and provider combination routes the interaction to provider-specific functions like <code><a href="../reference/openai_chat.html">openai_chat()</a></code> or <code><a href="../reference/claude_chat.html">claude_chat()</a></code> that do the work in the background. These functions can also be called directly as an alternative more verbose and provider-specific interface.</p>
 <div class="section level4">
 <h4 id="old-usage-0-3-0">Old Usage:<a class="anchor" aria-label="anchor" href="#old-usage-0-3-0"></a></h4>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Hello World"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-4o"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="new-usage-0-3-0">New Usage:<a class="anchor" aria-label="anchor" href="#new-usage-0-3-0"></a></h4>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Recommended Verb-Based Approach</span></span>
 <span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Hello World"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-4o"</span><span class="op">)</span><span class="op">)</span></span>
@@ -954,7 +1058,7 @@
 <h3 id="major-features-0-2-7">Major Features<a class="anchor" aria-label="anchor" href="#major-features-0-2-7"></a></h3>
 <ul><li>Batch API functions for the Mistral API</li>
 <li>Search Grounding with the <code>.grounding_threshold</code> argument added of the <code><a href="../reference/gemini_chat.html">gemini_chat()</a></code> function allowing you to use Google searches to ground model responses to a search result Gemini models. For example, asking about the maintainer of an obscure R package works with grounding but does only lead to a hallucination without:</li>
-</ul><div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+</ul><div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"What is tidyllm and who maintains this package?"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/gemini_chat.html">gemini_chat</a></span><span class="op">(</span>.grounding_threshold <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span></span></code></pre></div>
 <ul><li>Perplexity as additional API provider available through <code><a href="../reference/perplexity_chat.html">perplexity_chat()</a></code>. The neat feature of perplexity is the up-to-date web search it does with detailed citations. Cited sources are available in the <code>api_specific</code>-list column of <code><a href="../reference/get_metadata.html">get_metadata()</a></code>
@@ -994,7 +1098,7 @@
 <div class="section level3">
 <h3 id="minor-features-0-2-6">Minor Features<a class="anchor" aria-label="anchor" href="#minor-features-0-2-6"></a></h3>
 <ul><li>Google Gemini now supports working with multiple files in one message for the file upload functionality</li>
-</ul><div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+</ul><div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">here</span><span class="fu">::</span><span class="fu"><a href="https://here.r-lib.org/reference/here.html" class="external-link">here</a></span><span class="op">(</span><span class="st">"local_wip"</span>,<span class="st">"example.mp3"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/gemini_upload_file.html">gemini_upload_file</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">here</span><span class="fu">::</span><span class="fu"><a href="https://here.r-lib.org/reference/here.html" class="external-link">here</a></span><span class="op">(</span><span class="st">"local_wip"</span>,<span class="st">"legrille.mp4"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/gemini_upload_file.html">gemini_upload_file</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
@@ -1046,13 +1150,13 @@
 </div>
 <div class="section level4">
 <h4 id="old-usage-0-2-3">Old Usage:<a class="anchor" aria-label="anchor" href="#old-usage-0-2-3"></a></h4>
-<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Hello World"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-4o"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="new-usage-0-2-3">New Usage:<a class="anchor" aria-label="anchor" href="#new-usage-0-2-3"></a></h4>
-<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Recommended Verb-Based Approach</span></span>
 <span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Hello World"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-4o"</span><span class="op">)</span><span class="op">)</span></span>
@@ -1082,7 +1186,7 @@
 <h3 id="major-features-0-2-2">Major Features<a class="anchor" aria-label="anchor" href="#major-features-0-2-2"></a></h3>
 <ul><li>Added functions to work with the Google Gemini API, with the new <code><a href="../reference/gemini.html">gemini()</a></code> main API-function</li>
 <li>Support for the file upload workflows for Gemini:</li>
-</ul><div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+</ul><div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">#Upload a file for use with gemini</span></span>
 <span><span class="va">upload_info</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gemini_upload_file.html">gemini_upload_file</a></span><span class="op">(</span><span class="st">"example.mp3"</span><span class="op">)</span></span>
 <span></span>
@@ -1205,7 +1309,7 @@
 <h3 id="major-features-0-2-1">Major Features:<a class="anchor" aria-label="anchor" href="#major-features-0-2-1"></a></h3>
 <ul><li>Added <code><a href="../reference/get_metadata.html">get_metadata()</a></code> function to retrieve and format metadata from <code>LLMMessage</code> objects.</li>
 <li>Enhanced the <code>print</code> method for <code>LLMMessage</code> to support printing metadata, controlled via the new <code>tidyllm_print_metadata</code> option or a new <code>.meta</code>-arguement for the print method.</li>
-</ul><div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
+</ul><div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">conversation</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Write a short poem about software development"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>  </span>

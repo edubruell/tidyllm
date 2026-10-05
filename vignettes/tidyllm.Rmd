@@ -47,11 +47,15 @@ Sys.setenv(OPENAI_API_KEY = "your-key-here")
 | **Google Gemini** | `GOOGLE_API_KEY` | [Google AI Studio](https://aistudio.google.com/app/apikey) |
 | **Mistral** | `MISTRAL_API_KEY` | [Mistral Console](https://console.mistral.ai/api-keys/) |
 | **Groq** | `GROQ_API_KEY` | [Groq Console](https://console.groq.com/playground) |
-| **Perplexity** | `PERPLEXITY_API_KEY` | [Perplexity API Settings](https://www.perplexity.ai/settings/api) |
+| **Perplexity** (deprecated) | `PERPLEXITY_API_KEY` | [Perplexity API docs](https://docs.perplexity.ai/docs/getting-started/overview) |
 | **DeepSeek** | `DEEPSEEK_API_KEY` | [DeepSeek Platform](https://platform.deepseek.com/api_keys) |
-| **Voyage AI** | `VOYAGE_API_KEY` | [Voyage AI Dashboard](https://dashboard.voyageai.com/api-keys) |
+| **Voyage AI** | `VOYAGE_API_KEY` | [Voyage AI API key guide](https://docs.voyageai.com/docs/api-key-and-installation) |
 | **OpenRouter** | `OPENROUTER_API_KEY` | [OpenRouter Dashboard](https://openrouter.ai/keys) |
 | **Azure OpenAI** | `AZURE_OPENAI_API_KEY` | [Azure Portal](https://portal.azure.com/) |
+| **Tavily** (web search for `websearch()` and `websearch_tool()`) | `TAVILY_API_KEY` | [Tavily](https://app.tavily.com) |
+| **SearXNG** (self-hosted web search for `websearch()` and `websearch_tool()`) | `SEARXNG_SERVER` (the server address, not a key) | [SearXNG](https://docs.searxng.org) |
+
+`claude_cli()` needs no key: it runs the `claude` command line tool that is already installed and signed in on your machine.
 
 ### Running Local Models
 
@@ -101,7 +105,7 @@ c("A famous landmark in Paris is the Eiffel Tower.")
 All API interactions follow the **verb + provider** pattern:
 
 - **Verbs** define the action: `chat()`, `embed()`, `send_batch()`, `check_batch()`, `fetch_batch()`, `list_batches()`, `list_models()`, `deep_research()`, `check_job()`, `fetch_job()`, `upload_file()`, `list_files()`, `file_info()`, `delete_file()`
-- **Providers** specify the API: `openai()`, `claude()`, `gemini()`, `ollama()`, `mistral()`, `groq()`, `perplexity()`, `deepseek()`, `voyage()`, `openrouter()`, `llamacpp()`, `azure_openai()`
+- **Providers** specify the API: `openai()`, `claude()`, `claude_cli()`, `gemini()`, `ollama()`, `mistral()`, `groq()`, `deepseek()`, `voyage()`, `openrouter()`, `llamacpp()`, `azure_openai()`, `ellmer()`
 
 Provider-specific functions like `openai_chat()` or `claude_chat()` also work directly and expose the full range of parameters for each API.
 
@@ -117,7 +121,7 @@ knitr::include_graphics("picture.jpeg")
 # Single image
 image_description <- llm_message("Describe this picture. Can you guess where it was taken?",
                                   .media = img("picture.jpeg")) |>
-  chat(openai(.model = "gpt-5.6-terra"))
+  chat(openai(.model = "gpt-6-luna"))
 
 get_reply(image_description)
 ```
@@ -211,7 +215,7 @@ llm_message("Analyze this plot and data summary:",
 ```
 ```{r routputs_fake, eval=TRUE, echo=FALSE}
 llm_message("Analyze this plot and data summary:",
-            .imagefile = "file1568f6c1b4565.png",
+            .media = img("file1568f6c1b4565.png"),
             .f = ~{summary(mtcars)}) |>
   llm_message("The scatter plot shows a clear negative correlation between weight and fuel efficiency. Heavier cars consistently achieve lower mpg, with the linear trend confirming this relationship. Variability around the line suggests other factors, engine size and transmission, also play a role.", .role = "assistant")
 ```
@@ -254,7 +258,7 @@ conversation |> get_metadata()
 ```
 ```{r get_metadata_out, eval=TRUE, echo=FALSE}
 tibble::tibble(
-  model             = c("groq-model", "claude-sonnet-5"),
+  model             = c("groq-model", "claude-sonnet-5-5"),
   timestamp         = as.POSIXct(c("2026-07-08 14:25:43", "2026-07-08 14:26:02")),
   prompt_tokens     = c(20L, 80L),
   completion_tokens = c(45L, 40L),
@@ -357,10 +361,10 @@ llm_message("Write a haiku about tidyllm.") |>
 
 # Provider-specific args in the provider
 llm_message("Hello") |>
-  chat(ollama(.ollama_server = "http://my-server:11434"), .temperature = 0)
+  chat(ollama(.ollama_server = Sys.getenv("OLLAMA_SERVER")), .temperature = 0)
 ```
 
-When an argument appears in both `chat()` and the provider function, `chat()` takes precedence. If a common argument is not supported by the chosen provider, `chat()` raises an error rather than silently ignoring it.
+When an argument appears in both `chat()` and the provider function, `chat()` takes precedence. If a common argument is not supported by the chosen provider, `chat()` raises an error rather than silently ignoring it. `provider_capabilities()` (see "Checking What a Provider Supports" below) lists which arguments each provider accepts.
 
 ## Tool Use
 
@@ -388,6 +392,8 @@ llm_message("What time is it in Stuttgart right now?") |>
 ```
 
 When a tool is provided, the model can request its execution, tidyllm runs it in your R session, and the result is fed back automatically. Multi-turn tool loops (where the model makes several tool calls) are handled transparently.
+
+For provider-independent web search with `websearch_tool()` and tools served over MCP, see the [tools article](https://edubruell.github.io/tidyllm/articles/tidyllm_tools.html).
 
 If you use **ellmer**, convert existing ellmer tool definitions with `ellmer_tool()`:
 
@@ -467,25 +473,24 @@ conversations <- readRDS("claude_batch.rds") |>
 poems <- purrr::map_chr(conversations, get_reply)
 ```
 
-`check_job()` and `fetch_job()` are type-dispatching aliases; they work on both batch objects and Perplexity research jobs (see `deep_research()` below).
+`check_job()` and `fetch_job()` are type-dispatching aliases; they work on both batch objects and background research jobs (see `deep_research()` below).
 
 ## Deep Research
 
-For long-horizon research tasks, `deep_research()` runs an extended web search and synthesis. Perplexity's `sonar-deep-research` model is currently supported:
+For long-horizon research tasks, `deep_research()` runs an extended web search and synthesis. It is available for `openai()`, which runs the research with web search in the background and returns the finished report:
 
 ```{r, eval=FALSE}
 # Blocking: waits for completion, returns an LLMMessage
-result <- llm_message("Compare Rust and Go for systems programming in 2025.") |>
-  deep_research(perplexity())
+result <- llm_message("Compare Rust and Go for systems programming in 2026.") |>
+  deep_research(openai())
 
 get_reply(result)
-get_metadata(result)$api_specific[[1]]$citations
 ```
 
 ```{r, eval=FALSE}
 # Background mode: returns a job handle immediately
 job <- llm_message("Summarise recent EU AI Act developments.") |>
-  deep_research(perplexity(), .background = TRUE)
+  deep_research(openai(), .background = TRUE)
 
 check_job(job)           # poll status
 result <- fetch_job(job) # retrieve when complete
@@ -508,29 +513,50 @@ To stream into a user interface rather than the console, use `send_chat()`, whic
 
 | Provider | Strengths and tidyllm-specific features |
 |----------|-----------------------------------------|
-| `openai()` | Top benchmark performance across coding, math, and reasoning; `o3`/`o4` reasoning models; built-in web search via `openai_websearch()`; Files API |
-| `claude()` | Best-in-class coding (SWE-bench leader); `.thinking = TRUE` for extended reasoning; Files API for document workflows; batch |
+| `openai()` | GPT-6 model line with `.thinking` effort levels; `deep_research()`; built-in web search via `openai_websearch()`; Files API |
+| `claude()` | Strong at coding and long documents; `.thinking = TRUE` for extended reasoning; Files API for document workflows; batch |
 | `gemini()` | 1M-token context window; native image, audio, and video via `.media`; search grounding; `.thinking_budget` for reasoning; Files API; batch |
 | `mistral()` | EU-hosted, GDPR-friendly; Magistral reasoning models; Voxtral audio models (`.media = audio_file()`); embeddings; batch |
 | `groq()` | Fastest available inference (300-1200 tokens/s); `groq_transcribe()` for Whisper audio; `.json_schema`; batch |
-| `perplexity()` | Real-time web search with citations in metadata; `deep_research()` for long-horizon research; search domain filter |
-| `deepseek()` | Top math and reasoning benchmarks at very low cost; `.thinking = TRUE` auto-switches to `deepseek-reasoner` |
+| `perplexity()` (deprecated since 0.7.0, removed in 0.8.0; use `openrouter(.model = "perplexity/sonar")`) | Real-time web search with citations in metadata; `deep_research()` for long-horizon research; search domain filter |
+| `deepseek()` | Top math and reasoning benchmarks at very low cost; `.thinking = TRUE` turns on thinking mode and returns the reasoning trace in metadata |
 | `voyage()` | State-of-the-art retrieval embeddings; `voyage_rerank()`; multimodal embeddings (text + images); `.output_dimension` |
 | `openrouter()` | 500+ models via one API key; audio and video support on Gemini, Qwen 3.6, and other multimodal routes; automatic fallback routing |
+| `claude_cli()` | Runs your own installed and signed-in `claude` command line tool; no API key, usage counts against the CLI's plan; CLI tools are off unless you allow them with `.cli_tools` |
+| `ellmer()` | Use any ellmer chat object as a tidyllm provider |
 | `ollama()` | Local models with full data privacy; no API costs; `ollama_download_model()` for model management |
 | `llamacpp()` | Often the most performant local inference stack; audio input with Ultravox, Qwen2.5-Omni, Qwen3-Omni, and Gemma 4 models; BNF grammar constraints; logprobs; `llamacpp_rerank()` |
 | `azure_openai()` | Enterprise Azure deployments of OpenAI models; batch support |
 
 For getting started with local models (Ollama and llama.cpp), see the Local Models article on the tidyllm website.
 
+### Checking What a Provider Supports
+
+`provider_capabilities()` answers "can this provider do that?" without reading each help page. With a provider call it lists every verb the provider implements, each verb's arguments, the default of each argument as R code, and the function (`fn`) whose help page documents it:
+
+```{r, eval=FALSE}
+provider_capabilities(claude(), .verb = "chat")
+
+# Which providers accept .thinking, and for which verbs?
+provider_capabilities(.argument = ".thinking")
+
+# Default chat model of every provider
+provider_capabilities(.verb = "chat", .argument = ".model")
+
+# Which media types each provider takes in a message
+provider_capabilities(.what = "media")
+```
+
+The result is an ordinary tibble, so filter and reshape it as usual. An argument in the table means the provider's function accepts it; an individual model can still reject a value, for example some reasoning effort levels. The attachment check in `chat()` reads the same media table, so a message with audio sent to a provider that lists no audio support fails before any request is made.
+
 ## Setting a Default Provider
 
 Avoid specifying a provider on every call by setting options:
 
 ```{r, eval=FALSE}
-options(tidyllm_chat_default   = openai(.model = "gpt-5.6-terra"))
+options(tidyllm_chat_default   = openai(.model = "gpt-6-luna"))
 options(tidyllm_embed_default  = ollama())
-options(tidyllm_sbatch_default = claude(.temperature = 0))
+options(tidyllm_sbatch_default = claude())
 options(tidyllm_cbatch_default = claude())
 options(tidyllm_fbatch_default = claude())
 options(tidyllm_lbatch_default = claude())

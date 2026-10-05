@@ -11,6 +11,71 @@ api_mistral <- new_class("Mistral", api_chat_completions)
 #' @noRd
 method(parse_logprobs, list(api_mistral, class_any)) <- function(.api, .input) NULL
 
+#' Split Mistral message content into reply text and thinking text
+#'
+#' Reasoning models (Magistral, Medium 3.5, Z.ai GLM on Mistral) return
+#' `content` as an array of chunks: `thinking` chunks holding a list of text
+#' parts, and `text` chunks. Plain models return a string.
+#'
+#' @noRd
+mistral_split_content <- function(.content) {
+  if (is.null(.content) || is.character(.content)) {
+    return(list(text = .content, thinking = NULL))
+  }
+  join <- function(x) if (length(x) > 0) paste0(unlist(x), collapse = "") else NULL
+  text <- lapply(.content, function(chunk) if (identical(chunk$type, "text")) chunk$text)
+  thinking <- lapply(.content, function(chunk) {
+    if (!identical(chunk$type, "thinking")) return(NULL)
+    if (is.character(chunk$thinking)) return(chunk$thinking)
+    lapply(chunk$thinking, function(part) part$text)
+  })
+  list(text = join(text) %||% "", thinking = join(thinking))
+}
+
+#' Put chunked message content into the string-plus-`reasoning` shape
+#'
+#' @noRd
+mistral_normalise_message <- function(.message) {
+  if (!is.list(.message$content)) return(.message)
+  parts <- mistral_split_content(.message$content)
+  .message$content <- parts$text
+  .message$reasoning <- parts$thinking
+  .message
+}
+
+#' @noRd
+method(parse_chat_response, list(api_mistral, class_list)) <- function(.api, .content) {
+  if (length(.content$choices) >= 1) {
+    .content$choices[[1]]$message <- mistral_normalise_message(.content$choices[[1]]$message)
+  }
+  parse_chat_response(super(.api, api_chat_completions), .content)
+}
+
+#' @noRd
+method(extract_metadata, list(api_mistral, class_list)) <- function(.api, .response) {
+  meta <- extract_metadata(super(.api, api_chat_completions), .response)
+  if (length(.response$choices) >= 1) {
+    message <- mistral_normalise_message(.response$choices[[1]]$message)
+    meta$specific_metadata$thinking <- message$reasoning
+  }
+  meta
+}
+
+#' Chunked streaming deltas are flattened before the shared parser sees them
+#'
+#' @noRd
+method(parse_stream_event, api_mistral) <- function(.api, .chunk) {
+  parsed <- parse_stream_json(.chunk$data)
+  if (!is.null(parsed) && length(parsed$choices) >= 1 &&
+      is.list(parsed$choices[[1]]$delta$content)) {
+    parts <- mistral_split_content(parsed$choices[[1]]$delta$content)
+    parsed$choices[[1]]$delta$content <- if (nzchar(parts$text)) parts$text
+    parsed$choices[[1]]$delta$reasoning <- parts$thinking
+    .chunk$data <- as.character(jsonlite::toJSON(parsed, auto_unbox = TRUE, null = "null"))
+  }
+  parse_stream_event(super(.api, api_chat_completions), .chunk)
+}
+
 
 
 #' Convert LLMMessage to Mistral API format
@@ -100,7 +165,7 @@ method(ratelimit_from_header, list(api_mistral,new_S3_class("httr2_headers"))) <
 prepare_mistral_request <- function(
     .llm,
     .api,
-    .model = "mistral-large-latest",
+    .model = "zai-glm-5-3",
     .min_tokens = NULL,
     .max_tokens = NULL,
     .frequency_penalty = NULL,
@@ -175,7 +240,7 @@ prepare_mistral_request <- function(
 #' Send LLMMessage to Mistral API
 #'
 #' @param .llm An `LLMMessage` object.
-#' @param .model The model identifier to use (default: `"mistral-large-latest"`). 
+#' @param .model The model identifier to use (default: `"zai-glm-5-3"`). 
 #' @param .frequency_penalty Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency.
 #' @param .logit_bias A named list modifying the likelihood of specified tokens appearing in the completion.
 #' @param .presence_penalty Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far.
@@ -200,7 +265,7 @@ prepare_mistral_request <- function(
 #' @return Returns an updated `LLMMessage` object.
 #' @export
 mistral_chat <- function(.llm,
-                         .model = "mistral-large-latest",
+                         .model = "zai-glm-5-3",
                          .frequency_penalty = NULL,
                          .logit_bias = NULL,
                          .presence_penalty = NULL,
@@ -229,7 +294,7 @@ mistral_chat <- function(.llm,
 #'
 #' @noRd
 mistral_build_chat_request <- function(.llm,
-                         .model = "mistral-large-latest",
+                         .model = "zai-glm-5-3",
                          .frequency_penalty = NULL,
                          .logit_bias = NULL,
                          .presence_penalty = NULL,
@@ -827,7 +892,7 @@ fetch_mistral_batch <- function(.llms,
   # Parse JSONL response and map results by custom_id
   results_lines <- strsplit(httr2::resp_body_string(results_response), "\n")[[1]]
   results_list <- lapply(results_lines, function(line) {
-    if (nzchar(line)) jsonlite::fromJSON(line) else NULL
+    if (nzchar(line)) jsonlite::fromJSON(line, simplifyVector = FALSE) else NULL
   })
   results_list <- Filter(Negate(is.null), results_list)
   
@@ -838,7 +903,8 @@ fetch_mistral_batch <- function(.llms,
     result <- results_by_custom_id[[custom_id]]
     
     if (!is.null(result) && is.null(result$error) && result$response$status_code == 200) {
-      assistant_reply <- result$response$body$choices$message$content
+      reply_message <- mistral_normalise_message(result$response$body$choices[[1]]$message)
+      assistant_reply <- reply_message$content
       meta_data <- extract_metadata(api_obj,result$response$body)
       llm <- add_message(.llm = .llms[[custom_id]],
                          .role = "assistant", 
@@ -960,5 +1026,6 @@ mistral <- create_provider_function(
   check_batch = check_mistral_batch,
   list_batches = list_mistral_batches,
   fetch_batch = fetch_mistral_batch,
-  list_models = mistral_list_models
+  list_models = mistral_list_models,
+  .media = c("image", "audio")
 )

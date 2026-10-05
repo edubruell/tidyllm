@@ -293,11 +293,7 @@ method(run_tool_calls, list(api_gemini, class_list, class_list)) <- function(.ap
     tool_function <- matching_tool[[1]]@func
     
     # Execute the tool function with the provided arguments.
-    tool_result <- utils::capture.output(
-      do.call(tool_function, as.list(tool_args)),
-      file = NULL
-    ) |> 
-      stringr::str_c(collapse = "\n")
+    tool_result <- tool_result_text(tool_function, as.list(tool_args))
     
     # Format the tool response as a part for a single user message.
     list(
@@ -405,13 +401,13 @@ gemini_inject_files <- function(.gemini_contents,
 #' @param .stream Should the response be streamed (default: FALSE).
 #' @param .max_tool_rounds Integer specifying the maximum number of tool use iterations (default: 10).
 #'   Set to 1 for single-round tool use, or higher for multi-turn agentic loops.
-#' @param .thinking_budget Token budget for internal reasoning (default: NULL). Works with `gemini-3.6-flash` and `gemini-3.1-pro`.
+#' @param .thinking_budget Token budget for internal reasoning (default: NULL). Works with `gemini-3.8-flash` and `gemini-3.1-pro`.
 #'
 #' @return A new `LLMMessage` object containing the original messages plus the assistant's response.
 #'
 #' @export
 gemini_chat <- function(.llm,
-                   .model = "gemini-3.6-flash",
+                   .model = "gemini-3.8-flash",
                    .fileid = NULL,
                    .temperature = NULL,
                    .max_output_tokens = NULL,
@@ -439,7 +435,7 @@ gemini_chat <- function(.llm,
 #'
 #' @noRd
 gemini_build_chat_request <- function(.llm,
-                   .model = "gemini-3.6-flash",
+                   .model = "gemini-3.8-flash",
                    .fileid = NULL,
                    .temperature = NULL,
                    .max_output_tokens = NULL,
@@ -891,7 +887,7 @@ gemini_embedding <- function(.input,
 #' @return Named list of LLMMessage objects with attributes `batch_id` and `json`
 #' @export
 send_gemini_batch <- function(.llms,
-                              .model = "gemini-3.6-flash",
+                              .model = "gemini-3.8-flash",
                               .temperature = NULL,
                               .max_output_tokens = NULL,
                               .top_p = NULL,
@@ -1455,5 +1451,6 @@ gemini <- create_provider_function(
   upload_file = gemini_upload_file_verb,
   list_files  = gemini_list_files_verb,
   file_info   = gemini_file_info_verb,
-  delete_file = gemini_delete_file_verb
+  delete_file = gemini_delete_file_verb,
+  .media = c("image", "pdf", "audio", "video", "files")
 )

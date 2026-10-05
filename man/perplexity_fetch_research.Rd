@@ -23,3 +23,10 @@ An updated \code{LLMMessage} with the research reply appended.
 \description{
 Fetch Results from a Completed Perplexity Deep Research Job
 }
+\section{Deprecated}{
+
+Perplexity support is deprecated since tidyllm 0.7.0 and ends in 0.8.0. Use
+\code{openrouter(.model = "perplexity/sonar")} for the same models, or
+\code{\link[=websearch_tool]{websearch_tool()}} to give any provider web search.
+}
+

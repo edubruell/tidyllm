@@ -2,6 +2,7 @@ testthat::skip_if_not_installed("httptest2")
 library(httptest2)
 
 test_that("perplexity function constructs a correct request and dry runs it", {
+  withr::local_options(lifecycle_verbosity = "quiet")
   # Create a mock LLMMessage object
   llm <- llm_message("Write a haiku about search indices")
   
@@ -36,6 +37,7 @@ test_that("perplexity function constructs a correct request and dry runs it", {
 })
 
 test_that("perplexity_chat dry run includes search_domain_filter in body", {
+  withr::local_options(lifecycle_verbosity = "quiet")
   request <- llm_message("Any news?") |>
     chat(perplexity(.search_domain_filter = c("arxiv.org", "-reddit.com")), .dry_run = TRUE)
   body_json <- request$body |> jsonlite::toJSON() |> as.character()
@@ -44,6 +46,7 @@ test_that("perplexity_chat dry run includes search_domain_filter in body", {
 })
 
 test_that("perplexity_chat dry run includes search_recency_filter in body", {
+  withr::local_options(lifecycle_verbosity = "quiet")
   request <- llm_message("What happened today?") |>
     chat(perplexity(.search_recency_filter = "day"), .dry_run = TRUE)
   body_json <- request$body |> jsonlite::toJSON() |> as.character()
@@ -51,16 +54,19 @@ test_that("perplexity_chat dry run includes search_recency_filter in body", {
 })
 
 test_that("check_job errors for non-job object", {
+  withr::local_options(lifecycle_verbosity = "quiet")
   expect_error(check_job("not a job"), "check_job\\(\\) expects")
   expect_error(check_job(list(x = 1)), "check_job\\(\\) expects")
 })
 
 test_that("fetch_job errors for non-job object", {
+  withr::local_options(lifecycle_verbosity = "quiet")
   expect_error(fetch_job("not a job"), "fetch_job\\(\\) expects")
   expect_error(fetch_job(42), "fetch_job\\(\\) expects")
 })
 
 test_that("perplexity_deep_research validates reasoning_effort", {
+  withr::local_options(lifecycle_verbosity = "quiet")
   old_key <- Sys.getenv("PERPLEXITY_API_KEY")
   Sys.setenv(PERPLEXITY_API_KEY = "DUMMY_KEY_FOR_TESTING")
   on.exit(Sys.setenv(PERPLEXITY_API_KEY = old_key))
@@ -71,6 +77,7 @@ test_that("perplexity_deep_research validates reasoning_effort", {
 })
 
 test_that("perplexity_deep_research validates search_domain_filter max length", {
+  withr::local_options(lifecycle_verbosity = "quiet")
   old_key <- Sys.getenv("PERPLEXITY_API_KEY")
   Sys.setenv(PERPLEXITY_API_KEY = "DUMMY_KEY_FOR_TESTING")
   on.exit(Sys.setenv(PERPLEXITY_API_KEY = old_key))
@@ -84,6 +91,7 @@ test_that("perplexity_deep_research validates search_domain_filter max length", 
 })
 
 test_that("perplexity returns expected response", {
+  withr::local_options(lifecycle_verbosity = "quiet")
   with_mock_dir("perplexity", expr = {
     
     # Store the current API key and set a dummy key if none exists

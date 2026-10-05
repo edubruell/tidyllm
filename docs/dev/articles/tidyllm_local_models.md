@@ -111,15 +111,15 @@ get_reply(reply)
 The `.num_ctx` parameter controls how much text the model can read at
 once, known as its *context window*. Text is measured in tokens, which
 are roughly three-quarters of a word each. The function default is
-`2048` tokens, which is quite short and much smaller than what modern
-models like Qwen3.5 actually support. For long documents, increase it to
-fit your input:
+`32768` tokens, well short of what modern models like Qwen3.5 can
+support in principle, but a sane starting point on typical laptop
+hardware. For longer documents, increase it further to fit your input:
 
 ``` r
 
 long_document |>
   llm_message() |>
-  chat(ollama(.num_ctx = 32768))
+  chat(ollama(.num_ctx = 131072))
 ```
 
 For embeddings, use the
@@ -197,19 +197,22 @@ upgrading to Q8_0 on the 7B.
 
 Model size is measured in *parameters*, the numerical weights learned
 during training. More parameters generally means more capable, but also
-more memory required and slower inference. As of early 2026, strong
+more memory required and slower inference. As of September 2026, strong
 open-weight families come from a range of labs:
 
 | Family | Lab | Sizes | Notes |
 |----|----|----|----|
-| **Qwen3.5** | Alibaba | 0.8B–9B; 27B, 35B-A3B, 122B-A10B; 397B-A17B | 201 languages, 1M context, thinking mode on by default; default in tidyllm |
-| **Mistral Small 4** | Mistral AI | 119B total / 6B active (MoE) | Reasoning, vision, and agentic coding unified; 256K context; Apache 2.0 |
-| **Llama 4 Scout** | Meta | 109B total / ~17B active (MoE) | Native multimodal, 10M token context |
-| **Gemma 3** | Google | 1B, 4B, 12B, 27B | Compact multimodal models; permissive license |
-| **Kimi K2.5** | Moonshot AI | 1T total / 32B active (MoE) | Strong coding and vision; MIT license |
-| **MiniMax M2.5** | MiniMax | large MoE | Near-frontier quality at a fraction of proprietary API cost |
-| **DeepSeek V3.2** | DeepSeek | 671B MoE | Open-weight general model; best when hardware is not the constraint |
-| **Phi-4** | Microsoft | 14B | Punches well above weight class on reasoning tasks |
+| **Qwen3.8** | Alibaba | 27B dense | Apache 2.0; newest Qwen open weight (August 2026); `qwen3.8:27b` needs about 18 GB |
+| **Qwen3.6** | Alibaba | 27B dense, 35B-A3B (MoE) | Apache 2.0; no small sizes, so Qwen3.5 (0.8B to 9B) remains tidyllm’s Ollama default line |
+| **Gemma 4** | Google | E2B, E4B, 12B, 26B-A4B (MoE), 31B dense | 140+ languages, native audio/video input; the 12B (June 2026) has a 256K context and fits a 16 GB laptop; Apache 2.0 |
+| **GLM-5.3** | Z.ai | about 753B total (MoE); Flash: 320B total / 18B active | Successor to GLM-5.2 (August 2026); GLM-5.3 uses a custom license, GLM-5.3-Flash is MIT with a 1M context |
+| **Muse Glimmer** | Meta | 30B dense | Apache 2.0; multimodal (text and image), 131K context, runs on a single 24 GB GPU (August 2026); Meta’s larger Muse Spark models are closed |
+| **Kimi K3** | Moonshot AI | 2.8T total / 104B active (MoE) | Largest open-weight model; weights released July 26, 2026 under a custom Kimi K3 License that requires a deal for hosted services above \$20M a year |
+| **MiniMax M3** | MiniMax | about 428B total / 23B active (MoE) | 1M context, multimodal; custom MiniMax Community License |
+| **DeepSeek V4 Pro** | DeepSeek | 1.6T total / 49B active (MoE) | 1M context; MIT license. V4.1 Flash (September 2026) is a cheaper MIT-licensed sibling |
+| **Mistral Medium 3.5** | Mistral AI | 128B dense | 256K context, reasoning, vision and coding in one model; modified MIT, free below \$20M monthly revenue |
+| **Granite 4.2** | IBM | 3B, 8B, 30B | Apache 2.0, 128K context, thinking mode; `granite4.2:3b` and `:8b` run on modest laptops |
+| **Inkling** | Thinking Machines | 975B total / 41B active (MoE) | First US entrant at this scale; 1M context; built as a base for fine-tuning rather than top-end quality |
 
 Several of these are *Mixture-of-Experts* (MoE) models. Instead of
 activating the entire network for every word, MoE models route each step
@@ -227,7 +230,7 @@ Before investing in hardware or reserving compute time, test the model
 via a cloud API first to confirm it works for your task.
 
 [OpenRouter](https://openrouter.ai) provides a single API key for
-hundreds of models, including the Qwen, Mistral, Llama, Kimi, Gemma, and
+hundreds of models, including the Qwen, Mistral, Kimi, Gemma, GLM, and
 MiniMax families. Because tidyllm uses the same verb-and-provider
 pattern for every provider, switching between candidates requires only
 changing the `.model` argument:
@@ -237,9 +240,9 @@ changing the `.model` argument:
 prompt <- llm_message("Classify this job description into a one-sentence occupation label:
                         'I oversee a team of data engineers building our company data platform'")
 
-result_qwen    <- prompt |> chat(openrouter(.model = "qwen/qwen3.5-35b-a3b"))
-result_mistral <- prompt |> chat(openrouter(.model = "mistralai/mistral-small-4"))
-result_kimi    <- prompt |> chat(openrouter(.model = "moonshotai/kimi-k2.5"))
+result_qwen    <- prompt |> chat(openrouter(.model = "qwen/qwen3.6-35b-a3b"))
+result_mistral <- prompt |> chat(openrouter(.model = "mistralai/mistral-medium-3-5"))
+result_kimi    <- prompt |> chat(openrouter(.model = "moonshotai/kimi-k3"))
 
 get_reply(result_qwen)
 get_reply(result_mistral)
@@ -266,14 +269,14 @@ openrouter_list_models() |>
     ## # A tibble: 8 × 5
     ##   id          name  context_length prompt_price_per_mil…¹ completion_price_per…²
     ##   <chr>       <chr>          <int>                  <dbl>                  <dbl>
-    ## 1 qwen/qwen3… Qwen…        1000000                   0.1                    0.3 
-    ## 2 mistralai/… Mist…         256000                   0.1                    0.3 
-    ## 3 google/gem… Gemm…         131072                   0.1                    0.2 
-    ## 4 microsoft/… Phi-4         131072                   0.14                   0.14
-    ## 5 meta-llama… Llam…       10000000                   0.17                   0.6 
-    ## 6 minimax/mi… Mini…        1000000                   0.2                    0.55
-    ## 7 moonshotai… Kimi…         131072                   0.5                    1.5 
-    ## 8 deepseek/d… Deep…         163840                   0.55                   2.19
+    ## 1 meta-llama… Llam…        1310720                   0.1                    0.3 
+    ## 2 google/gem… Gemm…         262144                   0.12                   0.35
+    ## 3 qwen/qwen3… Qwen…         262144                   0.14                   1   
+    ## 4 minimax/mi… Mini…        1048576                   0.3                    1.2 
+    ## 5 deepseek/d… Deep…        1048576                   0.44                   0.87
+    ## 6 z-ai/glm-5… GLM …        1048576                   0.81                   2.56
+    ## 7 mistralai/… Mist…         262144                   1.5                    7.5 
+    ## 8 moonshotai… Kimi…        1048576                   3                     15   
     ## # ℹ abbreviated names: ¹​prompt_price_per_million, ²​completion_price_per_million
 
 Prices are in US dollars per million tokens. Once a model performs well
@@ -451,8 +454,9 @@ confidence score for each output token: a score close to zero means the
 model was highly certain; a strongly negative score means it was
 genuinely uncertain between several options.
 
-Passing `.logprobs = TRUE` stores these scores in the response metadata
-alongside the reply:
+Passing `.logprobs = TRUE` stores these scores alongside the reply;
+[`get_logprobs()`](https://edubruell.github.io/tidyllm/dev/reference/get_logprobs.md)
+extracts them into a tidy tibble:
 
 ``` r
 
@@ -463,23 +467,14 @@ result <- llm_message(
   chat(llamacpp(.logprobs = TRUE, .top_logprobs = 3))
 
 get_reply(result)
-get_metadata(result)$api_specific$logprobs
+get_logprobs(result)
 ```
 
     ## [1] "neutral"
-    ## $content
-    ## $content[[1]]
-    ## $content[[1]]$token
-    ## [1] "neutral"
-    ## $content[[1]]$logprob
-    ## [1] -0.847
-    ## $content[[1]]$top_logprobs
-    ## # A tibble: 3 × 2
-    ##   token    logprob
-    ##   <chr>      <dbl>
-    ## 1 neutral   -0.847
-    ## 2 mixed     -1.20 
-    ## 3 positive  -2.03
+    ## # A tibble: 1 × 4
+    ##   reply_index token   logprob top_logprobs    
+    ##         <dbl> <chr>     <dbl> <chr>           
+    ## 1           1 neutral  -0.847 <tibble [3 x 2]>
 
 A score of -0.85 on “neutral” means the model had genuine uncertainty;
 the review is mixed and the model knows it. In a large annotation batch,
@@ -578,21 +573,39 @@ cloud calls, no token costs, and reproducible results.
 Many universities, hospitals, and cloud providers run their own LLM
 servers using tools like [vLLM](https://github.com/vllm-project/vllm) or
 [text-generation-inference](https://github.com/huggingface/text-generation-inference).
-These services typically expose the same API format as OpenAI, so they
-work directly with tidyllm’s
-[`openai()`](https://edubruell.github.io/tidyllm/dev/reference/openai.md)
-provider by pointing it at a different server address:
+These services typically expose the same Chat Completions API format as
+OpenAI. The
+[`chat_completions()`](https://edubruell.github.io/tidyllm/dev/reference/chat_completions_chat.md)
+provider connects to any such endpoint; point it at the server’s base
+URL and name the model the server hosts:
 
 ``` r
 
 llm_message("Summarise this paragraph in one sentence.") |>
-  chat(openai(.api_url = "http://my-internal-server:8000/v1"))
+  chat(chat_completions(
+    .api_url = "http://my-internal-server:8000",
+    .model   = "llama-4-scout"
+  ))
+```
+
+By default no API key is sent, which suits local and internal servers.
+If the endpoint requires authentication, pass the name of the
+environment variable holding the key via `.api_key_env_var`:
+
+``` r
+
+llm_message("Summarise this paragraph in one sentence.") |>
+  chat(chat_completions(
+    .api_url         = "https://llm.my-university.edu",
+    .model           = "qwen3.6-35b-a3b",
+    .api_key_env_var = "MY_UNIVERSITY_API_KEY"
+  ))
 ```
 
 For llama.cpp specifically, using
 [`llamacpp()`](https://edubruell.github.io/tidyllm/dev/reference/llamacpp.md)
 with `LLAMACPP_SERVER` set in `.Renviron` is the cleaner path since it
 also exposes the llama.cpp-specific parameters covered above. The
-[`openai()`](https://edubruell.github.io/tidyllm/dev/reference/openai.md)
+[`chat_completions()`](https://edubruell.github.io/tidyllm/dev/reference/chat_completions_chat.md)
 route is there when you are connecting to a generic institutional
 endpoint that does not need any of those extras.

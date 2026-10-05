@@ -8,6 +8,8 @@
   tidyllm](https://edubruell.github.io/tidyllm/dev/articles/tidyllm_embed.md):
 - [Local Models with
   tidyllm](https://edubruell.github.io/tidyllm/dev/articles/tidyllm_local_models.md):
+- [Using tidyllm in
+  Shiny](https://edubruell.github.io/tidyllm/dev/articles/tidyllm_shiny.md):
 - [Using Tools with
   tidyllm](https://edubruell.github.io/tidyllm/dev/articles/tidyllm_tools.md):
 - [Working with Files and

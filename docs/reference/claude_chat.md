@@ -7,7 +7,7 @@ Interact with Claude AI models via the Anthropic API
 ``` r
 claude_chat(
   .llm,
-  .model = "claude-sonnet-5",
+  .model = "claude-sonnet-5-5",
   .max_tokens = 2048,
   .temperature = NULL,
   .top_k = NULL,
@@ -41,7 +41,7 @@ claude_chat(
 - .model:
 
   Character string specifying the Claude model version (default:
-  "claude-sonnet-5").
+  "claude-sonnet-5-5").
 
 - .max_tokens:
 

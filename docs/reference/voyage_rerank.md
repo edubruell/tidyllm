@@ -8,7 +8,7 @@ Rerank Documents Using Voyage AI API
 voyage_rerank(
   .query,
   .documents,
-  .model = "rerank-2",
+  .model = "rerank-3",
   .top_k = NULL,
   .api_key = Sys.getenv("VOYAGE_API_KEY"),
   .timeout = 60,
@@ -28,7 +28,7 @@ voyage_rerank(
 
 - .model:
 
-  The reranking model identifier (default: "rerank-2").
+  The reranking model identifier (default: "rerank-3").
 
 - .top_k:
 

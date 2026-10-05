@@ -64,6 +64,8 @@ reference:
       - starts_with("field_")
       - tidyllm_tool
       - ellmer_tool
+      - websearch_tool
+      - websearch
       - img
       - audio_file
       - video_file
@@ -76,6 +78,7 @@ reference:
     contents:
       - openai
       - claude
+      - claude_cli
       - gemini
       - groq
       - mistral
@@ -128,6 +131,7 @@ reference:
       - claude_file_metadata
       - claude_list_files
       - claude_websearch
+      - claude_cli_chat
 
   - title: "Gemini-Specific Functions"
     desc: >
@@ -180,7 +184,12 @@ reference:
       - ollama_delete_model
       - send_ollama_batch
 
-  - title: "Perplexity-Specific Functions"
+  - title: "Provider Capabilities"
+    desc: >
+      Find out which verbs, arguments and media types each provider supports.
+    contents:
+      - provider_capabilities
+  - title: "Perplexity-Specific Functions (deprecated)"
     desc: >
       Functions for Perplexity AI chat and asynchronous deep research.
     contents:

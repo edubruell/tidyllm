@@ -6,7 +6,7 @@
 \usage{
 mistral_chat(
   .llm,
-  .model = "mistral-large-latest",
+  .model = "zai-glm-5-3",
   .frequency_penalty = NULL,
   .logit_bias = NULL,
   .presence_penalty = NULL,
@@ -32,7 +32,7 @@ mistral_chat(
 \arguments{
 \item{.llm}{An \code{LLMMessage} object.}
 
-\item{.model}{The model identifier to use (default: \code{"mistral-large-latest"}).}
+\item{.model}{The model identifier to use (default: \code{"zai-glm-5-3"}).}
 
 \item{.frequency_penalty}{Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency.}
 

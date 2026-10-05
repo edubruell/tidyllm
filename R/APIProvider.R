@@ -22,6 +22,8 @@ prepare_llms_for_batch     <- new_generic("prepare_llms_for_batch",".api")
 extract_metadata           <- new_generic("extract_metadata",c(".api", ".response"))
 parse_logprobs             <- new_generic("parse_logprobs", c(".api", ".input"))
 assemble_stream_body   <- new_generic("assemble_stream_body", c(".api", ".events"))
+open_chat_stream       <- new_generic("open_chat_stream", ".api")
+start_async_request    <- new_generic("start_async_request", ".api")
 
 #' Defaults: a provider reports no rate limits and no logprobs
 #'
@@ -57,6 +59,38 @@ method(parse_logprobs, list(APIProvider, class_any)) <- function(.api, .input) N
 #'
 #' @noRd
 method(assemble_stream_body, list(APIProvider, class_any)) <- function(.api, .events) NULL
+
+#' Default: a stream is opened as a non-blocking httr2 connection
+#'
+#' `send_chat()` needs a stream it can read a piece at a time from a `later`
+#' callback. For twelve of the thirteen providers that is
+#' `req_perform_connection()`, and the headers and status have to be read here,
+#' while the response is still open, because the pump closes it.
+#'
+#' A provider whose stream is not an HTTP response overrides this and returns
+#' the same three fields; `claude_cli()` returns a running child process.
+#'
+#' @return `list(response, headers, status)`.
+#' @noRd
+method(open_chat_stream, APIProvider) <- function(.api, .built) {
+  response <- httr2::req_perform_connection(.built$request, blocking = FALSE)
+  list(
+    response = response,
+    headers  = httr2::resp_headers(response),
+    status   = httr2::resp_status(response)
+  )
+}
+
+#' Default: a non-streaming background chat is an httr2 promise
+#'
+#' The streaming and non-streaming halves of `send_chat()` need different things
+#' from a transport, so they are two generics rather than one. A provider that
+#' overrides only `open_chat_stream()` still gets the httr2 promise here, which
+#' would fail on a request that is not an httr2 request; `claude_cli()` therefore
+#' overrides both.
+#'
+#' @noRd
+method(start_async_request, APIProvider) <- function(.api, .job) start_promised_request(.job)
 
 #Default method for metadata extraction
 #'

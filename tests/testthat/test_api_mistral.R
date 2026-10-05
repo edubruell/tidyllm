@@ -29,7 +29,7 @@ test_that("mistral function constructs a correct request and dry runs it", {
   # Now check the body content to ensure the JSON is constructed as expected
   body_json <- request$body |> jsonlite::toJSON() |> as.character()
   
-  expected_json <- "{\"data\":{\"model\":[\"mistral-large-latest\"],\"messages\":[{\"role\":[\"user\"],\"content\":[\"Write a poem about the Gallic Rooster\"]}],\"safe_prompt\":[false],\"temperature\":[0.7],\"top_p\":[1]},\"type\":[\"json\"],\"content_type\":[\"application/json\"],\"params\":{\"auto_unbox\":[true],\"digits\":[22],\"null\":[\"null\"]}}"
+  expected_json <- "{\"data\":{\"model\":[\"zai-glm-5-3\"],\"messages\":[{\"role\":[\"user\"],\"content\":[\"Write a poem about the Gallic Rooster\"]}],\"safe_prompt\":[false],\"temperature\":[0.7],\"top_p\":[1]},\"type\":[\"json\"],\"content_type\":[\"application/json\"],\"params\":{\"auto_unbox\":[true],\"digits\":[22],\"null\":[\"null\"]}}"
   # Check if the JSON matches the expected JSON
   expect_equal(body_json, expected_json)
 })
@@ -51,6 +51,7 @@ test_that("mistral returns expected response",{
     
     result <- mistral_chat(
       .llm = llm,
+      .model = "mistral-large-latest",
       .max_tokens = 1024,
       .temperature = 0,
     )
@@ -146,4 +147,25 @@ test_that("send_batch creates correct JSONL for batch requests", {
   expect_true(stringr::str_detect(content_lines[1],"Mannheim"))
   expect_true(stringr::str_detect(content_lines[2],"Stuttgart"))
   expect_true(stringr::str_detect(content_lines[3],"Heidelberg"))
+})
+
+
+test_that("mistral_split_content separates thinking from text chunks", {
+  chunks <- list(
+    list(type = "thinking", thinking = list(list(type = "text", text = "hmm ")), closed = TRUE),
+    list(type = "text", text = "pong")
+  )
+  parts <- mistral_split_content(chunks)
+  expect_identical(parts$text, "pong")
+  expect_identical(parts$thinking, "hmm ")
+  expect_identical(mistral_split_content("plain")$text, "plain")
+  expect_null(mistral_split_content("plain")$thinking)
+})
+
+test_that("mistral parses a chunked blocking response to plain text", {
+  body <- list(choices = list(list(message = list(role = "assistant", content = list(
+    list(type = "thinking", thinking = list(list(type = "text", text = "hmm"))),
+    list(type = "text", text = "pong"))))))
+  api <- api_mistral(short_name = "mistral", long_name = "Mistral", api_key_env_var = "MISTRAL_API_KEY")
+  expect_identical(parse_chat_response(api, body), "pong")
 })

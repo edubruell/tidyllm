@@ -32,3 +32,10 @@ perplexity(..., .called_from = NULL)
 The result of the requested action, depending on the specific function
 invoked (e.g., an updated `LLMMessage` object for
 [`chat()`](https://edubruell.github.io/tidyllm/reference/chat.md)).
+
+## Deprecated
+
+Perplexity support is deprecated since tidyllm 0.7.0 and ends in 0.8.0.
+Use `openrouter(.model = "perplexity/sonar")` for the same models, or
+[`websearch_tool()`](https://edubruell.github.io/tidyllm/reference/websearch_tool.md)
+to give any provider web search.

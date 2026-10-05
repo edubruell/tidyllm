@@ -209,7 +209,7 @@ method(tools_to_api, list(api_claude, class_list)) <- function(.api, .tools) {
         description = tool@description,
         input_schema = list(
           type = "object",
-          properties = purrr::map(tool@input_schema, field_to_param_schema),
+          properties = tool_properties(tool),
           required = as.list(names(tool@input_schema))
         )
       )
@@ -252,18 +252,15 @@ method(run_tool_calls, list(api_claude, class_list, class_list)) <- function(.ap
     # Get the function for the tool and execute it with the provided arguments
     tool_function <- matching_tool[[1]]@func
     
-    tool_result <-  utils::capture.output(
-                        do.call(tool_function, as.list(tool_args))
-                        , file = NULL) |> 
-      stringr::str_c(collapse = "\n")
+    tool_result <- tool_result_text(tool_function, as.list(tool_args))
     
     
     # Return a content block as required by Claude:
-    # type "tool_result", the tool_use_id, and the output (as a JSON string)
+    # type "tool_result", the tool_use_id, and the output as text
     list(
       type = "tool_result",
       tool_use_id = tool_call_id,
-      content = jsonlite::toJSON(tool_result, auto_unbox = TRUE)
+      content = tool_result
     )
   })
   
@@ -488,7 +485,7 @@ claude_inject_files <- function(.claude_messages, .file_ids) {
 #' Interact with Claude AI models via the Anthropic API
 #'
 #' @param .llm An LLMMessage object containing the conversation history and system prompt.
-#' @param .model Character string specifying the Claude model version (default: "claude-sonnet-5").
+#' @param .model Character string specifying the Claude model version (default: "claude-sonnet-5-5").
 #' @param .max_tokens Integer specifying the maximum number of tokens in the response (default: 1024).
 #' @param .temperature Numeric between 0 and 1 controlling response randomness. Only supported on
 #'   older models; Claude Sonnet 5 and Opus 4.7 or newer reject sampling parameters.
@@ -540,7 +537,7 @@ claude_inject_files <- function(.claude_messages, .file_ids) {
 #'
 #' @export
 claude_chat <- function(.llm,
-                        .model = "claude-sonnet-5",
+                        .model = "claude-sonnet-5-5",
                         .max_tokens = 2048,
                         .temperature = NULL,
                         .top_k = NULL,
@@ -569,7 +566,7 @@ claude_chat <- function(.llm,
 #'
 #' @noRd
 claude_build_chat_request <- function(.llm,
-                        .model = "claude-sonnet-5",
+                        .model = "claude-sonnet-5-5",
                         .max_tokens = 2048,
                         .temperature = NULL,
                         .top_k = NULL,
@@ -731,7 +728,7 @@ claude_build_chat_request <- function(.llm,
 #' This function creates and submits a batch of messages to the Claude API for asynchronous processing.
 #'
 #' @param .llms A list of LLMMessage objects containing conversation histories.
-#' @param .model Character string specifying the Claude model version (default: "claude-sonnet-5").
+#' @param .model Character string specifying the Claude model version (default: "claude-sonnet-5-5").
 #' @param .max_tokens Integer specifying the maximum tokens per response (default: 1024).
 #' @param .temperature Numeric between 0 and 1 controlling response randomness. Only supported on
 #'   older models; Claude Sonnet 5 and Opus 4.7 or newer reject sampling parameters.
@@ -762,7 +759,7 @@ claude_build_chat_request <- function(.llm,
 #' @return An updated and named list of `.llms` with identifiers that align with batch responses, including a `batch_id` attribute.
 #' @export
 send_claude_batch <- function(.llms,
-                              .model = "claude-sonnet-5",
+                              .model = "claude-sonnet-5-5",
                               .max_tokens = 1024,
                               .temperature = NULL,
                               .top_k = NULL,
@@ -1718,5 +1715,6 @@ claude <- create_provider_function(
   upload_file = claude_upload_file_verb,
   list_files  = claude_list_files_verb,
   file_info   = claude_file_info_verb,
-  delete_file = claude_delete_file_verb
+  delete_file = claude_delete_file_verb,
+  .media = c("image", "pdf", "files")
 )

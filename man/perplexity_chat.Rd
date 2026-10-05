@@ -128,3 +128,10 @@ An updated \code{LLMMessage} object with the assistant's reply and metadata, inc
 \description{
 Sends a chat message history to the Perplexity Chat API, supporting all documented API parameters.
 }
+\section{Deprecated}{
+
+Perplexity support is deprecated since tidyllm 0.7.0 and ends in 0.8.0. Use
+\code{openrouter(.model = "perplexity/sonar")} for the same models, or
+\code{\link[=websearch_tool]{websearch_tool()}} to give any provider web search.
+}
+

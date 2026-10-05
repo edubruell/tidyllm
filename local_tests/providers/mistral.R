@@ -21,6 +21,20 @@ llt_test("streaming returns non-empty reply", {
   llt_expect_reply(result)
 })
 
+llt_test("reasoning model reply is text and thinking is in metadata", {
+  result <- llm_message("Reply with the single word: pong") |>
+    chat(mistral(.model = "zai-glm-5-3"))
+  reply <- get_reply(result)
+  llt_expect_true(is.character(reply) && length(reply) == 1, "Reply should be one string, not a chunk list")
+  llt_expect_true(nzchar(get_metadata(result)$api_specific[[1]]$thinking %||% ""), "Thinking should be kept in metadata")
+})
+
+llt_test("streaming a reasoning model returns text", {
+  result <- llm_message("Reply with the single word: pong") |>
+    chat(mistral(.model = "zai-glm-5-3", .stream = TRUE))
+  llt_expect_true(is.character(get_reply(result)), "Streamed reply should be a string")
+})
+
 # ── Embeddings ────────────────────────────────────────────────────────────────
 
 llt_test("embed returns tibble with embeddings", {

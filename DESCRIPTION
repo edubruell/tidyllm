@@ -1,6 +1,6 @@
 Package: tidyllm
 Title: Tidy Integration of Large Language Models
-Version: 0.6.0
+Version: 0.7.0
 Authors@R: c(
     person("Eduard", "Brüll", NULL, "eduard.bruell@zew.de", role = c("aut", "cre")),
     person("Jia", "Zhang", NULL, NULL, role = "ctb")
@@ -15,6 +15,7 @@ RoxygenNote: 7.3.3
 VignetteBuilder: knitr
 Suggests:
     later,
+    processx,
     shiny,
     wooldridge,
     promises,
@@ -24,6 +25,7 @@ Suggests:
     tidyverse,
     httptest2,
     httpuv,
+    withr,
     ellmer (>= 0.4.0)
 Imports: 
     S7 (>= 0.2.0),
@@ -56,12 +58,14 @@ Collate:
     'example_app.R'
     'llm_message.R'
     'llm_verbs.R'
+    'provider_capabilities.R'
     'media.R'
     'message_retrieval.R'
     'perform_api_requests.R'
     'rate_limits.R'
     'tidyllm_schema.R'
     'tools.R'
+    'websearch.R'
     'api_chat_completions.R'
     'api_openai.R'
     'api_azure_openai.R'
@@ -72,6 +76,7 @@ Collate:
     'api_voyage.R'
     'api_ollama.R'
     'api_claude.R'
+    'api_claude_cli.R'
     'api_gemini.R'
     'api_ellmer.R'
     'api_openrouter.R'

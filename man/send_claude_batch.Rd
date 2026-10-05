@@ -6,7 +6,7 @@
 \usage{
 send_claude_batch(
   .llms,
-  .model = "claude-sonnet-5",
+  .model = "claude-sonnet-5-5",
   .max_tokens = 1024,
   .temperature = NULL,
   .top_k = NULL,
@@ -29,7 +29,7 @@ send_claude_batch(
 \arguments{
 \item{.llms}{A list of LLMMessage objects containing conversation histories.}
 
-\item{.model}{Character string specifying the Claude model version (default: "claude-sonnet-5").}
+\item{.model}{Character string specifying the Claude model version (default: "claude-sonnet-5-5").}
 
 \item{.max_tokens}{Integer specifying the maximum tokens per response (default: 1024).}
 

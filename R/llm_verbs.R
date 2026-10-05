@@ -1,3 +1,5 @@
+MEDIA_TYPES <- c("image", "pdf", "audio", "video", "files")
+
 #' The message a provider gets when it cannot do a verb at all
 #' @noRd
 unsupported_verb_message <- function(provider_name, verb_label) {
@@ -55,12 +57,22 @@ dispatch_to_provider <- function(provider_expr, verb_name, common_args,
 #' @param .name A string representing the name of the provider (e.g., "openai").
 #' @param ... Named functions corresponding to the various actions the provider supports
 #'   (e.g., `chat`, `embed`, `send_batch`).
+#' @param .media Character vector of the media types the provider accepts in a message:
+#'   any of `"image"`, `"pdf"`, `"audio"`, `"video"` and `"files"` (remote file
+#'   references). Read by the attachment check and by `provider_capabilities()`.
 #'
 #' @return A function that dynamically routes to the appropriate action based on its
 #'   inputs.
 #' @noRd
-create_provider_function <- function(.name, ...) {
+create_provider_function <- function(.name, ..., .media = character()) {
   function_map <- list(...)
+  function_names <- vapply(
+    as.list(substitute(list(...)))[-1],
+    function(e) paste(deparse(e), collapse = ""),
+    character(1)
+  )
+  c(".media must contain only: image, pdf, audio, video, files" =
+      all(.media %in% MEDIA_TYPES)) |> validate_inputs()
   
   if ("metadata" %in% names(function_map)) {
     stop(glue::glue("'metadata' is a reserved keyword and cannot be used as a function name in provider '{.name}'."))
@@ -69,6 +81,11 @@ create_provider_function <- function(.name, ...) {
   # Capture the arguments used in the provider function
   supported_args <- purrr::map(function_map, formals) |> 
     purrr::map(names)
+  supported_defaults <- purrr::map(function_map, function(f) {
+    purrr::map_chr(formals(f), function(d) {
+      if (rlang::is_missing(d)) NA_character_ else paste(deparse(d), collapse = " ")
+    })
+  })
   
   # Create the provider function
   provider_function <- function(..., .called_from = NULL) {
@@ -79,7 +96,10 @@ create_provider_function <- function(.name, ...) {
         # Return provider metadata
         return(list(
           provider_name = .name,
-          supported_args = supported_args
+          supported_args = supported_args,
+          supported_defaults = supported_defaults,
+          functions = function_names,
+          media = .media
         ))
       } else if (.called_from %in% names(function_map)) {
         # Call the appropriate function
@@ -105,7 +125,7 @@ create_provider_function <- function(.name, ...) {
     return(rlang::call2(.name, !!!args))
   }
   
-  # Return the provider function with metadata accessible via "metadata" call
+  attr(provider_function, "tidyllm_provider") <- .name
   provider_function
 }
 
@@ -739,7 +759,10 @@ delete_file <- function(.provider, .file_id, ...) {
 #' Historical messages are not validated here; to_api_format() silently skips them.
 #'
 #' @noRd
-validate_message_attachments <- function(.llm, provider_name) {
+validate_message_attachments <- function(.llm, provider) {
+  meta <- provider_metadata(provider)
+  provider_name <- meta$provider_name
+  media <- meta$media
   history <- .llm@message_history
   user_msgs <- which(vapply(history, function(m) identical(m$role, "user"), logical(1)))
   if (length(user_msgs) == 0) return(invisible(NULL))
@@ -749,8 +772,7 @@ validate_message_attachments <- function(.llm, provider_name) {
 
   # Validate remote file references
   if (!is.null(last_msg$files) && length(last_msg$files) > 0) {
-    providers_with_files <- c("claude", "gemini", "openai")
-    if (!provider_name %in% providers_with_files) {
+    if (!"files" %in% media) {
       stop(glue::glue(
         "The '{provider_name}' provider does not support file references in messages.\n",
         "Use pdf_file() / audio_file() for inline binary instead."
@@ -768,19 +790,15 @@ validate_message_attachments <- function(.llm, provider_name) {
   }
 
   # Validate inline media types
-  providers_supporting_audio  <- c("gemini", "openrouter", "llamacpp", "mistral")
-  providers_supporting_video  <- c("gemini", "openrouter")
-  providers_supporting_binary_pdf <- c("gemini", "openrouter")
-
   if (!is.null(last_msg$media) && length(last_msg$media) > 0) {
     for (m in last_msg$media) {
-      if (S7_inherits(m, tidyllm_audio) && !provider_name %in% providers_supporting_audio) {
+      if (S7_inherits(m, tidyllm_audio) && !"audio" %in% media) {
         stop(glue::glue(
           "The '{provider_name}' provider does not support inline audio.\n",
           "Use gemini() or openrouter() for audio transcription."
         ))
       }
-      if (S7_inherits(m, tidyllm_video) && !provider_name %in% providers_supporting_video) {
+      if (S7_inherits(m, tidyllm_video) && !"video" %in% media) {
         stop(glue::glue(
           "The '{provider_name}' provider does not support inline video.\n",
           "Use gemini() or openrouter() for video analysis."

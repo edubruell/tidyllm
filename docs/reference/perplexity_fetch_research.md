@@ -30,3 +30,10 @@ perplexity_fetch_research(
 ## Value
 
 An updated `LLMMessage` with the research reply appended.
+
+## Deprecated
+
+Perplexity support is deprecated since tidyllm 0.7.0 and ends in 0.8.0.
+Use `openrouter(.model = "perplexity/sonar")` for the same models, or
+[`websearch_tool()`](https://edubruell.github.io/tidyllm/reference/websearch_tool.md)
+to give any provider web search.

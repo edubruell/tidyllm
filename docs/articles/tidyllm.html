@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.6.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.7.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -146,10 +146,11 @@ Console</a></td>
 <td><a href="https://console.groq.com/playground" class="external-link">Groq Console</a></td>
 </tr>
 <tr class="even">
-<td><strong>Perplexity</strong></td>
+<td>
+<strong>Perplexity</strong> (deprecated)</td>
 <td><code>PERPLEXITY_API_KEY</code></td>
-<td><a href="https://www.perplexity.ai/settings/api" class="external-link">Perplexity API
-Settings</a></td>
+<td><a href="https://docs.perplexity.ai/docs/getting-started/overview" class="external-link">Perplexity
+API docs</a></td>
 </tr>
 <tr class="odd">
 <td><strong>DeepSeek</strong></td>
@@ -160,8 +161,8 @@ Platform</a></td>
 <tr class="even">
 <td><strong>Voyage AI</strong></td>
 <td><code>VOYAGE_API_KEY</code></td>
-<td><a href="https://dashboard.voyageai.com/api-keys" class="external-link">Voyage AI
-Dashboard</a></td>
+<td><a href="https://docs.voyageai.com/docs/api-key-and-installation" class="external-link">Voyage AI
+API key guide</a></td>
 </tr>
 <tr class="odd">
 <td><strong>OpenRouter</strong></td>
@@ -173,8 +174,26 @@ Dashboard</a></td>
 <td><code>AZURE_OPENAI_API_KEY</code></td>
 <td><a href="https://portal.azure.com/" class="external-link">Azure Portal</a></td>
 </tr>
+<tr class="odd">
+<td>
+<strong>Tavily</strong> (web search for <code><a href="../reference/websearch.html">websearch()</a></code> and
+<code><a href="../reference/websearch_tool.html">websearch_tool()</a></code>)</td>
+<td><code>TAVILY_API_KEY</code></td>
+<td><a href="https://app.tavily.com" class="external-link">Tavily</a></td>
+</tr>
+<tr class="even">
+<td>
+<strong>SearXNG</strong> (self-hosted web search for
+<code><a href="../reference/websearch.html">websearch()</a></code> and <code><a href="../reference/websearch_tool.html">websearch_tool()</a></code>)</td>
+<td>
+<code>SEARXNG_SERVER</code> (the server address, not a key)</td>
+<td><a href="https://docs.searxng.org" class="external-link">SearXNG</a></td>
+</tr>
 </tbody>
 </table>
+<p><code><a href="../reference/claude_cli.html">claude_cli()</a></code> needs no key: it runs the
+<code>claude</code> command line tool that is already installed and
+signed in on your machine.</p>
 </div>
 <div class="section level4">
 <h4 id="running-local-models">Running Local Models<a class="anchor" aria-label="anchor" href="#running-local-models"></a>
@@ -236,11 +255,11 @@ pattern:</p>
 </li>
 <li>
 <strong>Providers</strong> specify the API: <code><a href="../reference/openai.html">openai()</a></code>,
-<code><a href="../reference/claude.html">claude()</a></code>, <code><a href="../reference/gemini.html">gemini()</a></code>, <code><a href="../reference/ollama.html">ollama()</a></code>,
-<code><a href="../reference/mistral.html">mistral()</a></code>, <code><a href="../reference/groq.html">groq()</a></code>, <code><a href="../reference/perplexity.html">perplexity()</a></code>,
+<code><a href="../reference/claude.html">claude()</a></code>, <code><a href="../reference/claude_cli.html">claude_cli()</a></code>, <code><a href="../reference/gemini.html">gemini()</a></code>,
+<code><a href="../reference/ollama.html">ollama()</a></code>, <code><a href="../reference/mistral.html">mistral()</a></code>, <code><a href="../reference/groq.html">groq()</a></code>,
 <code><a href="../reference/deepseek.html">deepseek()</a></code>, <code><a href="../reference/voyage.html">voyage()</a></code>,
 <code><a href="../reference/openrouter.html">openrouter()</a></code>, <code><a href="../reference/llamacpp.html">llamacpp()</a></code>,
-<code><a href="../reference/azure_openai.html">azure_openai()</a></code>
+<code><a href="../reference/azure_openai.html">azure_openai()</a></code>, <code><a href="../reference/ellmer.html">ellmer()</a></code>
 </li>
 </ul>
 <p>Provider-specific functions like <code><a href="../reference/openai_chat.html">openai_chat()</a></code> or
@@ -257,7 +276,7 @@ single media object or a list of them:</p>
 <code class="sourceCode R"><span><span class="co"># Single image</span></span>
 <span><span class="va">image_description</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Describe this picture. Can you guess where it was taken?"</span>,</span>
 <span>                                  .media <span class="op">=</span> <span class="fu"><a href="../reference/img.html">img</a></span><span class="op">(</span><span class="st">"picture.jpeg"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-5.6-terra"</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-6-luna"</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/get_reply.html">get_reply</a></span><span class="op">(</span><span class="va">image_description</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## [1] "The picture shows a beautiful landscape with a lake, mountains, and a town nestled below. The area appears lush and green, with agricultural fields visible. This scenery is reminiscent of northern Italy, particularly around Lake Garda."</span></span></code></pre>
@@ -358,12 +377,6 @@ list.</p>
 <span>            .capture_plot <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>            .f <span class="op">=</span> <span class="op">~</span><span class="op">{</span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">mtcars</span><span class="op">)</span><span class="op">}</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## Warning: The `.imagefile` argument of `llm_message()` is deprecated as of tidyllm 0.5.0.</span></span>
-<span><span class="co">## <span style="color: #00BBBB;">ℹ</span> Please use the `.media` argument instead.</span></span>
-<span><span class="co">## <span style="color: #00BBBB;">ℹ</span> Replace with .media = img(path).</span></span>
-<span><span class="co">## <span style="color: #555555;">This warning is displayed once per session.</span></span></span>
-<span><span class="co">## <span style="color: #555555;">Call `lifecycle::last_lifecycle_warnings()` to see where this warning was</span></span></span>
-<span><span class="co">## <span style="color: #555555;">generated.</span></span></span></code></pre>
 <pre><code><span><span class="co">## Message History:</span></span>
 <span><span class="co">## system:</span></span>
 <span><span class="co">## You are a helpful assistant</span></span>
@@ -387,7 +400,7 @@ list.</p>
 <p><code><a href="../reference/get_reply.html">get_reply()</a></code> retrieves assistant text from a message
 history. Use an index to access a specific reply, or omit it to get the
 last:</p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">conversation</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Imagine a German address."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/groq.html">groq</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Imagine another address."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -414,15 +427,15 @@ last:</p>
 <span><span class="co">## Fichtenweg 78</span></span>
 <span><span class="co">## 42103 Wuppertal</span></span>
 <span><span class="co">## --------------------------------------------------------------</span></span></code></pre>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">conversation</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/get_reply.html">get_reply</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>   <span class="co"># first reply</span></span></code></pre></div>
 <pre><code><span><span class="co">## [1] "Herr Müller\nMusterstraße 12\n53111 Bonn"</span></span></code></pre>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">conversation</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/get_reply.html">get_reply</a></span><span class="op">(</span><span class="op">)</span>    <span class="co"># last reply (default)</span></span></code></pre></div>
 <pre><code><span><span class="co">## [1] "Frau Schmidt\nFichtenweg 78\n42103 Wuppertal"</span></span></code></pre>
 <p>Convert the message history (without attachments) to a tibble with
 <code><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble()</a></code>:</p>
-<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">conversation</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 5 × 2</span></span></span>
 <span><span class="co">##   role      content                                       </span></span>
@@ -434,7 +447,7 @@ last:</p>
 <span><span class="co">## <span style="color: #BCBCBC;">5</span> assistant <span style="color: #949494;">"</span>Frau Schmidt\nFichtenweg 78\n42103 Wuppertal<span style="color: #949494;">"</span></span></span></code></pre>
 <p><code><a href="../reference/get_metadata.html">get_metadata()</a></code> returns token counts, model names, and
 API-specific metadata for all assistant replies:</p>
-<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">conversation</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/get_metadata.html">get_metadata</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">##   model  timestamp           prompt_tokens completion_tokens</span></span>
@@ -451,7 +464,7 @@ Gemini, DeepSeek), or grounding information (Gemini).</p>
 </h4>
 <p>Use <code><a href="../reference/list_models.html">list_models()</a></code> to query which models a provider
 offers:</p>
-<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/list_models.html">list_models</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/list_models.html">list_models</a></span><span class="op">(</span><span class="fu"><a href="../reference/openrouter.html">openrouter</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>   <span class="co"># 300+ models across providers</span></span>
 <span><span class="fu"><a href="../reference/list_models.html">list_models</a></span><span class="op">(</span><span class="fu"><a href="../reference/ollama.html">ollama</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>       <span class="co"># models installed locally</span></span></code></pre></div>
@@ -477,7 +490,7 @@ schema:</p>
 <code>field_object(...)</code>: nested object (supports
 <code>.vector = TRUE</code> for arrays)</li>
 </ul>
-<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">person_schema</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tidyllm_schema.html">tidyllm_schema</a></span><span class="op">(</span></span>
 <span>  first_name <span class="op">=</span> <span class="fu"><a href="../reference/field_chr.html">field_chr</a></span><span class="op">(</span><span class="st">"A male first name"</span><span class="op">)</span>,</span>
 <span>  last_name  <span class="op">=</span> <span class="fu"><a href="../reference/field_chr.html">field_chr</a></span><span class="op">(</span><span class="st">"A common last name"</span><span class="op">)</span>,</span>
@@ -510,7 +523,7 @@ schema:</p>
 <span><span class="co">## --------------------------------------------------------------</span></span></code></pre>
 <p>Extract the parsed result as an R list with
 <code><a href="../reference/get_reply_data.html">get_reply_data()</a></code>:</p>
-<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">profile</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/get_reply_data.html">get_reply_data</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## List of 4</span></span>
 <span><span class="co">##  $ first_name: chr "Julien"</span></span>
@@ -524,7 +537,7 @@ schema:</p>
 <span><span class="co">##   ..$ country: chr "France"</span></span></code></pre>
 <p>Set <code>.vector = TRUE</code> on <code><a href="../reference/field_object.html">field_object()</a></code> to get
 outputs that unpack directly into a data frame:</p>
-<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Imagine five people."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>       .json_schema <span class="op">=</span> <span class="fu"><a href="../reference/tidyllm_schema.html">tidyllm_schema</a></span><span class="op">(</span></span>
@@ -556,25 +569,27 @@ argument.</p>
 and <code>.json_schema</code> can be set directly in verbs like
 <code><a href="../reference/chat.html">chat()</a></code>. Provider-specific arguments go in the provider
 function:</p>
-<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Common args in the verb</span></span>
 <span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Write a haiku about tidyllm."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/ollama.html">ollama</a></span><span class="op">(</span><span class="op">)</span>, .temperature <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Provider-specific args in the provider</span></span>
 <span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Hello"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/ollama.html">ollama</a></span><span class="op">(</span>.ollama_server <span class="op">=</span> <span class="st">"http://my-server:11434"</span><span class="op">)</span>, .temperature <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/ollama.html">ollama</a></span><span class="op">(</span>.ollama_server <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"OLLAMA_SERVER"</span><span class="op">)</span><span class="op">)</span>, .temperature <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span></code></pre></div>
 <p>When an argument appears in both <code><a href="../reference/chat.html">chat()</a></code> and the provider
 function, <code><a href="../reference/chat.html">chat()</a></code> takes precedence. If a common argument is
 not supported by the chosen provider, <code><a href="../reference/chat.html">chat()</a></code> raises an
-error rather than silently ignoring it.</p>
+error rather than silently ignoring it.
+<code><a href="../reference/provider_capabilities.html">provider_capabilities()</a></code> (see “Checking What a Provider
+Supports” below) lists which arguments each provider accepts.</p>
 </div>
 <div class="section level3">
 <h3 id="tool-use">Tool Use<a class="anchor" aria-label="anchor" href="#tool-use"></a>
 </h3>
 <p>Define R functions that the model can call during a conversation.
 Wrap them with <code><a href="../reference/tidyllm_tool.html">tidyllm_tool()</a></code>:</p>
-<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">get_current_time</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">tz</span>, <span class="va">format</span> <span class="op">=</span> <span class="st">"%Y-%m-%d %H:%M:%S"</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/format.html" class="external-link">format</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.time</a></span><span class="op">(</span><span class="op">)</span>, tz <span class="op">=</span> <span class="va">tz</span>, format <span class="op">=</span> <span class="va">format</span>, usetz <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
@@ -603,9 +618,12 @@ Wrap them with <code><a href="../reference/tidyllm_tool.html">tidyllm_tool()</a>
 runs it in your R session, and the result is fed back automatically.
 Multi-turn tool loops (where the model makes several tool calls) are
 handled transparently.</p>
+<p>For provider-independent web search with
+<code><a href="../reference/websearch_tool.html">websearch_tool()</a></code> and tools served over MCP, see the <a href="https://edubruell.github.io/tidyllm/articles/tidyllm_tools.html">tools
+article</a>.</p>
 <p>If you use <strong>ellmer</strong>, convert existing ellmer tool
 definitions with <code><a href="../reference/ellmer_tool.html">ellmer_tool()</a></code>:</p>
-<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ellmer.tidyverse.org" class="external-link">ellmer</a></span><span class="op">)</span></span>
 <span><span class="va">btw_tool</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ellmer_tool.html">ellmer_tool</a></span><span class="op">(</span><span class="fu">btw</span><span class="fu">::</span><span class="va"><a href="https://posit-dev.github.io/btw/reference/deprecated.html" class="external-link">btw_tool_files_list_files</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"List files in the R/ folder."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -618,7 +636,7 @@ website.</p>
 </h3>
 <p>Generate vector representations of text with <code><a href="../reference/embed.html">embed()</a></code>.
 The output is a tibble with one row per input:</p>
-<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"What is the meaning of life?"</span>,</span>
 <span>  <span class="st">"How much wood would a woodchuck chuck?"</span>,</span>
 <span>  <span class="st">"How does the brain work?"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -631,12 +649,12 @@ The output is a tibble with one row per input:</p>
 <span><span class="co">## <span style="color: #BCBCBC;">3</span> How does the brain work?               <span style="color: #949494;">&lt;dbl [384]&gt;</span></span></span></code></pre>
 <p>Voyage AI supports <strong>multimodal embeddings</strong>, meaning
 text and images share the same vector space:</p>
-<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"tidyllm logo"</span>, <span class="fu"><a href="../reference/img.html">img</a></span><span class="op">(</span><span class="st">"docs/logo.png"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/embed.html">embed</a></span><span class="op">(</span><span class="fu"><a href="../reference/voyage.html">voyage</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><code><a href="../reference/voyage_rerank.html">voyage_rerank()</a></code> re-orders documents by relevance to a
 query:</p>
-<div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/voyage_rerank.html">voyage_rerank</a></span><span class="op">(</span></span>
 <span>  <span class="st">"best R package for LLMs"</span>,</span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"tidyllm"</span>, <span class="st">"ellmer"</span>, <span class="st">"httr2"</span>, <span class="st">"rvest"</span><span class="op">)</span></span>
@@ -650,13 +668,13 @@ numbers of requests overnight at roughly half the cost of standard
 calls. Use <code><a href="../reference/send_batch.html">send_batch()</a></code> to submit,
 <code><a href="../reference/check_batch.html">check_batch()</a></code> to poll status, and
 <code><a href="../reference/fetch_batch.html">fetch_batch()</a></code> to retrieve results:</p>
-<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Submit a batch and save the job handle to disk</span></span>
 <span><span class="fu">glue</span><span class="fu">::</span><span class="fu"><a href="https://glue.tidyverse.org/reference/glue.html" class="external-link">glue</a></span><span class="op">(</span><span class="st">"Write a poem about {x}"</span>, x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cats"</span>, <span class="st">"dogs"</span>, <span class="st">"hamsters"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">purrr</span><span class="fu">::</span><span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="va">llm_message</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/send_batch.html">send_batch</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="st">"claude_batch.rds"</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb48"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Check status</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"claude_batch.rds"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/check_batch.html">check_batch</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
@@ -665,33 +683,33 @@ calls. Use <code><a href="../reference/send_batch.html">send_batch()</a></code> 
 <span><span class="co">##   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dttm&gt;</span>              <span style="color: #949494; font-style: italic;">&lt;dttm&gt;</span>                      <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
 <span><span class="co">## <span style="color: #BCBCBC;">1</span> msgbatch_02A1B2C… ended  2025-11-01 <span style="color: #949494;">10:30:00</span> 2025-11-02 <span style="color: #949494;">10:30:00</span>             3</span></span>
 <span><span class="co">## <span style="color: #949494;"># ℹ 3 more variables: req_errored &lt;int&gt;, req_expired &lt;int&gt;, req_canceled &lt;int&gt;</span></span></span></code></pre>
-<div class="sourceCode" id="cb50"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Fetch completed results</span></span>
 <span><span class="va">conversations</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"claude_batch.rds"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/fetch_batch.html">fetch_batch</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">poems</span> <span class="op">&lt;-</span> <span class="fu">purrr</span><span class="fu">::</span><span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map_chr</a></span><span class="op">(</span><span class="va">conversations</span>, <span class="va">get_reply</span><span class="op">)</span></span></code></pre></div>
 <p><code><a href="../reference/check_job.html">check_job()</a></code> and <code><a href="../reference/fetch_job.html">fetch_job()</a></code> are
-type-dispatching aliases; they work on both batch objects and Perplexity
+type-dispatching aliases; they work on both batch objects and background
 research jobs (see <code><a href="../reference/deep_research.html">deep_research()</a></code> below).</p>
 </div>
 <div class="section level3">
 <h3 id="deep-research">Deep Research<a class="anchor" aria-label="anchor" href="#deep-research"></a>
 </h3>
 <p>For long-horizon research tasks, <code><a href="../reference/deep_research.html">deep_research()</a></code> runs an
-extended web search and synthesis. Perplexity’s
-<code>sonar-deep-research</code> model is currently supported:</p>
-<div class="sourceCode" id="cb51"><pre class="downlit sourceCode r">
+extended web search and synthesis. It is available for
+<code><a href="../reference/openai.html">openai()</a></code>, which runs the research with web search in the
+background and returns the finished report:</p>
+<div class="sourceCode" id="cb50"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Blocking: waits for completion, returns an LLMMessage</span></span>
-<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Compare Rust and Go for systems programming in 2025."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/deep_research.html">deep_research</a></span><span class="op">(</span><span class="fu"><a href="../reference/perplexity.html">perplexity</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Compare Rust and Go for systems programming in 2026."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/deep_research.html">deep_research</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/get_reply.html">get_reply</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/get_metadata.html">get_metadata</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span><span class="op">$</span><span class="va">api_specific</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">citations</span></span></code></pre></div>
-<div class="sourceCode" id="cb52"><pre class="downlit sourceCode r">
+<span><span class="fu"><a href="../reference/get_reply.html">get_reply</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb51"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Background mode: returns a job handle immediately</span></span>
 <span><span class="va">job</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Summarise recent EU AI Act developments."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/deep_research.html">deep_research</a></span><span class="op">(</span><span class="fu"><a href="../reference/perplexity.html">perplexity</a></span><span class="op">(</span><span class="op">)</span>, .background <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="../reference/deep_research.html">deep_research</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span><span class="op">)</span>, .background <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/check_job.html">check_job</a></span><span class="op">(</span><span class="va">job</span><span class="op">)</span>           <span class="co"># poll status</span></span>
 <span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fetch_job.html">fetch_job</a></span><span class="op">(</span><span class="va">job</span><span class="op">)</span> <span class="co"># retrieve when complete</span></span></code></pre></div>
@@ -701,7 +719,7 @@ extended web search and synthesis. Perplexity’s
 </h3>
 <p>Stream reply tokens to the console as they are generated with
 <code>.stream = TRUE</code>:</p>
-<div class="sourceCode" id="cb53"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb52"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Write a short poem about R."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span>, .stream <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p>Streaming is useful for monitoring long responses interactively. For
@@ -710,8 +728,8 @@ because it provides complete metadata and is more reliable.</p>
 <p>To stream into a user interface rather than the console, use
 <code><a href="../reference/send_chat.html">send_chat()</a></code>, which dispatches a request without blocking
 the session and reports each delta through <code>.on_chunk</code>. See
-the article on <a href="articles/tidyllm_shiny.html">using tidyllm in
-Shiny</a>, and the example app it walks through:
+the article on <a href="https://edubruell.github.io/tidyllm/articles/tidyllm_shiny.html">using
+tidyllm in Shiny</a>, and the example app it walks through:
 <code>tidyllm_example_app("model_explainer")</code>.</p>
 </div>
 <div class="section level3">
@@ -729,15 +747,14 @@ Shiny</a>, and the example app it walks through:
 <tbody>
 <tr class="odd">
 <td><code><a href="../reference/openai.html">openai()</a></code></td>
-<td>Top benchmark performance across coding, math, and reasoning;
-<code>o3</code>/<code>o4</code> reasoning models; built-in web search
-via <code><a href="../reference/openai_websearch.html">openai_websearch()</a></code>; Files API</td>
+<td>GPT-6 model line with <code>.thinking</code> effort levels;
+<code><a href="../reference/deep_research.html">deep_research()</a></code>; built-in web search via
+<code><a href="../reference/openai_websearch.html">openai_websearch()</a></code>; Files API</td>
 </tr>
 <tr class="even">
 <td><code><a href="../reference/claude.html">claude()</a></code></td>
-<td>Best-in-class coding (SWE-bench leader);
-<code>.thinking = TRUE</code> for extended reasoning; Files API for
-document workflows; batch</td>
+<td>Strong at coding and long documents; <code>.thinking = TRUE</code>
+for extended reasoning; Files API for document workflows; batch</td>
 </tr>
 <tr class="odd">
 <td><code><a href="../reference/gemini.html">gemini()</a></code></td>
@@ -757,7 +774,9 @@ models (<code>.media = audio_file()</code>); embeddings; batch</td>
 <code>.json_schema</code>; batch</td>
 </tr>
 <tr class="even">
-<td><code><a href="../reference/perplexity.html">perplexity()</a></code></td>
+<td>
+<code><a href="../reference/perplexity.html">perplexity()</a></code> (deprecated since 0.7.0, removed in 0.8.0;
+use <code>openrouter(.model = "perplexity/sonar")</code>)</td>
 <td>Real-time web search with citations in metadata;
 <code><a href="../reference/deep_research.html">deep_research()</a></code> for long-horizon research; search domain
 filter</td>
@@ -765,9 +784,8 @@ filter</td>
 <tr class="odd">
 <td><code><a href="../reference/deepseek.html">deepseek()</a></code></td>
 <td>Top math and reasoning benchmarks at very low cost;
-<code>.thinking = TRUE</code> auto-switches to
-<code>deepseek-reasoner</code>
-</td>
+<code>.thinking = TRUE</code> turns on thinking mode and returns the
+reasoning trace in metadata</td>
 </tr>
 <tr class="even">
 <td><code><a href="../reference/voyage.html">voyage()</a></code></td>
@@ -780,6 +798,17 @@ multimodal embeddings (text + images);
 <td><code><a href="../reference/openrouter.html">openrouter()</a></code></td>
 <td>500+ models via one API key; audio and video support on Gemini, Qwen
 3.6, and other multimodal routes; automatic fallback routing</td>
+</tr>
+<tr class="even">
+<td><code><a href="../reference/claude_cli.html">claude_cli()</a></code></td>
+<td>Runs your own installed and signed-in <code>claude</code> command
+line tool; no API key, usage counts against the CLI’s plan; CLI tools
+are off unless you allow them with <code>.cli_tools</code>
+</td>
+</tr>
+<tr class="odd">
+<td><code><a href="../reference/ellmer.html">ellmer()</a></code></td>
+<td>Use any ellmer chat object as a tidyllm provider</td>
 </tr>
 <tr class="even">
 <td><code><a href="../reference/ollama.html">ollama()</a></code></td>
@@ -801,15 +830,41 @@ constraints; logprobs; <code><a href="../reference/llamacpp_rerank.html">llamacp
 </table>
 <p>For getting started with local models (Ollama and llama.cpp), see the
 Local Models article on the tidyllm website.</p>
+<div class="section level4">
+<h4 id="checking-what-a-provider-supports">Checking What a Provider Supports<a class="anchor" aria-label="anchor" href="#checking-what-a-provider-supports"></a>
+</h4>
+<p><code><a href="../reference/provider_capabilities.html">provider_capabilities()</a></code> answers “can this provider do
+that?” without reading each help page. With a provider call it lists
+every verb the provider implements, each verb’s arguments, the default
+of each argument as R code, and the function (<code>fn</code>) whose
+help page documents it:</p>
+<div class="sourceCode" id="cb53"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/provider_capabilities.html">provider_capabilities</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span>, .verb <span class="op">=</span> <span class="st">"chat"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Which providers accept .thinking, and for which verbs?</span></span>
+<span><span class="fu"><a href="../reference/provider_capabilities.html">provider_capabilities</a></span><span class="op">(</span>.argument <span class="op">=</span> <span class="st">".thinking"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Default chat model of every provider</span></span>
+<span><span class="fu"><a href="../reference/provider_capabilities.html">provider_capabilities</a></span><span class="op">(</span>.verb <span class="op">=</span> <span class="st">"chat"</span>, .argument <span class="op">=</span> <span class="st">".model"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Which media types each provider takes in a message</span></span>
+<span><span class="fu"><a href="../reference/provider_capabilities.html">provider_capabilities</a></span><span class="op">(</span>.what <span class="op">=</span> <span class="st">"media"</span><span class="op">)</span></span></code></pre></div>
+<p>The result is an ordinary tibble, so filter and reshape it as usual.
+An argument in the table means the provider’s function accepts it; an
+individual model can still reject a value, for example some reasoning
+effort levels. The attachment check in <code><a href="../reference/chat.html">chat()</a></code> reads the
+same media table, so a message with audio sent to a provider that lists
+no audio support fails before any request is made.</p>
+</div>
 </div>
 <div class="section level3">
 <h3 id="setting-a-default-provider">Setting a Default Provider<a class="anchor" aria-label="anchor" href="#setting-a-default-provider"></a>
 </h3>
 <p>Avoid specifying a provider on every call by setting options:</p>
 <div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>tidyllm_chat_default   <span class="op">=</span> <span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-5.6-terra"</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>tidyllm_chat_default   <span class="op">=</span> <span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-6-luna"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>tidyllm_embed_default  <span class="op">=</span> <span class="fu"><a href="../reference/ollama.html">ollama</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>tidyllm_sbatch_default <span class="op">=</span> <span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span>.temperature <span class="op">=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>tidyllm_sbatch_default <span class="op">=</span> <span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>tidyllm_cbatch_default <span class="op">=</span> <span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>tidyllm_fbatch_default <span class="op">=</span> <span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>tidyllm_lbatch_default <span class="op">=</span> <span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>

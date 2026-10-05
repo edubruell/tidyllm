@@ -646,5 +646,6 @@ llamacpp <- create_provider_function(
   chat        = llamacpp_chat,
   build       = llamacpp_build_chat_request,
   embed       = llamacpp_embedding,
-  list_models = llamacpp_list_models
+  list_models = llamacpp_list_models,
+  .media = c("image", "audio")
 )

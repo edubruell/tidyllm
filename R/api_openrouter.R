@@ -148,7 +148,7 @@ method(to_api_format, list(LLMMessage, api_openrouter)) <- function(.llm,
 #'
 #' @export
 openrouter_chat <- function(.llm,
-                            .model = "anthropic/claude-sonnet-5",
+                            .model = "anthropic/claude-sonnet-5.5",
                             .max_tokens = 2048,
                             .temperature = NULL,
                             .top_p = NULL,
@@ -177,7 +177,7 @@ openrouter_chat <- function(.llm,
 #'
 #' @noRd
 openrouter_build_chat_request <- function(.llm,
-                            .model = "anthropic/claude-sonnet-5",
+                            .model = "anthropic/claude-sonnet-5.5",
                             .max_tokens = 2048,
                             .temperature = NULL,
                             .top_p = NULL,
@@ -548,5 +548,6 @@ openrouter <- create_provider_function(
   chat = openrouter_chat,
   build = openrouter_build_chat_request,
   embed = openrouter_embedding,
-  list_models = openrouter_list_models
+  list_models = openrouter_list_models,
+  .media = c("image", "audio", "video")
 )

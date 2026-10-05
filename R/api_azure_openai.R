@@ -854,7 +854,8 @@ azure_openai <- create_provider_function(
   send_batch = send_azure_openai_batch, 
   check_batch = check_azure_openai_batch,
   list_batches = list_azure_openai_batches,
-  fetch_batch = fetch_azure_openai_batch
+  fetch_batch = fetch_azure_openai_batch,
+  .media = c("image")
 )
 
 

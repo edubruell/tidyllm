@@ -366,7 +366,7 @@ PROVIDERS <- list(
                                       concurrent = FALSE),
   "Claude"                     = list(call = quote(claude()),
                                       concurrent = TRUE),
-  "OpenAI"                     = list(call = quote(openai(.model = "gpt-5.6-luna")),
+  "OpenAI"                     = list(call = quote(openai(.model = "gpt-6-luna")),
                                       concurrent = TRUE),
   "Gemini"                     = list(call = quote(gemini()),
                                       concurrent = TRUE)

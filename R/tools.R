@@ -1,7 +1,10 @@
 #' @title TOOL Class
 #' @description A class representing a tool for Language Model function calling
 #' 
-#' @slot description Character string describing what the tool does
+#' @slot description Character string describing what the tool does. It can be
+#'   set to a function returning that string, which is then called each time the
+#'   description is read, so a request always carries its current text.
+#' @slot description_source The stored string or function behind `description`
 #' @slot input_schema List of parameter schemas for the tool (empty for builtin tools)
 #' @slot func Function to be called by the LLM (dummy function for builtin tools that raises an error)
 #' @slot name Character string name of the tool
@@ -9,7 +12,18 @@
 #'
 #' @noRd 
 TOOL <- new_class("TOOL", properties = list(
-  description  = class_character,
+  description_source = new_property(class_character | class_function),
+  description  = new_property(
+    class_character,
+    getter = function(self) {
+      source <- self@description_source
+      if (is.function(source)) source() else source
+    },
+    setter = function(self, value) {
+      self@description_source <- value
+      self
+    }
+  ),
   input_schema = class_list,
   func         = class_function,
   name         = class_character,
@@ -273,6 +287,28 @@ convert_ellmer_type_to_field <- function(.ellmer_type) {
   }
 }
 
+#' Run a tool function and return its result as text
+#'
+#' Text results are passed on as they are. Anything else, including a named
+#' character vector or a character matrix, is printed, as is
+#' whatever the function itself prints while it runs. Wrapping a text result in
+#' `capture.output()` would send the model R's printed form, `[1] "..."`, with
+#' every newline and quote escaped.
+#' @noRd
+tool_result_text <- function(.f, .args) {
+  result  <- NULL
+  printed <- utils::capture.output(result <- withVisible(do.call(.f, .args)))
+  value <- if (!result$visible) {
+    character(0)
+  } else if (is.character(result$value) && is.null(names(result$value)) &&
+             is.null(dim(result$value))) {
+    result$value
+  } else {
+    utils::capture.output(print(result$value))
+  }
+  paste(c(printed, value), collapse = "\n")
+}
+
 #Generics for tools
 tools_to_api <- new_generic("tools_to_api", c(".api", ".tools"))
 run_tool_calls <- new_generic("run_tool_calls", c(".api",".tool_calls",".tools"))
@@ -294,6 +330,14 @@ method(print.TOOL,TOOL) <- function(x, ...){
   cat("  Description: ", x@description, "\n", sep = "")
   cat("  Arguments: \n")
   purrr::iwalk(x@input_schema, ~ cat("    -", .y, ": ", .x@type, "\n"))
+}
+
+tool_properties <- function(tool) {
+  props <- purrr::map(tool@input_schema, field_to_param_schema)
+  if (length(props) == 0) {
+    return(structure(list(), names = character(0)))
+  }
+  props
 }
 
 field_to_param_schema <- function(param) {
@@ -318,7 +362,7 @@ method(tools_to_api, list(APIProvider, class_list)) <- function(.api, .tools) {
           description = tool@description,
           parameters = add_no_extra_fields(list(
             type = "object",
-            properties = purrr::map(tool@input_schema, field_to_param_schema),
+            properties = tool_properties(tool),
             required = as.list(names(tool@input_schema))
           ))
         )

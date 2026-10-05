@@ -61,10 +61,9 @@ First, we prepare a list of messages for all PDFs in the folder by
 applying
 [`llm_message()`](https://edubruell.github.io/tidyllm/dev/reference/llm_message.md)
 with a prompt to the first five pages of each document. Even though
-`gpt-5.4` can process up to 128,000 tokens (roughly 80-90 pages of
-English text), we limit the input to five pages for demonstration
-purposes; the introduction is usually enough to get a first overview of
-a paper.
+`gpt-6-luna` can process much longer documents, we limit the input to
+five pages for demonstration purposes; the introduction is usually
+enough to get a first overview of a paper.
 
 Attach PDFs with
 [`pdf_file()`](https://edubruell.github.io/tidyllm/dev/reference/pdf_file.md)
@@ -130,7 +129,7 @@ and the schema:
 
 example_task <- document_tasks[[1]] |>
   chat(openai(.json_schema = document_schema,
-              .model       = "gpt-5.4"))
+              .model       = "gpt-6-luna"))
 ```
 
 ### Step 4: Extracting and Formatting the Results
@@ -148,25 +147,25 @@ get_reply_data(example_task)
 ## [1] "Edward W. Felten; Manav Raj; Robert Seamans"
 ## 
 ## $SuggestedFilename
-## [1] "2018_Felten_etal_AILinkOccupations.pdf"
+## [1] "2018_Felten_etal_AI_Occupational_Abilities.pdf"
 ## 
 ## $Type
 ## [1] "Research"
 ## 
 ## $Empirics
-## [1] "The study employs two main databases: the Electronic Frontier Foundation (EFF) AI Progress Measurement dataset and the Occupational Information Network (O*NET). The EFF dataset tracks task-specific AI performance metrics across various categories from 2010 to 2015, while O*NET provides contemporary occupational definitions. The authors calculate the correlation between AI advancements and occupational changes using an analysis of variance methodology to derive impact scores for occupations."
+## [1] "The study combines the Electronic Frontier Foundation’s AI Progress Measurement data with the US Department of Labor’s O*NET occupational database. For 16 AI categories, the authors scale different performance metrics, estimate progress trends using a common linear rate with metric-specific offsets, and set progress to zero where historical data are insufficient. Computer science PhD students help map AI categories to 52 O*NET abilities. The authors weight estimated ability effects by each ability’s importance and prevalence across nearly 1,000 occupations, then aggregate occupation scores. As a validation test, they correlate 2010–2015 scores with planned 2018 BLS definition revisions: the correlation is 0.074 (p = 0.041)."
 ## 
 ## $Theory
-## [1] "The theoretical framework relies on linking advancements in various AI fields (e.g., image recognition) to a set of 52 abilities outlined by O*NET. The authors construct a matrix correlating EFF AI categories to O*NET abilities, assessing how AI impacts specific skills important for different occupations, theoretically grounded in human capital and job task frameworks."
+## [1] "The paper uses a skills- and abilities-based view of labor: an occupation is understood as a bundle of abilities, with each ability varying in importance and prevalence across jobs. Advances in particular AI domains may affect the abilities used in occupations, so mapping AI progress to abilities and then to occupational requirements provides a way to compare relative exposure. This framework complements approaches that predict future automation susceptibility at the occupation level and those emphasizing variation in tasks among workers with the same occupational title. It does not provide a formal model of labor-market adjustment or determine whether AI substitutes for or complements workers; either outcome may occur."
 ## 
 ## $MainPoint
-## [1] "The paper introduces a novel methodology to quantitatively assess the impact of AI advancements on occupational abilities, facilitating better understanding for researchers and policymakers."
+## [1] "The authors propose a method for linking measured advances in specific AI domains to occupational abilities and aggregating those links to compare which occupations may be affected."
 ## 
 ## $Contribution
-## [1] "This research contributes a systematic approach for linking AI advancements to occupational changes, enhancing the understanding of AI's role in labor markets and the skills needed across different jobs. The methodology allows for further analysis of the varying impacts of AI on occupations, potentially aiding policy development."
+## [1] "The paper introduces a reproducible framework that combines historical AI performance trends with O*NET ability requirements, enabling researchers and policymakers to assess the relative exposure of occupations and industries to advances in particular AI technologies. It also offers an initial validation: occupations with higher impact scores were modestly more likely to be scheduled for updated BLS definitions."
 ## 
 ## $KeyCitations
-## [1] "Autor and Handel (2013); Brynjolfsson et al. (2018); Acemoglu and Restrepo (2017); Frey and Osborne (2017)"
+## [1] "Frey and Osborne (2017), “The Future of Employment,” provides an occupation-level automation-susceptibility approach that this method complements. Arntz, Gregory, and Zierahn (2016), “The Risk of Automation for Jobs in OECD Countries,” highlights task variation within occupations. Autor and Handel (2013), “Putting Tasks to the Test,” supports describing labor through job tasks and skills. Brynjolfsson, Mitchell, and Rock (2018), “What Can Machines Learn, and What Does it Mean for the Occupations and Industries?,” is a related approach to assessing AI and occupational effects."
 ```
 
 The model returns a named list matching our schema, which
@@ -181,11 +180,13 @@ get_metadata(example_task)
     ## # A tibble: 1 × 7
     ##   model  timestamp           prompt_tokens completion_tokens total_tokens stream
     ##   <chr>  <dttm>                      <int>             <int>        <int> <lgl> 
-    ## 1 gpt-5… 2026-03-16 10:00:00          4265               337         4602 FALSE 
+    ## 1 gpt-6… 2026-10-02 15:20:13          4223              1051         5274 FALSE 
     ## # ℹ 1 more variable: api_specific <list>
 
-At current `gpt-5.4` batch pricing the per-document cost is a few cents;
-processing a folder of 50 papers costs well under a dollar.
+At current `gpt-6-luna` batch pricing (\$0.05 per million input and
+\$0.25 per million output tokens) the per-document cost is a fraction of
+a cent; processing the 25 papers in this folder cost about 1.5 cents,
+and a folder of 50 papers costs a few cents.
 
 ### Step 5: Scaling Up to a Whole Batch of Papers
 
@@ -199,7 +200,7 @@ your regular quota.
 
 document_tasks |>
   send_batch(openai(.json_schema = document_schema,
-                    .model       = "gpt-5.4")) |>
+                    .model       = "gpt-6-luna")) |>
   write_rds("document_batch.rds")
 ```
 
@@ -249,20 +250,20 @@ document_table <- results |>
   map_dfr(as_tibble)
 
 document_table
-## # A tibble: 24 × 9
+## # A tibble: 25 × 9
 ##    Title  Authors SuggestedFilename Type  Empirics Theory MainPoint Contribution
 ##    <chr>  <chr>   <chr>             <chr> <chr>    <chr>  <chr>     <chr>       
-##  1 A Met… Edward… 2018_Felten_etal… Rese… The pap… Theor… The pape… The primary…
-##  2 The R… Alexan… 2024_Bick_etal_R… Rese… The emp… The t… The pape… The primary…
-##  3 The A… Andrew… 2024_Caplin_etal… Rese… The stu… The t… AI can s… The paper c…
-##  4 Large… John J… 2023_Horton_etal… Rese… The doc… The c… The pape… This resear…
-##  5 The I… Sida P… 2023_Peng_etal_I… Rese… The stu… The p… The stud… This resear…
-##  6 GPTs … Tyna E… 2023_Eloundou_et… Rese… The stu… The t… The intr… This paper …
-##  7 Autom… Philip… 2023_Lergetporer… Rese… This st… The u… Workers … This paper …
-##  8 Artif… Andrew… 2024_Green_etal_… Rese… The doc… The r… AI is tr… The primary…
-##  9 The A… Andrew… 2024_Caplin_etal… Rese… The res… The s… The abil… This resear…
-## 10 Autom… Daron … 2019_Acemoglu_Re… Rese… The doc… The p… The impa… The authors…
-## # ℹ 14 more rows
+##  1 A Met… Edward… 2018_Felten_etal… Rese… The aut… The p… The pape… The authors…
+##  2 The R… Alexan… 2024_Bick_etal_R… Rese… The stu… The p… Generati… The paper p…
+##  3 The A… Andrew… 2024_Caplin_etal… Rese… The aut… The p… AI assis… The study i…
+##  4 Large… John J… 2023_Horton_Larg… Rese… The pap… The p… Large la… The paper d…
+##  5 The I… Sida P… 2023_Peng_etal_A… Rese… Researc… No fo… In a con… The study p…
+##  6 GPTs … Tyna E… 2023_Eloundou_et… Rese… The stu… The p… LLMs cou… The paper i…
+##  7 Autom… Philip… 2023_Lergetporer… Rese… The aut… The p… Workers … The study d…
+##  8 Artif… Andrew… 2024_Green_etal_… Rese… The rep… The p… AI is ch… The report …
+##  9 The A… Andrew… 2024_Caplin_etal… Rese… The aut… The p… AI benef… The study p…
+## 10 Autom… Daron … 2019_Acemoglu_et… Rese… The pap… The f… Automati… The authors…
+## # ℹ 15 more rows
 ## # ℹ 1 more variable: KeyCitations <chr>
 ```
 
