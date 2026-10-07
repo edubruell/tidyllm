@@ -245,3 +245,19 @@ truncate_text <- function(.x, .max_chars) {
   if (is.na(.x) || nchar(.x) <= .max_chars) return(.x)
   paste0(substr(.x, 1, .max_chars), " [truncated]")
 }
+
+#' Find the environment of the code that called into tidyllm
+#'
+#' @noRd
+tidyllm_user_env <- function() {
+  ns <- topenv(environment(tidyllm_user_env))
+  frames <- sys.frames()
+  inside <- vapply(frames, function(f) identical(topenv(f), ns), logical(1))
+  first <- match(TRUE, inside)
+  if (is.na(first)) return(globalenv())
+  for (i in rev(seq_len(first - 1))) {
+    top <- topenv(frames[[i]])
+    if (!(isNamespace(top) && getNamespaceName(top) %in% c("base", "purrr"))) return(frames[[i]])
+  }
+  globalenv()
+}

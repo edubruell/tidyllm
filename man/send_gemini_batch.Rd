@@ -17,6 +17,7 @@ send_gemini_batch(
   .safety_settings = NULL,
   .json_schema = NULL,
   .grounding_threshold = NULL,
+  .thinking_level = NULL,
   .timeout = 120,
   .dry_run = FALSE,
   .max_tries = 3,
@@ -29,13 +30,13 @@ send_gemini_batch(
 
 \item{.model}{The model identifier (default: "gemini-1.5-flash").}
 
-\item{.temperature}{Controls randomness (default: NULL, range: 0-2).}
+\item{.temperature}{Controls randomness (default: NULL, range: 0-2). Ignored by Gemini 3.6 Flash and later models; Google plans to reject it on upcoming models.}
 
 \item{.max_output_tokens}{Maximum tokens in the response (default: NULL).}
 
-\item{.top_p}{Nucleus sampling (default: NULL, range: 0-1).}
+\item{.top_p}{Nucleus sampling (default: NULL, range: 0-1). Ignored by Gemini 3.6 Flash and later models; Google plans to reject it on upcoming models.}
 
-\item{.top_k}{Diversity in token selection (default: NULL).}
+\item{.top_k}{Diversity in token selection (default: NULL). Ignored by Gemini 3.6 Flash and later models; Google plans to reject it on upcoming models.}
 
 \item{.presence_penalty}{Penalizes new tokens (default: NULL, -2 to 2).}
 
@@ -48,6 +49,9 @@ send_gemini_batch(
 \item{.json_schema}{Optional schema to enforce output structure.}
 
 \item{.grounding_threshold}{Optional grounding threshold (0-1) to enable Google Search.}
+
+\item{.thinking_level}{How much the model reasons before answering: \code{"minimal"}, \code{"low"},
+\code{"medium"} or \code{"high"} (default: NULL, the model's own default). Supported levels vary by model.}
 
 \item{.timeout}{Timeout in seconds (default: 120).}
 

@@ -381,10 +381,10 @@ gemini_inject_files <- function(.gemini_contents,
 #' @param .llm An existing LLMMessage object or an initial text prompt.
 #' @param .model The model identifier (default: "gemini-1.5-flash").
 #' @param .fileid Optional vector of file IDs uploaded via `gemini_upload_file()` (default: NULL).
-#' @param .temperature Controls randomness in generation (default: NULL, range: 0.0-2.0).
+#' @param .temperature Controls randomness in generation (default: NULL, range: 0.0-2.0). Gemini 3.6 Flash and later models ignore it, and Google plans to reject it on upcoming models.
 #' @param .max_output_tokens Maximum tokens in the response (default: NULL).
-#' @param .top_p Controls nucleus sampling (default: NULL, range: 0.0-1.0).
-#' @param .top_k Controls diversity in token selection (default: NULL, range: 0 or more).
+#' @param .top_p Controls nucleus sampling (default: NULL, range: 0.0-1.0). Gemini 3.6 Flash and later models ignore it, and Google plans to reject it on upcoming models.
+#' @param .top_k Controls diversity in token selection (default: NULL, range: 0 or more). Gemini 3.6 Flash and later models ignore it, and Google plans to reject it on upcoming models.
 #' @param .presence_penalty Penalizes new tokens (default: NULL, range: -2.0 to 2.0).
 #' @param .frequency_penalty Penalizes frequent tokens (default: NULL, range: -2.0 to 2.0).
 #' @param .stop_sequences Optional character sequences to stop generation (default: NULL, up to 5).
@@ -401,7 +401,12 @@ gemini_inject_files <- function(.gemini_contents,
 #' @param .stream Should the response be streamed (default: FALSE).
 #' @param .max_tool_rounds Integer specifying the maximum number of tool use iterations (default: 10).
 #'   Set to 1 for single-round tool use, or higher for multi-turn agentic loops.
-#' @param .thinking_budget Token budget for internal reasoning (default: NULL). Works with `gemini-3.8-flash` and `gemini-3.1-pro`.
+#' @param .thinking_level How much the model reasons before answering: `"minimal"`, `"low"`,
+#'   `"medium"` or `"high"` (default: NULL, the model's own default). Supported levels
+#'   vary by model; `gemini-3.8-flash` accepts `"low"`, `"medium"` and `"high"`.
+#' @param .thinking_budget Deprecated. Token budget for internal reasoning
+#'   (default: NULL). Use `.thinking_level` instead; Google plans to reject token budgets on
+#'   upcoming models. Cannot be combined with `.thinking_level`.
 #'
 #' @return A new `LLMMessage` object containing the original messages plus the assistant's response.
 #'
@@ -420,6 +425,7 @@ gemini_chat <- function(.llm,
                    .safety_settings = NULL,
                    .json_schema = NULL,
                    .tools = NULL,
+                   .thinking_level = NULL,
                    .thinking_budget = NULL,
                    .timeout = 120,
                    .dry_run = FALSE,
@@ -448,6 +454,7 @@ gemini_build_chat_request <- function(.llm,
                    .safety_settings = NULL,
                    .json_schema = NULL,
                    .tools = NULL,
+                   .thinking_level = NULL,
                    .thinking_budget = NULL,
                    .timeout = 120,
                    .dry_run = FALSE,
@@ -478,9 +485,19 @@ gemini_build_chat_request <- function(.llm,
     "Input .stream must be logical" = is.logical(.verbose),
     "Input .tools must be NULL, a TOOL object, or a list of TOOL objects" = is.null(.tools) || S7_inherits(.tools, TOOL) || (is.list(.tools) && all(purrr::map_lgl(.tools, ~ S7_inherits(.x, TOOL)))),
     ".max_tool_rounds must be a positive integer" = is_integer_valued(.max_tool_rounds) && .max_tool_rounds >= 1,
-    ".thinking_budget must be NULL or a non-negative integer" = is.null(.thinking_budget) || (is_integer_valued(.thinking_budget) && .thinking_budget >= 0)
+    ".thinking_level must be NULL or one of \"minimal\", \"low\", \"medium\", \"high\"" = is.null(.thinking_level) || (is.character(.thinking_level) && length(.thinking_level) == 1 && .thinking_level %in% c("minimal", "low", "medium", "high")),
+    ".thinking_budget must be NULL or a non-negative integer" = is.null(.thinking_budget) || (is_integer_valued(.thinking_budget) && .thinking_budget >= 0),
+    "Set only one of .thinking_level and .thinking_budget" = is.null(.thinking_level) || is.null(.thinking_budget)
   ) |>
     validate_inputs()
+
+  if (!is.null(.thinking_budget)) {
+    lifecycle::deprecate_warn(
+      "0.7.1", "gemini(.thinking_budget=)", "gemini(.thinking_level=)",
+      details = "Google plans to reject thinking budgets on upcoming Gemini models.",
+      user_env = tidyllm_user_env()
+    )
+  }
   
   api_obj <- api_gemini(short_name = "gemini",
                         long_name  = "Google Gemini",
@@ -490,15 +507,14 @@ gemini_build_chat_request <- function(.llm,
   
   # Deprecated .fileid: convert to tidyllm_file objects and inject into last message
   if (!is.null(.fileid)) {
-    # See the note on the matching call in R/api_claude.R: the builder is one
-    # frame deeper than gemini_chat(), so user_env must be passed explicitly.
+    # See the note on the matching call in R/api_claude.R.
     lifecycle::deprecate_warn(
       "0.5.0", "gemini(.fileid=)",
       details = "Pass tidyllm_file objects via .files on llm_message() instead.",
-      user_env = rlang::caller_env(2)
+      user_env = tidyllm_user_env()
     )
     file_objs <- lapply(.fileid, function(id) {
-      meta <- tryCatch(gemini_file_metadata(id), error = function(e) NULL)
+      meta <- tryCatch(gemini_file_info_verb(id), error = function(e) NULL)
       uri  <- if (!is.null(meta)) meta$uri[1] else ""
       mime <- if (!is.null(meta)) meta$mime_type[1] else ""
       tidyllm_file(id = id, provider = "gemini", mime_type = mime,
@@ -573,7 +589,11 @@ gemini_build_chat_request <- function(.llm,
     presencePenalty = .presence_penalty,
     frequencyPenalty = .frequency_penalty,
     stopSequences = .stop_sequences,
-    thinkingConfig = if (!is.null(.thinking_budget)) list(thinkingBudget = .thinking_budget) else NULL
+    thinkingConfig = if (!is.null(.thinking_level)) {
+      list(thinkingLevel = .thinking_level)
+    } else if (!is.null(.thinking_budget)) {
+      list(thinkingBudget = .thinking_budget)
+    }
   ) |>
     append(response_format) |>
     purrr::compact()
@@ -869,16 +889,18 @@ gemini_embedding <- function(.input,
 #' Returns a named list (same as input) with batch_id and json attributes.
 #' @param .llms List of LLMMessage objects (named or unnamed).
 #' @param .model The model identifier (default: "gemini-1.5-flash").
-#' @param .temperature Controls randomness (default: NULL, range: 0-2).
+#' @param .temperature Controls randomness (default: NULL, range: 0-2). Ignored by Gemini 3.6 Flash and later models; Google plans to reject it on upcoming models.
 #' @param .max_output_tokens Maximum tokens in the response (default: NULL).
-#' @param .top_p Nucleus sampling (default: NULL, range: 0-1).
-#' @param .top_k Diversity in token selection (default: NULL).
+#' @param .top_p Nucleus sampling (default: NULL, range: 0-1). Ignored by Gemini 3.6 Flash and later models; Google plans to reject it on upcoming models.
+#' @param .top_k Diversity in token selection (default: NULL). Ignored by Gemini 3.6 Flash and later models; Google plans to reject it on upcoming models.
 #' @param .presence_penalty Penalizes new tokens (default: NULL, -2 to 2).
 #' @param .frequency_penalty Penalizes frequent tokens (default: NULL, -2 to 2).
 #' @param .stop_sequences Character vector or NULL of up to 5.
 #' @param .safety_settings Optional list of safety settings (default: NULL).
 #' @param .json_schema Optional schema to enforce output structure.
 #' @param .grounding_threshold Optional grounding threshold (0-1) to enable Google Search.
+#' @param .thinking_level How much the model reasons before answering: `"minimal"`, `"low"`,
+#'   `"medium"` or `"high"` (default: NULL, the model's own default). Supported levels vary by model.
 #' @param .timeout Timeout in seconds (default: 120).
 #' @param .dry_run If TRUE, returns the constructed request (default: FALSE).
 #' @param .max_tries Maximum retry attempts (default: 3).
@@ -898,6 +920,7 @@ send_gemini_batch <- function(.llms,
                               .safety_settings = NULL,
                               .json_schema = NULL,
                               .grounding_threshold = NULL,
+                              .thinking_level = NULL,
                               .timeout = 120,
                               .dry_run = FALSE,
                               .max_tries = 3,
@@ -929,6 +952,8 @@ send_gemini_batch <- function(.llms,
       is.null(.json_schema) || is.list(.json_schema) || is_ellmer_type(.json_schema),
     "Input .grounding_threshold must be NULL or in [0.0, 1.0]" =
       is.null(.grounding_threshold) || (.grounding_threshold >= 0.0 && .grounding_threshold <= 1.0),
+    ".thinking_level must be NULL or one of \"minimal\", \"low\", \"medium\", \"high\"" =
+      is.null(.thinking_level) || (is.character(.thinking_level) && length(.thinking_level) == 1 && .thinking_level %in% c("minimal", "low", "medium", "high")),
     "Input .timeout must be a positive integer" =
       is_integer_valued(.timeout) && .timeout > 0,
     "Input .max_tries must be a positive integer" =
@@ -962,7 +987,8 @@ send_gemini_batch <- function(.llms,
     presencePenalty = .presence_penalty,
     frequencyPenalty = .frequency_penalty,
     maxOutputTokens = .max_output_tokens,
-    stopSequences = .stop_sequences
+    stopSequences = .stop_sequences,
+    thinkingConfig = if (!is.null(.thinking_level)) list(thinkingLevel = .thinking_level)
   )
   if (json) {
     gen_config$response_mime_type <- "application/json"

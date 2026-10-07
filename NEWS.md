@@ -1,3 +1,36 @@
+# tidyllm 0.7.1 (in development)
+
+## Gemini: `.thinking_level` replaces `.thinking_budget`
+
+Google is changing how Gemini controls reasoning. Upcoming Gemini models will reject a
+token budget for thinking with a `400 INVALID_ARGUMENT` error, and accept only a named
+level. `gemini()` and `send_batch()` with `gemini()` now take `.thinking_level`, one of
+`"minimal"`, `"low"`, `"medium"` or `"high"`:
+
+```r
+llm_message("What is 17 * 23?") |>
+  chat(gemini(.thinking_level = "high"))
+```
+
+Leave it unset to use the model's default. Supported levels vary by model;
+`gemini-3.8-flash` accepts `"low"`, `"medium"` and `"high"`, and Gemini itself returns a
+clear error for a level the model does not support.
+
+`.thinking_budget` still works for the current models but now warns that it is
+deprecated. Setting both arguments is an error, because Gemini rejects a request that
+contains both.
+
+`.temperature`, `.top_p` and `.top_k` stay in `gemini()`, but Gemini 3.6 Flash and later
+ignore them. Google plans to reject them on upcoming models; their help text now says so.
+
+## Bug fixes
+
+* Deprecation warnings raised inside a chat request, such as for `.fileid` in
+  `gemini()` and `.file_ids` in `claude()`, no longer tell you to report a bug in
+  tidyllm when you call them through `chat()`, `purrr::map()` or `tryCatch()`.
+* The deprecated `.fileid` argument of `gemini()` no longer also warns about
+  `gemini_file_metadata()`, a function you did not call.
+
 # tidyllm 0.7.0
 
 This release adds a provider that talks to a locally installed Claude CLI, a web
