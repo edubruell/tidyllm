@@ -133,4 +133,47 @@ llt_test("streamed tool use assembles and completes", {
                   "the streamed response produced no executed tool call")
 })
 
+llt_test("mistral-large-4 reasons by default and stops with effort none", {
+  thinking <- llm_message("What is 17 * 23? Answer with the number.") |>
+    chat(mistral(.model = "mistral-large-4"))
+  llt_expect_reply(thinking)
+  llt_expect_true(nzchar(get_metadata(thinking)$api_specific[[1]]$thinking %||% ""),
+                  "expected thinking text from mistral-large-4 by default")
+  plain <- llm_message("What is 17 * 23? Answer with the number.") |>
+    chat(mistral(.model = "mistral-large-4", .reasoning_effort = "none"))
+  llt_expect_reply(plain)
+  llt_expect_true(is.null(get_metadata(plain)$api_specific[[1]]$thinking),
+                  "expected no thinking text with .reasoning_effort = 'none'")
+})
+
+llt_test("an unsupported reasoning effort surfaces Mistral's error message", {
+  err <- tryCatch(
+    llm_message("x") |> chat(mistral(.model = "mistral-large-4", .reasoning_effort = "low")),
+    error = function(e) conditionMessage(e)
+  )
+  llt_expect_true(grepl("not supported for this model", err),
+                  paste("Unexpected:", err))
+})
+
+llt_test("an invalid API key surfaces Mistral's detail message", {
+  key <- Sys.getenv("MISTRAL_API_KEY")
+  Sys.setenv(MISTRAL_API_KEY = "invalid-key-for-test")
+  err <- tryCatch(
+    llm_message("x") |> chat(mistral(.max_tries = 1)),
+    error = function(e) conditionMessage(e),
+    finally = Sys.setenv(MISTRAL_API_KEY = key)
+  )
+  llt_expect_true(grepl("Invalid API Key", err, ignore.case = TRUE),
+                  paste("Unexpected:", err))
+})
+
+llt_test("batch request carries reasoning_effort", {
+  req <- send_batch(list(llm_message("hi")),
+                    mistral(.model = "mistral-large-4", .reasoning_effort = "none"),
+                    .dry_run = TRUE)
+  body <- jsonlite::fromJSON(req[[1]])$body
+  llt_expect_true(identical(body$reasoning_effort, "none"),
+                  "batch request line should carry reasoning_effort = 'none'")
+})
+
 llt_report()

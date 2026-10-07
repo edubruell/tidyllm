@@ -20,6 +20,7 @@ send_mistral_batch(
   .stop = NULL,
   .safe_prompt = FALSE,
   .json_schema = NULL,
+  .reasoning_effort = NULL,
   .dry_run = FALSE,
   .overwrite = FALSE,
   .max_tries = 3,
@@ -57,6 +58,8 @@ send_mistral_batch(
 \item{.safe_prompt}{Logical; if TRUE, injects a safety prompt (default: FALSE).}
 
 \item{.json_schema}{A JSON schema object for structured output (optional).}
+
+\item{.reasoning_effort}{How much reasoning models think before answering; one of \code{"none"}, \code{"low"}, \code{"medium"}, or \code{"high"} (default: \code{NULL}, meaning the API default). Supported values vary by model: \code{mistral-large-4} accepts only \code{"high"} and \code{"none"}.}
 
 \item{.dry_run}{Logical; if TRUE, returns the prepared request without executing it (default: FALSE).}
 

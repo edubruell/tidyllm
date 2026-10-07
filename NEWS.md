@@ -27,7 +27,27 @@ contains both.
 `.temperature`, `.top_p` and `.top_k` stay in `gemini()`, but Gemini 3.6 Flash and later
 ignore them. Google plans to reject them on upcoming models; their help text now says so.
 
+## Mistral Large 4
+
+`mistral()` works with Mistral Large 4 (`mistral-large-4`, also `mistral-large-4-0`),
+Mistral's new reasoning model with a 512K-token context, image input and tool calls.
+It reasons by default; `.reasoning_effort` now also accepts `"none"`, which turns
+reasoning off. Large 4 supports only `"high"` and `"none"`. Batches sent with
+`send_batch(mistral())` take `.reasoning_effort` too.
+
+```r
+llm_message("Summarise this contract clause.") |>
+  chat(mistral(.model = "mistral-large-4", .reasoning_effort = "none"))
+```
+
+The default Mistral model does not change, and `mistral-large-latest` still points to
+the previous Large model.
+
 ## Bug fixes
+
+* `chat()` with `mistral()` now shows Mistral's own error message, for example for an
+  unsupported `.reasoning_effort` or an invalid API key, instead of "Received empty
+  response from Mistral".
 
 * Deprecation warnings raised inside a chat request, such as for `.fileid` in
   `gemini()` and `.file_ids` in `claude()`, no longer tell you to report a bug in

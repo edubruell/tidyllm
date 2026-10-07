@@ -58,7 +58,7 @@ mistral_chat(
 
 \item{.safe_prompt}{Whether to inject a safety prompt before all conversations (default: \code{FALSE}).}
 
-\item{.reasoning_effort}{Controls the reasoning effort for Magistral thinking models; one of \code{"low"}, \code{"medium"}, or \code{"high"} (default: \code{NULL}, meaning the API default).}
+\item{.reasoning_effort}{Controls how much reasoning models think before answering; one of \code{"none"}, \code{"low"}, \code{"medium"}, or \code{"high"} (default: \code{NULL}, meaning the API default). Supported values vary by model: \code{mistral-large-4} accepts only \code{"high"} and \code{"none"}, and \code{"none"} turns reasoning off.}
 
 \item{.timeout}{When should our connection time out in seconds (default: \code{120}).}
 

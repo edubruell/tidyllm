@@ -43,8 +43,19 @@ mistral_normalise_message <- function(.message) {
   .message
 }
 
+mistral_reasoning_efforts <- c("none", "low", "medium", "high")
+
 #' @noRd
 method(parse_chat_response, list(api_mistral, class_list)) <- function(.api, .content) {
+  if (identical(.content$object, "error")) {
+    .content$error <- list(type = .content$type %||% .content$code, message = .content$message)
+  } else if (!is.null(.content$detail) && length(.content$choices) == 0) {
+    detail <- .content$detail
+    if (!is.character(detail)) {
+      detail <- paste(purrr::map_chr(detail, ~ .x$msg %||% ""), collapse = "; ")
+    }
+    .content$error <- list(type = "invalid_request", message = detail)
+  }
   if (length(.content$choices) >= 1) {
     .content$choices[[1]]$message <- mistral_normalise_message(.content$choices[[1]]$message)
   }
@@ -255,7 +266,7 @@ prepare_mistral_request <- function(
 #' @param .tool_choice A character string specifying the tool-calling behavior; valid values are "none", "auto", or "required".
 #' @param .json_schema A JSON schema object provided by tidyllm schema or ellmer schemata.
 #' @param .safe_prompt Whether to inject a safety prompt before all conversations (default: `FALSE`).
-#' @param .reasoning_effort Controls the reasoning effort for Magistral thinking models; one of `"low"`, `"medium"`, or `"high"` (default: `NULL`, meaning the API default).
+#' @param .reasoning_effort Controls how much reasoning models think before answering; one of `"none"`, `"low"`, `"medium"`, or `"high"` (default: `NULL`, meaning the API default). Supported values vary by model: `mistral-large-4` accepts only `"high"` and `"none"`, and `"none"` turns reasoning off.
 #' @param .timeout When should our connection time out in seconds (default: `120`).
 #' @param .verbose Should additional information be shown after the API call? (default: `FALSE`)
 #' @param .dry_run If `TRUE`, perform a dry run and return the request object (default: `FALSE`).
@@ -331,7 +342,7 @@ mistral_build_chat_request <- function(.llm,
     "Input .logit_bias must be a list or NULL" = is.null(.logit_bias) || is.list(.logit_bias),
     "Input .presence_penalty must be numeric or NULL" = is.null(.presence_penalty) || is.numeric(.presence_penalty),
     "Input .safe_prompt must be logical" = is.logical(.safe_prompt) && length(.safe_prompt) == 1,
-    "Input .reasoning_effort must be NULL or one of 'low', 'medium', 'high'" = is.null(.reasoning_effort) || (is.character(.reasoning_effort) && .reasoning_effort %in% c("low", "medium", "high")),
+    "Input .reasoning_effort must be NULL or one of 'none', 'low', 'medium', 'high'" = is.null(.reasoning_effort) || (is.character(.reasoning_effort) && length(.reasoning_effort) == 1 && .reasoning_effort %in% mistral_reasoning_efforts),
     "Input .max_tries must be integer-valued numeric" = is_integer_valued(.max_tries),
     "Input .timeout must be integer-valued numeric (seconds till timeout)" = is_integer_valued(.timeout),
     "Input .json_schema must be NULL or a list or an ellmer type object" = is.null(.json_schema) || is.list(.json_schema) || is_ellmer_type(.json_schema),
@@ -510,6 +521,7 @@ mistral_embedding <- function(.input,
 #' @param .stop Sequence(s) at which to stop generation (optional).
 #' @param .safe_prompt Logical; if TRUE, injects a safety prompt (default: FALSE).
 #' @param .json_schema A JSON schema object for structured output (optional).
+#' @param .reasoning_effort How much reasoning models think before answering; one of `"none"`, `"low"`, `"medium"`, or `"high"` (default: `NULL`, meaning the API default). Supported values vary by model: `mistral-large-4` accepts only `"high"` and `"none"`.
 #' @param .dry_run Logical; if TRUE, returns the prepared request without executing it (default: FALSE).
 #' @param .overwrite Logical; if TRUE, allows overwriting existing custom IDs (default: FALSE).
 #' @param .max_tries Maximum retry attempts for requests (default: 3).
@@ -533,6 +545,7 @@ send_mistral_batch <- function(.llms,
                                .stop = NULL,
                                .safe_prompt = FALSE,
                                .json_schema = NULL,
+                               .reasoning_effort = NULL,
                                .dry_run = FALSE,
                                .overwrite = FALSE,
                                .max_tries = 3,
@@ -556,6 +569,7 @@ send_mistral_batch <- function(.llms,
     ".stop must be NULL or character" = is.null(.stop) || is.character(.stop),
     ".safe_prompt must be logical" = is.logical(.safe_prompt) && length(.safe_prompt) == 1,
     ".json_schema must be NULL or a list or an ellmer type object" = is.null(.json_schema) || is.list(.json_schema) || is_ellmer_type(.json_schema),
+    ".reasoning_effort must be NULL or one of 'none', 'low', 'medium', 'high'" = is.null(.reasoning_effort) || (is.character(.reasoning_effort) && length(.reasoning_effort) == 1 && .reasoning_effort %in% mistral_reasoning_efforts),
     ".dry_run must be logical" = is.logical(.dry_run),
     ".overwrite must be logical" = is.logical(.overwrite),
     ".id_prefix must be a string" = is.character(.id_prefix)
@@ -595,11 +609,14 @@ send_mistral_batch <- function(.llms,
       .json_schema = .json_schema
     )
     
+    body <- request_data$request_body
+    if (!is.null(.reasoning_effort)) body$reasoning_effort <- .reasoning_effort
+
     list(
       custom_id = custom_id,
       method = "POST",
       url = .endpoint,
-      body = request_data$request_body
+      body = body
     ) |> jsonlite::toJSON(auto_unbox = TRUE)
   })
   
