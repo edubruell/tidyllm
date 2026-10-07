@@ -246,6 +246,8 @@ truncate_text <- function(.x, .max_chars) {
   paste0(substr(.x, 1, .max_chars), " [truncated]")
 }
 
+tidyllm_pass_through_namespaces <- c("base", "purrr", "magrittr")
+
 #' Find the environment of the code that called into tidyllm
 #'
 #' @noRd
@@ -257,7 +259,7 @@ tidyllm_user_env <- function() {
   if (is.na(first)) return(globalenv())
   for (i in rev(seq_len(first - 1))) {
     top <- topenv(frames[[i]])
-    if (!(isNamespace(top) && getNamespaceName(top) %in% c("base", "purrr"))) return(frames[[i]])
+    if (!(isNamespace(top) && getNamespaceName(top) %in% tidyllm_pass_through_namespaces)) return(frames[[i]])
   }
   globalenv()
 }

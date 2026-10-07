@@ -1,4 +1,8 @@
-# tidyllm 0.7.1 (in development)
+# tidyllm 0.7.1 (development version)
+
+Work in progress. This release prepares `gemini()` for Google's coming change to how
+Gemini controls reasoning, and will add Mistral Large 4 and two more command-line
+providers, `codex_cli()` and `vibe_cli()`.
 
 ## Gemini: `.thinking_level` replaces `.thinking_budget`
 
@@ -27,7 +31,7 @@ ignore them. Google plans to reject them on upcoming models; their help text now
 
 * Deprecation warnings raised inside a chat request, such as for `.fileid` in
   `gemini()` and `.file_ids` in `claude()`, no longer tell you to report a bug in
-  tidyllm when you call them through `chat()`, `purrr::map()` or `tryCatch()`.
+  tidyllm when you call them through `chat()`, `%>%`, `purrr::map()` or `tryCatch()`.
 * The deprecated `.fileid` argument of `gemini()` no longer also warns about
   `gemini_file_metadata()`, a function you did not call.
 

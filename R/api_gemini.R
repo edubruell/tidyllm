@@ -376,6 +376,8 @@ gemini_inject_files <- function(.gemini_contents,
 
 
 
+gemini_thinking_levels <- c("minimal", "low", "medium", "high")
+
 #' Send LLMMessage to Gemini API
 #'
 #' @param .llm An existing LLMMessage object or an initial text prompt.
@@ -485,7 +487,7 @@ gemini_build_chat_request <- function(.llm,
     "Input .stream must be logical" = is.logical(.verbose),
     "Input .tools must be NULL, a TOOL object, or a list of TOOL objects" = is.null(.tools) || S7_inherits(.tools, TOOL) || (is.list(.tools) && all(purrr::map_lgl(.tools, ~ S7_inherits(.x, TOOL)))),
     ".max_tool_rounds must be a positive integer" = is_integer_valued(.max_tool_rounds) && .max_tool_rounds >= 1,
-    ".thinking_level must be NULL or one of \"minimal\", \"low\", \"medium\", \"high\"" = is.null(.thinking_level) || (is.character(.thinking_level) && length(.thinking_level) == 1 && .thinking_level %in% c("minimal", "low", "medium", "high")),
+    ".thinking_level must be NULL or one of \"minimal\", \"low\", \"medium\", \"high\"" = is.null(.thinking_level) || (is.character(.thinking_level) && length(.thinking_level) == 1 && .thinking_level %in% gemini_thinking_levels),
     ".thinking_budget must be NULL or a non-negative integer" = is.null(.thinking_budget) || (is_integer_valued(.thinking_budget) && .thinking_budget >= 0),
     "Set only one of .thinking_level and .thinking_budget" = is.null(.thinking_level) || is.null(.thinking_budget)
   ) |>
@@ -507,7 +509,6 @@ gemini_build_chat_request <- function(.llm,
   
   # Deprecated .fileid: convert to tidyllm_file objects and inject into last message
   if (!is.null(.fileid)) {
-    # See the note on the matching call in R/api_claude.R.
     lifecycle::deprecate_warn(
       "0.5.0", "gemini(.fileid=)",
       details = "Pass tidyllm_file objects via .files on llm_message() instead.",
@@ -953,7 +954,7 @@ send_gemini_batch <- function(.llms,
     "Input .grounding_threshold must be NULL or in [0.0, 1.0]" =
       is.null(.grounding_threshold) || (.grounding_threshold >= 0.0 && .grounding_threshold <= 1.0),
     ".thinking_level must be NULL or one of \"minimal\", \"low\", \"medium\", \"high\"" =
-      is.null(.thinking_level) || (is.character(.thinking_level) && length(.thinking_level) == 1 && .thinking_level %in% c("minimal", "low", "medium", "high")),
+      is.null(.thinking_level) || (is.character(.thinking_level) && length(.thinking_level) == 1 && .thinking_level %in% gemini_thinking_levels),
     "Input .timeout must be a positive integer" =
       is_integer_valued(.timeout) && .timeout > 0,
     "Input .max_tries must be a positive integer" =

@@ -129,15 +129,17 @@ llt_test("thinking mode returns thinking_tokens in metadata", {
 llt_test("deprecated .thinking_budget still works and warns", {
   warned <- FALSE
   old <- options(lifecycle_verbosity = "warning")
-  result <- withCallingHandlers(
-    llm_message("What is 17 * 23?") |>
-      chat(gemini(.model = "gemini-2.5-flash", .thinking_budget = 512)),
-    lifecycle_warning_deprecated = function(w) {
-      warned <<- TRUE
-      invokeRestart("muffleWarning")
-    }
+  result <- tryCatch(
+    withCallingHandlers(
+      llm_message("What is 17 * 23?") |>
+        chat(gemini(.model = "gemini-2.5-flash", .thinking_budget = 512)),
+      lifecycle_warning_deprecated = function(w) {
+        warned <<- TRUE
+        invokeRestart("muffleWarning")
+      }
+    ),
+    finally = options(old)
   )
-  options(old)
   llt_expect_reply(result)
   llt_expect_true(warned, "expected a deprecation warning")
 })
