@@ -45,16 +45,23 @@ mistral_normalise_message <- function(.message) {
 
 mistral_reasoning_efforts <- c("none", "low", "medium", "high")
 
+mistral_stop_on_error <- function(.response, .context = "") {
+  msg <- body_error_message(.response$content)
+  if (.response$status >= 400 || !is.null(msg)) {
+    sprintf("Mistral returned an Error%s:\nCode: %s\nMessage: %s",
+            .context, .response$status, msg %||% "No error message returned by the API") |>
+      stop(call. = FALSE)
+  }
+  invisible(.response)
+}
+
 #' @noRd
 method(parse_chat_response, list(api_mistral, class_list)) <- function(.api, .content) {
-  if (identical(.content$object, "error")) {
-    .content$error <- list(type = .content$type %||% .content$code, message = .content$message)
-  } else if (!is.null(.content$detail) && length(.content$choices) == 0) {
-    detail <- .content$detail
-    if (!is.character(detail)) {
-      detail <- paste(purrr::map_chr(detail, ~ .x$msg %||% ""), collapse = "; ")
+  if (length(.content$choices) == 0 && !is.list(.content$error)) {
+    msg <- body_error_message(.content)
+    if (!is.null(msg)) {
+      .content$error <- list(type = .content$type %||% .content$code %||% "error", message = msg)
     }
-    .content$error <- list(type = "invalid_request", message = detail)
   }
   if (length(.content$choices) >= 1) {
     .content$choices[[1]]$message <- mistral_normalise_message(.content$choices[[1]]$message)
@@ -486,8 +493,9 @@ mistral_embedding <- function(.input,
   
   extract_embeddings_fn <- function(response_content,error,headers){
     if(error){
-      paste0("API error response (Code ", response_content$code ,") ", response_content$message)|>
-        stop()
+      sprintf("Mistral returned an Error:\nMessage: %s",
+              body_error_message(response_content) %||% "No error message returned by the API") |>
+        stop(call. = FALSE)
     }
     response_content$data |> 
       purrr::map("embedding")  |>
@@ -636,6 +644,7 @@ send_mistral_batch <- function(.llms,
   upload_response <- upload_request |>
     perform_generic_request(.timeout = .timeout, .max_tries = .max_tries)
   
+  mistral_stop_on_error(upload_response, " during file upload")
   input_file_id <- upload_response$content$id
   
   # Create the batch job
@@ -656,9 +665,7 @@ send_mistral_batch <- function(.llms,
   batch_response <- batch_request |>
     perform_generic_request(.timeout = .timeout, .max_tries = .max_tries)
   
-  if(batch_response$status == 403) {
-    rlang::abort(sprintf("Mistral Batch API error: %s", batch_response$content$detail))
-  }
+  mistral_stop_on_error(batch_response, " during batch creation")
   
   # Attach batch_id as an attribute to the prepared LLMs
   batch_id <- batch_response$content$id
@@ -726,13 +733,8 @@ check_mistral_batch <- function(.llms = NULL,
                             .max_tries = .max_tries)
   
   # Parse response
+  mistral_stop_on_error(response)
   response_body <- response$content
-  if("error" %in% names(response_body)){
-    sprintf("Mistral API returned an Error:\nType: %s\nMessage: %s",
-            response_body$error$type,
-            response_body$error$message) |>
-      stop()
-  }
   
   # Extract relevant fields and handle timestamps
   tibble::tibble(
@@ -801,13 +803,8 @@ list_mistral_batches <- function(.limit = 100,
                             .max_tries = .max_tries)
   
   # Parse response
+  mistral_stop_on_error(response)
   response_body <- response$content
-  if ("error" %in% names(response_body)) {
-    sprintf("Mistral API returned an Error:\nType: %s\nMessage: %s",
-            response_body$error$type,
-            response_body$error$message) |>
-      stop()  
-  }
   
   # Extract batch data and format as tibble
   batch_data <- response_body$data
@@ -905,6 +902,13 @@ fetch_mistral_batch <- function(.llms,
       is_transient = function(resp) httr2::resp_status(resp) %in% c(429, 503)
     ) |>
     httr2::req_perform()
+
+  if (httr2::resp_status(results_response) >= 400) {
+    mistral_stop_on_error(list(
+      content = tryCatch(httr2::resp_body_json(results_response), error = function(e) NULL),
+      status  = httr2::resp_status(results_response)
+    ), " while downloading batch results")
+  }
   
   # Parse JSONL response and map results by custom_id
   results_lines <- strsplit(httr2::resp_body_string(results_response), "\n")[[1]]
@@ -986,10 +990,9 @@ mistral_list_models <- function(.api_url = "https://api.mistral.ai",
   
   # Perform the request with specified timeout and retry logic
   response <- request |>
-    httr2::req_timeout(.timeout) |>
-    httr2::req_retry(max_tries = .max_tries) |>
-    httr2::req_perform() |>
-    httr2::resp_body_json()
+    perform_generic_request(.timeout = .timeout, .max_tries = .max_tries) |>
+    mistral_stop_on_error()
+  response <- response$content
   
   if (.verbose) {
     message("Retrieved response from Mistral: ", response$object)

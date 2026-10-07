@@ -45,9 +45,14 @@ the previous Large model.
 
 ## Bug fixes
 
-* `chat()` with `mistral()` now shows Mistral's own error message, for example for an
-  unsupported `.reasoning_effort` or an invalid API key, instead of "Received empty
-  response from Mistral".
+* A streamed request that the provider rejects now shows the provider's error message,
+  for every provider that streams over HTTP. Before, it showed only the HTTP status, such as
+  "HTTP 400 Bad Request.".
+* `mistral()` now shows Mistral's own error message, for example for an unsupported
+  `.reasoning_effort` or an invalid API key, instead of "Received empty response from
+  Mistral". The same holds for Mistral embeddings, `list_models()` and the batch
+  functions; checking a batch id that does not exist is now an error instead of an
+  empty table.
 
 * Deprecation warnings raised inside a chat request, such as for `.fileid` in
   `gemini()` and `.file_ids` in `claude()`, no longer tell you to report a bug in

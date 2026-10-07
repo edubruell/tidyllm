@@ -221,6 +221,31 @@ api_error_message <- function(.error) {
   message %||% "No error message returned by the API"
 }
 
+#' Find the error message in a parsed API response body
+#'
+#' Providers put it in different places: an `error` object (most), a bare
+#' `error` string (Ollama), a top-level `message` with `object: "error"` or a
+#' `detail` string or list of `msg` entries (Mistral). Returns NULL when the
+#' body carries no error.
+#' @noRd
+body_error_message <- function(.body) {
+  if (!is.list(.body)) return(NULL)
+  error <- .body[["error"]]
+  if (is.list(error)) return(api_error_message(error))
+  if (is.character(error)) return(paste(error, collapse = "; "))
+  detail <- .body[["detail"]]
+  if (is.character(detail)) return(paste(detail, collapse = "; "))
+  if (is.list(detail)) {
+    parts <- purrr::map_chr(detail, function(d) {
+      if (is.list(d)) d[["msg"]] %||% "" else paste(as.character(d), collapse = " ")
+    })
+    parts <- parts[nzchar(parts)]
+    if (length(parts) > 0) return(paste(parts, collapse = "; "))
+  }
+  if (identical(.body[["object"]], "error") && is.character(.body[["message"]])) return(.body[["message"]])
+  NULL
+}
+
 #' Reduce a date string to YYYY-MM-DD where it can be read
 #'
 #' Reads ISO dates and RFC 1123 dates ("Tue, 22 Sep 2026 13:00:00 GMT", as HTTP

@@ -176,4 +176,34 @@ llt_test("batch request carries reasoning_effort", {
                   "batch request line should carry reasoning_effort = 'none'")
 })
 
+llt_test("a streamed request shows Mistral's error message", {
+  err <- tryCatch(
+    llm_message("x") |>
+      chat(mistral(.model = "mistral-large-4", .reasoning_effort = "low", .stream = TRUE)),
+    error = function(e) conditionMessage(e)
+  )
+  llt_expect_true(grepl("not supported for this model", err), paste("Unexpected:", err))
+})
+
+llt_test("an unknown batch id is an error, not an empty table", {
+  err <- tryCatch(
+    check_mistral_batch(.batch_id = "00000000-0000-0000-0000-000000000000"),
+    error = function(e) conditionMessage(e)
+  )
+  llt_expect_true(is.character(err) && grepl("not found", err, ignore.case = TRUE),
+                  paste("Unexpected:", paste(class(err), collapse = " ")))
+})
+
+llt_test("embeddings and list_models show an invalid-key message", {
+  key <- Sys.getenv("MISTRAL_API_KEY")
+  Sys.setenv(MISTRAL_API_KEY = "invalid-key-for-test")
+  errs <- tryCatch(
+    c(tryCatch(embed("hi", mistral()), error = function(e) conditionMessage(e)),
+      tryCatch(list_models(mistral()), error = function(e) conditionMessage(e))),
+    finally = Sys.setenv(MISTRAL_API_KEY = key)
+  )
+  llt_expect_true(all(grepl("Invalid API Key", errs, ignore.case = TRUE)),
+                  paste("Unexpected:", paste(errs, collapse = " / ")))
+})
+
 llt_report()

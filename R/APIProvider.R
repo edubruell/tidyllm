@@ -73,7 +73,7 @@ method(assemble_stream_body, list(APIProvider, class_any)) <- function(.api, .ev
 #' @return `list(response, headers, status)`.
 #' @noRd
 method(open_chat_stream, APIProvider) <- function(.api, .built) {
-  response <- httr2::req_perform_connection(.built$request, blocking = FALSE)
+  response <- perform_stream_connection(.api, .built$request, .blocking = FALSE)
   list(
     response = response,
     headers  = httr2::resp_headers(response),

@@ -180,4 +180,12 @@ llt_test("streamed tool use assembles and completes", {
                   "the streamed response produced no executed tool call")
 })
 
+llt_test("a streamed request shows Gemini's error message", {
+  err <- tryCatch(
+    llm_message("x") |> chat(gemini(.thinking_level = "minimal", .stream = TRUE)),
+    error = function(e) conditionMessage(e)
+  )
+  llt_expect_true(grepl("MINIMAL is not supported", err), paste("Unexpected:", err))
+})
+
 llt_report()

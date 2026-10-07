@@ -33,6 +33,26 @@ perform_generic_request <- function(.request,
 
 
 
+#' Open a streaming connection, turning an HTTP error into the provider's message
+#'
+#' httr2 keeps the error response body on the condition; without this the user
+#' sees only "HTTP 400 Bad Request."
+#' @noRd
+perform_stream_connection <- function(.api, .request, .blocking) {
+  tryCatch(
+    httr2::req_perform_connection(.request, blocking = .blocking),
+    httr2_http = function(e) {
+      status <- httr2::resp_status(e$resp)
+      body <- tryCatch(httr2::resp_body_string(e$resp), error = function(x) "")
+      parsed <- tryCatch(jsonlite::fromJSON(body, simplifyVector = FALSE), error = function(x) NULL)
+      fallback <- if (nzchar(body) && nchar(body) <= 300 && !startsWith(trimws(body), "<")) body else conditionMessage(e)
+      msg <- body_error_message(parsed) %||% fallback
+      stop(sprintf("%s returned an Error:\nCode: %s\nMessage: %s", .api@long_name, status, msg),
+           call. = FALSE)
+    }
+  )
+}
+
 #' Perform a Chat API request to interact with language models
 #'
 #' @param .request The httr2 request object.
@@ -62,7 +82,7 @@ perform_chat_request <- function(.request,
     # `blocking = TRUE` waits for bytes instead of spinning on empty reads. The
     # console path has nothing else to do while it waits, and the event-loop
     # driver (0.6.0 Phase B) is what needs the non-blocking form.
-    response <- httr2::req_perform_connection(.request, blocking = TRUE)
+    response <- perform_stream_connection(.api, .request, .blocking = TRUE)
     # `.timeout` now applies to streaming too, as an idle deadline between
     # events rather than a total, so a long generation is not killed for being
     # long. Before 0.6.0 the streaming path had no timeout backstop at all.
