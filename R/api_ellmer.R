@@ -177,7 +177,7 @@ chat_ellmer <- function(.llm,
 ellmer <- create_provider_function(
   .name = "ellmer",
   chat = chat_ellmer,
-  .media = character()
+  .media = c("image")
 )
 
 
