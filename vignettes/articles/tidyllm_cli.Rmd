@@ -1,0 +1,195 @@
+---
+title: "Using Your Coding Agent from R"
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE
+)
+```
+
+Many people already pay for a coding agent: Claude Code with a Claude plan, OpenAI's Codex with a ChatGPT plan or an API key, or Mistral's Vibe. **tidyllm** can send a chat through these command line tools instead of calling the provider's API from R. Three providers do this: `claude_cli()`, `codex_cli()` and `vibe_cli()`.
+
+Two things make this useful. A call counts against the plan the tool is signed in to. With a Claude, ChatGPT or Mistral plan you already have, you can try a call without an API key. And the agent can read files in your working directory when you allow it, so you can ask questions about scripts and project files without pasting them into a prompt. This article shows both, then audits a folder of R scripts into a tibble.
+
+These are not local models. The tool runs on your machine, but the model runs at Anthropic, OpenAI or Mistral. Your prompt, and any file the agent reads, is sent to them.
+
+## Setting up
+
+Each provider needs its tool installed and signed in. Installing means typing one command into a terminal, the text window your computer offers for running programs. In RStudio, open the Terminal tab next to the Console. On macOS it is also called Terminal, on Windows PowerShell. You type the command, press Enter, and wait until the prompt comes back.
+
+| Provider | Tool | Install | Sign-in and billing |
+|---|---|---|---|
+| `claude_cli()` | Claude Code | follow the guide at [docs.claude.com](https://docs.claude.com/en/docs/claude-code) | the tool's own login; usage counts against that plan |
+| `codex_cli()` | OpenAI Codex | `npm install -g @openai/codex` | `codex login`, with your ChatGPT account; calls use that plan. Or your `OPENAI_API_KEY` with `.use_api_key = TRUE` |
+| `vibe_cli()` | Mistral Vibe | `uv tool install mistral-vibe` | `vibe --setup`, which stores the account Vibe uses for calls. Or your `MISTRAL_API_KEY` |
+
+The Codex command needs `npm`, which comes with Node.js from [nodejs.org](https://nodejs.org). The `-g` flag installs the tool for the whole computer, not one project. The Vibe command needs `uv`, a small installer for Python tools; its installation guide is at [docs.astral.sh/uv](https://docs.astral.sh/uv). Install these once. After installing a tool, close RStudio and open it again.
+
+Then sign in once in the terminal. For Codex, run `codex login` and choose your ChatGPT account. For Vibe, run `vibe --setup` and follow its prompts. Each tool then keeps the sign-in, and tidyllm uses it without asking for a key.
+
+**Why R sometimes cannot find the tool.** Your terminal knows where it installed the tool because it searches a list of folders called the PATH. RStudio and R do not always read the same list, so a tool that works in the terminal can be invisible to R. tidyllm checks the usual folders where the installers put tools, but if it still reports that a tool is missing, do this:
+
+1. In the terminal, type `which codex` (or `which claude`, or `which vibe`) and press Enter. It prints the full location of the tool, for example `/Users/you/.local/bin/codex`. If it prints nothing, the installation did not finish; repeat the install command.
+2. Copy that location.
+3. In R, run `usethis::edit_r_profile()`. This opens a file called `.Rprofile`, which R reads each time it starts. Add one line with the location you copied, for example `options(tidyllm_codex_cli_path = "/Users/you/.local/bin/codex")`, and save the file.
+4. Restart R. From now on tidyllm uses that location.
+
+## The same question to all three
+
+The three providers work like any other in tidyllm:
+
+```{r compare, eval = FALSE}
+library(tidyllm)
+
+question <- llm_message("In two sentences: what is a tibble in R?")
+
+question |> chat(claude_cli(.model = "claude-haiku-4-5-20251001"))
+question |> chat(codex_cli(.use_api_key = TRUE, .reasoning_effort = "low"))
+question |> chat(vibe_cli())
+```
+
+The answers are much alike. The metadata is not:
+
+```{r compare_output, echo = FALSE}
+compare <- readRDS("cli_compare.rds")
+compare[, c("provider", "model", "prompt_tokens", "completion_tokens", "cost_usd")]
+```
+
+Each tool reports something different. Tokens are the pieces of text a model counts and bills, roughly three-quarters of a word each. The list below shows what each one reports.
+
+- `claude_cli()` reports the model and the cost of the call. Its prompt tokens leave out input the tool had cached (text it stored from an earlier call and did not send again), which is why the count is so small.
+- `codex_cli()` reports tokens but not the model, unless you set `.model`. Codex sends its own agent instructions with every call, so even this short question counts as thousands of input tokens. The recorded results above used `.use_api_key = TRUE`; with a ChatGPT login, drop that argument and the call is billed to your plan.
+- `vibe_cli()` reports neither tokens nor cost.
+
+## Tools are off unless you allow them
+
+These tools are agents. On a default install they can read files, run commands on your computer and edit your code. tidyllm turns all of that off, so a plain `chat()` call behaves like an ordinary completion. Here is a question that needs a file. It is asked with tools off, then with read access.
+
+The examples read three sample scripts from a folder called `cli_scripts`, which you can copy from the article's source folder in the package's GitHub repository. The prompt names `02_weights.R`, one of the three sample scripts.
+
+```{r tools, eval = FALSE}
+old_wd <- setwd("cli_scripts")
+ask <- llm_message("Read 02_weights.R and list the packages it uses.")
+
+ask |> chat(claude_cli(.model = "claude-haiku-4-5-20251001"))
+ask |> chat(claude_cli(.model = "claude-haiku-4-5-20251001", .cli_tools = c("Read")))
+setwd(old_wd)
+```
+
+```{r tools_output, echo = FALSE}
+tools_demo <- readRDS("cli_tools_demo.rds")
+off <- sub("<function_calls>.*</function_calls>\\s*", "[three pretend tool calls, shortened here]\n\n", tools_demo$claude_off)
+cat("Tools off:\n\n", off, "\n\n", "With Read:\n\n", tools_demo$claude_on, sep = "")
+```
+
+With tools off, the model could not read the file. It wrote out tool calls as plain text, which do nothing, and then guessed a list of packages that has nothing to do with the script. With `Read` allowed, it found the one package the script loads. Do not rely on a reply about files when the agent had no way to read them.
+
+How you allow tools differs by provider:
+
+- `claude_cli(.cli_tools = c("Read", "Glob"))` makes exactly those tools available. `.cli_tools = TRUE` uses your Claude Code settings.
+- `codex_cli(.cli_tools = TRUE)` turns Codex's tools on, inside its read-only sandbox (a mode in which it can read files but not change them). `.sandbox = "workspace-write"` lets it change files in the working directory.
+- `vibe_cli(.cli_tools = TRUE)` uses your Vibe settings, which may let it edit files and run commands. Vibe has no read-only setting, so the examples below use Claude Code and Codex.
+
+## Use case: auditing a folder of R scripts
+
+Many project scripts only work on one computer. They may call `setwd()` with someone's home folder, write to a fixed absolute path (one that starts at the top of the disk, such as `/Users/someone/...`), or load a package inside a function. An agent with read access can check each script. A schema is a description of the answer you want, and here it turns each answer into a row of a table.
+
+The folder in this example holds three short scripts:
+
+```{r list_scripts, echo = FALSE}
+list.files("cli_scripts")
+```
+
+The schema says what to report for each file:
+
+```{r audit_schema, eval = FALSE}
+audit_schema <- tidyllm_schema(
+  file                   = field_chr("The file name"),
+  undocumented_functions = field_chr("Functions defined without roxygen documentation", .vector = TRUE),
+  hardcoded_paths        = field_chr("Absolute file paths written into the code", .vector = TRUE),
+  uses_setwd             = field_lgl("Does the script call setwd()?"),
+  hidden_dependencies    = field_chr("Packages loaded with require() or library() inside a function", .vector = TRUE),
+  summary                = field_chr("One sentence on the most important problem")
+)
+```
+
+One function asks the agent to audit a file, and `purrr::map()` runs it over the folder:
+
+```{r audit_run, eval = FALSE}
+audit_file <- function(.file, .provider) {
+  llm_message(paste0(
+    "Read the R script ", .file, " in the current folder and audit it. ",
+    "Report only what is in the file."
+  )) |>
+    chat(.provider, .json_schema = audit_schema) |>
+    get_reply_data()
+}
+
+old_wd <- setwd("cli_scripts")
+files <- list.files(pattern = "\\.R$")
+audit <- purrr::map(files, audit_file,
+                    claude_cli(.model = "claude-haiku-4-5-20251001", .cli_tools = c("Read")))
+setwd(old_wd)
+```
+
+Each reply comes back as a list that follows the schema. A few lines make it a tibble with one row per file:
+
+```{r audit_table, echo = FALSE}
+audit <- readRDS("cli_audit.rds")$claude
+```
+
+```{r audit_tidy}
+audit_tbl <- tibble::tibble(
+  file                   = purrr::map_chr(audit, "file"),
+  uses_setwd             = purrr::map_lgl(audit, "uses_setwd"),
+  hardcoded_paths        = purrr::map_int(audit, ~ length(.x$hardcoded_paths)),
+  undocumented_functions = purrr::map_chr(audit, ~ paste(unlist(.x$undocumented_functions), collapse = ", ")),
+  hidden_dependencies    = purrr::map_chr(audit, ~ paste(unlist(.x$hidden_dependencies), collapse = ", "))
+)
+audit_tbl
+```
+
+```{r audit_summary}
+purrr::map_chr(audit, "summary")
+```
+
+Check the result before you act on it. In this run Claude counted `output/survey_clean.csv` among the absolute paths of the third script. That path is relative: it starts from the project folder and works on any computer, so it does not count as a hard-coded path.
+
+The same code runs with `codex_cli(.use_api_key = TRUE, .reasoning_effort = "low", .cli_tools = TRUE)` in place of `claude_cli()`. On these three scripts Codex found the same functions, paths and dependencies, and it left the relative path out. `vibe_cli()` does not take `.json_schema`, so it cannot fill the table.
+
+## Continuing a session
+
+By default every call sends the whole conversation, as every other tidyllm provider does. With `.stateful = TRUE` the tool keeps the conversation itself. The first call stores a session ID (a code that lets the tool find the conversation again) in the metadata (the details each reply carries). Later calls continue that session and send only the new message.
+
+```{r stateful, eval = FALSE}
+old_wd <- setwd("cli_scripts")
+agent <- claude_cli(.model = "claude-haiku-4-5-20251001",
+                    .cli_tools = c("Read", "Glob"), .stateful = TRUE)
+
+first <- llm_message(
+  "Read the three R scripts in this folder. Which one would break first on a colleague's computer? Two sentences."
+) |>
+  chat(agent)
+
+second <- first |>
+  llm_message("Show how its first line should look instead. Code only.") |>
+  chat(agent)
+setwd(old_wd)
+```
+
+```{r stateful_output, echo = FALSE}
+stateful <- readRDS("cli_stateful.rds")
+cat(stateful$first, "\n\n", stateful$second, sep = "")
+```
+
+Both calls ran in the same session, so the second question could refer to "its first line" without naming the file again.
+
+## What these providers do not do
+
+- **No `.tools`.** The agents run their own tools, so tidyllm's R function tools and `websearch_tool()` do not apply.
+- **Text only.** A PDF reaches them as extracted text. Images, audio, video and uploaded files are an error.
+- **`parallel_chat()`, batches and embeddings do not work with these providers.** Use `send_chat()` to run a call in the background, so R keeps working while the reply is pending.
+- **Streaming differs.** `claude_cli()` streams word by word, `codex_cli()` sends whole messages, and `vibe_cli()` sends its reply in one piece.
+
+For a large labelling job, use the API provider instead: `claude()`, `openai()` or `mistral()`. Plans have usage limits. Codex adds its own instructions to every call. The API providers support batches, which cost less per call. The command line providers suit the work an agent is good at: reading files you would otherwise paste in, on a plan you already have.
