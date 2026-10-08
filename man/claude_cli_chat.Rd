@@ -81,8 +81,8 @@ A new \code{LLMMessage} object containing the original messages plus the
 CLI's response.
 }
 \description{
-\code{claude_cli()} is the odd one out among tidyllm's providers: it sends nothing
-over the network itself. It runs the \code{claude} command line tool that is
+\code{claude_cli()}, like \code{codex_cli()} and \code{vibe_cli()}, sends nothing over the
+network itself. It runs the \code{claude} command line tool that is
 already installed and signed in on your machine, and reads its JSON output
 back. There is no API key to set, and usage counts against whatever plan the
 CLI is logged in to rather than against an Anthropic API key.

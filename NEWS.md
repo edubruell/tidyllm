@@ -76,7 +76,8 @@ command they would run.
 * An image attached with `img()` is now an error for providers that cannot take
   images (`claude_cli()`, `codex_cli()`, `vibe_cli()` and `deepseek()`), in `chat()`,
   `send_chat()` and `parallel_chat()`. Before, the command-line providers sent the
-  text alone and dropped the image without a word. `provider_capabilities(.what =
+  text alone and dropped the image without a word, and `deepseek()` sent the image to
+  an API that does not take images. `provider_capabilities(.what =
   "media")` now also lists images for `ellmer()`, which has always sent them.
 * A streamed request that the provider rejects now shows the provider's error message,
   for every provider that streams over HTTP. Before, it showed only the HTTP status, such as

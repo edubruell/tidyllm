@@ -74,7 +74,7 @@ reference:
   - title: "API Provider Functions"
     desc: >
       Provider functions called from main verbs. Each provider exposes a
-      consistent interface — pass to `chat()`, `embed()`, `send_batch()`, etc.
+      consistent interface; pass it to `chat()`, `embed()`, `send_batch()`, etc.
     contents:
       - openai
       - claude
@@ -133,6 +133,12 @@ reference:
       - claude_file_metadata
       - claude_list_files
       - claude_websearch
+
+  - title: "Command Line Providers"
+    desc: >
+      Chat through a command line tool installed on your machine: Claude Code,
+      OpenAI Codex or Mistral Vibe.
+    contents:
       - claude_cli_chat
       - codex_cli_chat
       - vibe_cli_chat
@@ -217,7 +223,7 @@ reference:
 
   - title: "OpenRouter-Specific Functions"
     desc: >
-      Functions for OpenRouter — access to 300+ models via a single API key.
+      Functions for OpenRouter, with access to 300+ models via a single API key.
     contents:
       - openrouter_chat
       - openrouter_embedding

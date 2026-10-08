@@ -36,7 +36,7 @@ Classifying each distinct answer once is enough; the labels are joined back to t
 
 ## Why a single answer is not enough
 
-Earlier versions of this article set `.temperature = 0` and treated the reply as fixed, which no longer holds. Claude 5 models, recent Gemini models and several OpenAI models reject or ignore sampling parameters, and `chat(openai(), .temperature = 0)` stops with an error for them. `provider_capabilities()` shows which providers still accept the argument.
+Earlier versions of this article set `.temperature = 0` and treated the reply as fixed, which no longer holds. Claude 5 models, recent Gemini models and several OpenAI models reject or ignore sampling parameters, and `chat(openai(), .temperature = 0)` stops with an error for them. `provider_capabilities()` shows which provider functions still accept the argument. That does not mean the model uses it: Gemini 3.6 Flash and later, including the default model of `gemini()`, accept `.temperature` and ignore it.
 
 Even where `temperature` is accepted, the literature on LLM annotation reports that repeated runs of the same prompt on the same text can return different labels, and that the instability is largest on borderline texts (Barrie, Palaiologou and Törnberg, 2024; Haldar and Hockenmaier, 2025). The practical answer in applied work is the one social scientists already use for human coders: label more than once, measure agreement, and look closely at the disagreements. Separately, an LLM label is only as good as its agreement with humans on your task, so the workflow always ends with a validation sample (Pangakis, Wolken and Fasching, 2023).
 

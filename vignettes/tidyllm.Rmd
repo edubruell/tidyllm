@@ -55,7 +55,7 @@ Sys.setenv(OPENAI_API_KEY = "your-key-here")
 | **Tavily** (web search for `websearch()` and `websearch_tool()`) | `TAVILY_API_KEY` | [Tavily](https://app.tavily.com) |
 | **SearXNG** (self-hosted web search for `websearch()` and `websearch_tool()`) | `SEARXNG_SERVER` (the server address, not a key) | [SearXNG](https://docs.searxng.org) |
 
-`claude_cli()` needs no key: it runs the `claude` command line tool that is already installed and signed in on your machine. `codex_cli()` and `vibe_cli()` run the Codex and Mistral Vibe command line tools the same way; `codex_cli()` uses Codex's own login or, with `.use_api_key = TRUE`, `OPENAI_API_KEY`, and `vibe_cli()` uses `MISTRAL_API_KEY`.
+Three providers run a command line tool installed on your machine instead of calling an API from R. `claude_cli()` uses the login of the `claude` tool and needs no key. `codex_cli()` uses Codex's own login, or `OPENAI_API_KEY` with `.use_api_key = TRUE`. `vibe_cli()` uses `MISTRAL_API_KEY`, or the key Vibe saved during its own setup.
 
 ### Running Local Models
 
@@ -516,7 +516,7 @@ To stream into a user interface rather than the console, use `send_chat()`, whic
 | `openai()` | GPT-6 model line with `.thinking` effort levels; `deep_research()`; built-in web search via `openai_websearch()`; Files API |
 | `claude()` | Strong at coding and long documents; `.thinking = TRUE` for extended reasoning; Files API for document workflows; batch |
 | `gemini()` | 1M-token context window; native image, audio, and video via `.media`; search grounding; `.thinking_level` for reasoning; Files API; batch |
-| `mistral()` | EU-hosted, GDPR-friendly; Magistral reasoning models; Voxtral audio models (`.media = audio_file()`); embeddings; batch |
+| `mistral()` | EU-hosted, GDPR-friendly; Magistral and Mistral Large 4 reasoning models (`.reasoning_effort = "none"` turns reasoning off on Large 4); Voxtral audio models (`.media = audio_file()`); embeddings; batch |
 | `groq()` | Fastest available inference (300-1200 tokens/s); `groq_transcribe()` for Whisper audio; `.json_schema`; batch |
 | `perplexity()` (deprecated since 0.7.0, removed in 0.8.0; use `openrouter(.model = "perplexity/sonar")`) | Real-time web search with citations in metadata; `deep_research()` for long-horizon research; search domain filter |
 | `deepseek()` | Top math and reasoning benchmarks at very low cost; `.thinking = TRUE` turns on thinking mode and returns the reasoning trace in metadata |
@@ -549,7 +549,7 @@ provider_capabilities(.verb = "chat", .argument = ".model")
 provider_capabilities(.what = "media")
 ```
 
-The result is an ordinary tibble, so filter and reshape it as usual. An argument in the table means the provider's function accepts it; an individual model can still reject a value, for example some reasoning effort levels. The attachment check in `chat()` reads the same media table, so a message with audio sent to a provider that lists no audio support fails before any request is made.
+The result is an ordinary tibble, so filter and reshape it as usual. An argument in the table means the provider's function accepts it; an individual model can still reject a value (Mistral Large 4 accepts only `"high"` and `"none"` for `.reasoning_effort`) or ignore it (Gemini 3.6 Flash and later ignore `.temperature`, `.top_p` and `.top_k`). The attachment check in `chat()` reads the same media table, so a message with audio sent to a provider that lists no audio support fails before any request is made.
 
 ## Setting a Default Provider
 

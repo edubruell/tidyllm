@@ -160,8 +160,8 @@ method(start_async_request, api_claude_cli) <- function(.api, .job) {
 
 #' Chat with Claude through your own installed Claude CLI
 #'
-#' `claude_cli()` is the odd one out among tidyllm's providers: it sends nothing
-#' over the network itself. It runs the `claude` command line tool that is
+#' `claude_cli()`, like `codex_cli()` and `vibe_cli()`, sends nothing over the
+#' network itself. It runs the `claude` command line tool that is
 #' already installed and signed in on your machine, and reads its JSON output
 #' back. There is no API key to set, and usage counts against whatever plan the
 #' CLI is logged in to rather than against an Anthropic API key.

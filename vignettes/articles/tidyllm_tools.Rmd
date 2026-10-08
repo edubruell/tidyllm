@@ -258,6 +258,8 @@ tibble::tibble(
 
 Claude and OpenAI also have web search built into their own services, available as `claude_websearch()` and `openai_websearch()`. Those work only with their own provider; `websearch_tool()` works with all of them.
 
+The command line providers `claude_cli()`, `codex_cli()` and `vibe_cli()` do not take `.tools`. They run their own tools, which tidyllm turns off unless you allow them with `.cli_tools`.
+
 ## Multi-Step Tool Chains
 
 When solving a problem requires more than one tool call, the model will make them in sequence. Each round, tidyllm executes the requested function, returns the result, and the model decides whether another call is needed before it can answer.
