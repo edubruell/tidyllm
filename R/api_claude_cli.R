@@ -381,9 +381,6 @@ claude_cli_tool_args <- function(.cli_tools) {
     tools <- paste(.cli_tools, collapse = ",")
     return(c("--tools", tools, "--allowed-tools", tools))
   }
-  # An empty `--allowed-tools` still left the read-only tools available, so
-  # `--tools ""` is what removes them; `--strict-mcp-config` keeps the user's MCP
-  # servers out, and the write-capable tools stay named as a second line.
   c("--tools", "", "--strict-mcp-config",
     "--disallowed-tools", "Bash,Write,Edit,NotebookEdit,WebFetch,WebSearch,Task")
 }
