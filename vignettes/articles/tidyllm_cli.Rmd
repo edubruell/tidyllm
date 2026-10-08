@@ -8,9 +8,9 @@ knitr::opts_chunk$set(
 )
 ```
 
-Many people already pay for a coding agent: Claude Code with a Claude plan, OpenAI's Codex with a ChatGPT plan or an API key, or Mistral's Vibe. **tidyllm** can send a chat through these command line tools instead of calling the provider's API from R. Three providers do this: `claude_cli()`, `codex_cli()` and `vibe_cli()`.
+Many people already pay for a coding agent: Claude Code with a Claude plan, or OpenAI's Codex with a ChatGPT plan. Mistral's Vibe runs on a Mistral API key instead. **tidyllm** can send a chat through these command line tools instead of calling the provider's API from R. Three providers do this: `claude_cli()`, `codex_cli()` and `vibe_cli()`.
 
-Two things make this useful. A call counts against the plan the tool is signed in to. With a Claude, ChatGPT or Mistral plan you already have, you can try a call without an API key. And the agent can read files in your working directory when you allow it, so you can ask questions about scripts and project files without pasting them into a prompt. This article shows both, then audits a folder of R scripts into a tibble.
+Two things make this useful. With Claude Code and Codex, a call counts against the plan the tool is signed in to. With Vibe, it counts against your Mistral API key. With a Claude or ChatGPT plan you already have, you can try a call without an API key. And the agent can read files in your working directory when you allow it, so you can ask questions about scripts and project files without pasting them into a prompt. This article shows both, then audits a folder of R scripts into a tibble.
 
 These are not local models. The tool runs on your machine, but the model runs at Anthropic, OpenAI or Mistral. Your prompt, and any file the agent reads, is sent to them.
 
@@ -22,11 +22,11 @@ Each provider needs its tool installed and signed in. Installing means typing on
 |---|---|---|---|
 | `claude_cli()` | Claude Code | follow the guide at [docs.claude.com](https://docs.claude.com/en/docs/claude-code) | the tool's own login; usage counts against that plan |
 | `codex_cli()` | OpenAI Codex | `npm install -g @openai/codex` | `codex login`, with your ChatGPT account; calls use that plan. Or your `OPENAI_API_KEY` with `.use_api_key = TRUE` |
-| `vibe_cli()` | Mistral Vibe | `uv tool install mistral-vibe` | `vibe --setup`, which stores the account Vibe uses for calls. Or your `MISTRAL_API_KEY` |
+| `vibe_cli()` | Mistral Vibe | `uv tool install mistral-vibe` | `vibe --setup`, which stores your Mistral API key. Or your `MISTRAL_API_KEY` |
 
 The Codex command needs `npm`, which comes with Node.js from [nodejs.org](https://nodejs.org). The `-g` flag installs the tool for the whole computer, not one project. The Vibe command needs `uv`, a small installer for Python tools; its installation guide is at [docs.astral.sh/uv](https://docs.astral.sh/uv). Install these once. After installing a tool, close RStudio and open it again.
 
-Then sign in once in the terminal. For Codex, run `codex login` and choose your ChatGPT account. For Vibe, run `vibe --setup` and follow its prompts. Each tool then keeps the sign-in, and tidyllm uses it without asking for a key.
+Then sign in once in the terminal. For Codex, run `codex login` and choose your ChatGPT account. For Vibe, run `vibe --setup` and follow its prompts to store your Mistral API key. Each tool then keeps its login, and tidyllm uses it without asking for a key.
 
 **Why R sometimes cannot find the tool.** Your terminal knows where it installed the tool because it searches a list of folders called the PATH. RStudio and R do not always read the same list, so a tool that works in the terminal can be invisible to R. tidyllm checks the usual folders where the installers put tools, but if it still reports that a tool is missing, do this:
 
@@ -192,4 +192,4 @@ Both calls ran in the same session, so the second question could refer to "its f
 - **`parallel_chat()`, batches and embeddings do not work with these providers.** Use `send_chat()` to run a call in the background, so R keeps working while the reply is pending.
 - **Streaming differs.** `claude_cli()` streams word by word, `codex_cli()` sends whole messages, and `vibe_cli()` sends its reply in one piece.
 
-For a large labelling job, use the API provider instead: `claude()`, `openai()` or `mistral()`. Plans have usage limits. Codex adds its own instructions to every call. The API providers support batches, which cost less per call. The command line providers suit the work an agent is good at: reading files you would otherwise paste in, on a plan you already have.
+For a large labelling job, use the API provider instead: `claude()`, `openai()` or `mistral()`. Plans have usage limits. Codex adds its own instructions to every call. The API providers support batches, which cost less per call. The command line providers suit the work an agent is good at: reading files you would otherwise paste in, on a plan or key you already have.

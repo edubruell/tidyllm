@@ -8,7 +8,7 @@ vibe_cli_binary <- function(.binary = "vibe") {
     .option       = "tidyllm_vibe_cli_path",
     .env_var      = "TIDYLLM_VIBE_CLI",
     .fn           = "vibe_cli()",
-    .install_hint = "run `uv tool install mistral-vibe` and set MISTRAL_API_KEY."
+    .install_hint = "run `uv tool install mistral-vibe`, then `vibe --setup` to store your API key, or set MISTRAL_API_KEY."
   )
 }
 
@@ -84,8 +84,8 @@ method(start_async_request, api_vibe_cli) <- function(.api, .job) {
 #' Chat with Mistral models through your own installed Mistral Vibe CLI
 #'
 #' `vibe_cli()` runs Mistral's `vibe` command line tool installed on your machine
-#' and reads its JSON output back. Vibe uses your `MISTRAL_API_KEY`, or the key
-#' it saved during its own setup.
+#' and reads its JSON output back. Vibe uses the API key stored by `vibe --setup`,
+#' or your `MISTRAL_API_KEY`.
 #'
 #' Vibe is a coding agent, not a plain completion endpoint. By default tidyllm
 #' runs it in Vibe's ask-first mode, in which every tool call needs an approval
