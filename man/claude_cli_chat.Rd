@@ -42,9 +42,9 @@ A character vector allows exactly those tools, for example
 which on a default install includes Bash, Write and Edit.}
 
 \item{.stateful}{Logical; if TRUE the CLI keeps the conversation on its side.
-The first call sends only the newest user message and records the session
-id in the metadata; later calls resume that session instead of replaying
-the history. Default FALSE sends the whole conversation every time, the way
+The first call sends the conversation and records the session id in the
+metadata; later calls resume that session and send only the newest user
+message instead of replaying the history. Default FALSE sends the whole conversation every time, the way
 every other tidyllm provider does.}
 
 \item{.session_id}{Character; resume this CLI session explicitly. Normally

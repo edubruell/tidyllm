@@ -1,7 +1,7 @@
 # tidyllm 0.7.1 (development version)
 
 Work in progress. This release prepares `gemini()` for Google's coming change to how
-Gemini controls reasoning, and will add Mistral Large 4 and two more command-line
+Gemini controls reasoning, and adds Mistral Large 4 and two more command-line
 providers, `codex_cli()` and `vibe_cli()`.
 
 ## Gemini: `.thinking_level` replaces `.thinking_budget`
@@ -42,6 +42,34 @@ llm_message("Summarise this contract clause.") |>
 
 The default Mistral model does not change, and `mistral-large-latest` still points to
 the previous Large model.
+
+## `codex_cli()` and `vibe_cli()`: two more command-line providers
+
+Like `claude_cli()`, these run a command line tool installed on your own machine and
+read its output back. `codex_cli()` runs OpenAI's Codex CLI and `vibe_cli()` runs
+Mistral's Vibe CLI:
+
+```r
+llm_message("Explain what a tibble is in one sentence.") |>
+  chat(codex_cli())
+
+llm_message("Explain what a tibble is in one sentence.") |>
+  chat(vibe_cli(.model = "mistral-large-4"))
+```
+
+`codex_cli()` uses the login Codex already has. With `.use_api_key = TRUE` it uses
+your `OPENAI_API_KEY` instead. It reports token counts, takes `.reasoning_effort`
+and `.json_schema`, and streams, although Codex sends whole messages, not single
+words. Codex adds about 12,000 tokens of its own instructions to every call.
+
+`vibe_cli()` uses your `MISTRAL_API_KEY`. Vibe reports no token counts or cost, has
+no system prompt option (the system prompt goes in front of the prompt text) and
+sends its reply in one piece.
+
+Both are agents that can run commands and change files. tidyllm turns that off
+unless you set `.cli_tools = TRUE`. Both can keep a conversation on their side with
+`.stateful = TRUE`, both work with `send_chat()`, and `.dry_run = TRUE` shows the
+command they would run.
 
 ## Bug fixes
 

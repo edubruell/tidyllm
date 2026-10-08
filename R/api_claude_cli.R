@@ -1,95 +1,16 @@
 #' @noRd
 api_claude_cli <- new_class("ClaudeCLI", APIProvider)
 
-#' Find the Claude CLI, without relying on the PATH alone
-#'
-#' `Sys.which()` on its own is not enough. A GUI R session does not inherit the
-#' PATH from the user's shell profile: RStudio on macOS starts from the launch
-#' environment, so `~/.local/bin`, where the CLI installs itself by default, is
-#' frequently absent even though `claude` runs fine in the same user's terminal.
-#' Reported from RStudio on 2026-09-16, with the binary sitting in
-#' `~/.local/bin/claude` the whole time.
-#'
-#' The order is: an explicit setting, then the PATH, then the handful of places
-#' the installers actually use. A caller who passes a path of their own gets that
-#' path and no searching.
-#'
 #' @noRd
 claude_cli_binary <- function(.binary = "claude") {
-  # A path rather than a bare command name is taken at face value: the user has
-  # said where it is, so a search would only second-guess them.
-  if (grepl("/", .binary, fixed = TRUE)) {
-    expanded <- path.expand(.binary)
-    if (file.access(expanded, mode = 1L) == 0) return(expanded)
-    stop(glue::glue("`{.binary}` is not an executable file."), call. = FALSE)
-  }
-
-  configured <- getOption("tidyllm_claude_cli_path", Sys.getenv("TIDYLLM_CLAUDE_CLI"))
-  if (is.character(configured) && length(configured) == 1 && nzchar(configured)) {
-    configured <- path.expand(configured)
-    if (file.access(configured, mode = 1L) == 0) return(configured)
-    stop(glue::glue(
-      "The Claude CLI was set to `{configured}`, which is not an executable file.\n",
-      "Fix the `tidyllm_claude_cli_path` option or the TIDYLLM_CLAUDE_CLI environment variable."
-    ), call. = FALSE)
-  }
-
-  found <- Sys.which(.binary)[[1]]
-  if (nzchar(found)) return(found)
-
-  # Returned as found, not through `normalizePath()`: on this machine
-  # `~/.local/bin/claude` is a symlink into a versioned directory, and resolving
-  # it would pin the call to one build of a CLI that updates itself.
-  for (candidate in claude_cli_search_paths(.binary)) {
-    if (file.access(candidate, mode = 1L) == 0) return(candidate)
-  }
-
-  stop(glue::glue(
-    "The `{.binary}` command was not found.\n",
-    "`claude_cli()` runs your own installed Claude CLI, so it has to be installed and logged in first: ",
-    "see https://docs.claude.com/en/docs/claude-code, then run `claude` once to sign in.\n\n",
-    "If `claude` does work in your terminal, this R session simply has a different PATH, ",
-    "which is usual in RStudio and other GUI front ends. Run `which claude` in a terminal and then either\n",
-    "  options(tidyllm_claude_cli_path = \"/the/path/it/printed\")\n",
-    "in your .Rprofile, or pass it directly with claude_cli(.binary = \"/the/path/it/printed\")."
-  ), call. = FALSE)
-}
-
-#' Where the Claude CLI installs itself
-#'
-#' Checked only after the PATH has failed, so a normal session never reaches
-#' them. Each entry is a real installer target: the official install script
-#' writes to `~/.local/bin`, the native installer to `~/.claude/local`, and a
-#' global npm install lands in whichever prefix npm is configured with.
-#'
-#' @noRd
-claude_cli_search_paths <- function(.binary) {
-  home <- path.expand("~")
-  candidates <- c(
-    file.path(home, ".local", "bin", .binary),
-    file.path(home, ".claude", "local", .binary),
-    file.path(home, "bin", .binary),
-    file.path("/opt/homebrew/bin", .binary),
-    file.path("/usr/local/bin", .binary)
+  cli_binary(
+    .binary,
+    .option       = "tidyllm_claude_cli_path",
+    .env_var      = "TIDYLLM_CLAUDE_CLI",
+    .fn           = "claude_cli()",
+    .install_hint = "see https://docs.claude.com/en/docs/claude-code, then run `claude` once to sign in.",
+    .extra_dirs   = file.path(path.expand("~"), ".claude", "local")
   )
-  if (.Platform$OS.type == "windows") {
-    candidates <- c(
-      candidates,
-      file.path(Sys.getenv("APPDATA"), "npm", paste0(.binary, ".cmd")),
-      file.path(Sys.getenv("LOCALAPPDATA"), "Programs", .binary, paste0(.binary, ".exe"))
-    )
-  }
-  candidates
-}
-
-#' @noRd
-check_processx_installed <- function() {
-  if (!requireNamespace("processx", quietly = TRUE)) {
-    stop(paste(
-      "`claude_cli()` needs the processx package to run the CLI and read its output.",
-      "Install it with install.packages(\"processx\")."
-    ), call. = FALSE)
-  }
 }
 
 #' The Claude CLI authenticates itself, so there is no key to look up
@@ -102,108 +23,16 @@ check_processx_installed <- function() {
 #' @noRd
 method(get_api_key, api_claude_cli) <- function(.api, .dry_run = FALSE) ""
 
-#' Flatten a conversation into the single prompt the CLI takes
-#'
-#' `claude -p` accepts one prompt, not a message list, so a multi-turn history
-#' has to be written out as text. Turns are labelled because without labels a
-#' two-turn history reads as one run-on user message and the model loses track
-#' of who said what.
-#'
-#' With `.stateful = TRUE` only the newest user turn is sent and the CLI holds
-#' the rest, which is why the builder passes `.history = FALSE` there.
-#'
 #' @noRd
 method(to_api_format, list(LLMMessage, api_claude_cli)) <- function(.llm,
                                                                     .api,
                                                                     .history = TRUE) {
-  turns <- filter_roles(.llm@message_history, c("user", "assistant"))
-
-  if (!isTRUE(.history)) {
-    user_turns <- Filter(function(m) identical(m$role, "user"), turns)
-    if (length(user_turns) == 0) {
-      stop("There is no user message to send to the Claude CLI.", call. = FALSE)
-    }
-    return(format_message(user_turns[[length(user_turns)]])$content)
-  }
-
-  if (length(turns) == 1) return(format_message(turns[[1]])$content)
-
-  labelled <- vapply(turns, function(m) {
-    label <- if (identical(m$role, "assistant")) "Assistant" else "User"
-    paste0(label, ": ", format_message(m)$content)
-  }, character(1))
-
-  paste(labelled, collapse = "\n\n")
+  cli_prompt_text(.llm, .history, .label = "the Claude CLI")
 }
 
-#' The command line a request runs, and what `.dry_run` hands back
-#'
-#' A `tidyllm_cli_command` rather than a bare character vector so that printing
-#' it shows the command a user could paste into a terminal, which is the CLI
-#' equivalent of inspecting an httr2 request. `args` stays a vector: the command
-#' is never run through a shell, so nothing here is ever re-parsed and there is
-#' no quoting to get wrong.
-#'
 #' @noRd
-new_cli_command <- function(.binary, .args, .stdin = NULL) {
-  structure(
-    list(binary = .binary, args = .args, stdin = .stdin),
-    class = "tidyllm_cli_command"
-  )
-}
-
-#' @export
-print.tidyllm_cli_command <- function(x, ...) {
-  cat("<tidyllm CLI command>\n")
-  cat(paste(c(x$binary, x$args), collapse = " "), "\n")
-  if (!is.null(x$stdin)) {
-    preview <- substr(x$stdin, 1, 400)
-    cat("\n-- prompt on stdin ------------------------------------------\n")
-    cat(preview)
-    if (nchar(x$stdin) > 400) cat("\n[... ", nchar(x$stdin) - 400, " more characters]", sep = "")
-    cat("\n")
-  }
-  invisible(x)
-}
-
-#' Run the CLI to completion and hand back its terminal event
-#'
-#' The output is drained while the child runs rather than read at the end. A
-#' pipe holds only a fixed number of bytes, so a reply larger than the buffer
-#' deadlocks a wait-then-read: the child blocks writing, the parent blocks
-#' waiting, and neither moves. Long answers are exactly the case this provider
-#' is for.
-#'
-#' @noRd
-claude_cli_run_blocking <- function(.command, .timeout) {
-  proc     <- claude_cli_start_process(.command)
-  deadline <- Sys.time() + .timeout
-  out      <- character(0)
-  err      <- character(0)
-
-  repeat {
-    proc$poll_io(250)
-    out <- c(out, proc$read_output_lines())
-    err <- c(err, proc$read_error_lines())
-
-    if (!proc$is_alive() && !proc$is_incomplete_output()) break
-
-    if (Sys.time() > deadline) {
-      proc$kill()
-      stop(sprintf("The Claude CLI produced no result within %g seconds; giving up.", .timeout),
-           call. = FALSE)
-    }
-  }
-  out <- c(out, proc$read_all_output_lines())
-
-  if (!length(out) || !nzchar(paste(out, collapse = ""))) {
-    stop(glue::glue(
-      "The Claude CLI exited with status {proc$get_exit_status()} and produced no output.\n",
-      "{substr(paste(err, collapse = '\n'), 1, 500)}"
-    ), call. = FALSE)
-  }
-
-  events <- jsonlite::fromJSON(paste(out, collapse = "\n"), simplifyVector = FALSE,
+claude_cli_read_output <- function(.lines) {
+  events <- jsonlite::fromJSON(paste(.lines, collapse = "\n"), simplifyVector = FALSE,
                                simplifyDataFrame = FALSE)
   claude_cli_result_event(events)
 }
@@ -318,78 +147,15 @@ method(assemble_stream_body, list(api_claude_cli, class_list)) <- function(.api,
 #' @noRd
 method(open_chat_stream, api_claude_cli) <- function(.api, .built) {
   list(
-    response = claude_cli_start_process(.built$request),
+    response = cli_start_process(.built$request, "claude_cli()"),
     headers  = list(),
     status   = 200L
   )
 }
 
 #' @noRd
-claude_cli_start_process <- function(.command) {
-  check_processx_installed()
-  proc <- processx::process$new(
-    command = .command$binary,
-    args    = .command$args,
-    stdin   = if (is.null(.command$stdin)) NULL else "|",
-    stdout  = "|",
-    stderr  = "|"
-  )
-  if (!is.null(.command$stdin)) {
-    proc$write_input(paste0(.command$stdin, "\n"))
-    proc$get_input_connection() |> close()
-  }
-  proc
-}
-
-#' Run a non-streaming CLI call in the background of the session
-#'
-#' The httr2 default cannot serve this: there is no request to promise. A child
-#' process is already non-blocking, so the driver only has to look in on it. The
-#' poll interval is a compromise: short enough that a quick answer is not left
-#' sitting, long enough that a two-minute agent run costs a few hundred wake-ups
-#' rather than a few thousand.
-#'
-#' @noRd
 method(start_async_request, api_claude_cli) <- function(.api, .job) {
-  check_later_installed()
-  env <- .job$env
-  proc <- claude_cli_start_process(env$built$request)
-
-  env$headers     <- list()
-  env$http_status <- 200L
-  env$cancel_fn   <- function() if (proc$is_alive()) proc$kill()
-
-  poll <- function() {
-    if (!identical(env$status, "running")) {
-      if (proc$is_alive()) proc$kill()
-      return(invisible(NULL))
-    }
-    if (proc$is_alive()) {
-      later::later(poll, delay = 0.1)
-      return(invisible(NULL))
-    }
-
-    outcome <- tryCatch({
-      out <- proc$read_all_output_lines()
-      if (!length(out) || !nzchar(paste(out, collapse = ""))) {
-        stop(sprintf("The Claude CLI exited with status %s and produced no output.",
-                     proc$get_exit_status()), call. = FALSE)
-      }
-      events <- jsonlite::fromJSON(paste(out, collapse = "\n"),
-                                   simplifyVector = FALSE, simplifyDataFrame = FALSE)
-      claude_cli_result_event(events)
-    }, error = function(e) e)
-
-    if (inherits(outcome, "condition")) {
-      env$status <- "error"
-      env$error  <- outcome
-      return(invisible(NULL))
-    }
-    chat_job_finish(.job, outcome)
-  }
-
-  later::later(poll, delay = 0.05)
-  invisible(NULL)
+  cli_start_async(.api, .job, claude_cli_read_output)
 }
 
 #' Chat with Claude through your own installed Claude CLI
@@ -427,9 +193,9 @@ method(start_async_request, api_claude_cli) <- function(.api, .job) {
 #'   `c("Read", "WebSearch")`. TRUE hands over to the CLI's own configuration,
 #'   which on a default install includes Bash, Write and Edit.
 #' @param .stateful Logical; if TRUE the CLI keeps the conversation on its side.
-#'   The first call sends only the newest user message and records the session
-#'   id in the metadata; later calls resume that session instead of replaying
-#'   the history. Default FALSE sends the whole conversation every time, the way
+#'   The first call sends the conversation and records the session id in the
+#'   metadata; later calls resume that session and send only the newest user
+#'   message instead of replaying the history. Default FALSE sends the whole conversation every time, the way
 #'   every other tidyllm provider does.
 #' @param .session_id Character; resume this CLI session explicitly. Normally
 #'   left NULL, because `.stateful = TRUE` picks the id up from the message
@@ -555,7 +321,7 @@ claude_cli_build_chat_request <- function(.llm,
   # call a continuation rather than a fresh conversation.
   resume_id <- .session_id
   if (isTRUE(.stateful) && is.null(resume_id)) {
-    resume_id <- claude_cli_last_session_id(.llm)
+    resume_id <- cli_last_session_id(.llm)
   }
 
   # Only a resumed session may drop the history: without one the CLI has no
@@ -579,7 +345,7 @@ claude_cli_build_chat_request <- function(.llm,
   if (!is.null(.model))          args <- c(args, "--model", .model)
   if (!is.null(system_prompt))   args <- c(args, "--append-system-prompt", system_prompt)
   if (!is.null(schema_arg))      args <- c(args, "--json-schema", schema_arg)
-  if (!is.null(.max_budget_usd)) args <- c(args, "--max-budget-usd", format(.max_budget_usd))
+  if (!is.null(.max_budget_usd)) args <- c(args, "--max-budget-usd", format(.max_budget_usd, scientific = FALSE))
   if (!is.null(resume_id))       args <- c(args, "--resume", resume_id)
   args <- c(args, claude_cli_tool_args(.cli_tools))
 
@@ -600,7 +366,7 @@ claude_cli_build_chat_request <- function(.llm,
     .timeout    = .timeout,
     .max_tries  = 1,
     .verbose    = .verbose,
-    .perform_fn = claude_cli_performer()
+    .perform_fn = cli_performer(claude_cli_read_output)
   )
 }
 
@@ -617,58 +383,6 @@ claude_cli_tool_args <- function(.cli_tools) {
   # quietly widen what a plain `chat()` call may do to the filesystem.
   c("--allowed-tools", "",
     "--disallowed-tools", "Bash,Write,Edit,NotebookEdit,WebFetch,WebSearch,Task")
-}
-
-#' The most recent CLI session id in a conversation's metadata
-#'
-#' @noRd
-claude_cli_last_session_id <- function(.llm) {
-  history <- .llm@message_history
-  for (i in rev(seq_along(history))) {
-    meta <- history[[i]]$meta
-    sid  <- meta$specific_metadata$session_id
-    if (!is.null(sid) && !is.na(sid) && nzchar(sid)) return(sid)
-  }
-  NULL
-}
-
-#' Run one round, blocking or streaming, and interpret it
-#'
-#' A closure on the built request rather than a branch inside
-#' `perform_chat_request()`, because that function is written against httr2 from
-#' its first line. `new_chat_request(.perform_fn =)` is the seam the pipeline
-#' already provides for a provider that performs its own requests.
-#'
-#' @noRd
-claude_cli_performer <- function() {
-  function(.built) {
-    if (chat_request_streams(.built)) {
-      if (!isTRUE(.built$quiet)) {
-        message("\n---------\nStart ", .built$api@long_name, " streaming: \n---------\n")
-      }
-      proc <- claude_cli_start_process(.built$request)
-      stream_response <- handle_stream(.built$api, proc,
-                                       .on_chunk     = .built$on_chunk,
-                                       .idle_timeout = .built$timeout,
-                                       .verbose      = !isTRUE(.built$quiet))
-      content <- assemble_stream_body(.built$api, stream_response$raw_data)
-      interpreted <- interpret_chat_response(
-        .built$api,
-        list(content = content, headers = list(), status = 200L)
-      )
-      interpreted$meta$stream <- TRUE
-      return(interpreted)
-    }
-
-    interpret_chat_response(
-      .built$api,
-      list(
-        content = claude_cli_run_blocking(.built$request, .built$timeout),
-        headers = list(),
-        status  = 200L
-      )
-    )
-  }
 }
 
 #' Chat through a locally installed Claude CLI

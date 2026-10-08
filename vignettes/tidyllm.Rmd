@@ -55,7 +55,7 @@ Sys.setenv(OPENAI_API_KEY = "your-key-here")
 | **Tavily** (web search for `websearch()` and `websearch_tool()`) | `TAVILY_API_KEY` | [Tavily](https://app.tavily.com) |
 | **SearXNG** (self-hosted web search for `websearch()` and `websearch_tool()`) | `SEARXNG_SERVER` (the server address, not a key) | [SearXNG](https://docs.searxng.org) |
 
-`claude_cli()` needs no key: it runs the `claude` command line tool that is already installed and signed in on your machine.
+`claude_cli()` needs no key: it runs the `claude` command line tool that is already installed and signed in on your machine. `codex_cli()` and `vibe_cli()` run the Codex and Mistral Vibe command line tools the same way; `codex_cli()` uses Codex's own login or, with `.use_api_key = TRUE`, `OPENAI_API_KEY`, and `vibe_cli()` uses `MISTRAL_API_KEY`.
 
 ### Running Local Models
 
@@ -105,7 +105,7 @@ c("A famous landmark in Paris is the Eiffel Tower.")
 All API interactions follow the **verb + provider** pattern:
 
 - **Verbs** define the action: `chat()`, `embed()`, `send_batch()`, `check_batch()`, `fetch_batch()`, `list_batches()`, `list_models()`, `deep_research()`, `check_job()`, `fetch_job()`, `upload_file()`, `list_files()`, `file_info()`, `delete_file()`
-- **Providers** specify the API: `openai()`, `claude()`, `claude_cli()`, `gemini()`, `ollama()`, `mistral()`, `groq()`, `deepseek()`, `voyage()`, `openrouter()`, `llamacpp()`, `azure_openai()`, `ellmer()`
+- **Providers** specify the API: `openai()`, `claude()`, `claude_cli()`, `codex_cli()`, `vibe_cli()`, `gemini()`, `ollama()`, `mistral()`, `groq()`, `deepseek()`, `voyage()`, `openrouter()`, `llamacpp()`, `azure_openai()`, `ellmer()`
 
 Provider-specific functions like `openai_chat()` or `claude_chat()` also work directly and expose the full range of parameters for each API.
 
@@ -523,6 +523,8 @@ To stream into a user interface rather than the console, use `send_chat()`, whic
 | `voyage()` | State-of-the-art retrieval embeddings; `voyage_rerank()`; multimodal embeddings (text + images); `.output_dimension` |
 | `openrouter()` | 500+ models via one API key; audio and video support on Gemini, Qwen 3.6, and other multimodal routes; automatic fallback routing |
 | `claude_cli()` | Runs your own installed and signed-in `claude` command line tool; no API key, usage counts against the CLI's plan; CLI tools are off unless you allow them with `.cli_tools` |
+| `codex_cli()` | Runs your own installed `codex` command line tool, signed in or with `OPENAI_API_KEY`; token counts, `.reasoning_effort`, `.json_schema`; its shell and browser tools are off unless `.cli_tools = TRUE` |
+| `vibe_cli()` | Runs your own installed Mistral `vibe` command line tool with `MISTRAL_API_KEY`; any Mistral model via `.model`; no token counts; its tools are off unless `.cli_tools = TRUE` |
 | `ellmer()` | Use any ellmer chat object as a tidyllm provider |
 | `ollama()` | Local models with full data privacy; no API costs; `ollama_download_model()` for model management |
 | `llamacpp()` | Often the most performant local inference stack; audio input with Ultravox, Qwen2.5-Omni, Qwen3-Omni, and Gemma 4 models; BNF grammar constraints; logprobs; `llamacpp_rerank()` |
