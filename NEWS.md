@@ -73,6 +73,13 @@ command they would run.
 
 ## Bug fixes
 
+* `claude_cli()` with its tools off (the default) could still read files, because
+  the Claude CLI kept its read-only tools when the allowed list was empty. It now
+  removes every built-in tool and leaves out your MCP servers, so a plain `chat()`
+  can no longer read files in the working directory. `.cli_tools = c("Read", "Glob")`
+  now makes exactly those built-in tools available.
+* Printing the command from a `.dry_run` of a command-line provider now quotes each
+  argument, so it can be pasted into a shell.
 * An image attached with `img()` is now an error for providers that cannot take
   images (`claude_cli()`, `codex_cli()`, `vibe_cli()` and `deepseek()`), in `chat()`,
   `send_chat()` and `parallel_chat()`. Before, the command-line providers sent the

@@ -146,20 +146,53 @@ llt_test("claude_cli dry run shows the command and disables tools by default", {
   args <- command$args
   llt_expect_true("--disallowed-tools" %in% args,
                   "the default call did not disable the CLI's own tools")
+  position <- which(args == "--tools")
+  llt_expect_true(length(position) == 1 && identical(args[position + 1], ""),
+                  "the default call did not remove every built-in tool with --tools \"\"")
+  llt_expect_true("--strict-mcp-config" %in% args,
+                  "the default call did not leave out the user's MCP servers")
   llt_expect_true(any(grepl("Bash", args, fixed = TRUE)),
                   "Bash was not among the disallowed tools")
   llt_expect_true(identical(command$stdin, "Say hello."),
                   "the prompt did not reach stdin")
 })
 
+llt_test("claude_cli cannot read files with tools off", {
+  dir <- tempfile("claude_tools_")
+  dir.create(dir)
+  writeLines("secretvalue42", file.path(dir, "note.txt"))
+  old <- setwd(dir)
+  result <- tryCatch(
+    llm_message("Read note.txt in the current directory and print its content.") |>
+      chat(claude_cli(.model = CLI_MODEL)),
+    finally = setwd(old)
+  )
+  llt_expect_true(!grepl("secretvalue42", get_reply(result), fixed = TRUE),
+                  "the CLI read a file although its tools were off")
+
+  setwd(dir)
+  allowed <- tryCatch(
+    llm_message("Read note.txt in the current directory and print its content.") |>
+      chat(claude_cli(.model = CLI_MODEL, .cli_tools = "Read")),
+    finally = setwd(old)
+  )
+  llt_expect_true(grepl("secretvalue42", get_reply(allowed), fixed = TRUE),
+                  "with .cli_tools = \"Read\" the CLI could not read the file")
+})
+
 llt_test("claude_cli passes an opt-in tool allow-list", {
   command <- llm_message("Say hello.") |>
     chat(claude_cli(.cli_tools = c("Read", "Glob")), .dry_run = TRUE)
   args <- command$args
-  position <- which(args == "--allowed-tools")
-  llt_expect_true(length(position) == 1, "expected exactly one --allowed-tools flag")
+  position <- which(args == "--tools")
+  llt_expect_true(length(position) == 1, "expected exactly one --tools flag")
   llt_expect_true(identical(args[position + 1], "Read,Glob"),
-                  paste("allow-list was:", args[position + 1]))
+                  paste("tool list was:", args[position + 1]))
+  allowed <- which(args == "--allowed-tools")
+  llt_expect_true(length(allowed) == 1 && identical(args[allowed + 1], "Read,Glob"),
+                  "the opt-in tools were not also pre-approved with --allowed-tools")
+  llt_expect_true(!("--strict-mcp-config" %in% args),
+                  "an explicit tool list should keep the user's MCP servers")
   llt_expect_true(!("--disallowed-tools" %in% args),
                   "an explicit allow-list should not also send a deny-list")
 })

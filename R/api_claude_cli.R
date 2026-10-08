@@ -187,11 +187,13 @@ method(start_async_request, api_claude_cli) <- function(.api, .job) {
 #'   the only way the CLI accepts one. With "ignore" it is dropped.
 #' @param .json_schema A schema to enforce an output structure; a list, or an
 #'   ellmer type object. Passed to the CLI's own `--json-schema` flag.
-#' @param .cli_tools Controls the CLI's built-in tools. FALSE, the default,
-#'   disables all of them, so the call behaves like an ordinary completion.
-#'   A character vector allows exactly those tools, for example
-#'   `c("Read", "WebSearch")`. TRUE hands over to the CLI's own configuration,
-#'   which on a default install includes Bash, Write and Edit.
+#' @param .cli_tools Controls the CLI's own tools. FALSE, the default,
+#'   removes all of them and leaves out your MCP servers, so the call behaves
+#'   like an ordinary completion and cannot read files. A character vector
+#'   makes exactly those built-in tools available, for example
+#'   `c("Read", "Glob")`; MCP tools named there still work. TRUE hands over to
+#'   the CLI's own configuration, which on a default install includes Bash,
+#'   Write and Edit.
 #' @param .stateful Logical; if TRUE the CLI keeps the conversation on its side.
 #'   The first call sends the conversation and records the session id in the
 #'   metadata; later calls resume that session and send only the newest user
@@ -376,12 +378,13 @@ claude_cli_build_chat_request <- function(.llm,
 claude_cli_tool_args <- function(.cli_tools) {
   if (isTRUE(.cli_tools)) return(character(0))
   if (is.character(.cli_tools) && length(.cli_tools)) {
-    return(c("--allowed-tools", paste(.cli_tools, collapse = ",")))
+    tools <- paste(.cli_tools, collapse = ",")
+    return(c("--tools", tools, "--allowed-tools", tools))
   }
-  # An empty allow-list is what the CLI reads as "nothing is permitted"; the
-  # write-capable tools are named as well so that a future CLI default cannot
-  # quietly widen what a plain `chat()` call may do to the filesystem.
-  c("--allowed-tools", "",
+  # An empty `--allowed-tools` still left the read-only tools available, so
+  # `--tools ""` is what removes them; `--strict-mcp-config` keeps the user's MCP
+  # servers out, and the write-capable tools stay named as a second line.
+  c("--tools", "", "--strict-mcp-config",
     "--disallowed-tools", "Bash,Write,Edit,NotebookEdit,WebFetch,WebSearch,Task")
 }
 

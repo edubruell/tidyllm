@@ -165,7 +165,7 @@ print.tidyllm_cli_command <- function(x, ...) {
   cat("<tidyllm CLI command>\n")
   if (length(x$env)) cat(paste0(names(x$env), "=", x$env, collapse = " "), "")
   if (length(x$env_from)) cat(paste0(names(x$env_from), "=$", x$env_from, collapse = " "), "")
-  cat(paste(c(x$binary, x$args), collapse = " "), "\n")
+  cat(paste(c(shQuote(x$binary), shQuote(x$args)), collapse = " "), "\n")
   if (!is.null(x$stdin)) {
     preview <- substr(x$stdin, 1, 400)
     cat("\n-- prompt on stdin ------------------------------------------\n")
