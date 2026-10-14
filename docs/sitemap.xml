@@ -7,6 +7,7 @@
 <url><loc>https://edubruell.github.io/tidyllm/articles/tidyllm-synthetic-data.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/articles/tidyllm.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/articles/tidyllm_classifiers.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/articles/tidyllm_cli.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/articles/tidyllm_embed.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/articles/tidyllm_local_models.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/articles/tidyllm_shiny.html</loc></url>
@@ -45,6 +46,8 @@
 <url><loc>https://edubruell.github.io/tidyllm/reference/claude_list_models.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/claude_upload_file.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/claude_websearch.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/codex_cli.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/codex_cli_chat.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/deep_research.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/deepseek.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/deepseek_chat.html</loc></url>
@@ -154,6 +157,8 @@
 <url><loc>https://edubruell.github.io/tidyllm/reference/tidyllm_schema.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/tidyllm_tool.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/upload_file.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/vibe_cli.html</loc></url>
+<url><loc>https://edubruell.github.io/tidyllm/reference/vibe_cli_chat.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/video_file.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/voyage.html</loc></url>
 <url><loc>https://edubruell.github.io/tidyllm/reference/voyage_embedding.html</loc></url>

@@ -20,6 +20,7 @@ gemini_chat(
   .safety_settings = NULL,
   .json_schema = NULL,
   .tools = NULL,
+  .thinking_level = NULL,
   .thinking_budget = NULL,
   .timeout = 120,
   .dry_run = FALSE,
@@ -49,6 +50,8 @@ gemini_chat(
 - .temperature:
 
   Controls randomness in generation (default: NULL, range: 0.0-2.0).
+  Gemini 3.6 Flash and later models ignore it, and Google plans to
+  reject it on upcoming models.
 
 - .max_output_tokens:
 
@@ -56,12 +59,15 @@ gemini_chat(
 
 - .top_p:
 
-  Controls nucleus sampling (default: NULL, range: 0.0-1.0).
+  Controls nucleus sampling (default: NULL, range: 0.0-1.0). Gemini 3.6
+  Flash and later models ignore it, and Google plans to reject it on
+  upcoming models.
 
 - .top_k:
 
   Controls diversity in token selection (default: NULL, range: 0 or
-  more).
+  more). Gemini 3.6 Flash and later models ignore it, and Google plans
+  to reject it on upcoming models.
 
 - .grounding_threshold:
 
@@ -95,10 +101,18 @@ gemini_chat(
   Either a single TOOL object or a list of TOOL objects representing the
   available functions for tool calls.
 
+- .thinking_level:
+
+  How much the model reasons before answering: `"minimal"`, `"low"`,
+  `"medium"` or `"high"` (default: NULL, the model's own default).
+  Supported levels vary by model; `gemini-3.8-flash` accepts `"low"`,
+  `"medium"` and `"high"`.
+
 - .thinking_budget:
 
-  Token budget for internal reasoning (default: NULL). Works with
-  `gemini-3.8-flash` and `gemini-3.1-pro`.
+  Deprecated. Token budget for internal reasoning (default: NULL). Use
+  `.thinking_level` instead; Google plans to reject token budgets on
+  upcoming models. Cannot be combined with `.thinking_level`.
 
 - .timeout:
 

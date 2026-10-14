@@ -212,6 +212,14 @@ llt_test("claude_cli rejects verbs and arguments it does not support", {
   }, error = function(e) conditionMessage(e))
   llt_expect_true(!is.null(embed_error),
                   "embed(claude_cli()) should have been rejected")
+
+  parallel_error <- tryCatch({
+    parallel_chat(list(llm_message("a"), llm_message("b")), claude_cli())
+    NULL
+  }, error = function(e) conditionMessage(e))
+  llt_expect_true(!is.null(parallel_error) &&
+                    grepl("does not support parallel_chat()", parallel_error, fixed = TRUE),
+                  "parallel_chat(claude_cli()) should stop with a clear message")
 })
 
 llt_test("claude_cli finds the CLI when the PATH does not have it", {

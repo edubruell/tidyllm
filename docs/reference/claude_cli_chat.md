@@ -1,11 +1,15 @@
 # Chat with Claude through your own installed Claude CLI
 
-[`claude_cli()`](https://edubruell.github.io/tidyllm/reference/claude_cli.md)
-is the odd one out among tidyllm's providers: it sends nothing over the
-network itself. It runs the `claude` command line tool that is already
-installed and signed in on your machine, and reads its JSON output back.
-There is no API key to set, and usage counts against whatever plan the
-CLI is logged in to rather than against an Anthropic API key.
+[`claude_cli()`](https://edubruell.github.io/tidyllm/reference/claude_cli.md),
+like
+[`codex_cli()`](https://edubruell.github.io/tidyllm/reference/codex_cli.md)
+and
+[`vibe_cli()`](https://edubruell.github.io/tidyllm/reference/vibe_cli.md),
+sends nothing over the network itself. It runs the `claude` command line
+tool that is already installed and signed in on your machine, and reads
+its JSON output back. There is no API key to set, and usage counts
+against whatever plan the CLI is logged in to rather than against an
+Anthropic API key.
 
 ## Usage
 
@@ -53,20 +57,22 @@ claude_cli_chat(
 
 - .cli_tools:
 
-  Controls the CLI's built-in tools. FALSE, the default, disables all of
-  them, so the call behaves like an ordinary completion. A character
-  vector allows exactly those tools, for example
-  `c("Read", "WebSearch")`. TRUE hands over to the CLI's own
+  Controls the CLI's own tools. FALSE, the default, removes all of them
+  and leaves out your MCP servers, so the call behaves like an ordinary
+  completion and cannot read files. A character vector makes exactly
+  those built-in tools available, for example `c("Read", "Glob")`; MCP
+  tools named there still work. TRUE hands over to the CLI's own
   configuration, which on a default install includes Bash, Write and
   Edit.
 
 - .stateful:
 
   Logical; if TRUE the CLI keeps the conversation on its side. The first
-  call sends only the newest user message and records the session id in
-  the metadata; later calls resume that session instead of replaying the
-  history. Default FALSE sends the whole conversation every time, the
-  way every other tidyllm provider does.
+  call sends the conversation and records the session id in the
+  metadata; later calls resume that session and send only the newest
+  user message instead of replaying the history. Default FALSE sends the
+  whole conversation every time, the way every other tidyllm provider
+  does.
 
 - .session_id:
 

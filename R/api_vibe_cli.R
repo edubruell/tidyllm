@@ -218,9 +218,9 @@ vibe_cli_build_chat_request <- function(.llm,
     if (length(parts)) prompt <- paste0(paste(parts, collapse = "\n\n"), "\n\n", prompt)
   }
 
-  env <- NULL
+  env <- if (nzchar(Sys.getenv("VIBE_CLI"))) NULL else c(VIBE_CLI = "python")
   if (!is.null(.model)) {
-    env <- c(
+    env <- c(env,
       VIBE_MODELS       = jsonlite::toJSON(list(list(name = .model, provider = "mistral", alias = .model)),
                                            auto_unbox = TRUE),
       VIBE_ACTIVE_MODEL = .model

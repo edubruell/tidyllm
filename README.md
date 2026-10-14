@@ -83,7 +83,7 @@ Read the [Changelog](https://edubruell.github.io/tidyllm/news/) for the full lis
   - [Embedding Models in tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_embed.html)
   - [Working with Files and Media](https://edubruell.github.io/tidyllm/articles/tidyllm_video.html)
   - [Local Models with tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_local_models.html)
-  - [Using Your Coding Agent from R](https://edubruell.github.io/tidyllm/articles/tidyllm_cli.html)
+  - [Command Line Providers](https://edubruell.github.io/tidyllm/articles/tidyllm_cli.html)
 
 ## Similar packages
 

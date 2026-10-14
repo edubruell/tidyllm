@@ -1,8 +1,8 @@
-tidyllm 0.7.0 adds `claude_cli()`, a provider that runs a locally installed Claude command line tool, and `websearch_tool()` and `websearch()`, which give any provider web search through Tavily or SearXNG. `provider_capabilities()` returns a tibble of what each provider accepts. `perplexity()` is deprecated.
+tidyllm 0.7.1 fixes a bug in `claude_cli()`, a provider added in 0.7.0: with its tools turned off, the default, the Claude command line tool could still read files in the working directory. The fix removes every built-in tool and the user's MCP servers unless the user asks for them.
 
-Default models are updated, because several providers retired models this summer. Bug fixes: empty tool schemas are sent as `{}`, Mistral reasoning replies and batch results are parsed correctly, OpenAI stateful mode sends all images, and `.capture_plot` no longer warns. The classifier article is rewritten for models without a temperature setting.
+It also adds two providers that work the same way, `codex_cli()` for OpenAI's Codex CLI and `vibe_cli()` for Mistral's Vibe CLI; a `.thinking_level` argument for `gemini()`, ahead of Google's change to how Gemini controls reasoning; support for Mistral Large 4; and clearer error messages for Mistral and for rejected streaming requests. An image is now an error for providers that cannot take images.
 
-No new Imports. `withr`, used in tests, is added to `Suggests`.
+No new Imports or Suggests.
 
 ## Test environments
 
@@ -10,8 +10,10 @@ No new Imports. `withr`, used in tests, is added to `Suggests`.
 
 ## R CMD check results
 
-0 errors | 0 warnings | 3 notes
+0 errors | 0 warnings | 1 note
 
-The notes are environmental: "unable to verify current time", an outdated local HTML Tidy, and 403 responses to scripted requests from `openai.com`, `platform.openai.com` and `portal.azure.com`, which load in a browser.
+The note is environmental: "unable to verify current time".
 
-There are no reverse dependencies.
+## Reverse dependencies
+
+Two CRAN packages suggest tidyllm: joinery and RKorAPClient. joinery passes R CMD check with tidyllm 0.7.1. RKorAPClient uses tidyllm only in tests that need LLM API keys and skip without them; the functions it calls are unchanged.

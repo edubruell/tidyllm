@@ -153,9 +153,11 @@ cli_last_session_id <- function(.llm) {
 #' copied from when the process starts, so a key never sits in the object.
 #'
 #' @noRd
-new_cli_command <- function(.binary, .args, .stdin = NULL, .env = NULL, .env_from = NULL) {
+new_cli_command <- function(.binary, .args, .stdin = NULL, .env = NULL, .env_from = NULL,
+                            .files = NULL) {
   structure(
-    list(binary = .binary, args = .args, stdin = .stdin, env = .env, env_from = .env_from),
+    list(binary = .binary, args = .args, stdin = .stdin, env = .env, env_from = .env_from,
+         files = .files),
     class = "tidyllm_cli_command"
   )
 }
@@ -166,6 +168,10 @@ print.tidyllm_cli_command <- function(x, ...) {
   if (length(x$env)) cat(paste0(names(x$env), "=", x$env, collapse = " "), "")
   if (length(x$env_from)) cat(paste0(names(x$env_from), "=$", x$env_from, collapse = " "), "")
   cat(paste(c(shQuote(x$binary), shQuote(x$args)), collapse = " "), "\n")
+  if (length(x$files)) {
+    cat("\n-- files written when the command runs ----------------------\n")
+    purrr::iwalk(x$files, function(content, path) cat(path, "\n", content, "\n", sep = ""))
+  }
   if (!is.null(x$stdin)) {
     preview <- substr(x$stdin, 1, 400)
     cat("\n-- prompt on stdin ------------------------------------------\n")
@@ -176,17 +182,58 @@ print.tidyllm_cli_command <- function(x, ...) {
   invisible(x)
 }
 
+#' Write the files a command reads, such as a JSON schema
+#'
+#' Written when the process starts, not when the request is built, so a dry run
+#' or an unsent request leaves nothing behind.
+#'
+#' @noRd
+cli_write_files <- function(.command) {
+  purrr::iwalk(.command$files, function(content, path) writeLines(content, path))
+  invisible(.command)
+}
+
+#' Delete the files a command read
+#'
+#' @noRd
+cli_remove_files <- function(.command) {
+  if (length(.command$files)) unlink(names(.command$files))
+  invisible(NULL)
+}
+
+#' Delete a command's files once its background process has exited
+#'
+#' @noRd
+cli_remove_files_when_done <- function(.proc, .command) {
+  if (!length(.command$files)) return(invisible(NULL))
+  check <- function() {
+    if (.proc$is_alive()) return(later::later(check, delay = 1))
+    cli_remove_files(.command)
+  }
+  later::later(check, delay = 1)
+  invisible(NULL)
+}
+
+#' Start a command's process and send it the prompt
+#'
 #' @noRd
 cli_start_process <- function(.command, .fn = "This provider") {
   check_processx_installed(.fn)
+  cli_write_files(.command)
   child_env <- c(.command$env, vapply(.command$env_from, Sys.getenv, character(1)))
-  proc <- processx::process$new(
-    command = .command$binary,
-    args    = .command$args,
-    env     = if (length(child_env)) c("current", child_env) else NULL,
-    stdin   = if (is.null(.command$stdin)) NULL else "|",
-    stdout  = "|",
-    stderr  = "|"
+  proc <- tryCatch(
+    processx::process$new(
+      command = .command$binary,
+      args    = .command$args,
+      env     = if (length(child_env)) c("current", child_env) else NULL,
+      stdin   = if (is.null(.command$stdin)) NULL else "|",
+      stdout  = "|",
+      stderr  = "|"
+    ),
+    error = function(e) {
+      cli_remove_files(.command)
+      stop(e)
+    }
   )
   if (!is.null(.command$stdin)) {
     proc$write_input(paste0(.command$stdin, "\n"))
@@ -205,6 +252,7 @@ cli_start_process <- function(.command, .fn = "This provider") {
 #'
 #' @noRd
 cli_run_blocking <- function(.command, .timeout, .label, .fn = "This provider") {
+  on.exit(cli_remove_files(.command), add = TRUE)
   proc     <- cli_start_process(.command, .fn)
   deadline <- Sys.time() + .timeout
   out      <- character(0)
@@ -258,6 +306,7 @@ cli_performer <- function(.read_output) {
       if (!isTRUE(.built$quiet)) {
         message("\n---------\nStart ", .built$api@long_name, " streaming: \n---------\n")
       }
+      on.exit(cli_remove_files(.built$request), add = TRUE)
       proc <- cli_start_process(.built$request, paste0(.built$api@short_name, "()"))
       stream_response <- handle_stream(.built$api, proc,
                                        .on_chunk     = .built$on_chunk,
@@ -294,6 +343,7 @@ cli_start_async <- function(.api, .job, .read_output) {
   check_later_installed()
   env <- .job$env
   proc <- cli_start_process(env$built$request, paste0(.api@short_name, "()"))
+  cli_remove_files_when_done(proc, env$built$request)
   deadline <- Sys.time() + env$built$timeout
   out <- character(0)
   err <- character(0)

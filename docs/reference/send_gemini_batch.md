@@ -18,6 +18,7 @@ send_gemini_batch(
   .safety_settings = NULL,
   .json_schema = NULL,
   .grounding_threshold = NULL,
+  .thinking_level = NULL,
   .timeout = 120,
   .dry_run = FALSE,
   .max_tries = 3,
@@ -38,7 +39,8 @@ send_gemini_batch(
 
 - .temperature:
 
-  Controls randomness (default: NULL, range: 0-2).
+  Controls randomness (default: NULL, range: 0-2). Ignored by Gemini 3.6
+  Flash and later models; Google plans to reject it on upcoming models.
 
 - .max_output_tokens:
 
@@ -46,11 +48,13 @@ send_gemini_batch(
 
 - .top_p:
 
-  Nucleus sampling (default: NULL, range: 0-1).
+  Nucleus sampling (default: NULL, range: 0-1). Ignored by Gemini 3.6
+  Flash and later models; Google plans to reject it on upcoming models.
 
 - .top_k:
 
-  Diversity in token selection (default: NULL).
+  Diversity in token selection (default: NULL). Ignored by Gemini 3.6
+  Flash and later models; Google plans to reject it on upcoming models.
 
 - .presence_penalty:
 
@@ -75,6 +79,12 @@ send_gemini_batch(
 - .grounding_threshold:
 
   Optional grounding threshold (0-1) to enable Google Search.
+
+- .thinking_level:
+
+  How much the model reasons before answering: `"minimal"`, `"low"`,
+  `"medium"` or `"high"` (default: NULL, the model's own default).
+  Supported levels vary by model.
 
 - .timeout:
 

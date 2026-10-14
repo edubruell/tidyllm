@@ -149,6 +149,30 @@ llt_test("codex_cli dry run hides the key and disables tools", {
                   ".cli_tools = TRUE still turned features off")
 })
 
+llt_test("codex_cli leaves no schema file behind", {
+  schema <- tidyllm_schema(answer = field_chr("the answer"))
+  leftover <- function() list.files(tempdir(), "^tidyllm_codex_schema_")
+  before <- leftover()
+
+  command <- llm_message("Say hello.") |> chat(CX(), .json_schema = schema, .dry_run = TRUE)
+  printed <- paste(capture.output(print(command)), collapse = "\n")
+  llt_expect_true(grepl("files written when the command runs", printed, fixed = TRUE),
+                  "the dry run does not show the schema file")
+  llt_expect_true(identical(leftover(), before), "a dry run wrote the schema file")
+
+  llm_message("Set answer to 'ok'.") |> chat(CX(), .json_schema = schema)
+  llt_expect_true(identical(leftover(), before), "chat() left the schema file behind")
+
+  job <- llm_message("Set answer to 'ok'.") |> send_chat(CX(), .json_schema = schema)
+  fetch_job(job)
+  job <- llm_message("Set answer to 'ok'.") |> send_chat(CX(), .json_schema = schema, .stream = TRUE)
+  fetch_job(job)
+  later::run_now(3)
+  Sys.sleep(1.5)
+  later::run_now(2)
+  llt_expect_true(identical(leftover(), before), "send_chat() left the schema file behind")
+})
+
 llt_report()
 
 }

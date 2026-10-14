@@ -1,6 +1,6 @@
-# tidyllm 0.7.1 (development version)
+# tidyllm 0.7.1
 
-Work in progress. This release prepares `gemini()` for Google's coming change to how
+This release prepares `gemini()` for Google's coming change to how
 Gemini controls reasoning, and adds Mistral Large 4 and two more command-line
 providers, `codex_cli()` and `vibe_cli()`.
 
@@ -62,9 +62,10 @@ your `OPENAI_API_KEY` instead. It reports token counts, takes `.reasoning_effort
 and `.json_schema`, and streams, although Codex sends whole messages, not single
 words. Codex adds about 12,000 tokens of its own instructions to every call.
 
-`vibe_cli()` uses your `MISTRAL_API_KEY`. Vibe reports no token counts or cost, has
-no system prompt option (the system prompt goes in front of the prompt text) and
-sends its reply in one piece.
+`vibe_cli()` uses your `MISTRAL_API_KEY`. Vibe reports no token counts or cost and
+sends its reply in one piece. Vibe has no system prompt setting of its own, so
+`vibe_cli()` puts the system prompt in front of the prompt text; set
+`.system_prompt_mode = "ignore"` to leave it out.
 
 Both are agents that can run commands and change files. tidyllm turns that off
 unless you set `.cli_tools = TRUE`. Both can keep a conversation on their side with
@@ -78,6 +79,9 @@ command they would run.
   removes every built-in tool and leaves out your MCP servers, so a plain `chat()`
   can no longer read files in the working directory. `.cli_tools = c("Read", "Glob")`
   now makes exactly those built-in tools available.
+* `parallel_chat()` with `claude_cli()` now stops with a message that the provider
+  does not support it. Before, it failed with an error from httr2. The same holds for
+  `codex_cli()` and `vibe_cli()`; use `send_chat()` or `chat()` in a loop instead.
 * Printing the command from a `.dry_run` of a command-line provider now quotes each
   argument, so it can be pasted into a shell.
 * An image attached with `img()` is now an error for providers that cannot take

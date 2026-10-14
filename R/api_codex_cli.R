@@ -138,7 +138,10 @@ method(assemble_stream_body, list(api_codex_cli, class_list)) <- function(.api, 
 
 #' @noRd
 method(open_chat_stream, api_codex_cli) <- function(.api, .built) {
-  list(response = cli_start_process(.built$request, "codex_cli()"), headers = list(), status = 200L)
+  check_later_installed()
+  proc <- cli_start_process(.built$request, "codex_cli()")
+  cli_remove_files_when_done(proc, .built$request)
+  list(response = proc, headers = list(), status = 200L)
 }
 
 #' @noRd
@@ -311,10 +314,14 @@ codex_cli_build_chat_request <- function(.llm,
 
   json <- !is.null(.json_schema)
   schema_file <- NULL
+  files <- NULL
   if (json) {
     schema_file <- tempfile("tidyllm_codex_schema_", fileext = ".json")
-    jsonlite::write_json(add_no_extra_fields(cli_schema(.json_schema)), schema_file,
-                         auto_unbox = TRUE, null = "null")
+    files <- stats::setNames(
+      list(jsonlite::toJSON(add_no_extra_fields(cli_schema(.json_schema)),
+                            auto_unbox = TRUE, null = "null")),
+      schema_file
+    )
   }
 
   args <- c("exec", "--json", "--skip-git-repo-check", "--sandbox", .sandbox)
@@ -333,7 +340,8 @@ codex_cli_build_chat_request <- function(.llm,
   if (!is.null(resume_id))         args <- c(args, "resume", resume_id)
   args <- c(args, "-")
 
-  command <- new_cli_command(codex_cli_binary(.binary), args, .stdin = prompt, .env_from = env_from)
+  command <- new_cli_command(codex_cli_binary(.binary), args, .stdin = prompt, .env_from = env_from,
+                             .files = files)
 
   new_chat_request(
     .request    = command,
@@ -346,10 +354,7 @@ codex_cli_build_chat_request <- function(.llm,
     .timeout    = .timeout,
     .max_tries  = 1,
     .verbose    = .verbose,
-    .perform_fn = function(.built) {
-      if (!is.null(schema_file)) on.exit(unlink(schema_file), add = TRUE)
-      cli_performer(codex_cli_read_output)(.built)
-    },
+    .perform_fn = cli_performer(codex_cli_read_output),
     .meta_fn    = function(meta, response) {
       if (!is.null(.model)) meta$model <- .model
       meta

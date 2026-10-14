@@ -67,46 +67,48 @@ cloud providers. See the [Get Started
 vignette](https://edubruell.github.io/tidyllm/articles/tidyllm.html) for
 setup instructions.
 
-## What’s new in 0.7.0
+## What’s new in 0.7.1
 
-**Find out what a provider supports.**
-[`provider_capabilities()`](https://edubruell.github.io/tidyllm/reference/provider_capabilities.md)
-returns a tibble of the verbs, arguments and defaults each provider
-accepts, or, with `.what = "media"`, which media types it takes:
-
-``` r
-
-provider_capabilities(.argument = ".thinking")
-provider_capabilities(.what = "media")
-```
-
-**Use your own Claude CLI.**
+**Use your coding agent from R.**
+[`codex_cli()`](https://edubruell.github.io/tidyllm/reference/codex_cli.md)
+runs OpenAI’s Codex CLI and
+[`vibe_cli()`](https://edubruell.github.io/tidyllm/reference/vibe_cli.md)
+runs Mistral’s Vibe CLI, both on your own machine, the same way
 [`claude_cli()`](https://edubruell.github.io/tidyllm/reference/claude_cli.md)
-runs the `claude` command line tool already installed and signed in on
-your machine. There is no API key, and the CLI’s built-in tools are off
-unless you allow them with `.cli_tools`:
+runs Claude Code:
 
 ``` r
 
 llm_message("Explain what a tibble is in one sentence.") |>
-  chat(claude_cli())
+  chat(codex_cli())
+
+llm_message("Explain what a tibble is in one sentence.") |>
+  chat(vibe_cli(.model = "mistral-large-4"))
 ```
 
-**Web search for any model.**
-[`websearch_tool()`](https://edubruell.github.io/tidyllm/reference/websearch_tool.md)
-gives any model that supports tools a search tool, including local
-Ollama models. It uses Tavily (needs `TAVILY_API_KEY`) or a SearXNG
-server;
-[`websearch()`](https://edubruell.github.io/tidyllm/reference/websearch.md)
-runs the same search directly and returns a tibble:
+**Control Gemini reasoning by level.**
+[`gemini()`](https://edubruell.github.io/tidyllm/reference/gemini.md)
+takes `.thinking_level` (`"minimal"`, `"low"`, `"medium"` or `"high"`).
+Google is replacing token budgets with these levels, so
+`.thinking_budget` now warns that it is deprecated.
 
 ``` r
 
-llm_message("What changed in the latest R release?") |>
-  chat(ollama(), .tools = websearch_tool())
-
-websearch("R release notes", .max_results = 3)
+llm_message("What is 17 * 23?") |>
+  chat(gemini(.thinking_level = "high"))
 ```
+
+**Mistral Large 4.**
+[`mistral()`](https://edubruell.github.io/tidyllm/reference/mistral.md)
+works with `mistral-large-4`, a reasoning model with a 512K-token
+context. Set `.reasoning_effort = "none"` to turn its reasoning off.
+
+**Fix for
+[`claude_cli()`](https://edubruell.github.io/tidyllm/reference/claude_cli.md).**
+With its tools off,
+[`claude_cli()`](https://edubruell.github.io/tidyllm/reference/claude_cli.md)
+could still read files. It no longer does. The 0.7.0 release on CRAN has
+the same leak.
 
 Read the [Changelog](https://edubruell.github.io/tidyllm/news/) for the
 full list of changes.
@@ -128,6 +130,8 @@ full list of changes.
     Media](https://edubruell.github.io/tidyllm/articles/tidyllm_video.html)
   - [Local Models with
     tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_local_models.html)
+  - [Command Line
+    Providers](https://edubruell.github.io/tidyllm/articles/tidyllm_cli.html)
 
 ## Similar packages
 

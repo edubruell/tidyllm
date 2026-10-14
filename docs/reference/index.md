@@ -114,7 +114,7 @@ Functions for JSON schemas, tool definitions, and media attachments.
 ## API Provider Functions
 
 Provider functions called from main verbs. Each provider exposes a
-consistent interface — pass to
+consistent interface; pass it to
 [`chat()`](https://edubruell.github.io/tidyllm/reference/chat.md),
 [`embed()`](https://edubruell.github.io/tidyllm/reference/embed.md),
 [`send_batch()`](https://edubruell.github.io/tidyllm/reference/send_batch.md),
@@ -140,6 +140,12 @@ etc.
 
 - [`claude_cli()`](https://edubruell.github.io/tidyllm/reference/claude_cli.md)
   : Chat through a locally installed Claude CLI
+
+- [`codex_cli()`](https://edubruell.github.io/tidyllm/reference/codex_cli.md)
+  : Chat through a locally installed Codex CLI
+
+- [`vibe_cli()`](https://edubruell.github.io/tidyllm/reference/vibe_cli.md)
+  : Chat through a locally installed Mistral Vibe CLI
 
 - [`gemini()`](https://edubruell.github.io/tidyllm/reference/gemini.md)
   : Google Gemini Provider Function
@@ -242,8 +248,18 @@ management.
   : List Files in Claude API
 - [`claude_websearch()`](https://edubruell.github.io/tidyllm/reference/claude_websearch.md)
   : Builtin Claude Web Search Tool
+
+## Command Line Providers
+
+Chat through a command line tool installed on your machine: Claude Code,
+OpenAI Codex or Mistral Vibe.
+
 - [`claude_cli_chat()`](https://edubruell.github.io/tidyllm/reference/claude_cli_chat.md)
   : Chat with Claude through your own installed Claude CLI
+- [`codex_cli_chat()`](https://edubruell.github.io/tidyllm/reference/codex_cli_chat.md)
+  : Chat with OpenAI models through your own installed Codex CLI
+- [`vibe_cli_chat()`](https://edubruell.github.io/tidyllm/reference/vibe_cli_chat.md)
+  : Chat with Mistral models through your own installed Mistral Vibe CLI
 
 ## Gemini-Specific Functions
 
@@ -367,7 +383,8 @@ Functions for Voyage AI embeddings and reranking.
 
 ## OpenRouter-Specific Functions
 
-Functions for OpenRouter — access to 300+ models via a single API key.
+Functions for OpenRouter, with access to 300+ models via a single API
+key.
 
 - [`openrouter_chat()`](https://edubruell.github.io/tidyllm/reference/openrouter_chat.md)
   : Send LLM Messages to the OpenRouter Chat API

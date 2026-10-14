@@ -100,9 +100,10 @@ mistral_chat(
 
 - .reasoning_effort:
 
-  Controls the reasoning effort for Magistral thinking models; one of
-  `"low"`, `"medium"`, or `"high"` (default: `NULL`, meaning the API
-  default).
+  Controls how much reasoning models think before answering; one of
+  `"none"`, `"low"`, `"medium"`, or `"high"` (default: `NULL`, meaning
+  the API default). Supported values vary by model: `mistral-large-4`
+  accepts only `"high"` and `"none"`, and `"none"` turns reasoning off.
 
 - .timeout:
 

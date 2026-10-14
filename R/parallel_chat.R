@@ -109,6 +109,11 @@ parallel_chat <- function(
   if (!all(vapply(built, inherits, logical(1), "tidyllm_chat_request"))) {
     stop("This provider does not support parallel_chat() yet.", call. = FALSE)
   }
+  if (any(vapply(built, function(b) inherits(b$request, "tidyllm_cli_command"), logical(1)))) {
+    stop(built[[1]]$api@short_name, "() does not support parallel_chat(): it runs a ",
+         "command line tool on this machine, not a web request. Use send_chat() for each ",
+         "message, or chat() in a loop.", call. = FALSE)
+  }
 
   requests <- lapply(built, function(b) {
     request <- b$request
