@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.7.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.7.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -20,6 +20,7 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/tidyllm_classifiers.html">Classifying Texts with tidyllm</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_cli.html">Command Line Providers</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm_embed.html">Embedding Models in tidyllm</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm_local_models.html">Local Models with tidyllm</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm_shiny.html">Using tidyllm in Shiny</a></li>
@@ -346,7 +347,7 @@
       </dl></div><div class="section level2">
       <h2 id="api-provider-functions">API Provider Functions<a class="anchor" aria-label="anchor" href="#api-provider-functions"></a></h2>
 
-      <div class="section-desc"><p>Provider functions called from main verbs. Each provider exposes a consistent interface — pass to <code><a href="../reference/chat.html">chat()</a></code>, <code><a href="../reference/embed.html">embed()</a></code>, <code><a href="../reference/send_batch.html">send_batch()</a></code>, etc.</p></div>
+      <div class="section-desc"><p>Provider functions called from main verbs. Each provider exposes a consistent interface; pass it to <code><a href="../reference/chat.html">chat()</a></code>, <code><a href="../reference/embed.html">embed()</a></code>, <code><a href="../reference/send_batch.html">send_batch()</a></code>, etc.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -373,6 +374,20 @@
 
         </dt>
         <dd>Chat through a locally installed Claude CLI</dd>
+
+        <dt>
+
+          <code><a href="codex_cli.html">codex_cli()</a></code>
+
+        </dt>
+        <dd>Chat through a locally installed Codex CLI</dd>
+
+        <dt>
+
+          <code><a href="vibe_cli.html">vibe_cli()</a></code>
+
+        </dt>
+        <dd>Chat through a locally installed Mistral Vibe CLI</dd>
 
         <dt>
 
@@ -652,13 +667,36 @@
 
         </dt>
         <dd>Builtin Claude Web Search Tool</dd>
+      </dl></div><div class="section level2">
+      <h2 id="command-line-providers">Command Line Providers<a class="anchor" aria-label="anchor" href="#command-line-providers"></a></h2>
 
-        <dt>
+      <div class="section-desc"><p>Chat through a command line tool installed on your machine: Claude Code, OpenAI Codex or Mistral Vibe.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
 
           <code><a href="claude_cli_chat.html">claude_cli_chat()</a></code>
 
         </dt>
         <dd>Chat with Claude through your own installed Claude CLI</dd>
+
+        <dt>
+
+          <code><a href="codex_cli_chat.html">codex_cli_chat()</a></code>
+
+        </dt>
+        <dd>Chat with OpenAI models through your own installed Codex CLI</dd>
+
+        <dt>
+
+          <code><a href="vibe_cli_chat.html">vibe_cli_chat()</a></code>
+
+        </dt>
+        <dd>Chat with Mistral models through your own installed Mistral Vibe CLI</dd>
       </dl></div><div class="section level2">
       <h2 id="gemini-specific-functions">Gemini-Specific Functions<a class="anchor" aria-label="anchor" href="#gemini-specific-functions"></a></h2>
 
@@ -1007,7 +1045,7 @@
       </dl></div><div class="section level2">
       <h2 id="openrouter-specific-functions">OpenRouter-Specific Functions<a class="anchor" aria-label="anchor" href="#openrouter-specific-functions"></a></h2>
 
-      <div class="section-desc"><p>Functions for OpenRouter — access to 300+ models via a single API key.</p></div>
+      <div class="section-desc"><p>Functions for OpenRouter, with access to 300+ models via a single API key.</p></div>
 
       <dl></dl></div><div class="section level2">
 

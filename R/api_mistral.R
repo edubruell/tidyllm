@@ -43,8 +43,26 @@ mistral_normalise_message <- function(.message) {
   .message
 }
 
+mistral_reasoning_efforts <- c("none", "low", "medium", "high")
+
+mistral_stop_on_error <- function(.response, .context = "") {
+  msg <- body_error_message(.response$content)
+  if (.response$status >= 400 || !is.null(msg)) {
+    sprintf("Mistral returned an Error%s:\nCode: %s\nMessage: %s",
+            .context, .response$status, msg %||% "No error message returned by the API") |>
+      stop(call. = FALSE)
+  }
+  invisible(.response)
+}
+
 #' @noRd
 method(parse_chat_response, list(api_mistral, class_list)) <- function(.api, .content) {
+  if (length(.content$choices) == 0 && !is.list(.content$error)) {
+    msg <- body_error_message(.content)
+    if (!is.null(msg)) {
+      .content$error <- list(type = .content$type %||% .content$code %||% "error", message = msg)
+    }
+  }
   if (length(.content$choices) >= 1) {
     .content$choices[[1]]$message <- mistral_normalise_message(.content$choices[[1]]$message)
   }
@@ -255,7 +273,7 @@ prepare_mistral_request <- function(
 #' @param .tool_choice A character string specifying the tool-calling behavior; valid values are "none", "auto", or "required".
 #' @param .json_schema A JSON schema object provided by tidyllm schema or ellmer schemata.
 #' @param .safe_prompt Whether to inject a safety prompt before all conversations (default: `FALSE`).
-#' @param .reasoning_effort Controls the reasoning effort for Magistral thinking models; one of `"low"`, `"medium"`, or `"high"` (default: `NULL`, meaning the API default).
+#' @param .reasoning_effort Controls how much reasoning models think before answering; one of `"none"`, `"low"`, `"medium"`, or `"high"` (default: `NULL`, meaning the API default). Supported values vary by model: `mistral-large-4` accepts only `"high"` and `"none"`, and `"none"` turns reasoning off.
 #' @param .timeout When should our connection time out in seconds (default: `120`).
 #' @param .verbose Should additional information be shown after the API call? (default: `FALSE`)
 #' @param .dry_run If `TRUE`, perform a dry run and return the request object (default: `FALSE`).
@@ -331,7 +349,7 @@ mistral_build_chat_request <- function(.llm,
     "Input .logit_bias must be a list or NULL" = is.null(.logit_bias) || is.list(.logit_bias),
     "Input .presence_penalty must be numeric or NULL" = is.null(.presence_penalty) || is.numeric(.presence_penalty),
     "Input .safe_prompt must be logical" = is.logical(.safe_prompt) && length(.safe_prompt) == 1,
-    "Input .reasoning_effort must be NULL or one of 'low', 'medium', 'high'" = is.null(.reasoning_effort) || (is.character(.reasoning_effort) && .reasoning_effort %in% c("low", "medium", "high")),
+    "Input .reasoning_effort must be NULL or one of 'none', 'low', 'medium', 'high'" = is.null(.reasoning_effort) || (is.character(.reasoning_effort) && length(.reasoning_effort) == 1 && .reasoning_effort %in% mistral_reasoning_efforts),
     "Input .max_tries must be integer-valued numeric" = is_integer_valued(.max_tries),
     "Input .timeout must be integer-valued numeric (seconds till timeout)" = is_integer_valued(.timeout),
     "Input .json_schema must be NULL or a list or an ellmer type object" = is.null(.json_schema) || is.list(.json_schema) || is_ellmer_type(.json_schema),
@@ -475,8 +493,9 @@ mistral_embedding <- function(.input,
   
   extract_embeddings_fn <- function(response_content,error,headers){
     if(error){
-      paste0("API error response (Code ", response_content$code ,") ", response_content$message)|>
-        stop()
+      sprintf("Mistral returned an Error:\nMessage: %s",
+              body_error_message(response_content) %||% "No error message returned by the API") |>
+        stop(call. = FALSE)
     }
     response_content$data |> 
       purrr::map("embedding")  |>
@@ -510,6 +529,7 @@ mistral_embedding <- function(.input,
 #' @param .stop Sequence(s) at which to stop generation (optional).
 #' @param .safe_prompt Logical; if TRUE, injects a safety prompt (default: FALSE).
 #' @param .json_schema A JSON schema object for structured output (optional).
+#' @param .reasoning_effort How much reasoning models think before answering; one of `"none"`, `"low"`, `"medium"`, or `"high"` (default: `NULL`, meaning the API default). Supported values vary by model: `mistral-large-4` accepts only `"high"` and `"none"`.
 #' @param .dry_run Logical; if TRUE, returns the prepared request without executing it (default: FALSE).
 #' @param .overwrite Logical; if TRUE, allows overwriting existing custom IDs (default: FALSE).
 #' @param .max_tries Maximum retry attempts for requests (default: 3).
@@ -533,6 +553,7 @@ send_mistral_batch <- function(.llms,
                                .stop = NULL,
                                .safe_prompt = FALSE,
                                .json_schema = NULL,
+                               .reasoning_effort = NULL,
                                .dry_run = FALSE,
                                .overwrite = FALSE,
                                .max_tries = 3,
@@ -556,6 +577,7 @@ send_mistral_batch <- function(.llms,
     ".stop must be NULL or character" = is.null(.stop) || is.character(.stop),
     ".safe_prompt must be logical" = is.logical(.safe_prompt) && length(.safe_prompt) == 1,
     ".json_schema must be NULL or a list or an ellmer type object" = is.null(.json_schema) || is.list(.json_schema) || is_ellmer_type(.json_schema),
+    ".reasoning_effort must be NULL or one of 'none', 'low', 'medium', 'high'" = is.null(.reasoning_effort) || (is.character(.reasoning_effort) && length(.reasoning_effort) == 1 && .reasoning_effort %in% mistral_reasoning_efforts),
     ".dry_run must be logical" = is.logical(.dry_run),
     ".overwrite must be logical" = is.logical(.overwrite),
     ".id_prefix must be a string" = is.character(.id_prefix)
@@ -595,11 +617,14 @@ send_mistral_batch <- function(.llms,
       .json_schema = .json_schema
     )
     
+    body <- request_data$request_body
+    if (!is.null(.reasoning_effort)) body$reasoning_effort <- .reasoning_effort
+
     list(
       custom_id = custom_id,
       method = "POST",
       url = .endpoint,
-      body = request_data$request_body
+      body = body
     ) |> jsonlite::toJSON(auto_unbox = TRUE)
   })
   
@@ -619,6 +644,7 @@ send_mistral_batch <- function(.llms,
   upload_response <- upload_request |>
     perform_generic_request(.timeout = .timeout, .max_tries = .max_tries)
   
+  mistral_stop_on_error(upload_response, " during file upload")
   input_file_id <- upload_response$content$id
   
   # Create the batch job
@@ -639,9 +665,7 @@ send_mistral_batch <- function(.llms,
   batch_response <- batch_request |>
     perform_generic_request(.timeout = .timeout, .max_tries = .max_tries)
   
-  if(batch_response$status == 403) {
-    rlang::abort(sprintf("Mistral Batch API error: %s", batch_response$content$detail))
-  }
+  mistral_stop_on_error(batch_response, " during batch creation")
   
   # Attach batch_id as an attribute to the prepared LLMs
   batch_id <- batch_response$content$id
@@ -709,13 +733,8 @@ check_mistral_batch <- function(.llms = NULL,
                             .max_tries = .max_tries)
   
   # Parse response
+  mistral_stop_on_error(response)
   response_body <- response$content
-  if("error" %in% names(response_body)){
-    sprintf("Mistral API returned an Error:\nType: %s\nMessage: %s",
-            response_body$error$type,
-            response_body$error$message) |>
-      stop()
-  }
   
   # Extract relevant fields and handle timestamps
   tibble::tibble(
@@ -784,13 +803,8 @@ list_mistral_batches <- function(.limit = 100,
                             .max_tries = .max_tries)
   
   # Parse response
+  mistral_stop_on_error(response)
   response_body <- response$content
-  if ("error" %in% names(response_body)) {
-    sprintf("Mistral API returned an Error:\nType: %s\nMessage: %s",
-            response_body$error$type,
-            response_body$error$message) |>
-      stop()  
-  }
   
   # Extract batch data and format as tibble
   batch_data <- response_body$data
@@ -888,6 +902,13 @@ fetch_mistral_batch <- function(.llms,
       is_transient = function(resp) httr2::resp_status(resp) %in% c(429, 503)
     ) |>
     httr2::req_perform()
+
+  if (httr2::resp_status(results_response) >= 400) {
+    mistral_stop_on_error(list(
+      content = tryCatch(httr2::resp_body_json(results_response), error = function(e) NULL),
+      status  = httr2::resp_status(results_response)
+    ), " while downloading batch results")
+  }
   
   # Parse JSONL response and map results by custom_id
   results_lines <- strsplit(httr2::resp_body_string(results_response), "\n")[[1]]
@@ -969,10 +990,9 @@ mistral_list_models <- function(.api_url = "https://api.mistral.ai",
   
   # Perform the request with specified timeout and retry logic
   response <- request |>
-    httr2::req_timeout(.timeout) |>
-    httr2::req_retry(max_tries = .max_tries) |>
-    httr2::req_perform() |>
-    httr2::resp_body_json()
+    perform_generic_request(.timeout = .timeout, .max_tries = .max_tries) |>
+    mistral_stop_on_error()
+  response <- response$content
   
   if (.verbose) {
     message("Retrieved response from Mistral: ", response$object)

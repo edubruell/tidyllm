@@ -282,6 +282,8 @@ A file uploaded to Claude cannot be used in a message sent to Gemini or OpenAI. 
 | Audio | `audio_file()` | Gemini, OpenRouter, llama.cpp, Mistral (Voxtral) | MP3, WAV, AIFF, AAC, OGG, FLAC |
 | Video | `video_file()` | Gemini, OpenRouter | MP4, MPEG, MOV, AVI, WEBM, WMV |
 
+The command line providers `claude_cli()`, `codex_cli()` and `vibe_cli()` take text only: a PDF reaches them as extracted text, and images, audio, video and uploaded files are rejected.
+
 **Provider Files API** (`upload_file()`):
 
 - **Gemini**: PDFs, images, audio, video, plain text, HTML, CSV, XML, Markdown, code files; files expire after 48 hours

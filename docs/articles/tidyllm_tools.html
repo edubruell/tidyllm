@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.7.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.7.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -40,6 +40,7 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/tidyllm_classifiers.html">Classifying Texts with tidyllm</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_cli.html">Command Line Providers</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm_embed.html">Embedding Models in tidyllm</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm_local_models.html">Local Models with tidyllm</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm_shiny.html">Using tidyllm in Shiny</a></li>
@@ -405,6 +406,10 @@ a tibble. It takes the same arguments as
 available as <code><a href="../reference/claude_websearch.html">claude_websearch()</a></code> and
 <code><a href="../reference/openai_websearch.html">openai_websearch()</a></code>. Those work only with their own
 provider; <code><a href="../reference/websearch_tool.html">websearch_tool()</a></code> works with all of them.</p>
+<p>The command line providers <code><a href="../reference/claude_cli.html">claude_cli()</a></code>,
+<code><a href="../reference/codex_cli.html">codex_cli()</a></code> and <code><a href="../reference/vibe_cli.html">vibe_cli()</a></code> do not take
+<code>.tools</code>. They run their own tools, which tidyllm turns off
+unless you allow them with <code>.cli_tools</code>.</p>
 </div>
 <div class="section level2">
 <h2 id="multi-step-tool-chains">Multi-Step Tool Chains<a class="anchor" aria-label="anchor" href="#multi-step-tool-chains"></a>

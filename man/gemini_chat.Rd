@@ -19,6 +19,7 @@ gemini_chat(
   .safety_settings = NULL,
   .json_schema = NULL,
   .tools = NULL,
+  .thinking_level = NULL,
   .thinking_budget = NULL,
   .timeout = 120,
   .dry_run = FALSE,
@@ -35,13 +36,13 @@ gemini_chat(
 
 \item{.fileid}{Optional vector of file IDs uploaded via \code{gemini_upload_file()} (default: NULL).}
 
-\item{.temperature}{Controls randomness in generation (default: NULL, range: 0.0-2.0).}
+\item{.temperature}{Controls randomness in generation (default: NULL, range: 0.0-2.0). Gemini 3.6 Flash and later models ignore it, and Google plans to reject it on upcoming models.}
 
 \item{.max_output_tokens}{Maximum tokens in the response (default: NULL).}
 
-\item{.top_p}{Controls nucleus sampling (default: NULL, range: 0.0-1.0).}
+\item{.top_p}{Controls nucleus sampling (default: NULL, range: 0.0-1.0). Gemini 3.6 Flash and later models ignore it, and Google plans to reject it on upcoming models.}
 
-\item{.top_k}{Controls diversity in token selection (default: NULL, range: 0 or more).}
+\item{.top_k}{Controls diversity in token selection (default: NULL, range: 0 or more). Gemini 3.6 Flash and later models ignore it, and Google plans to reject it on upcoming models.}
 
 \item{.grounding_threshold}{A grounding threshold between 0 and 1. With lower
 grounding thresholds  Gemini will use Google to search for relevant information
@@ -59,7 +60,13 @@ before answering.  (default: NULL).}
 
 \item{.tools}{Either a single TOOL object or a list of TOOL objects representing the available functions for tool calls.}
 
-\item{.thinking_budget}{Token budget for internal reasoning (default: NULL). Works with \code{gemini-3.8-flash} and \code{gemini-3.1-pro}.}
+\item{.thinking_level}{How much the model reasons before answering: \code{"minimal"}, \code{"low"},
+\code{"medium"} or \code{"high"} (default: NULL, the model's own default). Supported levels
+vary by model; \code{gemini-3.8-flash} accepts \code{"low"}, \code{"medium"} and \code{"high"}.}
+
+\item{.thinking_budget}{Deprecated. Token budget for internal reasoning
+(default: NULL). Use \code{.thinking_level} instead; Google plans to reject token budgets on
+upcoming models. Cannot be combined with \code{.thinking_level}.}
 
 \item{.timeout}{When should our connection time out (default: 120 seconds).}
 

@@ -63,7 +63,11 @@ reply as fixed, which no longer holds. Claude 5 models, recent Gemini
 models and several OpenAI models reject or ignore sampling parameters,
 and `chat(openai(), .temperature = 0)` stops with an error for them.
 [`provider_capabilities()`](https://edubruell.github.io/tidyllm/reference/provider_capabilities.md)
-shows which providers still accept the argument.
+shows which provider functions still accept the argument. That does not
+mean the model uses it: Gemini 3.6 Flash and later, including the
+default model of
+[`gemini()`](https://edubruell.github.io/tidyllm/reference/gemini.md),
+accept `.temperature` and ignore it.
 
 Even where `temperature` is accepted, the literature on LLM annotation
 reports that repeated runs of the same prompt on the same text can

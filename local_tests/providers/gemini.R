@@ -116,7 +116,7 @@ llt_test("max_tool_rounds raises error", {
 
 llt_test("thinking mode returns thinking_tokens in metadata", {
   result <- llm_message("What is 17 * 23? Think step by step.") |>
-    chat(gemini(.model = "gemini-2.5-flash", .thinking_budget = 1024))
+    chat(gemini(.thinking_level = "high"))
   llt_expect_reply(result)
   meta <- get_metadata(result)
   llt_expect_true(
@@ -125,6 +125,33 @@ llt_test("thinking mode returns thinking_tokens in metadata", {
   )
 })
 
+
+llt_test("deprecated .thinking_budget still works and warns", {
+  warned <- FALSE
+  old <- options(lifecycle_verbosity = "warning")
+  result <- tryCatch(
+    withCallingHandlers(
+      llm_message("What is 17 * 23?") |>
+        chat(gemini(.model = "gemini-2.5-flash", .thinking_budget = 512)),
+      lifecycle_warning_deprecated = function(w) {
+        warned <<- TRUE
+        invokeRestart("muffleWarning")
+      }
+    ),
+    finally = options(old)
+  )
+  llt_expect_reply(result)
+  llt_expect_true(warned, "expected a deprecation warning")
+})
+
+llt_test("setting both thinking arguments errors before any request", {
+  err <- tryCatch(
+    llm_message("x") |> chat(gemini(.thinking_level = "low", .thinking_budget = 100)),
+    error = function(e) conditionMessage(e)
+  )
+  llt_expect_true(grepl("only one of .thinking_level and .thinking_budget", err),
+                  paste("Unexpected:", err))
+})
 
 # -- Streaming with tools (0.6.0) ---------------------------------------------
 
@@ -151,6 +178,14 @@ llt_test("streamed tool use assembles and completes", {
   llt_expect_reply(result)
   llt_expect_true(calls >= 1,
                   "the streamed response produced no executed tool call")
+})
+
+llt_test("a streamed request shows Gemini's error message", {
+  err <- tryCatch(
+    llm_message("x") |> chat(gemini(.thinking_level = "minimal", .stream = TRUE)),
+    error = function(e) conditionMessage(e)
+  )
+  llt_expect_true(grepl("MINIMAL is not supported", err), paste("Unexpected:", err))
 })
 
 llt_report()

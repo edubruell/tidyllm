@@ -111,7 +111,7 @@ record_fixture(
 record_fixture(
   "gemini_thinking_sse",
   gemini_chat(llm_message("What is 17 * 23? Think it through."),
-              .stream = TRUE, .thinking_budget = 512, .dry_run = TRUE) |> gemini_sse(),
+              .stream = TRUE, .thinking_level = "low", .dry_run = TRUE) |> gemini_sse(),
   list(provider = "gemini", kind = "thinking", transport = "sse")
 )
 

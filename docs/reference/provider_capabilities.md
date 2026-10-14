@@ -99,7 +99,7 @@ provider_capabilities(.argument = ".thinking")
 #> 4 llamacpp chat       .thinking NULL    llamacpp_chat    
 
 provider_capabilities(.what = "media")
-#> # A tibble: 75 × 3
+#> # A tibble: 85 × 3
 #>    provider         media supported
 #>    <chr>            <chr> <lgl>    
 #>  1 azure_openai     image TRUE     
@@ -112,5 +112,5 @@ provider_capabilities(.what = "media")
 #>  8 chat_completions audio TRUE     
 #>  9 chat_completions video FALSE    
 #> 10 chat_completions files FALSE    
-#> # ℹ 65 more rows
+#> # ℹ 75 more rows
 ```

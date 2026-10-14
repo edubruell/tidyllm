@@ -35,16 +35,18 @@ the only way the CLI accepts one. With "ignore" it is dropped.}
 \item{.json_schema}{A schema to enforce an output structure; a list, or an
 ellmer type object. Passed to the CLI's own \code{--json-schema} flag.}
 
-\item{.cli_tools}{Controls the CLI's built-in tools. FALSE, the default,
-disables all of them, so the call behaves like an ordinary completion.
-A character vector allows exactly those tools, for example
-\code{c("Read", "WebSearch")}. TRUE hands over to the CLI's own configuration,
-which on a default install includes Bash, Write and Edit.}
+\item{.cli_tools}{Controls the CLI's own tools. FALSE, the default,
+removes all of them and leaves out your MCP servers, so the call behaves
+like an ordinary completion and cannot read files. A character vector
+makes exactly those built-in tools available, for example
+\code{c("Read", "Glob")}; MCP tools named there still work. TRUE hands over to
+the CLI's own configuration, which on a default install includes Bash,
+Write and Edit.}
 
 \item{.stateful}{Logical; if TRUE the CLI keeps the conversation on its side.
-The first call sends only the newest user message and records the session
-id in the metadata; later calls resume that session instead of replaying
-the history. Default FALSE sends the whole conversation every time, the way
+The first call sends the conversation and records the session id in the
+metadata; later calls resume that session and send only the newest user
+message instead of replaying the history. Default FALSE sends the whole conversation every time, the way
 every other tidyllm provider does.}
 
 \item{.session_id}{Character; resume this CLI session explicitly. Normally
@@ -81,8 +83,8 @@ A new \code{LLMMessage} object containing the original messages plus the
 CLI's response.
 }
 \description{
-\code{claude_cli()} is the odd one out among tidyllm's providers: it sends nothing
-over the network itself. It runs the \code{claude} command line tool that is
+\code{claude_cli()}, like \code{codex_cli()} and \code{vibe_cli()}, sends nothing over the
+network itself. It runs the \code{claude} command line tool that is
 already installed and signed in on your machine, and reads its JSON output
 back. There is no API key to set, and usage counts against whatever plan the
 CLI is logged in to rather than against an Anthropic API key.

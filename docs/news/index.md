@@ -1,6 +1,189 @@
 # Changelog
 
+## tidyllm 0.7.1
+
+This release prepares
+[`gemini()`](https://edubruell.github.io/tidyllm/reference/gemini.md)
+for Google’s coming change to how Gemini controls reasoning, and adds
+Mistral Large 4 and two more command-line providers,
+[`codex_cli()`](https://edubruell.github.io/tidyllm/reference/codex_cli.md)
+and
+[`vibe_cli()`](https://edubruell.github.io/tidyllm/reference/vibe_cli.md).
+
+### Gemini: `.thinking_level` replaces `.thinking_budget`
+
+Google is changing how Gemini controls reasoning. Upcoming Gemini models
+will reject a token budget for thinking with a `400 INVALID_ARGUMENT`
+error, and accept only a named level.
+[`gemini()`](https://edubruell.github.io/tidyllm/reference/gemini.md)
+and
+[`send_batch()`](https://edubruell.github.io/tidyllm/reference/send_batch.md)
+with
+[`gemini()`](https://edubruell.github.io/tidyllm/reference/gemini.md)
+now take `.thinking_level`, one of `"minimal"`, `"low"`, `"medium"` or
+`"high"`:
+
+``` r
+
+llm_message("What is 17 * 23?") |>
+  chat(gemini(.thinking_level = "high"))
+```
+
+Leave it unset to use the model’s default. Supported levels vary by
+model; `gemini-3.8-flash` accepts `"low"`, `"medium"` and `"high"`, and
+Gemini itself returns a clear error for a level the model does not
+support.
+
+`.thinking_budget` still works for the current models but now warns that
+it is deprecated. Setting both arguments is an error, because Gemini
+rejects a request that contains both.
+
+`.temperature`, `.top_p` and `.top_k` stay in
+[`gemini()`](https://edubruell.github.io/tidyllm/reference/gemini.md),
+but Gemini 3.6 Flash and later ignore them. Google plans to reject them
+on upcoming models; their help text now says so.
+
+### Mistral Large 4
+
+[`mistral()`](https://edubruell.github.io/tidyllm/reference/mistral.md)
+works with Mistral Large 4 (`mistral-large-4`, also
+`mistral-large-4-0`), Mistral’s new reasoning model with a 512K-token
+context, image input and tool calls. It reasons by default;
+`.reasoning_effort` now also accepts `"none"`, which turns reasoning
+off. Large 4 supports only `"high"` and `"none"`. Batches sent with
+`send_batch(mistral())` take `.reasoning_effort` too.
+
+``` r
+
+llm_message("Summarise this contract clause.") |>
+  chat(mistral(.model = "mistral-large-4", .reasoning_effort = "none"))
+```
+
+The default Mistral model does not change, and `mistral-large-latest`
+still points to the previous Large model.
+
+### `codex_cli()` and `vibe_cli()`: two more command-line providers
+
+Like
+[`claude_cli()`](https://edubruell.github.io/tidyllm/reference/claude_cli.md),
+these run a command line tool installed on your own machine and read its
+output back.
+[`codex_cli()`](https://edubruell.github.io/tidyllm/reference/codex_cli.md)
+runs OpenAI’s Codex CLI and
+[`vibe_cli()`](https://edubruell.github.io/tidyllm/reference/vibe_cli.md)
+runs Mistral’s Vibe CLI:
+
+``` r
+
+llm_message("Explain what a tibble is in one sentence.") |>
+  chat(codex_cli())
+
+llm_message("Explain what a tibble is in one sentence.") |>
+  chat(vibe_cli(.model = "mistral-large-4"))
+```
+
+[`codex_cli()`](https://edubruell.github.io/tidyllm/reference/codex_cli.md)
+uses the login Codex already has. With `.use_api_key = TRUE` it uses
+your `OPENAI_API_KEY` instead. It reports token counts, takes
+`.reasoning_effort` and `.json_schema`, and streams, although Codex
+sends whole messages, not single words. Codex adds about 12,000 tokens
+of its own instructions to every call.
+
+[`vibe_cli()`](https://edubruell.github.io/tidyllm/reference/vibe_cli.md)
+uses your `MISTRAL_API_KEY`. Vibe reports no token counts or cost and
+sends its reply in one piece. Vibe has no system prompt setting of its
+own, so
+[`vibe_cli()`](https://edubruell.github.io/tidyllm/reference/vibe_cli.md)
+puts the system prompt in front of the prompt text; set
+`.system_prompt_mode = "ignore"` to leave it out.
+
+Both are agents that can run commands and change files. tidyllm turns
+that off unless you set `.cli_tools = TRUE`. Both can keep a
+conversation on their side with `.stateful = TRUE`, both work with
+[`send_chat()`](https://edubruell.github.io/tidyllm/reference/send_chat.md),
+and `.dry_run = TRUE` shows the command they would run.
+
+### Bug fixes
+
+- [`claude_cli()`](https://edubruell.github.io/tidyllm/reference/claude_cli.md)
+  with its tools off (the default) could still read files, because the
+  Claude CLI kept its read-only tools when the allowed list was empty.
+  It now removes every built-in tool and leaves out your MCP servers, so
+  a plain
+  [`chat()`](https://edubruell.github.io/tidyllm/reference/chat.md) can
+  no longer read files in the working directory.
+  `.cli_tools = c("Read", "Glob")` now makes exactly those built-in
+  tools available.
+
+- [`parallel_chat()`](https://edubruell.github.io/tidyllm/reference/parallel_chat.md)
+  with
+  [`claude_cli()`](https://edubruell.github.io/tidyllm/reference/claude_cli.md)
+  now stops with a message that the provider does not support it.
+  Before, it failed with an error from httr2. The same holds for
+  [`codex_cli()`](https://edubruell.github.io/tidyllm/reference/codex_cli.md)
+  and
+  [`vibe_cli()`](https://edubruell.github.io/tidyllm/reference/vibe_cli.md);
+  use
+  [`send_chat()`](https://edubruell.github.io/tidyllm/reference/send_chat.md)
+  or [`chat()`](https://edubruell.github.io/tidyllm/reference/chat.md)
+  in a loop instead.
+
+- Printing the command from a `.dry_run` of a command-line provider now
+  quotes each argument, so it can be pasted into a shell.
+
+- An image attached with
+  [`img()`](https://edubruell.github.io/tidyllm/reference/img.md) is now
+  an error for providers that cannot take images
+  ([`claude_cli()`](https://edubruell.github.io/tidyllm/reference/claude_cli.md),
+  [`codex_cli()`](https://edubruell.github.io/tidyllm/reference/codex_cli.md),
+  [`vibe_cli()`](https://edubruell.github.io/tidyllm/reference/vibe_cli.md)
+  and
+  [`deepseek()`](https://edubruell.github.io/tidyllm/reference/deepseek.md)),
+  in [`chat()`](https://edubruell.github.io/tidyllm/reference/chat.md),
+  [`send_chat()`](https://edubruell.github.io/tidyllm/reference/send_chat.md)
+  and
+  [`parallel_chat()`](https://edubruell.github.io/tidyllm/reference/parallel_chat.md).
+  Before, the command-line providers sent the text alone and dropped the
+  image without a word, and
+  [`deepseek()`](https://edubruell.github.io/tidyllm/reference/deepseek.md)
+  sent the image to an API that does not take images.
+  `provider_capabilities(.what = "media")` now also lists images for
+  [`ellmer()`](https://edubruell.github.io/tidyllm/reference/ellmer.md),
+  which has always sent them.
+
+- A streamed request that the provider rejects now shows the provider’s
+  error message, for every provider that streams over HTTP. Before, it
+  showed only the HTTP status, such as “HTTP 400 Bad Request.”.
+
+- [`mistral()`](https://edubruell.github.io/tidyllm/reference/mistral.md)
+  now shows Mistral’s own error message, for example for an unsupported
+  `.reasoning_effort` or an invalid API key, instead of “Received empty
+  response from Mistral”. The same holds for Mistral embeddings,
+  [`list_models()`](https://edubruell.github.io/tidyllm/reference/list_models.md)
+  and the batch functions; checking a batch id that does not exist is
+  now an error instead of an empty table.
+
+- Deprecation warnings raised inside a chat request, such as for
+  `.fileid` in
+  [`gemini()`](https://edubruell.github.io/tidyllm/reference/gemini.md)
+  and `.file_ids` in
+  [`claude()`](https://edubruell.github.io/tidyllm/reference/claude.md),
+  no longer tell you to report a bug in tidyllm when you call them
+  through
+  [`chat()`](https://edubruell.github.io/tidyllm/reference/chat.md),
+  `%>%`,
+  [`purrr::map()`](https://purrr.tidyverse.org/reference/map.html) or
+  [`tryCatch()`](https://rdrr.io/r/base/conditions.html).
+
+- The deprecated `.fileid` argument of
+  [`gemini()`](https://edubruell.github.io/tidyllm/reference/gemini.md)
+  no longer also warns about
+  [`gemini_file_metadata()`](https://edubruell.github.io/tidyllm/reference/gemini_file_metadata.md),
+  a function you did not call.
+
 ## tidyllm 0.7.0
+
+CRAN release: 2026-10-05
 
 This release adds a provider that talks to a locally installed Claude
 CLI, a web search tool that works with every provider, and

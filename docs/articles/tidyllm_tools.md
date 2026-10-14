@@ -358,6 +358,14 @@ Those work only with their own provider;
 [`websearch_tool()`](https://edubruell.github.io/tidyllm/reference/websearch_tool.md)
 works with all of them.
 
+The command line providers
+[`claude_cli()`](https://edubruell.github.io/tidyllm/reference/claude_cli.md),
+[`codex_cli()`](https://edubruell.github.io/tidyllm/reference/codex_cli.md)
+and
+[`vibe_cli()`](https://edubruell.github.io/tidyllm/reference/vibe_cli.md)
+do not take `.tools`. They run their own tools, which tidyllm turns off
+unless you allow them with `.cli_tools`.
+
 ## Multi-Step Tool Chains
 
 When solving a problem requires more than one tool call, the model will

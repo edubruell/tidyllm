@@ -4,6 +4,8 @@
 
 - [Classifying Texts with
   tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_classifiers.md):
+- [Command Line
+  Providers](https://edubruell.github.io/tidyllm/articles/tidyllm_cli.md):
 - [Embedding Models in
   tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_embed.md):
 - [Local Models with

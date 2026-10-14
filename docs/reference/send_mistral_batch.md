@@ -22,6 +22,7 @@ send_mistral_batch(
   .stop = NULL,
   .safe_prompt = FALSE,
   .json_schema = NULL,
+  .reasoning_effort = NULL,
   .dry_run = FALSE,
   .overwrite = FALSE,
   .max_tries = 3,
@@ -92,6 +93,13 @@ send_mistral_batch(
 - .json_schema:
 
   A JSON schema object for structured output (optional).
+
+- .reasoning_effort:
+
+  How much reasoning models think before answering; one of `"none"`,
+  `"low"`, `"medium"`, or `"high"` (default: `NULL`, meaning the API
+  default). Supported values vary by model: `mistral-large-4` accepts
+  only `"high"` and `"none"`.
 
 - .dry_run:
 

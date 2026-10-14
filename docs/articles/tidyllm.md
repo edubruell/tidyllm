@@ -54,9 +54,14 @@ Sys.setenv(OPENAI_API_KEY = "your-key-here")
 | **Tavily** (web search for [`websearch()`](https://edubruell.github.io/tidyllm/reference/websearch.md) and [`websearch_tool()`](https://edubruell.github.io/tidyllm/reference/websearch_tool.md)) | `TAVILY_API_KEY` | [Tavily](https://app.tavily.com) |
 | **SearXNG** (self-hosted web search for [`websearch()`](https://edubruell.github.io/tidyllm/reference/websearch.md) and [`websearch_tool()`](https://edubruell.github.io/tidyllm/reference/websearch_tool.md)) | `SEARXNG_SERVER` (the server address, not a key) | [SearXNG](https://docs.searxng.org) |
 
+Three providers run a command line tool installed on your machine
+instead of calling an API from R.
 [`claude_cli()`](https://edubruell.github.io/tidyllm/reference/claude_cli.md)
-needs no key: it runs the `claude` command line tool that is already
-installed and signed in on your machine.
+uses the login of the `claude` tool and needs no key.
+[`codex_cli()`](https://edubruell.github.io/tidyllm/reference/codex_cli.md)
+uses Codex’s own login, or `OPENAI_API_KEY` with `.use_api_key = TRUE`.
+[`vibe_cli()`](https://edubruell.github.io/tidyllm/reference/vibe_cli.md)
+uses `MISTRAL_API_KEY`, or the key Vibe saved during its own setup.
 
 #### Running Local Models
 
@@ -137,6 +142,8 @@ All API interactions follow the **verb + provider** pattern:
   [`openai()`](https://edubruell.github.io/tidyllm/reference/openai.md),
   [`claude()`](https://edubruell.github.io/tidyllm/reference/claude.md),
   [`claude_cli()`](https://edubruell.github.io/tidyllm/reference/claude_cli.md),
+  [`codex_cli()`](https://edubruell.github.io/tidyllm/reference/codex_cli.md),
+  [`vibe_cli()`](https://edubruell.github.io/tidyllm/reference/vibe_cli.md),
   [`gemini()`](https://edubruell.github.io/tidyllm/reference/gemini.md),
   [`ollama()`](https://edubruell.github.io/tidyllm/reference/ollama.md),
   [`mistral()`](https://edubruell.github.io/tidyllm/reference/mistral.md),
@@ -764,14 +771,16 @@ and the example app it walks through:
 |----|----|
 | [`openai()`](https://edubruell.github.io/tidyllm/reference/openai.md) | GPT-6 model line with `.thinking` effort levels; [`deep_research()`](https://edubruell.github.io/tidyllm/reference/deep_research.md); built-in web search via [`openai_websearch()`](https://edubruell.github.io/tidyllm/reference/openai_websearch.md); Files API |
 | [`claude()`](https://edubruell.github.io/tidyllm/reference/claude.md) | Strong at coding and long documents; `.thinking = TRUE` for extended reasoning; Files API for document workflows; batch |
-| [`gemini()`](https://edubruell.github.io/tidyllm/reference/gemini.md) | 1M-token context window; native image, audio, and video via `.media`; search grounding; `.thinking_budget` for reasoning; Files API; batch |
-| [`mistral()`](https://edubruell.github.io/tidyllm/reference/mistral.md) | EU-hosted, GDPR-friendly; Magistral reasoning models; Voxtral audio models (`.media = audio_file()`); embeddings; batch |
+| [`gemini()`](https://edubruell.github.io/tidyllm/reference/gemini.md) | 1M-token context window; native image, audio, and video via `.media`; search grounding; `.thinking_level` for reasoning; Files API; batch |
+| [`mistral()`](https://edubruell.github.io/tidyllm/reference/mistral.md) | EU-hosted, GDPR-friendly; Magistral and Mistral Large 4 reasoning models (`.reasoning_effort = "none"` turns reasoning off on Large 4); Voxtral audio models (`.media = audio_file()`); embeddings; batch |
 | [`groq()`](https://edubruell.github.io/tidyllm/reference/groq.md) | Fastest available inference (300-1200 tokens/s); [`groq_transcribe()`](https://edubruell.github.io/tidyllm/reference/groq_transcribe.md) for Whisper audio; `.json_schema`; batch |
 | [`perplexity()`](https://edubruell.github.io/tidyllm/reference/perplexity.md) (deprecated since 0.7.0, removed in 0.8.0; use `openrouter(.model = "perplexity/sonar")`) | Real-time web search with citations in metadata; [`deep_research()`](https://edubruell.github.io/tidyllm/reference/deep_research.md) for long-horizon research; search domain filter |
 | [`deepseek()`](https://edubruell.github.io/tidyllm/reference/deepseek.md) | Top math and reasoning benchmarks at very low cost; `.thinking = TRUE` turns on thinking mode and returns the reasoning trace in metadata |
 | [`voyage()`](https://edubruell.github.io/tidyllm/reference/voyage.md) | State-of-the-art retrieval embeddings; [`voyage_rerank()`](https://edubruell.github.io/tidyllm/reference/voyage_rerank.md); multimodal embeddings (text + images); `.output_dimension` |
 | [`openrouter()`](https://edubruell.github.io/tidyllm/reference/openrouter.md) | 500+ models via one API key; audio and video support on Gemini, Qwen 3.6, and other multimodal routes; automatic fallback routing |
 | [`claude_cli()`](https://edubruell.github.io/tidyllm/reference/claude_cli.md) | Runs your own installed and signed-in `claude` command line tool; no API key, usage counts against the CLI’s plan; CLI tools are off unless you allow them with `.cli_tools` |
+| [`codex_cli()`](https://edubruell.github.io/tidyllm/reference/codex_cli.md) | Runs your own installed `codex` command line tool, signed in or with `OPENAI_API_KEY`; token counts, `.reasoning_effort`, `.json_schema`; its shell and browser tools are off unless `.cli_tools = TRUE` |
+| [`vibe_cli()`](https://edubruell.github.io/tidyllm/reference/vibe_cli.md) | Runs your own installed Mistral `vibe` command line tool with `MISTRAL_API_KEY`; any Mistral model via `.model`; no token counts; its tools are off unless `.cli_tools = TRUE` |
 | [`ellmer()`](https://edubruell.github.io/tidyllm/reference/ellmer.md) | Use any ellmer chat object as a tidyllm provider |
 | [`ollama()`](https://edubruell.github.io/tidyllm/reference/ollama.md) | Local models with full data privacy; no API costs; [`ollama_download_model()`](https://edubruell.github.io/tidyllm/reference/ollama_download_model.md) for model management |
 | [`llamacpp()`](https://edubruell.github.io/tidyllm/reference/llamacpp.md) | Often the most performant local inference stack; audio input with Ultravox, Qwen2.5-Omni, Qwen3-Omni, and Gemma 4 models; BNF grammar constraints; logprobs; [`llamacpp_rerank()`](https://edubruell.github.io/tidyllm/reference/llamacpp_rerank.md) |
@@ -804,8 +813,10 @@ provider_capabilities(.what = "media")
 
 The result is an ordinary tibble, so filter and reshape it as usual. An
 argument in the table means the provider’s function accepts it; an
-individual model can still reject a value, for example some reasoning
-effort levels. The attachment check in
+individual model can still reject a value (Mistral Large 4 accepts only
+`"high"` and `"none"` for `.reasoning_effort`) or ignore it (Gemini 3.6
+Flash and later ignore `.temperature`, `.top_p` and `.top_k`). The
+attachment check in
 [`chat()`](https://edubruell.github.io/tidyllm/reference/chat.md) reads
 the same media table, so a message with audio sent to a provider that
 lists no audio support fails before any request is made.

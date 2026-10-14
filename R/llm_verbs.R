@@ -798,6 +798,12 @@ validate_message_attachments <- function(.llm, provider) {
           "Use gemini() or openrouter() for audio transcription."
         ))
       }
+      if (S7_inherits(m, tidyllm_image) && !"image" %in% media) {
+        stop(glue::glue(
+          "The '{provider_name}' provider does not support images.\n",
+          "Use a provider that lists \"image\" in provider_capabilities(.what = \"media\")."
+        ))
+      }
       if (S7_inherits(m, tidyllm_video) && !"video" %in% media) {
         stop(glue::glue(
           "The '{provider_name}' provider does not support inline video.\n",

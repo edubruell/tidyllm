@@ -360,6 +360,14 @@ and tidyllm will catch any mismatch before sending the request.
 | Audio | [`audio_file()`](https://edubruell.github.io/tidyllm/reference/audio_file.md) | Gemini, OpenRouter, llama.cpp, Mistral (Voxtral) | MP3, WAV, AIFF, AAC, OGG, FLAC |
 | Video | [`video_file()`](https://edubruell.github.io/tidyllm/reference/video_file.md) | Gemini, OpenRouter | MP4, MPEG, MOV, AVI, WEBM, WMV |
 
+The command line providers
+[`claude_cli()`](https://edubruell.github.io/tidyllm/reference/claude_cli.md),
+[`codex_cli()`](https://edubruell.github.io/tidyllm/reference/codex_cli.md)
+and
+[`vibe_cli()`](https://edubruell.github.io/tidyllm/reference/vibe_cli.md)
+take text only: a PDF reaches them as extracted text, and images, audio,
+video and uploaded files are rejected.
+
 **Provider Files API**
 ([`upload_file()`](https://edubruell.github.io/tidyllm/reference/upload_file.md)):
 

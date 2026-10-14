@@ -647,15 +647,15 @@ claude_build_chat_request <- function(.llm,
   
   # Deprecated .file_ids: convert to tidyllm_file objects and inject into last message
   if (!is.null(.file_ids)) {
-    # `user_env` is passed explicitly because this call sits in the builder, one
-    # frame deeper than the user-facing `claude_chat()`. lifecycle's default of
-    # caller_env(2) would resolve to the tidyllm namespace and append "the
+    # `user_env` is passed explicitly because this call sits several tidyllm frames
+    # below the user's code (chat() -> claude() -> claude_chat() -> builder).
+    # lifecycle's default would resolve to the tidyllm namespace and append "the
     # deprecated feature was likely used in the tidyllm package; please report
     # the issue", telling users on a documented path to file a bug.
     lifecycle::deprecate_warn(
       "0.5.0", "claude(.file_ids=)",
       details = "Pass tidyllm_file objects via .files on llm_message() instead.",
-      user_env = rlang::caller_env(2)
+      user_env = tidyllm_user_env()
     )
     file_objs <- lapply(.file_ids, function(id)
       tidyllm_file(id = id, provider = "claude", mime_type = "", filename = id, uri = ""))

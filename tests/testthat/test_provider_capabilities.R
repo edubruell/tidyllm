@@ -63,6 +63,18 @@ test_that("the attachment check reads the media registry", {
   expect_no_error(tidyllm:::validate_message_attachments(with_audio(), gemini()))
 })
 
+test_that("the attachment check rejects images for providers without image support", {
+  png <- withr::local_tempfile(fileext = ".png")
+  writeBin(as.raw(0:10), png)
+  with_image <- llm_message("hi", .media = list(img(png)))
+  for (provider in c("claude_cli", "codex_cli", "vibe_cli", "deepseek")) {
+    expect_error(tidyllm:::validate_message_attachments(with_image, provider), "does not support images")
+  }
+  for (provider in c("claude", "gemini", "openai", "ellmer")) {
+    expect_no_error(tidyllm:::validate_message_attachments(with_image, provider))
+  }
+})
+
 test_that("create_provider_function rejects unknown media types", {
   expect_error(
     tidyllm:::create_provider_function(.name = "x", chat = claude_chat, .media = "hologram"),
