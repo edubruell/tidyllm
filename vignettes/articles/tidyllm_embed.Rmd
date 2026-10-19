@@ -153,9 +153,9 @@ Unsurprisingly, the top result is the target abstract itself. The remaining resu
 
 ## Multimodal Embeddings
 
-While most embedding functions work only on text, the Voyage AI provider in tidyllm supports embedding text and images in the same space. This is particularly useful for **cross-modal search**, where text descriptions and images need to be compared semantically.
+Several providers embed images, audio and video in the same space as text. This is useful for **cross-modal search**, where a text query is compared with pictures, clips or recordings.
 
-Use `img()` to create image objects and mix them with text in a list. When passing such a list to `embed(voyage())`, the function automatically routes to Voyage's multimodal API:
+Use `img()`, `audio_file()` and `video_file()` to create media objects and mix them with text in a list. Each list element becomes one row of the result:
 
 ```{r, eval = FALSE, echo = TRUE}
 list("a dish consisting of a sausage served in the slit of a partially sliced bun",
@@ -174,6 +174,49 @@ tibble::tibble(
 ```
 
 Since the text description and the image refer to the same concept, their embeddings will be close together in the high-dimensional space, enabling similarity-based retrieval across modalities.
+
+`provider_capabilities(.what = "embed_media")` shows which provider takes which media type. `embed()` stops with an error before sending anything when a provider cannot embed what you passed.
+
+| Provider | Image | Audio | Video |
+|---|---|---|---|
+| `gemini()` | yes | yes | yes |
+| `openrouter()` with a multimodal model such as `google/gemini-embedding-2` | yes | yes | yes |
+| `llamacpp()` with EmbeddingGemma 2 | yes | yes | yes |
+| `ollama()` with `embeddinggemma-2:740m` | yes | yes | no |
+| `voyage()` | yes | no | no |
+
+### Fused items
+
+A nested list is one item with a single vector, for example a caption together with its photo:
+
+```{r, eval = FALSE, echo = TRUE}
+list(list("A cat drinking from a puddle", img(here("cat.jpg")))) |>
+  embed(gemini())
+```
+
+### Running EmbeddingGemma 2 locally
+
+EmbeddingGemma 2 is an open model that embeds text, images, audio and video into 768 dimensions. With llama.cpp, start the server with the model and its projector file, then embed:
+
+```bash
+llama-server -m embeddinggemma-2-Q8_0.gguf --mmproj mmproj-embeddinggemma-2-Q8_0.gguf \
+  --embeddings -c 16384 -b 16384 -ub 16384
+```
+
+```{r, eval = FALSE, echo = TRUE}
+list("A cat", img(here("cat.jpg")), audio_file(here("cat.wav")), video_file(here("cat.mp4"))) |>
+  embed(llamacpp())
+```
+
+A video of about nine seconds costs roughly 3,000 tokens, so long clips need a larger context and batch size. The server marks audio input as experimental.
+
+### Queries, documents and dimensions
+
+EmbeddingGemma 2 and `gemini-embedding-2` read the task from a text prefix. `.task = "query"` or `.task = "document"` adds the right prefix to text, and media get none. Use `.dimensions` to shorten the vectors where the model allows it (`voyage()` calls this argument `.output_dimension`).
+
+### What to expect from the results
+
+Compare vectors within one media type. A text query is closer to its matching picture than to unrelated pictures, but the gap between text and image vectors is wide, so absolute cosine values across types mean little. Non-speech audio matches text queries poorly in every model we tested: a meow and a bark both scored highest against the query "a dog". Rank clips against other clips, or use speech, instead of searching audio with text.
 
 ## Reranking with Voyage
 

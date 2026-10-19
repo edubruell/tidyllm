@@ -10,11 +10,15 @@ ollama_embedding(
   .truncate = TRUE,
   .ollama_server = "http://localhost:11434",
   .timeout = 120,
-  .dry_run = FALSE
+  .dry_run = FALSE,
+  .task = NULL,
+  .dimensions = NULL
 )
 }
 \arguments{
-\item{.input}{Aa charachter vector of texts to embed or an \code{LLMMessage} object}
+\item{.input}{A character vector of texts to embed, a list mixing texts with \code{img()} and
+\code{audio_file()} objects, or an \code{LLMMessage} object. A nested list is one fused item with
+at most one image and one audio file.}
 
 \item{.model}{The embedding model identifier (default: "all-minilm").}
 
@@ -25,10 +29,18 @@ ollama_embedding(
 \item{.timeout}{Timeout for the API request in seconds (default: 120).}
 
 \item{.dry_run}{If TRUE, perform a dry run and return the request object.}
+
+\item{.task}{\code{NULL} (default), \code{"query"} or \code{"document"}. Adds the EmbeddingGemma 2 task
+prefix to text; media get none.}
+
+\item{.dimensions}{Number of dimensions to return, for models that can shorten their
+vectors (default: the model's own size).}
 }
 \value{
-A matrix where each column corresponds to the embedding of a message in the message history.
+A tibble with columns \code{input} (text, or a label such as \verb{[IMG] cat.jpg}) and
+\code{embeddings} (list of numeric vectors).
 }
 \description{
-Generate Embeddings Using Ollama API
+Images (PNG, JPEG, GIF, WebP) and WAV or OGG audio need a multimodal embedding model such
+as \code{"embeddinggemma-2:740m"} and Ollama 0.40.4 or later. Ollama does not embed video or MP3.
 }

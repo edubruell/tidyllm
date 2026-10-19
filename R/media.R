@@ -161,13 +161,7 @@ img <- function(.path) {
   raw_file <- readBin(.path, what = "raw", n = file.size(.path))
   b64      <- base64enc::base64encode(raw_file)
 
-  mime_type <- if (grepl("\\.jpe?g$", .path, ignore.case = TRUE)) {
-    "image/jpeg"
-  } else if (grepl("\\.png$", .path, ignore.case = TRUE)) {
-    "image/png"
-  } else {
-    "application/octet-stream"
-  }
+  mime_type <- guess_mime_type(.path)
 
   b64_with_header <- paste0("data:", mime_type, ";base64,", b64)
 

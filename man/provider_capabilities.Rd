@@ -8,7 +8,7 @@ provider_capabilities(
   .provider = NULL,
   .verb = NULL,
   .argument = NULL,
-  .what = c("arguments", "media"),
+  .what = c("arguments", "media", "embed_media"),
   .internal = FALSE
 )
 }
@@ -22,8 +22,9 @@ to keep. \code{NULL} keeps all verbs.}
 \item{.argument}{Character vector of argument names (such as \code{".thinking"}) to
 keep. \code{NULL} keeps all arguments.}
 
-\item{.what}{\code{"arguments"} (default) for verbs and arguments, or \code{"media"} for
-one row per provider and media type.}
+\item{.what}{\code{"arguments"} (default) for verbs and arguments, \code{"media"} for
+one row per provider and media type a message can carry, or \code{"embed_media"} for
+one row per provider and media type \code{embed()} accepts (\code{image}, \code{audio}, \code{video}).}
 
 \item{.internal}{Logical; if \code{TRUE}, include the internal \code{build} verb that
 \code{send_chat()} and \code{parallel_chat()} use. Default \code{FALSE}.}
@@ -31,7 +32,8 @@ one row per provider and media type.}
 \value{
 A tibble. For \code{.what = "arguments"}: \code{provider}, \code{verb}, \code{argument},
 \code{default}, \code{fn}. For \code{.what = "media"}: \code{provider}, \code{media} (\code{image}, \code{pdf},
-\code{audio}, \code{video}, \code{files}) and \code{supported}.
+\code{audio}, \code{video}, \code{files}) and \code{supported}. For \code{.what = "embed_media"} the same
+columns with \code{media} limited to \code{image}, \code{audio} and \code{video}.
 }
 \description{
 Lists the verbs a provider implements and the arguments each verb accepts, or

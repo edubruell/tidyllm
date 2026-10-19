@@ -809,20 +809,34 @@ gemini_delete_file <- function(.file_name) {
 
 #' Generate Embeddings Using the Google Gemini API
 #'
-#' @param .input  A character vector of texts to embed or an `LLMMessage` object
+#' `gemini-embedding-2` embeds text, images (JPEG or PNG, at most 6 per item), audio
+#' (WAV or MP3, up to 180 seconds) and video (MP4, up to 120 seconds) into one space.
+#' Media files are sent inline and must not exceed 20 MB. The model reads task
+#' instructions from the text, so `.task` adds a text prefix and no `taskType` is sent.
+#'
+#' @param .input  A character vector of texts to embed, a list mixing texts with `img()`,
+#'   `audio_file()` and `video_file()` objects, or an `LLMMessage` object. Each list element
+#'   is one row; a nested list is one fused item with a single vector.
 #' @param .model The embedding model identifier (default: "gemini-embedding-2").
 #' @param .truncate Whether to truncate inputs to fit the model's context length (default: TRUE).
 #' @param .timeout Timeout for the API request in seconds (default: 120).
 #' @param .dry_run If TRUE, perform a dry run and return the request object.
 #' @param .max_tries Maximum retry attempts for requests (default: 3).
-#' @return A matrix where each column corresponds to the embedding of a message in the message history.
+#' @param .task `NULL` (default), `"query"` or `"document"`. Adds the task prefix to text;
+#'   media get none.
+#' @param .dimensions Number of dimensions to return (`gemini-embedding-2` accepts 128 to
+#'   3072 and renormalises the shortened vector). Default: the model's 3072.
+#' @return A tibble with columns `input` (text, or a label such as `[IMG] cat.jpg`) and
+#'   `embeddings` (list of numeric vectors).
 #' @export
 gemini_embedding <- function(.input,
                              .model = "gemini-embedding-2",
                              .truncate = TRUE,
                              .timeout = 120,
                              .dry_run = FALSE,
-                             .max_tries = 3) {
+                             .max_tries = 3,
+                             .task = NULL,
+                             .dimensions = NULL) {
 
   # Get the API key
   api_key <- Sys.getenv("GOOGLE_API_KEY")
@@ -832,27 +846,25 @@ gemini_embedding <- function(.input,
   
   # Validate inputs
   c(
-    "Input .input must be a character vector or an LLMMessage object" = S7_inherits(.input, LLMMessage) | is.character(.input),
     "Input .model must be a string" = is.character(.model),
     "Input .truncate must be logical" = is.logical(.truncate),
     "Input .timeout must be a positive numeric value" = is.numeric(.timeout) && .timeout > 0,
     ".dry_run must be logical" = is.logical(.dry_run)
   ) |> validate_inputs()
+  validate_embed_options(.task, .dimensions)
   
-  # Prepare message texts
-  input_texts <- parse_embedding_input(.input)
+  items <- embed_items(.input)
+  input_labels <- embed_labels(items)
+  check_embed_media_size(items, 20, "gemini")
+  prefix <- embed_task_prefix(.task)
   
-  # Prepare batch request
   request_body <- list(
-    requests = lapply(input_texts, function(text) {
-      list(
-        model = paste0("models/",.model),
-        content = list(
-          parts = list(
-            list(text = text)
-          )
-        )
-      )
+    requests = purrr::map(items, \(item) {
+      purrr::compact(list(
+        model = paste0("models/", .model),
+        content = list(parts = purrr::map(embed_apply_prefix(item, prefix)$parts, gemini_embed_part)),
+        outputDimensionality = .dimensions
+      ))
     })
   )
   
@@ -881,8 +893,17 @@ gemini_embedding <- function(.input,
   perform_embedding_request(.request = request,
                             .timeout = .timeout,
                             .max_tries = 3,
-                            .input_texts = input_texts, 
+                            .input_texts = input_labels, 
                             .fn_extract_embeddings = extract_embeddings_fn)
+}
+
+#' One embed part as a Gemini content part
+#' @param .part A string or a tidyllm image, audio or video object.
+#' @return A named list for the `parts` array.
+#' @noRd
+gemini_embed_part <- function(.part) {
+  if (is.character(.part)) return(list(text = .part))
+  list(inlineData = list(mimeType = embed_part_mime(.part), data = embed_part_base64(.part)))
 }
 
 #' Submit a list of LLMMessage objects to Gemini's batch API
@@ -1479,5 +1500,6 @@ gemini <- create_provider_function(
   list_files  = gemini_list_files_verb,
   file_info   = gemini_file_info_verb,
   delete_file = gemini_delete_file_verb,
-  .media = c("image", "pdf", "audio", "video", "files")
+  .media = c("image", "pdf", "audio", "video", "files"),
+  .embed_media = c("image", "audio", "video")
 )

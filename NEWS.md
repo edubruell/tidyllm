@@ -1,3 +1,20 @@
+# tidyllm (development version)
+
+## Multimodal embeddings
+
+`embed()` now takes images, audio and video as well as text. Pass a list that mixes strings with `img()`, `audio_file()` and `video_file()` objects; each element becomes one row, and a nested list is one fused item with a single vector:
+
+```r
+list("A cat", img("cat.jpg"), audio_file("cat.wav"), video_file("cat.mp4")) |>
+  embed(llamacpp())
+```
+
+`llamacpp()` (EmbeddingGemma 2 started with its `--mmproj` file), `gemini()` and `openrouter()` (for example `google/gemini-embedding-2`) embed images, audio and video; `ollama()` embeds images and audio (Ollama 0.40.4 or later), and `voyage()` embeds images only. `provider_capabilities(.what = "embed_media")` lists who takes what, and `embed()` stops with an error before any request when a provider cannot embed what you passed. Media rows show a label such as `[IMG] cat.jpg` in the `input` column.
+
+`embed()` also gains `.task` (`"query"` or `"document"`, the prefix EmbeddingGemma 2 and `gemini-embedding-2` read from the text) and `.dimensions` (shorter vectors where the model allows it).
+
+`img()` now labels GIF and WebP files with their own MIME type instead of `application/octet-stream`.
+
 # tidyllm 0.7.1
 
 This release prepares `gemini()` for Google's coming change to how

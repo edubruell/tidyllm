@@ -11,11 +11,17 @@ embed(
   .truncate = NULL,
   .timeout = NULL,
   .dry_run = NULL,
-  .max_tries = NULL
+  .max_tries = NULL,
+  .task = NULL,
+  .dimensions = NULL
 )
 }
 \arguments{
-\item{.input}{A character vector of texts v, a list of texts and image objects,  or an \code{LLMMessage} object}
+\item{.input}{A character vector of texts, a list mixing texts with \code{img()}, \code{audio_file()}
+and \code{video_file()} objects, or an \code{LLMMessage} object. Each element of a list is embedded
+as its own row. A nested list, such as \code{list(list("A cat", img("cat.jpg")))}, is one
+fused item that gets a single vector. \code{provider_capabilities(.what = "embed_media")} shows
+which provider embeds which media type.}
 
 \item{.provider}{A function or function call specifying the language model provider and any additional parameters.
 This should be a call to a provider function like \code{openai()}, \code{ollama()}, etc.
@@ -30,11 +36,21 @@ You can also set a default provider function via the \code{tidyllm_embed_default
 \item{.dry_run}{If TRUE, perform a dry run and return the request object.}
 
 \item{.max_tries}{Maximum retry attempts for requests}
+
+\item{.task}{\code{"query"} or \code{"document"}. Adds the task prefix that EmbeddingGemma 2 and
+\code{gemini-embedding-2} read from the text (and sets \code{input_type} for \code{voyage()}).
+Media get no prefix. Leave \code{NULL} for models that take no prefix.}
+
+\item{.dimensions}{Number of dimensions to return, for providers and models that
+can shorten their vectors. \code{voyage()} calls this argument \code{.output_dimension}.}
 }
 \value{
 A tibble with two columns: \code{input} and \code{embeddings}.
-The \code{input} column contains the texts sent to embed, and the \code{embeddings} column
+The \code{input} column contains the texts sent to embed, or a label such as
+\verb{[IMG] cat.jpg} for a media file, and the \code{embeddings} column
 is a list column where each row contains an embedding vector of the sent input.
+Vectors of different media types sit in one space, but a vector is closer to
+others of its own type, so rank results within a media type.
 }
 \description{
 The \code{embed()} function allows you to embed a text via a specified provider.

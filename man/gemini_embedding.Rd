@@ -10,11 +10,15 @@ gemini_embedding(
   .truncate = TRUE,
   .timeout = 120,
   .dry_run = FALSE,
-  .max_tries = 3
+  .max_tries = 3,
+  .task = NULL,
+  .dimensions = NULL
 )
 }
 \arguments{
-\item{.input}{A character vector of texts to embed or an \code{LLMMessage} object}
+\item{.input}{A character vector of texts to embed, a list mixing texts with \code{img()},
+\code{audio_file()} and \code{video_file()} objects, or an \code{LLMMessage} object. Each list element
+is one row; a nested list is one fused item with a single vector.}
 
 \item{.model}{The embedding model identifier (default: "gemini-embedding-2").}
 
@@ -25,10 +29,20 @@ gemini_embedding(
 \item{.dry_run}{If TRUE, perform a dry run and return the request object.}
 
 \item{.max_tries}{Maximum retry attempts for requests (default: 3).}
+
+\item{.task}{\code{NULL} (default), \code{"query"} or \code{"document"}. Adds the task prefix to text;
+media get none.}
+
+\item{.dimensions}{Number of dimensions to return (\code{gemini-embedding-2} accepts 128 to
+3072 and renormalises the shortened vector). Default: the model's 3072.}
 }
 \value{
-A matrix where each column corresponds to the embedding of a message in the message history.
+A tibble with columns \code{input} (text, or a label such as \verb{[IMG] cat.jpg}) and
+\code{embeddings} (list of numeric vectors).
 }
 \description{
-Generate Embeddings Using the Google Gemini API
+\code{gemini-embedding-2} embeds text, images (JPEG or PNG, at most 6 per item), audio
+(WAV or MP3, up to 180 seconds) and video (MP4, up to 120 seconds) into one space.
+Media files are sent inline and must not exceed 20 MB. The model reads task
+instructions from the text, so \code{.task} adds a text prefix and no \code{taskType} is sent.
 }
