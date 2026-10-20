@@ -9,7 +9,8 @@ mistral_embedding(
   .model = "mistral-embed",
   .timeout = 120,
   .max_tries = 3,
-  .dry_run = FALSE
+  .dry_run = FALSE,
+  .dimensions = NULL
 )
 }
 \arguments{
@@ -22,6 +23,9 @@ mistral_embedding(
 \item{.max_tries}{Maximum retries to peform request}
 
 \item{.dry_run}{If TRUE, perform a dry run and return the request object.}
+
+\item{.dimensions}{Number of dimensions to return (default: NULL, the model's full size).
+Sent as \code{output_dimension}. \code{codestral-embed} accepts it; \code{mistral-embed} does not and returns an error.}
 }
 \value{
 A matrix where each column corresponds to the embedding of a message in the message history.

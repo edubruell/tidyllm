@@ -199,14 +199,14 @@ method(run_tool_calls, list(api_chat_completions, class_list, class_list)) <- fu
     tool_function <- matching_tool[[1]]@func
     
     # Execute the function with extracted arguments
-    tool_result <- do.call(tool_function, as.list(tool_args))
+    tool_result <- tool_result_text(tool_function, as.list(tool_args))
     
     # Format the response for OpenAI
     list(
       role = "tool",
       tool_call_id = tool_call_id,
       name = tool_name,
-      content = jsonlite::toJSON(tool_result, auto_unbox = TRUE)
+      content = tool_result
     )
   })
   
@@ -687,6 +687,8 @@ cc_build_chat_request <- function(
 #' @param .dry_run If TRUE, perform a dry run and return the request object.
 #' @param .max_tries Maximum retry attempts for requests (default: 3).
 #' @param .verbose Should information about current ratelimits be printed? (default: FALSE)
+#' @param .dimensions Number of dimensions to return (default: NULL, the model's full size).
+#'   The `text-embedding-3` models can shorten their vectors; `text-embedding-ada-002` cannot and returns an error.
 #' @return A tibble with two columns: `input` and `embeddings`. 
 #' The `input` column contains the texts sent to embed, and the `embeddings` column 
 #' is a list column where each row contains an embedding vector of the sent input.
@@ -697,7 +699,8 @@ openai_embedding <- function(.input,
                              .timeout = 120,
                              .dry_run = FALSE,
                              .max_tries = 3,
-                             .verbose   = FALSE) {
+                             .verbose   = FALSE,
+                             .dimensions = NULL) {
 
   # Get the OpenAI API key
   api_key <- Sys.getenv("OPENAI_API_KEY")
@@ -713,13 +716,15 @@ openai_embedding <- function(.input,
     "Input .timeout must be an integer-valued numeric (seconds till timeout)" = is.numeric(.timeout) && .timeout > 0,
     ".dry_run must be logical" = is.logical(.dry_run)
   ) |> validate_inputs()
+  validate_embed_options(NULL, .dimensions)
   
   input_texts <- parse_embedding_input(.input)
   # Prepare the request body
-  request_body <- list(
+  request_body <- purrr::compact(list(
     model = .model,
-    input = input_texts
-  )
+    input = input_texts,
+    dimensions = .dimensions
+  ))
   
   # Build the request
   request <- httr2::request("https://api.openai.com/v1/embeddings") |>

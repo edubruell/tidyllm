@@ -43,7 +43,8 @@ You can also set a default provider function via the \code{tidyllm_embed_default
 Media get no prefix. Leave \code{NULL} for models that take no prefix.}
 
 \item{.dimensions}{Number of dimensions to return, for providers and models that
-can shorten their vectors. \code{voyage()} calls this argument \code{.output_dimension}.}
+can shorten their vectors: \code{gemini()}, \code{openrouter()}, \code{ollama()}, \code{openai()} (\code{text-embedding-3} models) and \code{mistral()} (\code{codestral-embed}).
+\code{voyage()} calls this argument \code{.output_dimension}. \code{llamacpp()} has no such argument, because llama-server ignores it.}
 
 \item{.media_columns}{If \code{TRUE}, add a \code{modality} and a \code{path} column after \code{input}.
 \code{modality} is \code{"text"}, \code{"image"}, \code{"audio"} or \code{"video"}; a fused item lists its parts

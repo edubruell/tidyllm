@@ -37,3 +37,29 @@ test_that("gemini_chat function constructs a correct request and dry runs it", {
   
 })
 
+
+test_that("gemini warns when sampling arguments reach a model that ignores them", {
+  withr::local_envvar(GOOGLE_API_KEY = "x")
+  cases <- list(
+    list(model = "gemini-3.8-flash", args = list(.temperature = 0.2), warns = TRUE),
+    list(model = "gemini-3.6-flash", args = list(.top_p = 0.9, .top_k = 5), warns = TRUE),
+    list(model = "gemini-3.8-flash", args = list(), warns = FALSE),
+    list(model = "gemini-3.5-flash", args = list(.temperature = 0.2), warns = FALSE),
+    list(model = "gemini-2.5-pro", args = list(.temperature = 0.2), warns = FALSE),
+    list(model = "gemini-3.10-flash", args = list(.temperature = 0.2), warns = TRUE),
+    list(model = "gemini-4.0-pro", args = list(.temperature = 0.2), warns = TRUE),
+    list(model = "gemini-flash-latest", args = list(.temperature = 0.2), warns = FALSE)
+  )
+  purrr::walk(cases, \(case) {
+    call <- function() rlang::exec(gemini_chat, llm_message("hi"), .model = case$model, .dry_run = TRUE, !!!case$args)
+    if (case$warns) {
+      expect_warning(call(), class = "tidyllm_gemini_sampling_ignored")
+    } else {
+      expect_no_warning(call())
+    }
+  })
+  expect_warning(
+    send_gemini_batch(list(llm_message("hi")), .model = "gemini-3.8-flash", .top_k = 3, .dry_run = TRUE),
+    class = "tidyllm_gemini_sampling_ignored"
+  )
+})

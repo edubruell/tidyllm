@@ -15,6 +15,14 @@ list("A cat", img("cat.jpg"), audio_file("cat.wav"), video_file("cat.mp4")) |>
 
 `img()` now labels GIF and WebP files with their own MIME type instead of `application/octet-stream`.
 
+`.dimensions` also works with `openai()` (the `text-embedding-3` models) and `mistral()` (`codestral-embed`, sent as `output_dimension`). `mistral-embed` and `text-embedding-ada-002` cannot shorten their vectors and return the API's error. `llamacpp()` has no `.dimensions`, because llama-server ignores it.
+
+## Smaller changes
+
+`gemini()` and `send_gemini_batch()` now warn when `.temperature`, `.top_p` or `.top_k` are passed to a Gemini model numbered 3.6 or later. Google announced that Gemini 3.6 Flash and later models ignore the values and will reject them.
+
+Tool results are now sent to the model as text on every provider. `openai()`, `ollama()` and the chat-completions providers used to send non-text results, such as a data frame, as JSON. They now send the printed form, as `claude()` and `gemini()` already did, and text results are passed on unchanged.
+
 # tidyllm 0.7.1
 
 This release prepares `gemini()` for Google's coming change to how

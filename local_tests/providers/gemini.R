@@ -188,4 +188,14 @@ llt_test("a streamed request shows Gemini's error message", {
   llt_expect_true(grepl("MINIMAL is not supported", err), paste("Unexpected:", err))
 })
 
+llt_test("sampling arguments on a model that ignores them warn and still reply", {
+  warned <- FALSE
+  result <- withCallingHandlers(
+    llm_message("Say hello in one word.") |> chat(gemini(.model = "gemini-3.8-flash", .temperature = 0.2)),
+    tidyllm_gemini_sampling_ignored = \(w) { warned <<- TRUE; invokeRestart("muffleWarning") }
+  )
+  llt_expect_true(warned, "Should warn that .temperature is ignored")
+  llt_expect_reply(result)
+})
+
 llt_report()

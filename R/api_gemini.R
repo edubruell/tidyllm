@@ -378,6 +378,37 @@ gemini_inject_files <- function(.gemini_contents,
 
 gemini_thinking_levels <- c("minimal", "low", "medium", "high")
 
+#' Whether a Gemini model ignores temperature, top_p and top_k
+#'
+#' Gemini 3.6 Flash and later models ignore these sampling values. Names without
+#' a version, such as `gemini-flash-latest`, return `FALSE`.
+#'
+#' @param .model A Gemini model name such as `"gemini-3.8-flash"`.
+#' @return A logical.
+#' @noRd
+gemini_ignores_sampling <- function(.model) {
+  version <- as.integer(stringr::str_match(.model, "^gemini-(\\d+)\\.(\\d+)")[1, 2:3])
+  !anyNA(version) && (version[1] > 3L || (version[1] == 3L && version[2] >= 6L))
+}
+
+#' Warn when sampling arguments are passed to a Gemini model that ignores them
+#' @param .model A Gemini model name.
+#' @param .temperature,.top_p,.top_k The sampling arguments, `NULL` when unset.
+#' @return `NULL`, invisibly.
+#' @noRd
+warn_gemini_sampling <- function(.model, .temperature, .top_p, .top_k) {
+  set <- c(.temperature = !is.null(.temperature), .top_p = !is.null(.top_p), .top_k = !is.null(.top_k))
+  if (any(set) && gemini_ignores_sampling(.model)) {
+    ignored <- names(set)[set]
+    model <- .model
+    cli::cli_warn(
+      "{.val {model}} ignores {.arg {ignored}}. Gemini 3.6 Flash and later models do not use sampling values, and Google plans to reject them.",
+      class = "tidyllm_gemini_sampling_ignored"
+    )
+  }
+  invisible(NULL)
+}
+
 #' Send LLMMessage to Gemini API
 #'
 #' @param .llm An existing LLMMessage object or an initial text prompt.
@@ -492,6 +523,8 @@ gemini_build_chat_request <- function(.llm,
     "Set only one of .thinking_level and .thinking_budget" = is.null(.thinking_level) || is.null(.thinking_budget)
   ) |>
     validate_inputs()
+
+  warn_gemini_sampling(.model, .temperature, .top_p, .top_k)
 
   if (!is.null(.thinking_budget)) {
     lifecycle::deprecate_warn(
@@ -982,6 +1015,7 @@ send_gemini_batch <- function(.llms,
       is_integer_valued(.max_tries) && .max_tries > 0,
     "Input .dry_run must be logical" = is.logical(.dry_run)
   ) |> validate_inputs()
+  warn_gemini_sampling(.model, .temperature, .top_p, .top_k)
   
   # --- Auto-name messages if needed ---
   if (is.null(names(.llms)) || anyNA(names(.llms)) || any(names(.llms) == "")) {

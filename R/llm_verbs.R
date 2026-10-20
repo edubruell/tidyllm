@@ -277,7 +277,8 @@ chat <- function(
 #'   `gemini-embedding-2` read from the text (and sets `input_type` for `voyage()`).
 #'   Media get no prefix. Leave `NULL` for models that take no prefix.
 #' @param .dimensions Number of dimensions to return, for providers and models that
-#'   can shorten their vectors. `voyage()` calls this argument `.output_dimension`.
+#'   can shorten their vectors: `gemini()`, `openrouter()`, `ollama()`, `openai()` (`text-embedding-3` models) and `mistral()` (`codestral-embed`).
+#'   `voyage()` calls this argument `.output_dimension`. `llamacpp()` has no such argument, because llama-server ignores it.
 #' @param .media_columns If `TRUE`, add a `modality` and a `path` column after `input`.
 #'   `modality` is `"text"`, `"image"`, `"audio"` or `"video"`; a fused item lists its parts
 #'   joined by `" + "`, such as `"text + image"`. `path` holds the file path of the media

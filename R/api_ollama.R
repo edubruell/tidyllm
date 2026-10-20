@@ -179,12 +179,7 @@ method(run_tool_calls, list(api_ollama, class_list, class_list)) <- function(.ap
     tool_function <- matching_tool[[1]]@func
     
     tool_result <- tryCatch({
-      result <- do.call(tool_function, as.list(tool_args))
-      if (is.character(result)) {
-        result
-      } else {
-        jsonlite::toJSON(result, auto_unbox = TRUE)
-      }
+      tool_result_text(tool_function, as.list(tool_args))
     }, error = function(e) {
       paste("Error executing tool:", e$message)
     })

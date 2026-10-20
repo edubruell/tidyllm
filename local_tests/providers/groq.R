@@ -111,4 +111,13 @@ llt_test("streamed tool use assembles and completes", {
                   "the streamed response produced no executed tool call")
 })
 
+llt_test("a tool that returns a data frame reaches the model as readable text", {
+  city_table <- function(country) data.frame(city = c("Zathora", "Brimvault"), population = c(412000, 1800000))
+  table_tool <- tidyllm_tool(city_table, "Population table of the cities of a country", country = field_chr("Country name"))
+  result <- llm_message("Use the tool for Korvel and tell me the population of Brimvault as a number.") |>
+    chat(groq(), .tools = table_tool)
+  llt_expect_reply(result)
+  llt_expect_true(grepl("1[.,]?800[.,]?000|1\\.8", get_reply(result)), get_reply(result))
+})
+
 llt_report()

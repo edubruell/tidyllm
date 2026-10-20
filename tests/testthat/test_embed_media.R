@@ -251,3 +251,15 @@ test_that("embed_part_label and embed_part_type name every part kind", {
     expect_equal(embed_part_label(case$part), case$label)
   })
 })
+
+test_that("openai and mistral send .dimensions under their own field names", {
+  withr::local_envvar(OPENAI_API_KEY = "x", MISTRAL_API_KEY = "x")
+  openai_body <- body_of(embed("a", openai(), .dimensions = 256, .dry_run = TRUE))
+  expect_equal(openai_body$dimensions, 256)
+  mistral_body <- body_of(embed("a", mistral(.model = "codestral-embed"), .dimensions = 256, .dry_run = TRUE))
+  expect_equal(mistral_body$output_dimension, 256)
+  expect_null(body_of(embed("a", openai(), .dry_run = TRUE))$dimensions)
+  expect_null(body_of(embed("a", mistral(), .dry_run = TRUE))$output_dimension)
+  expect_error(embed("a", openai(), .dimensions = 0, .dry_run = TRUE), ".dimensions")
+  expect_error(embed("a", llamacpp(), .dimensions = 256, .dry_run = TRUE))
+})

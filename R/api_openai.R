@@ -232,12 +232,12 @@ method(run_tool_calls, list(api_openai, class_list, class_list)) <- function(.ap
       return(NULL)
     }
 
-    result <- do.call(matching[[1]]@func, as.list(tool_args))
+    result <- tool_result_text(matching[[1]]@func, as.list(tool_args))
 
     list(
       type    = "function_call_output",
       call_id = call_id,
-      output  = jsonlite::toJSON(result, auto_unbox = TRUE)
+      output  = result
     )
   }) |> purrr::compact()
 }

@@ -132,3 +132,26 @@ test_that("a tool description given as a function is computed each time it is re
   expect_error(TOOL(description = 5, input_schema = list(), func = function() NULL,
                     name = "bad", builtin = list()), "description_source")
 })
+
+test_that("ChatCompletions, OpenAI and Ollama send tool results as text like Claude and Gemini", {
+  frame_tool <- tidyllm_tool(\(q) data.frame(a = 1:2, b = c("u", "v")), "Returns a data frame", q = field_chr("q"))
+  text_tool <- tidyllm_tool(\(q) paste0("line 1\n\"", q, "\""), "Returns text", q = field_chr("q"))
+  call_args <- "{\"q\":\"x\"}"
+  cases <- list(
+    list(api = api_chat_completions(short_name = "x", long_name = "X", api_key_env_var = "K"),
+         call = \(t) list(list(id = "1", `function` = list(name = t@name, arguments = call_args))),
+         pick = \(out) out[[2]]$content),
+    list(api = api_openai(short_name = "o", long_name = "O", api_key_env_var = "K"),
+         call = \(t) list(list(name = t@name, call_id = "1", arguments = call_args)),
+         pick = \(out) out[[1]]$output),
+    list(api = api_ollama(short_name = "l", long_name = "L", api_key_env_var = ""),
+         call = \(t) list(list(`function` = list(name = t@name, arguments = list(q = "x")))),
+         pick = \(out) out[[1]]$content)
+  )
+  purrr::walk(cases, \(case) {
+    text_out <- run_tool_calls(case$api, case$call(text_tool), list(text_tool))
+    expect_identical(as.character(case$pick(text_out)), "line 1\n\"x\"")
+    frame_out <- run_tool_calls(case$api, case$call(frame_tool), list(frame_tool))
+    expect_identical(as.character(case$pick(frame_out)), "  a b\n1 1 u\n2 2 v")
+  })
+})
