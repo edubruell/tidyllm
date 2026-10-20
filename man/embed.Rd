@@ -13,7 +13,8 @@ embed(
   .dry_run = NULL,
   .max_tries = NULL,
   .task = NULL,
-  .dimensions = NULL
+  .dimensions = NULL,
+  .media_columns = FALSE
 )
 }
 \arguments{
@@ -43,14 +44,20 @@ Media get no prefix. Leave \code{NULL} for models that take no prefix.}
 
 \item{.dimensions}{Number of dimensions to return, for providers and models that
 can shorten their vectors. \code{voyage()} calls this argument \code{.output_dimension}.}
+
+\item{.media_columns}{If \code{TRUE}, add a \code{modality} and a \code{path} column after \code{input}.
+\code{modality} is \code{"text"}, \code{"image"}, \code{"audio"} or \code{"video"}; a fused item lists its parts
+joined by \code{" + "}, such as \code{"text + image"}. \code{path} holds the file path of the media
+in the item (joined by \code{" + "} for several files) and is \code{NA} for text. Has no effect with
+\code{.dry_run = TRUE}, which returns the request. Defaults to \code{FALSE}.}
 }
 \value{
-A tibble with two columns: \code{input} and \code{embeddings}.
+A tibble with the columns \code{input} and \code{embeddings}, plus \code{modality} and \code{path}
+when \code{.media_columns = TRUE}.
 The \code{input} column contains the texts sent to embed, or a label such as
-\verb{[IMG] cat.jpg} for a media file, and the \code{embeddings} column
+\verb{[IMG] cat.jpg} for a media file. A fused item shows its parts joined by \code{" + "}, for
+example \verb{A cat + [IMG] cat.jpg}. The \code{embeddings} column
 is a list column where each row contains an embedding vector of the sent input.
-Vectors of different media types sit in one space, but a vector is closer to
-others of its own type, so rank results within a media type.
 }
 \description{
 The \code{embed()} function allows you to embed a text via a specified provider.

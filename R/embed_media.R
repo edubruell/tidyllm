@@ -253,3 +253,39 @@ embed_content_input <- function(.items, .part_fn, .prefix = "") {
   }
   purrr::map(items, \(i) list(content = purrr::map(i$parts, .part_fn)))
 }
+
+#' Modality of one item: the types of its parts joined by " + "
+#' @param .item An item from `embed_items()`.
+#' @return A string such as `"text"` or `"text + image"`.
+#' @noRd
+embed_item_modality <- function(.item) {
+  paste(vapply(.item$parts, embed_part_type, character(1)), collapse = " + ")
+}
+
+#' File paths of the media in one item, joined by " + "
+#' @param .item An item from `embed_items()`.
+#' @return A string, or `NA` when the item has no media part.
+#' @noRd
+embed_item_path <- function(.item) {
+  media <- Filter(\(p) !is.character(p), .item$parts)
+  if (length(media) == 0) return(NA_character_)
+  paste(vapply(media, embed_part_path, character(1)), collapse = " + ")
+}
+
+#' Add the `modality` and `path` columns to an embedding result
+#' @param .result The tibble from a provider's embedding function.
+#' @param .items Items from `embed_items()`, in the order of the rows.
+#' @return The tibble with `modality` and `path` after `input`.
+#' @noRd
+embed_media_columns <- function(.result, .items) {
+  c(
+    "The provider returned a different number of rows than inputs, so .media_columns cannot be added" =
+      nrow(.result) == length(.items)
+  ) |> validate_inputs()
+  tibble::add_column(
+    .result,
+    modality = vapply(.items, embed_item_modality, character(1)),
+    path = vapply(.items, embed_item_path, character(1)),
+    .after = "input"
+  )
+}

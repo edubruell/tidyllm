@@ -278,12 +278,17 @@ chat <- function(
 #'   Media get no prefix. Leave `NULL` for models that take no prefix.
 #' @param .dimensions Number of dimensions to return, for providers and models that
 #'   can shorten their vectors. `voyage()` calls this argument `.output_dimension`.
-#' @return A tibble with two columns: `input` and `embeddings`.
+#' @param .media_columns If `TRUE`, add a `modality` and a `path` column after `input`.
+#'   `modality` is `"text"`, `"image"`, `"audio"` or `"video"`; a fused item lists its parts
+#'   joined by `" + "`, such as `"text + image"`. `path` holds the file path of the media
+#'   in the item (joined by `" + "` for several files) and is `NA` for text. Has no effect with
+#'   `.dry_run = TRUE`, which returns the request. Defaults to `FALSE`.
+#' @return A tibble with the columns `input` and `embeddings`, plus `modality` and `path`
+#' when `.media_columns = TRUE`.
 #' The `input` column contains the texts sent to embed, or a label such as
-#' `[IMG] cat.jpg` for a media file, and the `embeddings` column
+#' `[IMG] cat.jpg` for a media file. A fused item shows its parts joined by `" + "`, for
+#' example `A cat + [IMG] cat.jpg`. The `embeddings` column
 #' is a list column where each row contains an embedding vector of the sent input.
-#' Vectors of different media types sit in one space, but a vector is closer to
-#' others of its own type, so rank results within a media type.
 #' @examples
 #' \dontrun{
 #'c("What is the meaning of life, the universe and everything?",
@@ -300,10 +305,12 @@ embed <- function(.input,
                   .dry_run=NULL,
                   .max_tries=NULL,
                   .task=NULL,
-                  .dimensions=NULL) {
+                  .dimensions=NULL,
+                  .media_columns=FALSE) {
 
   c(
-    "You need to specify a .provider function in embed()" = !is.null(.provider)
+    "You need to specify a .provider function in embed()" = !is.null(.provider),
+    "Input .media_columns must be TRUE or FALSE" = isTRUE(.media_columns) || isFALSE(.media_columns)
   ) |> validate_inputs()
   items <- embed_items(.input)
   
@@ -338,7 +345,11 @@ embed <- function(.input,
     common_args$.input <- embed_labels(items)
   }
 
-  return(dispatch_to_provider(provider_expr, "embed", common_args))
+  result <- dispatch_to_provider(provider_expr, "embed", common_args)
+  if (.media_columns && is.data.frame(result)) {
+    result <- embed_media_columns(result, items)
+  }
+  return(result)
 }
 
 

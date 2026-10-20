@@ -187,6 +187,13 @@ if (!nzchar(Sys.getenv("GOOGLE_API_KEY"))) {
 } else {
   run_provider(provider_spec("gemini", \(...) gemini(.model = "gemini-embedding-2", ...), 3072, 256,
                              ".dimensions", c("image", "audio", "video")))
+  llt_test("gemini .media_columns adds modality and path in row order", {
+    out <- embed(list("a cat", list("a dog", img(sample("dog.jpg"))), audio_file(sample("speech.wav"))),
+                 gemini(.model = "gemini-embedding-2"), .media_columns = TRUE)
+    llt_expect_true(identical(names(out), c("input", "modality", "path", "embeddings")), paste(names(out), collapse = ","))
+    llt_expect_true(identical(out$modality, c("text", "text + image", "audio")), paste(out$modality, collapse = ","))
+    llt_expect_true(identical(out$path, c(NA, sample("dog.jpg"), sample("speech.wav"))), paste(out$path, collapse = ","))
+  })
 }
 
 if (!nzchar(Sys.getenv("OPENROUTER_API_KEY"))) {

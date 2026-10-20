@@ -221,6 +221,23 @@ test_that("embed keeps LLMMessage and named character input working for text pro
   expect_equal(unlist(body_of(embed(llm, ollama(), .dry_run = TRUE))$input), "Hello there ")
 })
 
+test_that("embed_media_columns adds modality and path for plain, media and fused items", {
+  m <- tiny_media()
+  items <- embed_items(list("a", m$image, m$audio, list("t", m$image), list(m$image, m$audio)))
+  result <- tibble::tibble(input = embed_labels(items), embeddings = list(1, 2, 3, 4, 5))
+  out <- embed_media_columns(result, items)
+  expect_named(out, c("input", "modality", "path", "embeddings"))
+  expect_equal(out$modality, c("text", "image", "audio", "text + image", "image + audio"))
+  expect_equal(out$path, c(NA, m$paths[1], m$paths[2], m$paths[1], paste(m$paths[1:2], collapse = " + ")))
+  expect_error(embed_media_columns(result[1:2, ], items), "different number of rows")
+})
+
+test_that("embed adds media columns only on request and rejects a non-logical flag", {
+  m <- tiny_media()
+  expect_error(embed("a", ollama(), .media_columns = "yes", .dry_run = TRUE), ".media_columns")
+  expect_s3_class(embed(list("a", m$image), ollama(), .media_columns = TRUE, .dry_run = TRUE), "httr2_request")
+})
+
 test_that("embed_part_label and embed_part_type name every part kind", {
   m <- tiny_media()
   cases <- list(
