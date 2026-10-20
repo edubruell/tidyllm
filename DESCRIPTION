@@ -49,7 +49,6 @@ Collate:
     'tidyllm-package.R'
     'utilites.R'
     'embedding_helpers.R'
-    'embed_media.R'
     'LLMMessage.R'
     'APIProvider.R'
     'stream_pump.R'
