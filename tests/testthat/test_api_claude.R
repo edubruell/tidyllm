@@ -197,3 +197,15 @@ test_that("fetch_claude_batch constructs correct request", {
   expect_equal(dry_run$path, "/v1/messages/batches/test-batch-id-67890")
   
 })
+
+
+test_that("claude_rejects_sampling_params covers the model families that reject sampling", {
+  cases <- c(
+    "claude-sonnet-5-5" = TRUE, "claude-haiku-5-5" = TRUE, "claude-opus-5-5" = TRUE,
+    "claude-opus-4-7" = TRUE, "claude-fable-5-1" = TRUE,
+    "claude-haiku-4-5-20251001" = FALSE, "claude-sonnet-4-6" = FALSE, "claude-opus-4-6" = FALSE
+  )
+  got <- vapply(names(cases), claude_rejects_sampling_params, logical(1))
+  expect_equal(unname(got), unname(cases))
+  expect_error(claude_check_sampling_params("claude-haiku-5-5", 0.2, NULL, NULL), "Haiku 5")
+})

@@ -48,6 +48,9 @@ test_that("gemini warns when sampling arguments reach a model that ignores them"
     list(model = "gemini-2.5-pro", args = list(.temperature = 0.2), warns = FALSE),
     list(model = "gemini-3.10-flash", args = list(.temperature = 0.2), warns = TRUE),
     list(model = "gemini-4.0-pro", args = list(.temperature = 0.2), warns = TRUE),
+    list(model = "gemini-4-argon", args = list(.temperature = 0.2), warns = TRUE),
+    list(model = "gemini-3-flash-preview", args = list(.temperature = 0.2), warns = FALSE),
+    list(model = "gemini-20250101-x", args = list(.temperature = 0.2), warns = FALSE),
     list(model = "gemini-flash-latest", args = list(.temperature = 0.2), warns = FALSE)
   )
   purrr::walk(cases, \(case) {

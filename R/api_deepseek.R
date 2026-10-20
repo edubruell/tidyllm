@@ -42,7 +42,7 @@ method(extract_metadata, list(api_deepseek,class_list))<- function(.api,.respons
 #' Currently tool calls cause problems on the DeepSeek API
 #'
 #' @param .llm An `LLMMessage` object containing the conversation history.
-#' @param .model The identifier of the model to use (default: `"deepseek-v4-pro"`). Use `"deepseek-v4-flash"` for a faster, cheaper alternative.
+#' @param .model The identifier of the model to use (default: `"deepseek-v4-pro"`). Use `"deepseek-flash"`, an alias for the latest Flash model, for a faster, cheaper alternative.
 #' @param .max_tokens The maximum number of tokens that can be generated in the response (default: 2048).
 #' @param .temperature Controls the randomness in the model's response. Values between 0 and 2 are allowed (optional).
 #' @param .top_p Nucleus sampling parameter that controls the proportion of probability mass considered (optional).

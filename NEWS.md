@@ -1,27 +1,25 @@
 # tidyllm (development version)
 
-## Multimodal embeddings
+## Embed images, audio and video
 
-`embed()` now takes images, audio and video as well as text. Pass a list that mixes strings with `img()`, `audio_file()` and `video_file()` objects; each element becomes one row, and a nested list is one fused item with a single vector:
+Until now only `voyage()` could embed images. `embed()` now also embeds images, audio and video with `llamacpp()`, `gemini()` and `openrouter()`, and images and audio with `ollama()` (version 0.40.4 or later). Pass a list that mixes text with `img()`, `audio_file()` and `video_file()`:
 
 ```r
-list("A cat", img("cat.jpg"), audio_file("cat.wav"), video_file("cat.mp4")) |>
+list("A cat", img("cat.jpg"), audio_file("cat.wav")) |>
   embed(llamacpp())
 ```
 
-`llamacpp()` (EmbeddingGemma 2 started with its `--mmproj` file), `gemini()` and `openrouter()` (for example `google/gemini-embedding-2`) embed images, audio and video; `ollama()` embeds images and audio (Ollama 0.40.4 or later), and `voyage()` embeds images only. `provider_capabilities(.what = "embed_media")` lists who takes what, and `embed()` stops with an error before any request when a provider cannot embed what you passed. Media rows show a label such as `[IMG] cat.jpg` in the `input` column, and a fused item shows its parts joined by ` + `. With `.media_columns = TRUE`, `embed()` adds a `modality` column and a `path` column to the result.
+Each element becomes one row. Put several items in a nested list to get one combined vector for them. `provider_capabilities(.what = "embed_media")` shows what each provider accepts, and `embed()` stops with a clear message if you pass something a provider cannot handle.
 
-`embed()` also gains `.task` (`"query"` or `"document"`, the prefix EmbeddingGemma 2 and `gemini-embedding-2` read from the text) and `.dimensions` (shorter vectors where the model allows it).
-
-`img()` now labels GIF and WebP files with their own MIME type instead of `application/octet-stream`.
-
-`.dimensions` also works with `openai()` (the `text-embedding-3` models) and `mistral()` (`codestral-embed`, sent as `output_dimension`). `mistral-embed` and `text-embedding-ada-002` cannot shorten their vectors and return the API's error. `llamacpp()` has no `.dimensions`, because llama-server ignores it.
+Two new options help along the way. `.task` tells models such as EmbeddingGemma 2 whether your text is a `"query"` or a `"document"`. `.media_columns = TRUE` adds a `modality` and a `path` column to the result. `.dimensions` gives shorter vectors and now also works with `openai()` and `mistral()`.
 
 ## Smaller changes
 
-`gemini()` and `send_gemini_batch()` now warn when `.temperature`, `.top_p` or `.top_k` are passed to a Gemini model numbered 3.6 or later. Google announced that Gemini 3.6 Flash and later models ignore the values and will reject them.
+`gemini()` and `send_gemini_batch()` now warn when you set `.temperature`, `.top_p` or `.top_k` on a Gemini model numbered 3.6 or later, because Google's newer models ignore these values. `claude()` now also refuses these arguments for Claude Haiku 5 models before sending the request, as it already does for Sonnet 5 and Opus 5.
 
-Tool results are now sent to the model as text on every provider. `openai()`, `ollama()` and the chat-completions providers used to send non-text results, such as a data frame, as JSON. They now send the printed form, as `claude()` and `gemini()` already did, and text results are passed on unchanged.
+Tool results now reach the model the same way on every provider. A tool that returns a data frame now sends the printed table instead of JSON on `openai()`, `ollama()` and the chat-completions providers.
+
+`img()` now labels GIF and WebP files with their own file type instead of `application/octet-stream`.
 
 # tidyllm 0.7.1
 

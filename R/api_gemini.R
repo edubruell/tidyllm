@@ -380,15 +380,16 @@ gemini_thinking_levels <- c("minimal", "low", "medium", "high")
 
 #' Whether a Gemini model ignores temperature, top_p and top_k
 #'
-#' Gemini 3.6 Flash and later models ignore these sampling values. Names without
+#' Gemini 3.6 Flash and later models ignore these sampling values, including
+#' names such as `gemini-4-argon` that carry only a major version. Names without
 #' a version, such as `gemini-flash-latest`, return `FALSE`.
 #'
 #' @param .model A Gemini model name such as `"gemini-3.8-flash"`.
 #' @return A logical.
 #' @noRd
 gemini_ignores_sampling <- function(.model) {
-  version <- as.integer(stringr::str_match(.model, "^gemini-(\\d+)\\.(\\d+)")[1, 2:3])
-  !anyNA(version) && (version[1] > 3L || (version[1] == 3L && version[2] >= 6L))
+  version <- as.integer(stringr::str_match(.model, "^gemini-(\\d{1,2})(?!\\d)(?:\\.(\\d+))?")[1, 2:3])
+  !is.na(version[1]) && (version[1] > 3L || (version[1] == 3L && isTRUE(version[2] >= 6L)))
 }
 
 #' Warn when sampling arguments are passed to a Gemini model that ignores them

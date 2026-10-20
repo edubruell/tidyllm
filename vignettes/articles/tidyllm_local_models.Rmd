@@ -115,6 +115,8 @@ tibble::tibble(
   dplyr::mutate(embeddings = purrr::map(embeddings, ~.x))
 ```
 
+To embed images and audio as well as text, pull `embeddinggemma-2:740m` (Ollama 0.40.4 or later) and pass it as `.model`.
+
 ## Finding the Right Model
 
 The open-source landscape moves fast enough that a model recommended a few months ago may already have been superseded. Here is how to navigate it.
