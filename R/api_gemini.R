@@ -378,6 +378,38 @@ gemini_inject_files <- function(.gemini_contents,
 
 gemini_thinking_levels <- c("minimal", "low", "medium", "high")
 
+#' Whether a Gemini model ignores temperature, top_p and top_k
+#'
+#' Gemini 3.6 Flash and later models ignore these sampling values, including
+#' names such as `gemini-4-argon` that carry only a major version. Names without
+#' a version, such as `gemini-flash-latest`, return `FALSE`.
+#'
+#' @param .model A Gemini model name such as `"gemini-3.8-flash"`.
+#' @return A logical.
+#' @noRd
+gemini_ignores_sampling <- function(.model) {
+  version <- as.integer(stringr::str_match(.model, "^gemini-(\\d{1,2})(?!\\d)(?:\\.(\\d+))?")[1, 2:3])
+  !is.na(version[1]) && (version[1] > 3L || (version[1] == 3L && isTRUE(version[2] >= 6L)))
+}
+
+#' Warn when sampling arguments are passed to a Gemini model that ignores them
+#' @param .model A Gemini model name.
+#' @param .temperature,.top_p,.top_k The sampling arguments, `NULL` when unset.
+#' @return `NULL`, invisibly.
+#' @noRd
+warn_gemini_sampling <- function(.model, .temperature, .top_p, .top_k) {
+  set <- c(.temperature = !is.null(.temperature), .top_p = !is.null(.top_p), .top_k = !is.null(.top_k))
+  if (any(set) && gemini_ignores_sampling(.model)) {
+    ignored <- names(set)[set]
+    model <- .model
+    cli::cli_warn(
+      "{.val {model}} ignores {.arg {ignored}}. Gemini 3.6 Flash and later models do not use sampling values, and Google plans to reject them.",
+      class = "tidyllm_gemini_sampling_ignored"
+    )
+  }
+  invisible(NULL)
+}
+
 #' Send LLMMessage to Gemini API
 #'
 #' @param .llm An existing LLMMessage object or an initial text prompt.
@@ -492,6 +524,8 @@ gemini_build_chat_request <- function(.llm,
     "Set only one of .thinking_level and .thinking_budget" = is.null(.thinking_level) || is.null(.thinking_budget)
   ) |>
     validate_inputs()
+
+  warn_gemini_sampling(.model, .temperature, .top_p, .top_k)
 
   if (!is.null(.thinking_budget)) {
     lifecycle::deprecate_warn(
@@ -809,20 +843,34 @@ gemini_delete_file <- function(.file_name) {
 
 #' Generate Embeddings Using the Google Gemini API
 #'
-#' @param .input  A character vector of texts to embed or an `LLMMessage` object
+#' `gemini-embedding-2` embeds text, images (JPEG or PNG, at most 6 per item), audio
+#' (WAV or MP3, up to 180 seconds) and video (MP4, up to 120 seconds) into one space.
+#' Media files are sent inline and must not exceed 20 MB. The model reads task
+#' instructions from the text, so `.task` adds a text prefix and no `taskType` is sent.
+#'
+#' @param .input  A character vector of texts to embed, a list mixing texts with `img()`,
+#'   `audio_file()` and `video_file()` objects, or an `LLMMessage` object. Each list element
+#'   is one row; a nested list is one fused item with a single vector.
 #' @param .model The embedding model identifier (default: "gemini-embedding-2").
 #' @param .truncate Whether to truncate inputs to fit the model's context length (default: TRUE).
 #' @param .timeout Timeout for the API request in seconds (default: 120).
 #' @param .dry_run If TRUE, perform a dry run and return the request object.
 #' @param .max_tries Maximum retry attempts for requests (default: 3).
-#' @return A matrix where each column corresponds to the embedding of a message in the message history.
+#' @param .task `NULL` (default), `"query"` or `"document"`. Adds the task prefix to text;
+#'   media get none.
+#' @param .dimensions Number of dimensions to return (`gemini-embedding-2` accepts 128 to
+#'   3072 and renormalises the shortened vector). Default: the model's 3072.
+#' @return A tibble with columns `input` (text, or a label such as `[IMG] cat.jpg`) and
+#'   `embeddings` (list of numeric vectors).
 #' @export
 gemini_embedding <- function(.input,
                              .model = "gemini-embedding-2",
                              .truncate = TRUE,
                              .timeout = 120,
                              .dry_run = FALSE,
-                             .max_tries = 3) {
+                             .max_tries = 3,
+                             .task = NULL,
+                             .dimensions = NULL) {
 
   # Get the API key
   api_key <- Sys.getenv("GOOGLE_API_KEY")
@@ -832,27 +880,25 @@ gemini_embedding <- function(.input,
   
   # Validate inputs
   c(
-    "Input .input must be a character vector or an LLMMessage object" = S7_inherits(.input, LLMMessage) | is.character(.input),
     "Input .model must be a string" = is.character(.model),
     "Input .truncate must be logical" = is.logical(.truncate),
     "Input .timeout must be a positive numeric value" = is.numeric(.timeout) && .timeout > 0,
     ".dry_run must be logical" = is.logical(.dry_run)
   ) |> validate_inputs()
+  validate_embed_options(.task, .dimensions)
   
-  # Prepare message texts
-  input_texts <- parse_embedding_input(.input)
+  items <- embed_items(.input)
+  input_labels <- embed_labels(items)
+  check_embed_media_size(items, 20, "gemini")
+  prefix <- embed_task_prefix(.task)
   
-  # Prepare batch request
   request_body <- list(
-    requests = lapply(input_texts, function(text) {
-      list(
-        model = paste0("models/",.model),
-        content = list(
-          parts = list(
-            list(text = text)
-          )
-        )
-      )
+    requests = purrr::map(items, \(item) {
+      purrr::compact(list(
+        model = paste0("models/", .model),
+        content = list(parts = purrr::map(embed_apply_prefix(item, prefix)$parts, gemini_embed_part)),
+        outputDimensionality = .dimensions
+      ))
     })
   )
   
@@ -881,8 +927,17 @@ gemini_embedding <- function(.input,
   perform_embedding_request(.request = request,
                             .timeout = .timeout,
                             .max_tries = 3,
-                            .input_texts = input_texts, 
+                            .input_texts = input_labels, 
                             .fn_extract_embeddings = extract_embeddings_fn)
+}
+
+#' One embed part as a Gemini content part
+#' @param .part A string or a tidyllm image, audio or video object.
+#' @return A named list for the `parts` array.
+#' @noRd
+gemini_embed_part <- function(.part) {
+  if (is.character(.part)) return(list(text = .part))
+  list(inlineData = list(mimeType = embed_part_mime(.part), data = embed_part_base64(.part)))
 }
 
 #' Submit a list of LLMMessage objects to Gemini's batch API
@@ -961,6 +1016,7 @@ send_gemini_batch <- function(.llms,
       is_integer_valued(.max_tries) && .max_tries > 0,
     "Input .dry_run must be logical" = is.logical(.dry_run)
   ) |> validate_inputs()
+  warn_gemini_sampling(.model, .temperature, .top_p, .top_k)
   
   # --- Auto-name messages if needed ---
   if (is.null(names(.llms)) || anyNA(names(.llms)) || any(names(.llms) == "")) {
@@ -1479,5 +1535,6 @@ gemini <- create_provider_function(
   list_files  = gemini_list_files_verb,
   file_info   = gemini_file_info_verb,
   delete_file = gemini_delete_file_verb,
-  .media = c("image", "pdf", "audio", "video", "files")
+  .media = c("image", "pdf", "audio", "video", "files"),
+  .embed_media = c("image", "audio", "video")
 )

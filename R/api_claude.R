@@ -5,7 +5,7 @@ api_claude <- new_class("Claude", APIProvider)
 
 #' Does a Claude model reject sampling parameters?
 #'
-#' Claude Sonnet 5, Opus 4.7 and later, and the Fable/Mythos models return a
+#' Claude Sonnet 5, Haiku 5, Opus 4.7 and later, and the Fable/Mythos models return a
 #' 400 error when temperature, top_k, or top_p are sent.
 #'
 #' @noRd
@@ -13,7 +13,8 @@ claude_rejects_sampling_params <- function(.model) {
   grepl("^claude-(fable|mythos)", .model) ||
     grepl("^claude-opus-4-[7-9]", .model) ||
     grepl("^claude-opus-[5-9]", .model) ||
-    grepl("^claude-sonnet-[5-9]", .model)
+    grepl("^claude-sonnet-[5-9]", .model) ||
+    grepl("^claude-haiku-[5-9]", .model)
 }
 
 #' Does a Claude model support adaptive thinking?
@@ -50,7 +51,7 @@ claude_check_sampling_params <- function(.model, .temperature, .top_k, .top_p) {
   if (length(supplied) == 0) return(invisible(NULL))
   if (claude_rejects_sampling_params(.model)) {
     stop(sprintf(
-      "%s is not supported by \"%s\". The Anthropic API rejects sampling parameters on Claude Sonnet 5 and Opus 4.7 or newer. Remove the argument or use an older model.",
+      "%s is not supported by \"%s\". The Anthropic API rejects sampling parameters on Claude Sonnet 5, Haiku 5 and Opus 4.7 or newer. Remove the argument or use an older model.",
       paste(supplied, collapse = ", "), .model), call. = FALSE)
   }
   invisible(NULL)

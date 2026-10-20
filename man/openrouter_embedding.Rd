@@ -9,11 +9,15 @@ openrouter_embedding(
   .model = "openai/text-embedding-3-small",
   .timeout = 120,
   .dry_run = FALSE,
-  .max_tries = 3
+  .max_tries = 3,
+  .task = NULL,
+  .dimensions = NULL
 )
 }
 \arguments{
-\item{.input}{An \code{LLMMessage} object or a character vector of texts to embed.}
+\item{.input}{An \code{LLMMessage} object, a character vector of texts, or a list mixing
+texts with \code{img()}, \code{audio_file()} and \code{video_file()} objects (a nested list is one
+fused item).}
 
 \item{.model}{The embedding model ID (default: \code{"openai/text-embedding-3-small"}).}
 
@@ -22,9 +26,16 @@ openrouter_embedding(
 \item{.dry_run}{If TRUE, returns the request object without executing it (default: FALSE).}
 
 \item{.max_tries}{Maximum retries (default: 3).}
+
+\item{.task}{\code{NULL} (default), \code{"query"} or \code{"document"}. Adds the task prefix that
+\code{gemini-embedding-2} reads from the text; media get none. Leave \code{NULL} for other models.}
+
+\item{.dimensions}{Number of dimensions to return, for models that can shorten
+their vectors (default: the model's own size).}
 }
 \value{
-A tibble with columns \code{input} (text) and \code{embeddings} (list of numeric vectors).
+A tibble with columns \code{input} (text, or a label such as \verb{[IMG] cat.jpg}) and
+\code{embeddings} (list of numeric vectors).
 }
 \description{
 Sends text to an embedding model accessible via OpenRouter and returns
@@ -32,4 +43,9 @@ embedding vectors. Note that embedding models are not listed in
 \code{list_models(openrouter())} — specify the model ID directly.
 Known supported models include \code{"openai/text-embedding-3-small"},
 \code{"openai/text-embedding-3-large"}, and \code{"mistralai/mistral-embed"}.
+
+Images, audio and video work with multimodal embedding models such as
+\code{"google/gemini-embedding-2"}; \code{"voyageai/voyage-multimodal-3.5"} and
+\code{"nvidia/llama-nemotron-embed-vl-1b-v2:free"} take text and images only.
+\verb{https://openrouter.ai/api/v1/embeddings/models} lists the input types per model.
 }

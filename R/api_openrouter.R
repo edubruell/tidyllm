@@ -470,33 +470,48 @@ openrouter_generation <- function(.id,
 #' Known supported models include `"openai/text-embedding-3-small"`,
 #' `"openai/text-embedding-3-large"`, and `"mistralai/mistral-embed"`.
 #'
-#' @param .input An `LLMMessage` object or a character vector of texts to embed.
+#' Images, audio and video work with multimodal embedding models such as
+#' `"google/gemini-embedding-2"`; `"voyageai/voyage-multimodal-3.5"` and
+#' `"nvidia/llama-nemotron-embed-vl-1b-v2:free"` take text and images only.
+#' `https://openrouter.ai/api/v1/embeddings/models` lists the input types per model.
+#'
+#' @param .input An `LLMMessage` object, a character vector of texts, or a list mixing
+#'   texts with `img()`, `audio_file()` and `video_file()` objects (a nested list is one
+#'   fused item).
 #' @param .model The embedding model ID (default: `"openai/text-embedding-3-small"`).
 #' @param .timeout Request timeout in seconds (default: 120).
 #' @param .dry_run If TRUE, returns the request object without executing it (default: FALSE).
 #' @param .max_tries Maximum retries (default: 3).
+#' @param .task `NULL` (default), `"query"` or `"document"`. Adds the task prefix that
+#'   `gemini-embedding-2` reads from the text; media get none. Leave `NULL` for other models.
+#' @param .dimensions Number of dimensions to return, for models that can shorten
+#'   their vectors (default: the model's own size).
 #'
-#' @return A tibble with columns `input` (text) and `embeddings` (list of numeric vectors).
+#' @return A tibble with columns `input` (text, or a label such as `[IMG] cat.jpg`) and
+#'   `embeddings` (list of numeric vectors).
 #'
 #' @export
 openrouter_embedding <- function(.input,
                                  .model = "openai/text-embedding-3-small",
                                  .timeout = 120,
                                  .dry_run = FALSE,
-                                 .max_tries = 3) {
+                                 .max_tries = 3,
+                                 .task = NULL,
+                                 .dimensions = NULL) {
   c(
-    "Input .input must be an LLMMessage object or a character vector" = S7_inherits(.input, LLMMessage) | is.character(.input),
     "Input .model must be a non-empty string" = is.character(.model) && nzchar(.model),
     "Input .timeout must be a positive number" = is.numeric(.timeout) && .timeout > 0,
     "Input .dry_run must be logical" = is.logical(.dry_run)
   ) |> validate_inputs()
+  validate_embed_options(.task, .dimensions)
 
   api_obj <- api_openrouter(short_name = "openrouter",
                             long_name  = "OpenRouter",
                             api_key_env_var = "OPENROUTER_API_KEY")
   api_key <- get_api_key(api_obj, .dry_run)
 
-  input_texts <- parse_embedding_input(.input)
+  items <- embed_items(.input)
+  input_labels <- embed_labels(items)
 
   request <- httr2::request("https://openrouter.ai") |>
     httr2::req_url_path("/api/v1/embeddings") |>
@@ -504,7 +519,11 @@ openrouter_embedding <- function(.input,
       Authorization  = sprintf("Bearer %s", api_key),
       `Content-Type` = "application/json"
     ) |>
-    httr2::req_body_json(list(model = .model, input = input_texts))
+    httr2::req_body_json(purrr::compact(list(
+      model = .model,
+      input = embed_content_input(items, openrouter_embed_part, embed_task_prefix(.task)),
+      dimensions = .dimensions
+    )))
 
   if (.dry_run) {
     return(request)
@@ -523,8 +542,22 @@ openrouter_embedding <- function(.input,
     .request             = request,
     .timeout             = .timeout,
     .max_tries           = .max_tries,
-    .input_texts         = input_texts,
+    .input_texts         = input_labels,
     .fn_extract_embeddings = extract_embeddings_fn
+  )
+}
+
+#' One embed part as an OpenRouter typed content part
+#' @param .part A string or a tidyllm image, audio or video object.
+#' @return A named list for the `content` array.
+#' @noRd
+openrouter_embed_part <- function(.part) {
+  switch(embed_part_type(.part),
+    text  = list(type = "text", text = .part),
+    image = list(type = "image_url", image_url = list(url = .part@imagebase64)),
+    audio = list(type = "input_audio",
+                 input_audio = list(data = embed_part_data_uri(.part), format = embed_audio_format(.part))),
+    video = list(type = "input_video", input_video = list(data = embed_part_data_uri(.part)))
   )
 }
 
@@ -549,5 +582,6 @@ openrouter <- create_provider_function(
   build = openrouter_build_chat_request,
   embed = openrouter_embedding,
   list_models = openrouter_list_models,
-  .media = c("image", "audio", "video")
+  .media = c("image", "audio", "video"),
+  .embed_media = c("image", "audio", "video")
 )

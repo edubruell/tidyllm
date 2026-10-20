@@ -11,11 +11,18 @@ embed(
   .truncate = NULL,
   .timeout = NULL,
   .dry_run = NULL,
-  .max_tries = NULL
+  .max_tries = NULL,
+  .task = NULL,
+  .dimensions = NULL,
+  .media_columns = FALSE
 )
 }
 \arguments{
-\item{.input}{A character vector of texts v, a list of texts and image objects,  or an \code{LLMMessage} object}
+\item{.input}{A character vector of texts, a list mixing texts with \code{img()}, \code{audio_file()}
+and \code{video_file()} objects, or an \code{LLMMessage} object. Each element of a list is embedded
+as its own row. A nested list, such as \code{list(list("A cat", img("cat.jpg")))}, is one
+fused item that gets a single vector. \code{provider_capabilities(.what = "embed_media")} shows
+which provider embeds which media type.}
 
 \item{.provider}{A function or function call specifying the language model provider and any additional parameters.
 This should be a call to a provider function like \code{openai()}, \code{ollama()}, etc.
@@ -30,10 +37,27 @@ You can also set a default provider function via the \code{tidyllm_embed_default
 \item{.dry_run}{If TRUE, perform a dry run and return the request object.}
 
 \item{.max_tries}{Maximum retry attempts for requests}
+
+\item{.task}{\code{"query"} or \code{"document"}. Adds the task prefix that EmbeddingGemma 2 and
+\code{gemini-embedding-2} read from the text (and sets \code{input_type} for \code{voyage()}).
+Media get no prefix. Leave \code{NULL} for models that take no prefix.}
+
+\item{.dimensions}{Number of dimensions to return, for providers and models that
+can shorten their vectors: \code{gemini()}, \code{openrouter()}, \code{ollama()}, \code{openai()} (\code{text-embedding-3} models) and \code{mistral()} (\code{codestral-embed}).
+\code{voyage()} calls this argument \code{.output_dimension}. \code{llamacpp()} has no such argument, because llama-server ignores it.}
+
+\item{.media_columns}{If \code{TRUE}, add a \code{modality} and a \code{path} column after \code{input}.
+\code{modality} is \code{"text"}, \code{"image"}, \code{"audio"} or \code{"video"}; a fused item lists its parts
+joined by \code{" + "}, such as \code{"text + image"}. \code{path} holds the file path of the media
+in the item (joined by \code{" + "} for several files) and is \code{NA} for text. Has no effect with
+\code{.dry_run = TRUE}, which returns the request. Defaults to \code{FALSE}.}
 }
 \value{
-A tibble with two columns: \code{input} and \code{embeddings}.
-The \code{input} column contains the texts sent to embed, and the \code{embeddings} column
+A tibble with the columns \code{input} and \code{embeddings}, plus \code{modality} and \code{path}
+when \code{.media_columns = TRUE}.
+The \code{input} column contains the texts sent to embed, or a label such as
+\verb{[IMG] cat.jpg} for a media file. A fused item shows its parts joined by \code{" + "}, for
+example \verb{A cat + [IMG] cat.jpg}. The \code{embeddings} column
 is a list column where each row contains an embedding vector of the sent input.
 }
 \description{

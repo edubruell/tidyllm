@@ -449,13 +449,16 @@ mistral_build_chat_request <- function(.llm,
 #' @param .timeout Timeout for the API request in seconds (default: 120).
 #' @param .dry_run If TRUE, perform a dry run and return the request object.
 #' @param .max_tries Maximum retries to peform request
+#' @param .dimensions Number of dimensions to return (default: NULL, the model's full size).
+#'   Sent as `output_dimension`. `codestral-embed` accepts it; `mistral-embed` does not and returns an error.
 #' @return A matrix where each column corresponds to the embedding of a message in the message history.
 #' @export
 mistral_embedding <- function(.input,
                               .model = "mistral-embed",
                               .timeout = 120,
                               .max_tries = 3,
-                              .dry_run = FALSE) {
+                              .dry_run = FALSE,
+                              .dimensions = NULL) {
 
   # Retrieve API key from environment variables
   api_key <- Sys.getenv("MISTRAL_API_KEY")
@@ -469,13 +472,15 @@ mistral_embedding <- function(.input,
     "Input .timeout must be an integer-valued numeric (seconds till timeout)" = is.numeric(.timeout) && .timeout > 0,
     ".dry_run must be logical" = is.logical(.dry_run)
   ) |> validate_inputs()
+  validate_embed_options(NULL, .dimensions)
   
   input_texts <- parse_embedding_input(.input)
   # Prepare the request body
-  request_body <- list(
+  request_body <- purrr::compact(list(
     model = .model,
-    input = input_texts
-  )
+    input = input_texts,
+    output_dimension = .dimensions
+  ))
   
   # Build the request
   request <- httr2::request("https://api.mistral.ai/v1/embeddings") |>

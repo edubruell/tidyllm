@@ -11,7 +11,8 @@ voyage_embedding(
   .timeout = 120,
   .dry_run = FALSE,
   .max_tries = 3,
-  .verbose = FALSE
+  .verbose = FALSE,
+  .task = NULL
 )
 }
 \arguments{
@@ -19,7 +20,7 @@ voyage_embedding(
 \itemize{
 \item A character vector of texts
 \item An \code{LLMMessage} object (all textual components will be embedded)
-\item A list containing a mix of character strings and \code{tidyllm_image} objects created with \code{img()}
+\item A list containing a mix of character strings and \code{img()} objects
 }}
 
 \item{.model}{The embedding model identifier. For text-only: "voyage-3.5-lite" (default).
@@ -34,11 +35,13 @@ For multimodal inputs: "voyage-multimodal-3.5" is used automatically.}
 \item{.max_tries}{Maximum retry attempts for requests (default: 3).}
 
 \item{.verbose}{Should information about current rate limits be printed? (default: FALSE).}
+
+\item{.task}{\code{NULL} (default), \code{"query"} or \code{"document"}; sent as Voyage's \code{input_type}.}
 }
 \value{
 A tibble with two columns: \code{input} and \code{embeddings}.
 \itemize{
-\item The \code{input} column contains the input texts or image labels
+\item The \code{input} column contains the input texts or media labels
 \item The \code{embeddings} column is a list column where each row contains an embedding vector
 }
 }
@@ -50,11 +53,13 @@ using the Voyage AI API. It supports three types of input:
 \enumerate{
 \item Character vector: Embeds each text string separately
 \item LLMMessage object: Extracts and embeds text content from messages
-\item List of mixed content: Processes a combination of text strings and image objects created with \code{img()}
+\item List of mixed content: Processes text strings and image objects created with \code{img()}.
+Each element is one row; a nested list is one fused item.
 }
 
 For multimodal inputs, the function automatically switches to Voyage's multimodal API
-and formats the response with appropriate labels (e.g., \code{"[IMG] image.png"}) for images.
+and formats the response with appropriate labels (e.g., \code{"[IMG] image.png"}).
+Voyage does not embed audio, and tidyllm has not tested video. Image files must not exceed 20 MB.
 }
 \examples{
 \dontrun{

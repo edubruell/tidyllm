@@ -1,3 +1,26 @@
+# tidyllm (development version)
+
+## Embed images, audio and video
+
+Until now only `voyage()` could embed images. `embed()` now also embeds images, audio and video with `llamacpp()`, `gemini()` and `openrouter()`, and images and audio with `ollama()` (version 0.40.4 or later). Pass a list that mixes text with `img()`, `audio_file()` and `video_file()`:
+
+```r
+list("A cat", img("cat.jpg"), audio_file("cat.wav")) |>
+  embed(llamacpp())
+```
+
+Each element becomes one row. Put several items in a nested list to get one combined vector for them. `provider_capabilities(.what = "embed_media")` shows what each provider accepts, and `embed()` stops with a clear message if you pass something a provider cannot handle.
+
+Two new options help along the way. `.task` tells models such as EmbeddingGemma 2 whether your text is a `"query"` or a `"document"`. `.media_columns = TRUE` adds a `modality` and a `path` column to the result. `.dimensions` gives shorter vectors and now also works with `openai()` and `mistral()`.
+
+## Smaller changes
+
+`gemini()` and `send_gemini_batch()` now warn when you set `.temperature`, `.top_p` or `.top_k` on a Gemini model numbered 3.6 or later, because Google's newer models ignore these values. `claude()` now also refuses these arguments for Claude Haiku 5 models before sending the request, as it already does for Sonnet 5 and Opus 5.
+
+Tool results now reach the model the same way on every provider. A tool that returns a data frame now sends the printed table instead of JSON on `openai()`, `ollama()` and the chat-completions providers.
+
+`img()` now labels GIF and WebP files with their own file type instead of `application/octet-stream`.
+
 # tidyllm 0.7.1
 
 This release prepares `gemini()` for Google's coming change to how

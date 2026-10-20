@@ -179,12 +179,7 @@ method(run_tool_calls, list(api_ollama, class_list, class_list)) <- function(.ap
     tool_function <- matching_tool[[1]]@func
     
     tool_result <- tryCatch({
-      result <- do.call(tool_function, as.list(tool_args))
-      if (is.character(result)) {
-        result
-      } else {
-        jsonlite::toJSON(result, auto_unbox = TRUE)
-      }
+      tool_result_text(tool_function, as.list(tool_args))
     }, error = function(e) {
       paste("Error executing tool:", e$message)
     })
@@ -439,38 +434,52 @@ ollama_build_chat_request <- function(.llm,
 
 #' Generate Embeddings Using Ollama API
 #'
-#' @param .input Aa charachter vector of texts to embed or an `LLMMessage` object
+#' Images (PNG, JPEG, GIF, WebP) and WAV or OGG audio need a multimodal embedding model such
+#' as `"embeddinggemma-2:740m"` and Ollama 0.40.4 or later. Ollama does not embed video or MP3.
+#'
+#' @param .input A character vector of texts to embed, a list mixing texts with `img()` and
+#'   `audio_file()` objects, or an `LLMMessage` object. A nested list is one fused item with
+#'   at most one image and one audio file.
 #' @param .model The embedding model identifier (default: "all-minilm").
 #' @param .truncate Whether to truncate inputs to fit the model's context length (default: TRUE).
 #' @param .ollama_server The URL of the Ollama server to be used (default: "http://localhost:11434").
 #' @param .timeout Timeout for the API request in seconds (default: 120).
 #' @param .dry_run If TRUE, perform a dry run and return the request object.
-#' @return A matrix where each column corresponds to the embedding of a message in the message history.
+#' @param .task `NULL` (default), `"query"` or `"document"`. Adds the EmbeddingGemma 2 task
+#'   prefix to text; media get none.
+#' @param .dimensions Number of dimensions to return, for models that can shorten their
+#'   vectors (default: the model's own size).
+#' @return A tibble with columns `input` (text, or a label such as `[IMG] cat.jpg`) and
+#'   `embeddings` (list of numeric vectors).
 #' @export
 ollama_embedding <- function(.input,
                              .model = "qwen3-embedding:0.6b",
                              .truncate = TRUE,
                              .ollama_server = "http://localhost:11434",
                              .timeout = 120,
-                             .dry_run=FALSE) {
+                             .dry_run=FALSE,
+                             .task = NULL,
+                             .dimensions = NULL) {
 
   # Validate the inputs
   c(
-    "Input .input must be a character vector or an LLMMessage object" = S7_inherits(.input, LLMMessage) | is.character(.input),
     "Input .model must be a string" = is.character(.model),
     "Input .truncate must be logical" = is.logical(.truncate),
     "Input .timeout must be an integer-valued numeric (seconds till timeout)" = is.numeric(.timeout) && .timeout > 0,
     ".dry_run must be logical"                   = is.logical(.dry_run)
   ) |> validate_inputs()
+  validate_embed_options(.task, .dimensions)
   
-  input_texts <- parse_embedding_input(.input)
+  items <- embed_items(.input)
+  input_labels <- embed_labels(items)
+  prefix <- embed_task_prefix(.task)
   
-  # Prepare the request body
   request_body <- list(
     model = .model,
-    input = input_texts,
-    truncate = .truncate
-  )
+    input = ollama_embed_input(items, prefix),
+    truncate = .truncate,
+    dimensions = .dimensions
+  ) |> purrr::compact()
   
   # Build the request
   request <- httr2::request(.ollama_server) |>
@@ -495,8 +504,42 @@ ollama_embedding <- function(.input,
  perform_embedding_request(.request = request,
                            .timeout = .timeout,
                            .max_tries = 3,
-                           .input_texts = input_texts, 
+                           .input_texts = input_labels, 
                            .fn_extract_embeddings = extract_embeddings_fn)
+}
+
+#' The Ollama `input` field: a character vector for text, a list otherwise
+#' @param .items Items from `embed_items()`.
+#' @param .prefix Task prefix applied to text parts.
+#' @return A character vector or a list of strings and named lists.
+#' @noRd
+ollama_embed_input <- function(.items, .prefix = "") {
+  entries <- lapply(.items, ollama_embed_item, .prefix = .prefix)
+  if (embed_is_text_only(.items)) unlist(entries) else entries
+}
+
+#' One embed item as an Ollama `input` entry
+#'
+#' A single text part is a plain string. Anything else is an object with `text`,
+#' `image` and `audio` keys holding plain base64 for the media.
+#'
+#' @param .item An item from `embed_items()`.
+#' @param .prefix Task prefix applied to text parts.
+#' @return A string or a named list.
+#' @noRd
+ollama_embed_item <- function(.item, .prefix = "") {
+  item <- embed_apply_prefix(.item, .prefix)
+  types <- vapply(item$parts, embed_part_type, character(1))
+  if (identical(types, "text")) return(item$parts[[1]])
+  audio_formats <- vapply(item$parts[types == "audio"], embed_audio_format, character(1))
+  c("Ollama embeds at most one image and one audio file per fused item" =
+      sum(types == "image") <= 1 && sum(types == "audio") <= 1,
+    "Ollama embeds WAV or OGG audio only, not MP3 or other formats" =
+      all(audio_formats %in% c("wav", "ogg"))) |> validate_inputs()
+  texts <- item$parts[types == "text"]
+  media <- item$parts[types != "text"]
+  out <- if (length(texts) > 0) list(text = paste(unlist(texts), collapse = " ")) else list()
+  c(out, stats::setNames(lapply(media, embed_part_base64), types[types != "text"]))
 }
 
 
@@ -829,5 +872,6 @@ ollama <- create_provider_function(
   embed = ollama_embedding,
   send_batch = send_ollama_batch,
   list_models = ollama_list_models,
-  .media = c("image")
+  .media = c("image"),
+  .embed_media = c("image", "audio")
 )

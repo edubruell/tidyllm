@@ -43,6 +43,13 @@ llt_test("embed returns tibble with embeddings", {
   llt_expect_true("embeddings" %in% names(result), "Should have embeddings column")
 })
 
+llt_test("embed .dimensions shortens codestral-embed vectors and mistral-embed returns the API error", {
+  result <- c("Hello world", "Goodbye world") |> embed(mistral(.model = "codestral-embed"), .dimensions = 256)
+  llt_expect_true(all(lengths(result$embeddings) == 256), paste(lengths(result$embeddings), collapse = ","))
+  err <- tryCatch(embed("Hello", mistral(), .dimensions = 256), error = \(e) conditionMessage(e))
+  llt_expect_true(is.character(err) && grepl("output_dimension", err), paste("got:", paste(err, collapse = " ")))
+})
+
 # ── Structured output ─────────────────────────────────────────────────────────
 
 llt_test("structured output returns valid data", {

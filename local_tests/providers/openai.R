@@ -44,6 +44,11 @@ llt_test("embed returns tibble with embeddings", {
   llt_expect_true("embeddings" %in% names(result), "Should have embeddings column")
 })
 
+llt_test("embed .dimensions shortens the vectors", {
+  result <- c("Hello world", "Goodbye world") |> embed(openai(), .dimensions = 256)
+  llt_expect_true(all(lengths(result$embeddings) == 256), paste(lengths(result$embeddings), collapse = ","))
+})
+
 # ── Tool use ──────────────────────────────────────────────────────────────────
 
 llt_test("single tool call returns reply", {
@@ -178,6 +183,15 @@ llt_test("streamed tool use assembles and completes", {
   llt_expect_reply(result)
   llt_expect_true(calls >= 1,
                   "the streamed response produced no executed tool call")
+})
+
+llt_test("a tool that returns a data frame reaches the model as readable text", {
+  city_table <- function(country) data.frame(city = c("Zathora", "Brimvault"), population = c(412000, 1800000))
+  table_tool <- tidyllm_tool(city_table, "Population table of the cities of a country", country = field_chr("Country name"))
+  result <- llm_message("Use the tool for Korvel and tell me the population of Brimvault as a number.") |>
+    chat(openai(), .tools = table_tool)
+  llt_expect_reply(result)
+  llt_expect_true(grepl("1[.,]?800[.,]?000|1\\.8", get_reply(result)), get_reply(result))
 })
 
 llt_report()

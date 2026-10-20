@@ -91,6 +91,7 @@ guess_mime_type <- function(file_path) {
     jpeg = "image/jpeg",
     jpg = "image/jpeg",
     webp = "image/webp",
+    gif = "image/gif",
     heic = "image/heic",
     heif = "image/heif",
     mp4 = "video/mp4",

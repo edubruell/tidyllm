@@ -1,4 +1,5 @@
 MEDIA_TYPES <- c("image", "pdf", "audio", "video", "files")
+EMBED_MEDIA_TYPES <- c("image", "audio", "video")
 
 #' The message a provider gets when it cannot do a verb at all
 #' @noRd
@@ -60,11 +61,14 @@ dispatch_to_provider <- function(provider_expr, verb_name, common_args,
 #' @param .media Character vector of the media types the provider accepts in a message:
 #'   any of `"image"`, `"pdf"`, `"audio"`, `"video"` and `"files"` (remote file
 #'   references). Read by the attachment check and by `provider_capabilities()`.
+#' @param .embed_media Character vector of the media types the provider embeds:
+#'   any of `"image"`, `"audio"` and `"video"`. Read by `embed()` and by
+#'   `provider_capabilities()`.
 #'
 #' @return A function that dynamically routes to the appropriate action based on its
 #'   inputs.
 #' @noRd
-create_provider_function <- function(.name, ..., .media = character()) {
+create_provider_function <- function(.name, ..., .media = character(), .embed_media = character()) {
   function_map <- list(...)
   function_names <- vapply(
     as.list(substitute(list(...)))[-1],
@@ -72,7 +76,9 @@ create_provider_function <- function(.name, ..., .media = character()) {
     character(1)
   )
   c(".media must contain only: image, pdf, audio, video, files" =
-      all(.media %in% MEDIA_TYPES)) |> validate_inputs()
+      all(.media %in% MEDIA_TYPES),
+    ".embed_media must contain only: image, audio, video" =
+      all(.embed_media %in% EMBED_MEDIA_TYPES)) |> validate_inputs()
   
   if ("metadata" %in% names(function_map)) {
     stop(glue::glue("'metadata' is a reserved keyword and cannot be used as a function name in provider '{.name}'."))
@@ -99,7 +105,8 @@ create_provider_function <- function(.name, ..., .media = character()) {
           supported_args = supported_args,
           supported_defaults = supported_defaults,
           functions = function_names,
-          media = .media
+          media = .media,
+          embed_media = .embed_media
         ))
       } else if (.called_from %in% names(function_map)) {
         # Call the appropriate function
@@ -253,7 +260,11 @@ chat <- function(
 #' The `embed()` function allows you to embed a text via a specified provider.
 #' It routes the input to the appropriate provider-specific embedding function.
 #'
-#' @param .input  A character vector of texts v, a list of texts and image objects,  or an `LLMMessage` object
+#' @param .input  A character vector of texts, a list mixing texts with `img()`, `audio_file()`
+#'   and `video_file()` objects, or an `LLMMessage` object. Each element of a list is embedded
+#'   as its own row. A nested list, such as `list(list("A cat", img("cat.jpg")))`, is one
+#'   fused item that gets a single vector. `provider_capabilities(.what = "embed_media")` shows
+#'   which provider embeds which media type.
 #' @param .provider A function or function call specifying the language model provider and any additional parameters.
 #'   This should be a call to a provider function like `openai()`, `ollama()`, etc. 
 #'   You can also set a default provider function via the `tidyllm_embed_default` option.
@@ -262,8 +273,22 @@ chat <- function(
 #' @param .timeout Timeout for the API request in seconds
 #' @param .dry_run If TRUE, perform a dry run and return the request object.
 #' @param .max_tries Maximum retry attempts for requests
-#' @return A tibble with two columns: `input` and `embeddings`. 
-#' The `input` column contains the texts sent to embed, and the `embeddings` column 
+#' @param .task `"query"` or `"document"`. Adds the task prefix that EmbeddingGemma 2 and
+#'   `gemini-embedding-2` read from the text (and sets `input_type` for `voyage()`).
+#'   Media get no prefix. Leave `NULL` for models that take no prefix.
+#' @param .dimensions Number of dimensions to return, for providers and models that
+#'   can shorten their vectors: `gemini()`, `openrouter()`, `ollama()`, `openai()` (`text-embedding-3` models) and `mistral()` (`codestral-embed`).
+#'   `voyage()` calls this argument `.output_dimension`. `llamacpp()` has no such argument, because llama-server ignores it.
+#' @param .media_columns If `TRUE`, add a `modality` and a `path` column after `input`.
+#'   `modality` is `"text"`, `"image"`, `"audio"` or `"video"`; a fused item lists its parts
+#'   joined by `" + "`, such as `"text + image"`. `path` holds the file path of the media
+#'   in the item (joined by `" + "` for several files) and is `NA` for text. Has no effect with
+#'   `.dry_run = TRUE`, which returns the request. Defaults to `FALSE`.
+#' @return A tibble with the columns `input` and `embeddings`, plus `modality` and `path`
+#' when `.media_columns = TRUE`.
+#' The `input` column contains the texts sent to embed, or a label such as
+#' `[IMG] cat.jpg` for a media file. A fused item shows its parts joined by `" + "`, for
+#' example `A cat + [IMG] cat.jpg`. The `embeddings` column
 #' is a list column where each row contains an embedding vector of the sent input.
 #' @examples
 #' \dontrun{
@@ -279,13 +304,16 @@ embed <- function(.input,
                   .truncate=NULL,
                   .timeout=NULL,
                   .dry_run=NULL,
-                  .max_tries=NULL) {
+                  .max_tries=NULL,
+                  .task=NULL,
+                  .dimensions=NULL,
+                  .media_columns=FALSE) {
 
-  # Validate the inputs
   c(
-    "Input .input must be a character vector, a list or an LLMMessage object" = S7_inherits(.input, LLMMessage) | is.character(.input) | is.list(.input),
-    "You need to specify a .provider function in embed()" = !is.null(.provider)
+    "You need to specify a .provider function in embed()" = !is.null(.provider),
+    "Input .media_columns must be TRUE or FALSE" = isTRUE(.media_columns) || isFALSE(.media_columns)
   ) |> validate_inputs()
+  items <- embed_items(.input)
   
   #Accept an unevaluated function
   if(rlang::is_function(.provider)){
@@ -306,11 +334,23 @@ embed <- function(.input,
     .truncate = .truncate,
     .max_tries = .max_tries,
     .timeout = .timeout,
-    .dry_run = .dry_run
+    .dry_run = .dry_run,
+    .task = .task,
+    .dimensions = .dimensions
   )
   common_args <- common_args[!sapply(common_args, is.null)]
 
-  return(dispatch_to_provider(provider_expr, "embed", common_args))
+  provider_meta <- rlang::call_modify(provider_expr, .called_from = "metadata") |> rlang::eval_tidy()
+  check_embed_media(items, provider_meta)
+  if (embed_is_text_only(items) && !S7_inherits(.input, LLMMessage)) {
+    common_args$.input <- embed_labels(items)
+  }
+
+  result <- dispatch_to_provider(provider_expr, "embed", common_args)
+  if (.media_columns && is.data.frame(result)) {
+    result <- embed_media_columns(result, items)
+  }
+  return(result)
 }
 
 

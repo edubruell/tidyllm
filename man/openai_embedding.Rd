@@ -11,7 +11,8 @@ openai_embedding(
   .timeout = 120,
   .dry_run = FALSE,
   .max_tries = 3,
-  .verbose = FALSE
+  .verbose = FALSE,
+  .dimensions = NULL
 )
 }
 \arguments{
@@ -28,6 +29,9 @@ openai_embedding(
 \item{.max_tries}{Maximum retry attempts for requests (default: 3).}
 
 \item{.verbose}{Should information about current ratelimits be printed? (default: FALSE)}
+
+\item{.dimensions}{Number of dimensions to return (default: NULL, the model's full size).
+The \code{text-embedding-3} models can shorten their vectors; \code{text-embedding-ada-002} cannot and returns an error.}
 }
 \value{
 A tibble with two columns: \code{input} and \code{embeddings}.
