@@ -1,4 +1,4 @@
-# tidyllm (development version)
+# tidyllm 0.7.2
 
 ## Embed images, audio and video
 

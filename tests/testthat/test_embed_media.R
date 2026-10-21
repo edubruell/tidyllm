@@ -63,7 +63,7 @@ test_that("embed_media_used and embed_is_text_only read the items", {
 })
 
 test_that("the embed media registry matches what each provider documents", {
-  caps <- provider_capabilities(.what = "embed_media") |> dplyr::filter(supported)
+  caps <- provider_capabilities(.what = "embed_media") |> subset(supported)
   registry <- split(caps$media, caps$provider)
   expect_setequal(registry$llamacpp, c("image", "audio", "video"))
   expect_setequal(registry$gemini, c("image", "audio", "video"))
