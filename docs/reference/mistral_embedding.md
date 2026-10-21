@@ -10,7 +10,8 @@ mistral_embedding(
   .model = "mistral-embed",
   .timeout = 120,
   .max_tries = 3,
-  .dry_run = FALSE
+  .dry_run = FALSE,
+  .dimensions = NULL
 )
 ```
 
@@ -35,6 +36,12 @@ mistral_embedding(
 - .dry_run:
 
   If TRUE, perform a dry run and return the request object.
+
+- .dimensions:
+
+  Number of dimensions to return (default: NULL, the model's full size).
+  Sent as `output_dimension`. `codestral-embed` accepts it;
+  `mistral-embed` does not and returns an error.
 
 ## Value
 

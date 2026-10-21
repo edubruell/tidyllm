@@ -142,6 +142,9 @@ c("neural networks", "deep learning", "baking bread") |>
     ## 2 deep learning   <dbl [1,024]>
     ## 3 baking bread    <dbl [1,024]>
 
+To embed images and audio as well as text, pull `embeddinggemma-2:740m`
+(Ollama 0.40.4 or later) and pass it as `.model`.
+
 ## Finding the Right Model
 
 The open-source landscape moves fast enough that a model recommended a

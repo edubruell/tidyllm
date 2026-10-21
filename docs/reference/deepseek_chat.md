@@ -40,7 +40,8 @@ deepseek_chat(
 - .model:
 
   The identifier of the model to use (default: `"deepseek-v4-pro"`). Use
-  `"deepseek-v4-flash"` for a faster, cheaper alternative.
+  `"deepseek-flash"`, an alias for the latest Flash model, for a faster,
+  cheaper alternative.
 
 - .thinking:
 

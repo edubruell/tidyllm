@@ -9,7 +9,7 @@ It routes the input to the appropriate provider-specific embedding function."><m
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.7.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.7.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -60,7 +60,10 @@ It routes the input to the appropriate provider-specific embedding function.</p>
 <span>  .truncate <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .timeout <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .dry_run <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  .max_tries <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  .max_tries <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  .task <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  .dimensions <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  .media_columns <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -69,7 +72,11 @@ It routes the input to the appropriate provider-specific embedding function.</p>
 
 
 <dl><dt id="arg--input">.input<a class="anchor" aria-label="anchor" href="#arg--input"></a></dt>
-<dd><p>A character vector of texts v, a list of texts and image objects,  or an <code>LLMMessage</code> object</p></dd>
+<dd><p>A character vector of texts, a list mixing texts with <code><a href="img.html">img()</a></code>, <code><a href="audio_file.html">audio_file()</a></code>
+and <code><a href="video_file.html">video_file()</a></code> objects, or an <code>LLMMessage</code> object. Each element of a list is embedded
+as its own row. A nested list, such as <code>list(list("A cat", img("cat.jpg")))</code>, is one
+fused item that gets a single vector. <code>provider_capabilities(.what = "embed_media")</code> shows
+which provider embeds which media type.</p></dd>
 
 
 <dt id="arg--provider">.provider<a class="anchor" aria-label="anchor" href="#arg--provider"></a></dt>
@@ -97,11 +104,34 @@ You can also set a default provider function via the <code>tidyllm_embed_default
 <dt id="arg--max-tries">.max_tries<a class="anchor" aria-label="anchor" href="#arg--max-tries"></a></dt>
 <dd><p>Maximum retry attempts for requests</p></dd>
 
+
+<dt id="arg--task">.task<a class="anchor" aria-label="anchor" href="#arg--task"></a></dt>
+<dd><p><code>"query"</code> or <code>"document"</code>. Adds the task prefix that EmbeddingGemma 2 and
+<code>gemini-embedding-2</code> read from the text (and sets <code>input_type</code> for <code><a href="voyage.html">voyage()</a></code>).
+Media get no prefix. Leave <code>NULL</code> for models that take no prefix.</p></dd>
+
+
+<dt id="arg--dimensions">.dimensions<a class="anchor" aria-label="anchor" href="#arg--dimensions"></a></dt>
+<dd><p>Number of dimensions to return, for providers and models that
+can shorten their vectors: <code><a href="gemini.html">gemini()</a></code>, <code><a href="openrouter.html">openrouter()</a></code>, <code><a href="ollama.html">ollama()</a></code>, <code><a href="openai.html">openai()</a></code> (<code>text-embedding-3</code> models) and <code><a href="mistral.html">mistral()</a></code> (<code>codestral-embed</code>).
+<code><a href="voyage.html">voyage()</a></code> calls this argument <code>.output_dimension</code>. <code><a href="llamacpp.html">llamacpp()</a></code> has no such argument, because llama-server ignores it.</p></dd>
+
+
+<dt id="arg--media-columns">.media_columns<a class="anchor" aria-label="anchor" href="#arg--media-columns"></a></dt>
+<dd><p>If <code>TRUE</code>, add a <code>modality</code> and a <code>path</code> column after <code>input</code>.
+<code>modality</code> is <code>"text"</code>, <code>"image"</code>, <code>"audio"</code> or <code>"video"</code>; a fused item lists its parts
+joined by <code>" + "</code>, such as <code>"text + image"</code>. <code>path</code> holds the file path of the media
+in the item (joined by <code>" + "</code> for several files) and is <code>NA</code> for text. Has no effect with
+<code>.dry_run = TRUE</code>, which returns the request. Defaults to <code>FALSE</code>.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A tibble with two columns: <code>input</code> and <code>embeddings</code>.
-The <code>input</code> column contains the texts sent to embed, and the <code>embeddings</code> column
+    <p>A tibble with the columns <code>input</code> and <code>embeddings</code>, plus <code>modality</code> and <code>path</code>
+when <code>.media_columns = TRUE</code>.
+The <code>input</code> column contains the texts sent to embed, or a label such as
+<code>[IMG] cat.jpg</code> for a media file. A fused item shows its parts joined by <code>" + "</code>, for
+example <code>A cat + [IMG] cat.jpg</code>. The <code>embeddings</code> column
 is a list column where each row contains an embedding vector of the sent input.</p>
     </div>
 

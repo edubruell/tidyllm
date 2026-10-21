@@ -221,32 +221,120 @@ geographic and policy contexts.
 
 ## Multimodal Embeddings
 
-While most embedding functions work only on text, the Voyage AI provider
-in tidyllm supports embedding text and images in the same space. This is
-particularly useful for **cross-modal search**, where text descriptions
-and images need to be compared semantically.
+Embedding models can also read pictures, audio and video and put them in
+the same space as text. That lets you search your photos with a sentence
+or find the clip that matches a description.
 
-Use [`img()`](https://edubruell.github.io/tidyllm/reference/img.md) to
-create image objects and mix them with text in a list. When passing such
-a list to `embed(voyage())`, the function automatically routes to
-Voyage’s multimodal API:
+Put text and media objects from
+[`img()`](https://edubruell.github.io/tidyllm/reference/img.md),
+[`audio_file()`](https://edubruell.github.io/tidyllm/reference/audio_file.md)
+and
+[`video_file()`](https://edubruell.github.io/tidyllm/reference/video_file.md)
+into one list, and each element becomes one row.
 
 ``` r
 
-list("a dish consisting of a sausage served in the slit of a partially sliced bun",
-     img(here("hotdog.jpg"))) |>
-  embed(voyage())
+list("a sausage in a bun", img(here("hotdog.jpg"))) |>
+  embed(gemini())
 ```
 
     ## # A tibble: 2 × 2
-    ##   input                                                               embeddings
-    ##   <chr>                                                               <list>    
-    ## 1 a dish consisting of a sausage served in the slit of a partially s… <dbl>     
-    ## 2 [IMG] hotdog.jpg                                                    <dbl>
+    ##   input              embeddings   
+    ##   <chr>              <list>       
+    ## 1 a sausage in a bun <dbl [3,072]>
+    ## 2 [IMG] hotdog.jpg   <dbl [3,072]>
 
-Since the text description and the image refer to the same concept,
-their embeddings will be close together in the high-dimensional space,
-enabling similarity-based retrieval across modalities.
+The `input` column shows each text unchanged and each file as a label
+such as `[IMG] hotdog.jpg`. A mixed item, such as a caption and its
+photo, shows its parts joined with `+`, as in `A cat + [IMG] cat.jpg`.
+
+Set `.media_columns = TRUE` to add a `modality` column (`text`, `image`,
+`audio` or `video`, and `text + image` for a mixed item) and a `path`
+column with the file path.
+
+``` r
+
+list("a sausage in a bun", img(here("hotdog.jpg"))) |>
+  embed(gemini(), .media_columns = TRUE)
+```
+
+    ## # A tibble: 2 × 4
+    ##   input              modality path       embeddings   
+    ##   <chr>              <chr>    <chr>      <list>       
+    ## 1 a sausage in a bun text     NA         <dbl [3,072]>
+    ## 2 [IMG] hotdog.jpg   image    hotdog.jpg <dbl [3,072]>
+
+To see which picture matches a sentence, use the `cosine_similarity()`
+function from above to compare the vectors. Embed the sentence and the
+pictures in one call, so that they come from the same model.
+
+``` r
+
+items <- list("a sausage in a bun", img(here("hotdog.jpg")), img(here("pizza.jpg"))) |>
+  embed(gemini())
+
+items |>
+  slice(-1) |>
+  mutate(similarity = map_dbl(embeddings, \(e) cosine_similarity(e, items$embeddings[[1]]))) |>
+  select(input, similarity)
+```
+
+The picture with the highest similarity is the best match.
+
+Support for media types varies by provider, and
+`provider_capabilities(.what = "embed_media")` lists which providers
+support each type. If you pass a type the provider does not support,
+[`embed()`](https://edubruell.github.io/tidyllm/reference/embed.md)
+stops with an error before sending anything.
+
+``` r
+
+provider_capabilities(.what = "embed_media")
+```
+
+### Mixed items
+
+A nested list contains one item with a single vector, such as a caption
+together with its photo.
+
+``` r
+
+list(list("A cat drinking from a puddle", img(here("cat.jpg")))) |>
+  embed(gemini())
+```
+
+### Running EmbeddingGemma 2 locally
+
+You can also run the open model EmbeddingGemma 2 on your own computer,
+so nothing leaves your machine. It runs on llama.cpp, a program that
+serves a downloaded model to R, and it comes as two files: one for the
+model and one that lets it read images, audio and video. The article on
+local models shows how to install llama.cpp and download models, and the
+command below starts the server with both files.
+
+``` bash
+llama-server -m embeddinggemma-2-Q8_0.gguf --mmproj mmproj-embeddinggemma-2-Q8_0.gguf \
+  --embeddings -c 16384 -b 16384 -ub 16384
+```
+
+Video needs a large context because nine seconds use about 3,000 tokens,
+so the server runs with 16,384. Then embed as before:
+
+``` r
+
+list("A cat", img(here("cat.jpg")), audio_file(here("cat.wav")), video_file(here("cat.mp4"))) |>
+  embed(llamacpp())
+```
+
+### Queries, documents and shorter vectors
+
+Some models need to know what a text is for. Set `.task = "query"` for a
+short search question and `.task = "document"` for a text that will be
+searched, and
+[`embed()`](https://edubruell.github.io/tidyllm/reference/embed.md) adds
+the prefix the model expects. Every embedding has a fixed length, and
+`.dimensions` asks for shorter vectors where the model allows it, which
+saves storage and speeds up searches.
 
 ## Reranking with Voyage
 

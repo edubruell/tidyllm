@@ -9,7 +9,7 @@ using the Voyage AI API. It supports three types of input:"><meta property="og:i
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.7.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.7.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -60,7 +60,8 @@ using the Voyage AI API. It supports three types of input:</p>
 <span>  .timeout <span class="op">=</span> <span class="fl">120</span>,</span>
 <span>  .dry_run <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  .max_tries <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  .verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  .verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  .task <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -71,7 +72,7 @@ using the Voyage AI API. It supports three types of input:</p>
 <dl><dt id="arg--input">.input<a class="anchor" aria-label="anchor" href="#arg--input"></a></dt>
 <dd><p>Input to embed. Can be:</p><ul><li><p>A character vector of texts</p></li>
 <li><p>An <code>LLMMessage</code> object (all textual components will be embedded)</p></li>
-<li><p>A list containing a mix of character strings and <code>tidyllm_image</code> objects created with <code><a href="img.html">img()</a></code></p></li>
+<li><p>A list containing a mix of character strings and <code><a href="img.html">img()</a></code> objects</p></li>
 </ul></dd>
 
 
@@ -99,10 +100,14 @@ For multimodal inputs: "voyage-multimodal-3.5" is used automatically.</p></dd>
 <dt id="arg--verbose">.verbose<a class="anchor" aria-label="anchor" href="#arg--verbose"></a></dt>
 <dd><p>Should information about current rate limits be printed? (default: FALSE).</p></dd>
 
+
+<dt id="arg--task">.task<a class="anchor" aria-label="anchor" href="#arg--task"></a></dt>
+<dd><p><code>NULL</code> (default), <code>"query"</code> or <code>"document"</code>; sent as Voyage's <code>input_type</code>.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A tibble with two columns: <code>input</code> and <code>embeddings</code>.</p><ul><li><p>The <code>input</code> column contains the input texts or image labels</p></li>
+    <p>A tibble with two columns: <code>input</code> and <code>embeddings</code>.</p><ul><li><p>The <code>input</code> column contains the input texts or media labels</p></li>
 <li><p>The <code>embeddings</code> column is a list column where each row contains an embedding vector</p></li>
 </ul></div>
     <div class="section level2">
@@ -110,9 +115,11 @@ For multimodal inputs: "voyage-multimodal-3.5" is used automatically.</p></dd>
 
 <ol><li><p>Character vector: Embeds each text string separately</p></li>
 <li><p>LLMMessage object: Extracts and embeds text content from messages</p></li>
-<li><p>List of mixed content: Processes a combination of text strings and image objects created with <code><a href="img.html">img()</a></code></p></li>
+<li><p>List of mixed content: Processes text strings and image objects created with <code><a href="img.html">img()</a></code>.
+Each element is one row; a nested list is one fused item.</p></li>
 </ol><p>For multimodal inputs, the function automatically switches to Voyage's multimodal API
-and formats the response with appropriate labels (e.g., <code>"[IMG] image.png"</code>) for images.</p>
+and formats the response with appropriate labels (e.g., <code>"[IMG] image.png"</code>).
+Voyage does not embed audio, and tidyllm has not tested video. Image files must not exceed 20 MB.</p>
     </div>
 
     <div class="section level2">

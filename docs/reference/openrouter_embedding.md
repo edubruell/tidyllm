@@ -6,6 +6,12 @@ embedding vectors. Note that embedding models are not listed in
 supported models include `"openai/text-embedding-3-small"`,
 `"openai/text-embedding-3-large"`, and `"mistralai/mistral-embed"`.
 
+Images, audio and video work with multimodal embedding models such as
+`"google/gemini-embedding-2"`; `"voyageai/voyage-multimodal-3.5"` and
+`"nvidia/llama-nemotron-embed-vl-1b-v2:free"` take text and images only.
+`https://openrouter.ai/api/v1/embeddings/models` lists the input types
+per model.
+
 ## Usage
 
 ``` r
@@ -14,7 +20,9 @@ openrouter_embedding(
   .model = "openai/text-embedding-3-small",
   .timeout = 120,
   .dry_run = FALSE,
-  .max_tries = 3
+  .max_tries = 3,
+  .task = NULL,
+  .dimensions = NULL
 )
 ```
 
@@ -22,7 +30,13 @@ openrouter_embedding(
 
 - .input:
 
-  An `LLMMessage` object or a character vector of texts to embed.
+  An `LLMMessage` object, a character vector of texts, or a list mixing
+  texts with
+  [`img()`](https://edubruell.github.io/tidyllm/reference/img.md),
+  [`audio_file()`](https://edubruell.github.io/tidyllm/reference/audio_file.md)
+  and
+  [`video_file()`](https://edubruell.github.io/tidyllm/reference/video_file.md)
+  objects (a nested list is one fused item).
 
 - .model:
 
@@ -41,7 +55,18 @@ openrouter_embedding(
 
   Maximum retries (default: 3).
 
+- .task:
+
+  `NULL` (default), `"query"` or `"document"`. Adds the task prefix that
+  `gemini-embedding-2` reads from the text; media get none. Leave `NULL`
+  for other models.
+
+- .dimensions:
+
+  Number of dimensions to return, for models that can shorten their
+  vectors (default: the model's own size).
+
 ## Value
 
-A tibble with columns `input` (text) and `embeddings` (list of numeric
-vectors).
+A tibble with columns `input` (text, or a label such as `[IMG] cat.jpg`)
+and `embeddings` (list of numeric vectors).

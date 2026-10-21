@@ -12,7 +12,7 @@ provider_capabilities(
   .provider = NULL,
   .verb = NULL,
   .argument = NULL,
-  .what = c("arguments", "media"),
+  .what = c("arguments", "media", "embed_media"),
   .internal = FALSE
 )
 ```
@@ -38,8 +38,11 @@ provider_capabilities(
 
 - .what:
 
-  `"arguments"` (default) for verbs and arguments, or `"media"` for one
-  row per provider and media type.
+  `"arguments"` (default) for verbs and arguments, `"media"` for one row
+  per provider and media type a message can carry, or `"embed_media"`
+  for one row per provider and media type
+  [`embed()`](https://edubruell.github.io/tidyllm/reference/embed.md)
+  accepts (`image`, `audio`, `video`).
 
 - .internal:
 
@@ -53,7 +56,9 @@ provider_capabilities(
 
 A tibble. For `.what = "arguments"`: `provider`, `verb`, `argument`,
 `default`, `fn`. For `.what = "media"`: `provider`, `media` (`image`,
-`pdf`, `audio`, `video`, `files`) and `supported`.
+`pdf`, `audio`, `video`, `files`) and `supported`. For
+`.what = "embed_media"` the same columns with `media` limited to
+`image`, `audio` and `video`.
 
 ## Details
 

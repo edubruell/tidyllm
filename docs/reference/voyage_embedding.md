@@ -14,7 +14,8 @@ voyage_embedding(
   .timeout = 120,
   .dry_run = FALSE,
   .max_tries = 3,
-  .verbose = FALSE
+  .verbose = FALSE,
+  .task = NULL
 )
 ```
 
@@ -28,9 +29,9 @@ voyage_embedding(
 
   - An `LLMMessage` object (all textual components will be embedded)
 
-  - A list containing a mix of character strings and `tidyllm_image`
-    objects created with
+  - A list containing a mix of character strings and
     [`img()`](https://edubruell.github.io/tidyllm/reference/img.md)
+    objects
 
 - .model:
 
@@ -61,11 +62,16 @@ voyage_embedding(
   Should information about current rate limits be printed? (default:
   FALSE).
 
+- .task:
+
+  `NULL` (default), `"query"` or `"document"`; sent as Voyage's
+  `input_type`.
+
 ## Value
 
 A tibble with two columns: `input` and `embeddings`.
 
-- The `input` column contains the input texts or image labels
+- The `input` column contains the input texts or media labels
 
 - The `embeddings` column is a list column where each row contains an
   embedding vector
@@ -76,13 +82,15 @@ A tibble with two columns: `input` and `embeddings`.
 
 2.  LLMMessage object: Extracts and embeds text content from messages
 
-3.  List of mixed content: Processes a combination of text strings and
-    image objects created with
-    [`img()`](https://edubruell.github.io/tidyllm/reference/img.md)
+3.  List of mixed content: Processes text strings and image objects
+    created with
+    [`img()`](https://edubruell.github.io/tidyllm/reference/img.md).
+    Each element is one row; a nested list is one fused item.
 
 For multimodal inputs, the function automatically switches to Voyage's
 multimodal API and formats the response with appropriate labels (e.g.,
-`"[IMG] image.png"`) for images.
+`"[IMG] image.png"`). Voyage does not embed audio, and tidyllm has not
+tested video. Image files must not exceed 20 MB.
 
 ## Examples
 

@@ -3,11 +3,19 @@
 embedding vectors. Note that embedding models are not listed in
 list_models(openrouter()) — specify the model ID directly.
 Known supported models include "openai/text-embedding-3-small",
-"openai/text-embedding-3-large", and "mistralai/mistral-embed".'><meta property="og:description" content='Sends text to an embedding model accessible via OpenRouter and returns
+"openai/text-embedding-3-large", and "mistralai/mistral-embed".
+Images, audio and video work with multimodal embedding models such as
+"google/gemini-embedding-2"; "voyageai/voyage-multimodal-3.5" and
+"nvidia/llama-nemotron-embed-vl-1b-v2:free" take text and images only.
+https://openrouter.ai/api/v1/embeddings/models lists the input types per model.'><meta property="og:description" content='Sends text to an embedding model accessible via OpenRouter and returns
 embedding vectors. Note that embedding models are not listed in
 list_models(openrouter()) — specify the model ID directly.
 Known supported models include "openai/text-embedding-3-small",
-"openai/text-embedding-3-large", and "mistralai/mistral-embed".'><meta property="og:image" content="https://edubruell.github.io/tidyllm/logo.png"></head><body>
+"openai/text-embedding-3-large", and "mistralai/mistral-embed".
+Images, audio and video work with multimodal embedding models such as
+"google/gemini-embedding-2"; "voyageai/voyage-multimodal-3.5" and
+"nvidia/llama-nemotron-embed-vl-1b-v2:free" take text and images only.
+https://openrouter.ai/api/v1/embeddings/models lists the input types per model.'><meta property="og:image" content="https://edubruell.github.io/tidyllm/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -15,7 +23,7 @@ Known supported models include "openai/text-embedding-3-small",
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.7.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.7.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -58,6 +66,10 @@ embedding vectors. Note that embedding models are not listed in
 <code>list_models(openrouter())</code> — specify the model ID directly.
 Known supported models include <code>"openai/text-embedding-3-small"</code>,
 <code>"openai/text-embedding-3-large"</code>, and <code>"mistralai/mistral-embed"</code>.</p>
+<p>Images, audio and video work with multimodal embedding models such as
+<code>"google/gemini-embedding-2"</code>; <code>"voyageai/voyage-multimodal-3.5"</code> and
+<code>"nvidia/llama-nemotron-embed-vl-1b-v2:free"</code> take text and images only.
+<code>https://openrouter.ai/api/v1/embeddings/models</code> lists the input types per model.</p>
     </div>
 
     <div class="section level2">
@@ -67,7 +79,9 @@ Known supported models include <code>"openai/text-embedding-3-small"</code>,
 <span>  .model <span class="op">=</span> <span class="st">"openai/text-embedding-3-small"</span>,</span>
 <span>  .timeout <span class="op">=</span> <span class="fl">120</span>,</span>
 <span>  .dry_run <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  .max_tries <span class="op">=</span> <span class="fl">3</span></span>
+<span>  .max_tries <span class="op">=</span> <span class="fl">3</span>,</span>
+<span>  .task <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  .dimensions <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -76,7 +90,9 @@ Known supported models include <code>"openai/text-embedding-3-small"</code>,
 
 
 <dl><dt id="arg--input">.input<a class="anchor" aria-label="anchor" href="#arg--input"></a></dt>
-<dd><p>An <code>LLMMessage</code> object or a character vector of texts to embed.</p></dd>
+<dd><p>An <code>LLMMessage</code> object, a character vector of texts, or a list mixing
+texts with <code><a href="img.html">img()</a></code>, <code><a href="audio_file.html">audio_file()</a></code> and <code><a href="video_file.html">video_file()</a></code> objects (a nested list is one
+fused item).</p></dd>
 
 
 <dt id="arg--model">.model<a class="anchor" aria-label="anchor" href="#arg--model"></a></dt>
@@ -94,10 +110,21 @@ Known supported models include <code>"openai/text-embedding-3-small"</code>,
 <dt id="arg--max-tries">.max_tries<a class="anchor" aria-label="anchor" href="#arg--max-tries"></a></dt>
 <dd><p>Maximum retries (default: 3).</p></dd>
 
+
+<dt id="arg--task">.task<a class="anchor" aria-label="anchor" href="#arg--task"></a></dt>
+<dd><p><code>NULL</code> (default), <code>"query"</code> or <code>"document"</code>. Adds the task prefix that
+<code>gemini-embedding-2</code> reads from the text; media get none. Leave <code>NULL</code> for other models.</p></dd>
+
+
+<dt id="arg--dimensions">.dimensions<a class="anchor" aria-label="anchor" href="#arg--dimensions"></a></dt>
+<dd><p>Number of dimensions to return, for models that can shorten
+their vectors (default: the model's own size).</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A tibble with columns <code>input</code> (text) and <code>embeddings</code> (list of numeric vectors).</p>
+    <p>A tibble with columns <code>input</code> (text, or a label such as <code>[IMG] cat.jpg</code>) and
+<code>embeddings</code> (list of numeric vectors).</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

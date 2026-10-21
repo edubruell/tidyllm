@@ -1,6 +1,8 @@
 # Generate Embeddings Using Ollama API
 
-Generate Embeddings Using Ollama API
+Images (PNG, JPEG, GIF, WebP) and WAV or OGG audio need a multimodal
+embedding model such as `"embeddinggemma-2:740m"` and Ollama 0.40.4 or
+later. Ollama does not embed video or MP3.
 
 ## Usage
 
@@ -11,7 +13,9 @@ ollama_embedding(
   .truncate = TRUE,
   .ollama_server = "http://localhost:11434",
   .timeout = 120,
-  .dry_run = FALSE
+  .dry_run = FALSE,
+  .task = NULL,
+  .dimensions = NULL
 )
 ```
 
@@ -19,7 +23,11 @@ ollama_embedding(
 
 - .input:
 
-  Aa charachter vector of texts to embed or an `LLMMessage` object
+  A character vector of texts to embed, a list mixing texts with
+  [`img()`](https://edubruell.github.io/tidyllm/reference/img.md) and
+  [`audio_file()`](https://edubruell.github.io/tidyllm/reference/audio_file.md)
+  objects, or an `LLMMessage` object. A nested list is one fused item
+  with at most one image and one audio file.
 
 - .model:
 
@@ -43,7 +51,17 @@ ollama_embedding(
 
   If TRUE, perform a dry run and return the request object.
 
+- .task:
+
+  `NULL` (default), `"query"` or `"document"`. Adds the EmbeddingGemma 2
+  task prefix to text; media get none.
+
+- .dimensions:
+
+  Number of dimensions to return, for models that can shorten their
+  vectors (default: the model's own size).
+
 ## Value
 
-A matrix where each column corresponds to the embedding of a message in
-the message history.
+A tibble with columns `input` (text, or a label such as `[IMG] cat.jpg`)
+and `embeddings` (list of numeric vectors).

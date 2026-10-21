@@ -1,6 +1,73 @@
 # Changelog
 
+## tidyllm 0.7.2
+
+### Embed images, audio and video
+
+Until now only
+[`voyage()`](https://edubruell.github.io/tidyllm/reference/voyage.md)
+could embed images.
+[`embed()`](https://edubruell.github.io/tidyllm/reference/embed.md) now
+also embeds images, audio and video with
+[`llamacpp()`](https://edubruell.github.io/tidyllm/reference/llamacpp.md),
+[`gemini()`](https://edubruell.github.io/tidyllm/reference/gemini.md)
+and
+[`openrouter()`](https://edubruell.github.io/tidyllm/reference/openrouter.md),
+and images and audio with
+[`ollama()`](https://edubruell.github.io/tidyllm/reference/ollama.md)
+(version 0.40.4 or later). Pass a list that mixes text with
+[`img()`](https://edubruell.github.io/tidyllm/reference/img.md),
+[`audio_file()`](https://edubruell.github.io/tidyllm/reference/audio_file.md)
+and
+[`video_file()`](https://edubruell.github.io/tidyllm/reference/video_file.md):
+
+``` r
+
+list("A cat", img("cat.jpg"), audio_file("cat.wav")) |>
+  embed(llamacpp())
+```
+
+Each element becomes one row. Put several items in a nested list to get
+one combined vector for them.
+`provider_capabilities(.what = "embed_media")` shows what each provider
+accepts, and
+[`embed()`](https://edubruell.github.io/tidyllm/reference/embed.md)
+stops with a clear message if you pass something a provider cannot
+handle.
+
+Two new options help along the way. `.task` tells models such as
+EmbeddingGemma 2 whether your text is a `"query"` or a `"document"`.
+`.media_columns = TRUE` adds a `modality` and a `path` column to the
+result. `.dimensions` gives shorter vectors and now also works with
+[`openai()`](https://edubruell.github.io/tidyllm/reference/openai.md)
+and
+[`mistral()`](https://edubruell.github.io/tidyllm/reference/mistral.md).
+
+### Smaller changes
+
+[`gemini()`](https://edubruell.github.io/tidyllm/reference/gemini.md)
+and
+[`send_gemini_batch()`](https://edubruell.github.io/tidyllm/reference/send_gemini_batch.md)
+now warn when you set `.temperature`, `.top_p` or `.top_k` on a Gemini
+model numbered 3.6 or later, because Google’s newer models ignore these
+values.
+[`claude()`](https://edubruell.github.io/tidyllm/reference/claude.md)
+now also refuses these arguments for Claude Haiku 5 models before
+sending the request, as it already does for Sonnet 5 and Opus 5.
+
+Tool results now reach the model the same way on every provider. A tool
+that returns a data frame now sends the printed table instead of JSON on
+[`openai()`](https://edubruell.github.io/tidyllm/reference/openai.md),
+[`ollama()`](https://edubruell.github.io/tidyllm/reference/ollama.md)
+and the chat-completions providers.
+
+[`img()`](https://edubruell.github.io/tidyllm/reference/img.md) now
+labels GIF and WebP files with their own file type instead of
+`application/octet-stream`.
+
 ## tidyllm 0.7.1
+
+CRAN release: 2026-10-14
 
 This release prepares
 [`gemini()`](https://edubruell.github.io/tidyllm/reference/gemini.md)

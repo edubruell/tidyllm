@@ -11,7 +11,7 @@ do something before you write code that depends on it."><meta property="og:image
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.7.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.7.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -60,7 +60,7 @@ do something before you write code that depends on it.</p>
 <span>  .provider <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .verb <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .argument <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  .what <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"arguments"</span>, <span class="st">"media"</span><span class="op">)</span>,</span>
+<span>  .what <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"arguments"</span>, <span class="st">"media"</span>, <span class="st">"embed_media"</span><span class="op">)</span>,</span>
 <span>  .internal <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -85,8 +85,9 @@ keep. <code>NULL</code> keeps all arguments.</p></dd>
 
 
 <dt id="arg--what">.what<a class="anchor" aria-label="anchor" href="#arg--what"></a></dt>
-<dd><p><code>"arguments"</code> (default) for verbs and arguments, or <code>"media"</code> for
-one row per provider and media type.</p></dd>
+<dd><p><code>"arguments"</code> (default) for verbs and arguments, <code>"media"</code> for
+one row per provider and media type a message can carry, or <code>"embed_media"</code> for
+one row per provider and media type <code><a href="embed.html">embed()</a></code> accepts (<code>image</code>, <code>audio</code>, <code>video</code>).</p></dd>
 
 
 <dt id="arg--internal">.internal<a class="anchor" aria-label="anchor" href="#arg--internal"></a></dt>
@@ -98,7 +99,8 @@ one row per provider and media type.</p></dd>
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A tibble. For <code>.what = "arguments"</code>: <code>provider</code>, <code>verb</code>, <code>argument</code>,
 <code>default</code>, <code>fn</code>. For <code>.what = "media"</code>: <code>provider</code>, <code>media</code> (<code>image</code>, <code>pdf</code>,
-<code>audio</code>, <code>video</code>, <code>files</code>) and <code>supported</code>.</p>
+<code>audio</code>, <code>video</code>, <code>files</code>) and <code>supported</code>. For <code>.what = "embed_media"</code> the same
+columns with <code>media</code> limited to <code>image</code>, <code>audio</code> and <code>video</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>

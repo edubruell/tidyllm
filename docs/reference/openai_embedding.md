@@ -12,7 +12,8 @@ openai_embedding(
   .timeout = 120,
   .dry_run = FALSE,
   .max_tries = 3,
-  .verbose = FALSE
+  .verbose = FALSE,
+  .dimensions = NULL
 )
 ```
 
@@ -48,6 +49,12 @@ openai_embedding(
 
   Should information about current ratelimits be printed? (default:
   FALSE)
+
+- .dimensions:
+
+  Number of dimensions to return (default: NULL, the model's full size).
+  The `text-embedding-3` models can shorten their vectors;
+  `text-embedding-ada-002` cannot and returns an error.
 
 ## Value
 
