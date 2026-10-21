@@ -1,6 +1,6 @@
-tidyllm 0.7.1 fixes a bug in `claude_cli()`, a provider added in 0.7.0: with its tools turned off, the default, the Claude command line tool could still read files in the working directory. The fix removes every built-in tool and the user's MCP servers unless the user asks for them.
+tidyllm 0.7.2 extends `embed()` so that it also embeds images, audio and video. Until now only `voyage()` could embed images. `embed()` now takes a list that mixes text with image, audio and video files for `llamacpp()`, `gemini()`, `openrouter()` and `ollama()`, and has new arguments `.task`, `.dimensions` and `.media_columns`.
 
-It also adds two providers that work the same way, `codex_cli()` for OpenAI's Codex CLI and `vibe_cli()` for Mistral's Vibe CLI; a `.thinking_level` argument for `gemini()`, ahead of Google's change to how Gemini controls reasoning; support for Mistral Large 4; and clearer error messages for Mistral and for rejected streaming requests. An image is now an error for providers that cannot take images.
+Smaller changes: `gemini()` warns when sampling arguments reach a model that ignores them, `claude()` refuses these arguments for Claude Haiku 5 models before sending the request, and tool results reach the model as text on every provider.
 
 No new Imports or Suggests.
 
@@ -10,10 +10,10 @@ No new Imports or Suggests.
 
 ## R CMD check results
 
-0 errors | 0 warnings | 1 note
+0 errors | 0 warnings | 3 notes
 
-The note is environmental: "unable to verify current time".
+The notes come from the local setup and the network. R could not verify the current time, the installed HTML Tidy is too old to validate the manual, and the check got a 403 response from `https://openai.com` and `https://platform.openai.com/account/api-keys`, which load in a browser.
 
 ## Reverse dependencies
 
-Two CRAN packages suggest tidyllm: joinery and RKorAPClient. joinery passes R CMD check with tidyllm 0.7.1. RKorAPClient uses tidyllm only in tests that need LLM API keys and skip without them; the functions it calls are unchanged.
+Two CRAN packages suggest tidyllm: joinery and RKorAPClient. I have not re-run their checks against 0.7.2. The changes are additive and no existing function lost an argument, so I expect no effect.
