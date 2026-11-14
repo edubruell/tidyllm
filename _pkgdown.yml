@@ -34,6 +34,7 @@ reference:
       - parallel_chat
       - embed
       - decide
+      - box_to_pixels
       - deep_research
       - check_job
       - fetch_job

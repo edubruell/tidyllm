@@ -952,6 +952,14 @@ validate_message_attachments <- function(.llm, provider) {
 #' refuses, gives NA rows and one warning; the other states are kept. A malformed
 #' item stops the call before any request and names its position.
 #'
+#' @section Finding things in images (experimental):
+#' `field_box()` asks where something is in an image and returns one box. Only
+#' `jev()` answers it; `openai()`, `gemini()` and `ollama()` stop with a message
+#' before any request, and so does a state without an image. A box question always
+#' returns a box, so pair it with a yes/no presence question. The vendor labels
+#' this as preview and the format may change. See [field_box()] and
+#' [box_to_pixels()].
+#'
 #' @param .state What to decide about. Every element is one item: a non-empty
 #'   string, a media object, an `LLMMessage`, or a list of parts that belong
 #'   together (one level only). Pass one item bare, a character vector, or a list
@@ -969,13 +977,16 @@ validate_message_attachments <- function(.llm, provider) {
 #' @param .progress Show a progress bar when `.state` holds many states.
 #'
 #' @return A tibble with one row per question and the columns `question`, `type`
-#'   (`"yes_no"`, `"choice"` or `"score"`), `answer` (`"yes"` or `"no"`, the chosen
+#'   (`"yes_no"`, `"choice"`, `"score"` or `"box"`), `answer` (`"yes"` or `"no"`, the chosen
 #'   option, or the score level with the highest probability), `probability` (of
 #'   that answer), `confidence` (the backend's
 #'   confidence in the answer; for yes/no questions the larger of the probability
 #'   of yes and of no when the backend gives none, and `NA` for choice and score
 #'   questions) and `probabilities` (a list
-#'   column with one named numeric vector over the options for each row). For many
+#'   column with one named numeric vector over the options for each row). A box
+#'   question gives one row with `answer` and `probability` `NA`, and the schema
+#'   then also adds the numeric columns `top`, `bottom`, `left` and `right`
+#'   (fractions of the image; `NA` on all other rows). For many
 #'   states, one block of rows per state with `state` and `state_id` in front.
 #'
 #'   The attributes `usage`, `latency` and `model` describe the call. `usage` is a

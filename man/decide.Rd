@@ -41,13 +41,16 @@ minute, so lower it if you see rate-limit warnings.}
 }
 \value{
 A tibble with one row per question and the columns \code{question}, \code{type}
-(\code{"yes_no"}, \code{"choice"} or \code{"score"}), \code{answer} (\code{"yes"} or \code{"no"}, the chosen
+(\code{"yes_no"}, \code{"choice"}, \code{"score"} or \code{"box"}), \code{answer} (\code{"yes"} or \code{"no"}, the chosen
 option, or the score level with the highest probability), \code{probability} (of
 that answer), \code{confidence} (the backend's
 confidence in the answer; for yes/no questions the larger of the probability
 of yes and of no when the backend gives none, and \code{NA} for choice and score
 questions) and \code{probabilities} (a list
-column with one named numeric vector over the options for each row). For many
+column with one named numeric vector over the options for each row). A box
+question gives one row with \code{answer} and \code{probability} \code{NA}, and the schema
+then also adds the numeric columns \code{top}, \code{bottom}, \code{left} and \code{right}
+(fractions of the image; \code{NA} on all other rows). For many
 states, one block of rows per state with \code{state} and \code{state_id} in front.
 
 The attributes \code{usage}, \code{latency} and \code{model} describe the call. \code{usage} is a
@@ -123,6 +126,16 @@ The requests run in parallel, at most \code{.max_active} at a time, and are retr
 like a single request. A state that fails after its retries, or that the model
 refuses, gives NA rows and one warning; the other states are kept. A malformed
 item stops the call before any request and names its position.
+}
+
+\section{Finding things in images (experimental)}{
+
+\code{field_box()} asks where something is in an image and returns one box. Only
+\code{jev()} answers it; \code{openai()}, \code{gemini()} and \code{ollama()} stop with a message
+before any request, and so does a state without an image. A box question always
+returns a box, so pair it with a yes/no presence question. The vendor labels
+this as preview and the format may change. See \code{\link[=field_box]{field_box()}} and
+\code{\link[=box_to_pixels]{box_to_pixels()}}.
 }
 
 \examples{

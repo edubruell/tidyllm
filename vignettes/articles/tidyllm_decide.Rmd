@@ -264,6 +264,41 @@ decide(map(files, img), cat_question, gemini(.resolution = "low"))
 
 The `state` column then names each file, such as `[IMG] cat.jpg`. Pictures and recordings leave your computer and go to the provider, so do not send restricted or personal data, such as survey photos with faces.
 
+## Finding things in images (experimental)
+
+Sometimes the question is not "is there a cat" but "where is it". `field_box()` asks the model for one box around the thing, for example to crop a banner out of a protest photo or to find a stamp on a scanned page. This is experimental. Only Jev answers it, the vendor labels its image features as a preview, and the format may change in a later release. The other providers stop with a message before anything is sent, and so does a state that holds no image.
+
+A box question always returns a box, even when the thing is not in the picture. So pair it with a yes/no question and read the box only where the answer is yes. Name the image in a backticked key and in the question text, so the model knows which picture you mean; this also works to point at one of several images.
+
+```{r box_call, eval = FALSE}
+where_cat <- tidyllm_schema(
+  has_cat = field_lgl("Is there a cat in `photo`?"),
+  cat = field_box("The cat in `photo`")
+)
+
+decide(list(list(photo = img("photos/cat.jpg"))), where_cat, jev())
+```
+
+```{r box_load, include = FALSE}
+box_run <- readRDS("decide_box_result.rds")
+```
+
+```{r box_show}
+box_run$result |>
+  select(question, type, answer, probability, confidence, top, bottom, left, right)
+```
+
+The box row has type `box`, no answer and no probability. Its `confidence` is the model's own number and can be missing. The four new columns appear only when your questions hold a box question. They are fractions of the picture, measured from the top-left corner: here the cat starts at the very left edge (`left` is 0), reaches 79 per cent of the way to the right, and spans from 20 to 68 per cent of the height. The first row is the presence question, so its box columns are empty.
+
+To draw or crop, you need pixels. `box_to_pixels()` multiplies the fractions by the image size. Give it the width and height, or the path of the image file and it reads the size itself.
+
+```{r box_pixels}
+box_to_pixels(box_run$result, .width = box_run$width, .height = box_run$height) |>
+  select(question, x_min, x_max, y_min, y_max)
+```
+
+Boxes are rough, particularly for small objects in large images, and nobody has measured their accuracy. Look at a sample by eye before you rely on them. The same warning about personal data applies: faces in photos should not go to a provider.
+
 ## Choosing a provider
 
 Each provider has a default model and a key you store in an environment variable. The price is the list price per million input tokens (the tokens you send).
@@ -384,6 +419,7 @@ request$url
 - **Treat each field as a question:** Set the levels in scale order for a score question, and add descriptions so the model knows what each level means.
 - **Pass many items at once:** A character vector or a list of items runs in parallel and returns one tibble with `state` and `state_id`.
 - **Give it pictures when the question is about a picture:** Wrap files in `img()`, name the parts when a question must tell them apart, and check `provider_capabilities()` for what each provider reads.
+- **Ask where, carefully:** `field_box()` finds a thing in an image with Jev only, is experimental, and always returns a box, so pair it with a yes/no question.
 - **Review uncertain answers first:** Read rows with low probabilities, then compare a human-labelled sample with the model's answers.
 - **Choose and inspect your provider:** Compare measured price and speed, and use `.dry_run = TRUE` to inspect the request before sending it.
 

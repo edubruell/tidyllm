@@ -252,3 +252,85 @@ ollama_state_images <- function(.state) {
     images = vapply(.state$parts[is_media], embed_part_base64, character(1))
   )
 }
+
+#' Stop when a box question meets a provider that cannot answer it, or a state without an image
+#' @param .state A parsed state.
+#' @param .questions The normalised questions.
+#' @param .meta Provider metadata from `provider_metadata()`.
+#' @noRd
+check_decide_box <- function(.state, .questions, .meta) {
+  boxes <- names(Filter(\(q) q$type == "box", .questions))
+  if (length(boxes) == 0) return(invisible(NULL))
+  provider <- .meta$provider_name
+  if (!provider %in% DECIDE_BOX_PROVIDERS) {
+    cli::cli_abort("Question {.val {boxes[1]}} is a field_box(), which the {.val {provider}} provider cannot answer. Providers that can: {.val {DECIDE_BOX_PROVIDERS}}.", call = NULL)
+  }
+  stats::setNames(
+    "image" %in% decide_types(.state),
+    glue::glue("Question `{boxes[1]}` is a field_box() and needs an image in .state; this item has none.")
+  ) |> validate_inputs()
+}
+
+#' Image size for box_to_pixels(): given numbers, or read from an image file
+#' @param .width,.height Numbers or `NULL`.
+#' @param .image A path to a PNG or JPEG, or `NULL`.
+#' @return `c(width, height)`.
+#' @noRd
+box_image_size <- function(.width, .height, .image) {
+  if (!is.null(.image)) {
+    c("`.image` must be the path of an existing PNG or JPEG file" =
+        is.character(.image) && length(.image) == 1 && file.exists(.image) && !is.null(image_dims(.image))) |>
+      validate_inputs()
+    return(image_dims(.image))
+  }
+  positive <- \(x) is.numeric(x) && length(x) == 1 && !is.na(x) && x > 0
+  c("Give `.width` and `.height` as positive numbers, or `.image` as a file path" =
+      positive(.width) && positive(.height)) |>
+    validate_inputs()
+  c(.width, .height)
+}
+
+#' Turn the fractions of box answers into pixel positions
+#'
+#' A box answer from [field_box()] gives `top`, `bottom`, `left` and `right` as
+#' fractions of the image. `box_to_pixels()` multiplies them by the image size,
+#' after clamping them to 0 and 1, and returns your `decide()` result with four
+#' more columns: `x_min`, `x_max`, `y_min` and `y_max`, in pixels counted from the
+#' top-left corner. Rows that are not boxes, or whose `type` is missing, get `NA`.
+#' The pixel values are rounded to whole pixels. If `.result` already has pixel
+#' columns from an earlier call, they are replaced.
+#'
+#' Clamping keeps each edge inside the image but does not repair a box the model
+#' returned upside down: if `left` is larger than `right`, `x_min` stays larger
+#' than `x_max`. Widths and heights need not be whole numbers.
+#'
+#' The result must come from one image size. If your states are images of
+#' different sizes, filter the result by `state_id` and call the function once per
+#' size.
+#'
+#' @param .result A `decide()` result that holds a [field_box()] question.
+#' @param .width,.height Image width and height in pixels, one number each.
+#' @param .image Instead of `.width` and `.height`, the path of the PNG or JPEG
+#'   file the boxes refer to; its size is read from the file. If you give it,
+#'   `.width` and `.height` are ignored.
+#' @return `.result` with the columns `x_min`, `x_max`, `y_min` and `y_max`.
+#' @examples
+#' res <- tibble::tibble(question = "cat", type = "box",
+#'                       top = 0.2, bottom = 0.7, left = 0, right = 0.8)
+#' box_to_pixels(res, .width = 1000, .height = 600)
+#' @seealso [field_box()]
+#' @export
+box_to_pixels <- function(.result, .width = NULL, .height = NULL, .image = NULL) {
+  c("`.result` must be a decide() result that holds a field_box() question" =
+      is.data.frame(.result) && all(c("type", BOX_EDGES) %in% names(.result))) |>
+    validate_inputs()
+  size <- box_image_size(.width, .height, .image)
+  edge <- \(e) pmin(pmax(.result[[e]], 0), 1)
+  pixels <- tibble::tibble(
+    x_min = round(edge("left") * size[[1]]), x_max = round(edge("right") * size[[1]]),
+    y_min = round(edge("top") * size[[2]]), y_max = round(edge("bottom") * size[[2]])
+  )
+  pixels[!(.result$type %in% "box"), ] <- NA_real_
+  kept <- as.list(.result)[setdiff(names(.result), names(pixels))]
+  tibble::as_tibble(c(kept, as.list(pixels)))
+}

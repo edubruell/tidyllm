@@ -1,4 +1,6 @@
-DECIDE_TYPES <- c("yes_no", "choice", "score")
+DECIDE_TYPES <- c("yes_no", "choice", "score", "box")
+DECIDE_BOX_PROVIDERS <- "jev"
+BOX_EDGES <- c("top", "bottom", "left", "right")
 
 #' Turn one schema property into a normalised question
 #'
@@ -9,6 +11,10 @@ DECIDE_TYPES <- c("yes_no", "choice", "score")
 #'   and, for yes/no questions with definitions, `true` and `false`.
 #' @noRd
 decide_question <- function(.name, .prop, .meta) {
+  if (isTRUE(.meta$box)) {
+    return(list(name = .name, type = "box", instructions = .prop$description %||% .name,
+                options = character(0), descriptions = character(0)))
+  }
   stats::setNames(
     .prop$type %in% c("boolean", "string") && is.null(.prop$items),
     glue::glue("Question `{.name}` must be field_lgl() or field_fct(); nested objects and vectors are not questions.")
@@ -53,11 +59,12 @@ decide_questions <- function(.questions) {
 #' One result row
 #' @param .confidence The backend's confidence in the answer, or `NA`.
 #' @param .probabilities A named numeric vector over the options.
+#' @param .box For box questions, the named numeric vector `top`, `bottom`, `left`, `right`.
 #' @return A one-row tibble in the `decide()` column layout.
 #' @noRd
 decide_row <- function(.question, .type, .answer, .probability,
-                       .confidence = NA_real_, .probabilities = numeric(0)) {
-  tibble::tibble(
+                       .confidence = NA_real_, .probabilities = numeric(0), .box = NULL) {
+  row <- tibble::tibble(
     question = .question,
     type = .type,
     answer = .answer,
@@ -65,6 +72,7 @@ decide_row <- function(.question, .type, .answer, .probability,
     confidence = as.numeric(.confidence),
     probabilities = list(.probabilities)
   )
+  if (is.null(.box)) row else tibble::as_tibble(c(as.list(row), as.list(.box)))
 }
 
 #' Confidence the reply reports, or NA when absent or null
@@ -135,14 +143,23 @@ decide_refused <- function(.answer, .field) {
 #' The result row for a question the model did not answer
 #' @noRd
 refused_row <- function(.q) {
-  decide_row(.q$name, .q$type, NA_character_, NA_real_)
+  box <- if (.q$type == "box") stats::setNames(rep(NA_real_, 4), BOX_EDGES)
+  decide_row(.q$name, .q$type, NA_character_, NA_real_, .box = box)
+}
+
+#' Which result rows are unanswered: no answer, and for box rows no coordinates
+#' @param .rows The result rows.
+#' @noRd
+decide_unanswered <- function(.rows) {
+  boxed <- (.rows[["type"]] %||% "") == "box" & !is.na(.rows[["top"]] %||% NA_real_)
+  is.na(.rows$answer) & !boxed
 }
 
 #' Warn once about the questions that came back refused
 #' @param .rows The result rows.
 #' @noRd
 warn_refused <- function(.rows) {
-  refused <- .rows$question[is.na(.rows$answer)]
+  refused <- .rows$question[decide_unanswered(.rows)]
   if (length(refused) > 0) {
     cli::cli_warn("The model gave no answer for {length(refused)} question{?s}: {.val {refused}}.")
   }
@@ -178,7 +195,8 @@ system_one_question <- function(.q, .gemini = FALSE) {
     choice = list(type = "choice", instructions = .q$instructions,
                   criteria = stats::setNames(as.list(.q$descriptions), .q$options)),
     score = list(type = "score", instructions = .q$instructions,
-                 criteria = as.list(unname(.q$descriptions)))
+                 criteria = as.list(unname(.q$descriptions))),
+    box = list(type = "box", instructions = .q$instructions)
   )
 }
 
@@ -205,11 +223,41 @@ choice_probability <- function(.q, .answer, .probs) {
   found[[1]]
 }
 
+#' The four edges of a box answer, with a warning when they are not a sensible box
+#'
+#' Values are kept as the model returns them; the vendor documents fractions
+#' but the schema does not bound them.
+#' @param .q The box question.
+#' @param .box The decoded `box` object of the reply.
+#' @return A named numeric vector `top`, `bottom`, `left`, `right`.
+#' @noRd
+decide_box_edges <- function(.q, .box) {
+  box <- if (is.list(.box)) .box else list()
+  edges <- vapply(BOX_EDGES, \(e) suppressWarnings(as.numeric(box[[e]] %||% NA_real_))[1], numeric(1))
+  stats::setNames(
+    !anyNA(edges),
+    glue::glue("Question `{.q$name}`: the reply box lacks a numeric top, bottom, left or right.")
+  ) |> validate_inputs()
+  sensible <- all(edges >= 0 & edges <= 1) && edges[["top"]] < edges[["bottom"]] && edges[["left"]] < edges[["right"]]
+  if (!sensible) {
+    cli::cli_warn("Question {.val {(.q$name)}}: the box {.val {round(edges, 3)}} is not inside the image or has no area; the values are kept as returned.")
+  }
+  edges
+}
+
+#' Result row of a box question
+#' @noRd
+decide_box_row <- function(.q, .answer) {
+  decide_row(.q$name, "box", NA_character_, NA_real_, .confidence = decide_confidence(.answer),
+             .box = decide_box_edges(.q, .answer$box))
+}
+
 #' Read one System One answer into a result row
 #' @noRd
 system_one_row <- function(.q, .answer) {
-  field <- c(yes_no = "noul", choice = "choice", score = "probabilities")[[.q$type]]
+  field <- c(yes_no = "noul", choice = "choice", score = "probabilities", box = "box")[[.q$type]]
   if (decide_refused(.answer, field)) return(refused_row(.q))
+  if (.q$type == "box") return(decide_box_row(.q, .answer))
   probs <- unlist(.answer$probabilities)
   confidence <- decide_confidence(.answer)
   if (.q$type == "yes_no") {

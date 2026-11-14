@@ -37,6 +37,7 @@ decide_states <- function(.state) {
 #' @return The state, with PDF parts replaced by text where needed.
 #' @noRd
 decide_checked <- function(.state, .questions, .meta) {
+  check_decide_box(.state, .questions, .meta)
   state <- decide_pdf_fallback(.state, .meta)
   check_decide_media(state, .meta)
   check_decide_state(state, .questions, .meta)
@@ -128,7 +129,7 @@ warn_many <- function(.results) {
     shown <- paste0("state ", failed, ": ", errors[failed])[seq_len(min(3, length(failed)))]
     cli::cli_warn("{length(failed)} of {length(.results)} state{?s} failed and give NA rows. First errors: {shown}")
   }
-  refused <- sum(purrr::map_int(.results[is.na(errors)], \(r) sum(is.na(r$rows$answer))))
+  refused <- sum(purrr::map_int(.results[is.na(errors)], \(r) sum(decide_unanswered(r$rows))))
   if (refused > 0) {
     cli::cli_warn("The model gave no answer for {refused} question{?s} across the states that ran.")
   }

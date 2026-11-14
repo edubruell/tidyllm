@@ -174,6 +174,30 @@ if (nzchar(Sys.getenv("TYPESAFE_API_KEY")) && dir.exists(MEDIA_DIR)) {
   llt_test("jev two labelled images keep their names", {
     expect_two_photos(decide(two_photos(), pet_q(), jev()))
   })
+  llt_test("jev box: a presence question plus a box on the cat photo", {
+    q <- tidyllm_schema(has_cat = field_lgl("Is there a cat in `photo`?"), cat = field_box("The cat in `photo`"))
+    out <- decide(list(list(photo = img(media_path("cat.jpg")))), q, jev())
+    box <- out[out$question == "cat", ]
+    llt_expect_true(identical(out$type, c("yes_no", "box")), paste(out$type, collapse = ","))
+    llt_expect_true(out$answer[1] == "yes", paste("presence answer was", out$answer[1]))
+    llt_expect_true(is.na(box$answer) && is.na(box$probability), "a box row has no answer or probability")
+    llt_expect_true(all(c("top", "bottom", "left", "right") %in% names(out)), "coordinate columns missing")
+    edges <- unlist(box[c("top", "bottom", "left", "right")])
+    llt_expect_true(!anyNA(edges) && all(edges >= 0 & edges <= 1), paste("edges were", paste(edges, collapse = ",")))
+    llt_expect_true(box$top < box$bottom && box$left < box$right, "the box should have an area")
+    llt_expect_true(all(is.na(out[1, c("top", "bottom", "left", "right")])), "non-box rows should have NA coordinates")
+  })
+  llt_test("jev box: a named second image can be targeted in the description", {
+    q <- tidyllm_schema(dog = field_box("The dog in `b`"))
+    out <- decide(list(list(a = img(media_path("cat.jpg")), b = img(media_path("dog.jpg")))), q, jev())
+    llt_expect_true(out$type == "box" && !anyNA(out[c("top", "bottom", "left", "right")]), "no box returned")
+  })
+  llt_test("a box question stops before any request for providers that cannot answer it", {
+    q <- tidyllm_schema(cat = field_box("The cat in `photo`"))
+    err <- tryCatch(decide(img(media_path("cat.jpg")), q, openai(), .dry_run = TRUE), error = \(e) conditionMessage(e))
+    err <- gsub("\\s+", " ", err)
+    llt_expect_true(grepl("cannot answer", err) && grepl("jev", err), err)
+  })
   llt_test("jev rejects a 64 x 64 image locally, before any request", {
     tiny <- tempfile(fileext = ".png")
     png::writePNG(matrix(0.5, 64, 64), tiny)

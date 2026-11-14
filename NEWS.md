@@ -30,6 +30,12 @@ Many texts at once: every element of `.state` is one item, and an item is a stri
 
 `field_lgl()` gains `.true` and `.false`, which tell the model what yes and no mean. They are only used by `decide()`.
 
+## Find things in images with `field_box()` (experimental)
+
+`decide()` can now ask where something is in a picture. `field_box("The cat in `photo`")` is a question whose answer is one box around the thing, returned as four fractions of the image. The result gets one row of type `"box"` and the numeric columns `top`, `bottom`, `left` and `right`; these columns appear only when your questions hold a box question. A box question always returns a box, so pair it with a yes/no question that asks whether the thing is there. `box_to_pixels()` turns the fractions into pixel positions, given the image width and height or the path of the image file.
+
+This feature is experimental and works with `jev()` only; the vendor labels it a preview and its format may change. `openai()`, `gemini()` and `ollama()` stop with a message before any request, and so does a state without an image.
+
 ## Perplexity removed
 
 `perplexity()` and the `perplexity_*()` functions, deprecated since 0.7.0, are gone. Perplexity models stay available through `openrouter()`, for example `openrouter(.model = "perplexity/sonar")`, and `websearch_tool()` gives any provider web search. `deep_research()` now supports `openai()` only. Research jobs started with `perplexity()` can no longer be checked or fetched; start them again with `deep_research(.provider = openai())`; `check_job()` and `fetch_job()` stop with a message that says so. `perplexity()` stays as a stub that stops with a pointer to `openai()`, `claude()`, `gemini()` and `openrouter()`, so old scripts fail with a clear message.
