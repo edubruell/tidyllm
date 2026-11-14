@@ -159,7 +159,7 @@ jev_reply <- function() {
   )
 }
 
-test_that("a score answer without a score field keeps its row for both backends", {
+test_that("a score answer keeps its row without a score field for both backends", {
   schema <- tidyllm_schema(
     anger = field_fct("Anger?", .levels = c("calm", "annoyed", "furious"), .ordered = TRUE),
     late = field_lgl("Late?")
@@ -172,7 +172,7 @@ test_that("a score answer without a score field keeps its row for both backends"
   out <- parse_decide_response(jev_provider_obj(), jev_body, qs)$rows
   expect_equal(nrow(out), 2)
   expect_equal(out$answer, c("annoyed", "yes"))
-  expect_true(is.na(out$score[[1]]))
+  expect_false("score" %in% names(out))
   by_label <- list(answers = list(
     anger = list(score = 0.2, probabilities = list(calm = 0.1, annoyed = 0.2, furious = 0.7)),
     late = list(noul = 0.9)
@@ -190,7 +190,6 @@ test_that("a score answer without a score field keeps its row for both backends"
   ))
   oa_out <- parse_decide_response(oa, oa_body, qs)$rows
   expect_equal(nrow(oa_out), 2)
-  expect_true(is.na(oa_out$score[[1]]))
 })
 
 test_that("Jev replies parse into the long tibble", {
@@ -200,7 +199,7 @@ test_that("Jev replies parse into the long tibble", {
   expect_equal(out$rows$type, c("yes_no", "choice", "score"))
   expect_equal(out$rows$answer, c("yes", "billing", "annoyed"))
   expect_equal(out$rows$probability, c(0.98, 0.85, 0.6))
-  expect_equal(out$rows$score, c(NA, NA, 0.86))
+  expect_false("score" %in% names(out$rows))
   expect_equal(out$usage, list(input_tokens = 403, output_tokens = 69))
   expect_equal(out$model, "jev-1.14.0")
 })
@@ -260,7 +259,6 @@ test_that("OpenAI replies parse by answer name", {
   out <- parse_decide_response(oa, openai_reply(), qs)
   expect_equal(out$rows$answer, c("yes", "billing", "annoyed"))
   expect_equal(out$rows$probability, c(0.94, 0.85, 1))
-  expect_equal(out$rows$score, c(NA, NA, 1))
   expect_equal(out$usage$input_tokens, 398)
   expect_equal(out$usage$cached_tokens, 0)
   expect_equal(out$model, "gpt-6-luna")
@@ -329,7 +327,6 @@ test_that("a score answer with empty probabilities is a refused row on every bac
     expect_warning(out <- parse_decide_response(cases[[nm]]$api, cases[[nm]]$body, qs)$rows,
                    "1 question", info = nm)
     expect_equal(out$answer, c(NA, "yes"), info = nm)
-    expect_true(is.na(out$score[[1]]), info = nm)
   }
 })
 
@@ -348,7 +345,7 @@ test_that("null, error and refusal answers give NA rows and one warning", {
     body$answers <- stats::setNames(lapply(names(cases[[nm]]), \(n) cases[[nm]][[n]]), names(cases[[nm]]))
     expect_warning(out <- parse_system_one(body, qs), "late.*topic.*anger", info = nm)
     expect_equal(nrow(out$rows), 3, info = nm)
-    expect_true(all(is.na(out$rows$answer) & is.na(out$rows$probability) & is.na(out$rows$score)), info = nm)
+    expect_true(all(is.na(out$rows$answer) & is.na(out$rows$probability)), info = nm)
     expect_equal(out$rows$type, c("yes_no", "choice", "score"), info = nm)
   }
   mixed <- jev_reply()
@@ -380,7 +377,6 @@ test_that("OpenAI refusals give NA rows without aborting the other questions", {
   both$answers[[3]] <- list(type = "refusal", name = "anger")
   expect_warning(out <- parse_decide_response(oa, both, qs), "late.*anger")
   expect_equal(out$rows$answer, c(NA, "billing", NA))
-  expect_equal(out$rows$score, c(NA_real_, NA_real_, NA_real_))
 })
 
 test_that("non-JSON, empty and error bodies report the HTTP status", {
@@ -460,7 +456,7 @@ test_that("rows carry confidence and per-option probabilities on every backend",
   )
   for (nm in names(outs)) {
     rows <- outs[[nm]]
-    expect_named(rows, c("question", "type", "answer", "probability", "score", "confidence", "probabilities"), info = nm)
+    expect_named(rows, c("question", "type", "answer", "probability", "confidence", "probabilities"), info = nm)
     expect_equal(names(rows$probabilities[[1]]), c("yes", "no"), info = nm)
     expect_equal(names(rows$probabilities[[2]]), c("billing", "delivery", "other"), info = nm)
     expect_equal(names(rows$probabilities[[3]]), c("calm", "annoyed", "furious"), info = nm)
@@ -526,4 +522,11 @@ test_that("usage carries Gemini modality tokens and OpenAI cache writes", {
   reply <- openai_reply()
   reply$usage$input_tokens_details$cache_write_tokens <- 1381
   expect_equal(parse_decide_response(oa, reply, qs)$usage$cache_write_tokens, 1381)
+})
+
+test_that("perplexity() is a stub that stops with the replacement providers, whatever it is given", {
+  for (args in list(list(), list(.model = "sonar"), list("a", b = 2))) {
+    expect_error(do.call(perplexity, args), "removed in tidyllm 0.8.0.*openai.*claude.*gemini.*openrouter.*deep_research")
+  }
+  expect_true("perplexity" %in% getNamespaceExports("tidyllm"))
 })

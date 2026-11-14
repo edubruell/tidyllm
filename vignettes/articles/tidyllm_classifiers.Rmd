@@ -112,17 +112,18 @@ frame_answer <- \(x) paste0("Survey question: What is your job? Answer: ", x)
 ```
 
 ```{r decide_one, eval = FALSE}
-decide(frame_answer("Residential roofer"), occ_questions, gemini())
+decide(frame_answer("Residential roofer"), occ_questions, gemini()) |>
+  select(question, type, answer, probability)
 ```
 
 ```
-# A tibble: 1 × 5
-  question type   answer probability score
-  <chr>    <chr>  <chr>        <dbl> <dbl>
-1 occ2     choice 47           0.998    NA
+# A tibble: 1 × 4
+  question type   answer probability
+  <chr>    <chr>  <chr>        <dbl>
+1 occ2     choice 47           0.998
 ```
 
-The result has five columns: `question`, `type`, `answer`, `probability` and `score`. For `occ2`, the model chooses code 47, Construction and Extraction, which fits a roofer, and assigns it probability 0.998. `score` is `NA` because this choice question is not an ordered scale question.
+The result has one row per question; we show its first four columns. For `occ2`, the model chooses code 47, Construction and Extraction, which fits a roofer, and assigns it probability 0.998.
 
 Code 99 is the codebook's "Missing" category: the answer names no occupation, or is too vague to place. The framing line tells the model what kind of text it is reading.
 

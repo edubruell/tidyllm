@@ -341,3 +341,23 @@ test_that("field_lgl validates its definitions", {
   json <- jsonlite::toJSON(unclass(tidyllm_schema(q = field_lgl("q", .true = "a", .false = "b"))), auto_unbox = TRUE)
   expect_false(grepl("description\":\"a|true_description", json))
 })
+
+test_that("the PDF text fallback is announced once per call, with provider, count and files", {
+  skip_if_not_installed("pdftools")
+  pdf <- pdf_file(fake_pdf())
+  states <- list(decide_parts(pdf), decide_parts(pdf), decide_parts("plain text"))
+  expect_message(inform_pdf_text_fallback(states, meta_of(openai())), "openai.*2 PDFs.*p.pdf.*lost")
+  expect_equal(length(testthat::capture_messages(inform_pdf_text_fallback(states, meta_of(openai())))), 1)
+  expect_silent(inform_pdf_text_fallback(states, meta_of(gemini())))
+  forced <- list(decide_parts(pdf_file(fake_pdf(), .text_extract = TRUE)))
+  expect_message(inform_pdf_text_fallback(forced, meta_of(gemini())), "gemini.*1 PDF\\b")
+  expect_silent(inform_pdf_text_fallback(list(decide_parts("plain text")), meta_of(openai())))
+})
+
+test_that("decide() announces the PDF fallback once and still stops on an empty PDF", {
+  skip_if_not_installed("pdftools")
+  q <- tidyllm_schema(q = field_lgl("Is it a greeting?"))
+  msgs <- testthat::capture_messages(
+    decide(list(pdf_file(fake_pdf()), pdf_file(fake_pdf())), q, openai(), .dry_run = TRUE))
+  expect_length(grep("layout, tables and figures are lost", msgs), 1)
+})

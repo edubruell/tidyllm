@@ -42,7 +42,7 @@ ollama_has_model <- function(.model) {
 
 expect_decide_shape <- function(.out, .questions) {
   llt_expect_tibble(.out, length(.questions))
-  llt_expect_true(identical(names(.out), c("question", "type", "answer", "probability", "score", "confidence", "probabilities")),
+  llt_expect_true(identical(names(.out), c("question", "type", "answer", "probability", "confidence", "probabilities")),
                   paste("columns were", paste(names(.out), collapse = ",")))
   llt_expect_true(identical(.out$question, .questions), paste("questions were", paste(.out$question, collapse = ",")))
   llt_expect_true(all(.out$probability >= 0 & .out$probability <= 1), "probabilities should lie in [0, 1]")
@@ -57,19 +57,18 @@ run_provider <- function(.name, .make) {
     out <- decide(STATE, yes_no_q(), .make())
     expect_decide_shape(out, "late")
     llt_expect_true(out$type == "yes_no" && out$answer == "yes", paste("answer was", out$answer))
-    llt_expect_true(is.na(out$score), "score should be NA for yes/no")
+    llt_expect_true(!"score" %in% names(out), "there is no score column")
   })
   llt_test(paste(.name, "choice question"), {
     out <- decide(STATE, choice_q(), .make())
     expect_decide_shape(out, "topic")
     llt_expect_true(out$type == "choice" && out$answer %in% c("billing", "delivery", "other"), paste("answer was", out$answer))
-    llt_expect_true(is.na(out$score), "score should be NA for choice")
   })
   llt_test(paste(.name, "score question"), {
     out <- decide(STATE, score_q(), .make())
     expect_decide_shape(out, "anger")
     llt_expect_true(out$type == "score" && out$answer %in% c("calm", "annoyed", "furious"), paste("answer was", out$answer))
-    llt_expect_true(is.finite(out$score) && out$score >= 0 && out$score <= 2, paste("score was", out$score))
+    llt_expect_true(is.finite(out$probability) && length(out$probabilities[[1]]) == 3, "score row should carry three level probabilities")
   })
   llt_test(paste(.name, "multi-question call keeps order"), {
     out <- decide(STATE, multi_q(), .make())

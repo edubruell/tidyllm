@@ -55,14 +55,13 @@ decide_questions <- function(.questions) {
 #' @param .probabilities A named numeric vector over the options.
 #' @return A one-row tibble in the `decide()` column layout.
 #' @noRd
-decide_row <- function(.question, .type, .answer, .probability, .score = NA_real_,
+decide_row <- function(.question, .type, .answer, .probability,
                        .confidence = NA_real_, .probabilities = numeric(0)) {
   tibble::tibble(
     question = .question,
     type = .type,
     answer = .answer,
     probability = as.numeric(.probability),
-    score = as.numeric(.score),
     confidence = as.numeric(.confidence),
     probabilities = list(.probabilities)
   )
@@ -136,7 +135,7 @@ decide_refused <- function(.answer, .field) {
 #' The result row for a question the model did not answer
 #' @noRd
 refused_row <- function(.q) {
-  decide_row(.q$name, .q$type, NA_character_, NA_real_, NA_real_)
+  decide_row(.q$name, .q$type, NA_character_, NA_real_)
 }
 
 #' Warn once about the questions that came back refused
@@ -222,7 +221,7 @@ system_one_row <- function(.q, .answer) {
                       .confidence = confidence, .probabilities = by_option))
   }
   best <- which.max(by_option)
-  decide_row(.q$name, "score", names(by_option)[best], by_option[[best]], .answer$score %||% NA_real_,
+  decide_row(.q$name, "score", names(by_option)[best], by_option[[best]],
              .confidence = confidence, .probabilities = by_option)
 }
 

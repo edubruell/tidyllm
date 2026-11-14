@@ -43,10 +43,10 @@ minute, so lower it if you see rate-limit warnings.}
 A tibble with one row per question and the columns \code{question}, \code{type}
 (\code{"yes_no"}, \code{"choice"} or \code{"score"}), \code{answer} (\code{"yes"} or \code{"no"}, the chosen
 option, or the score level with the highest probability), \code{probability} (of
-that answer), \code{score} (the expected level position as the backend reports
-it, counted from 0; \code{NA} for other types), \code{confidence} (the backend's
+that answer), \code{confidence} (the backend's
 confidence in the answer; for yes/no questions the larger of the probability
-of yes and of no when the backend gives none) and \code{probabilities} (a list
+of yes and of no when the backend gives none, and \code{NA} for choice and score
+questions) and \code{probabilities} (a list
 column with one named numeric vector over the options for each row). For many
 states, one block of rows per state with \code{state} and \code{state_id} in front.
 
@@ -97,7 +97,9 @@ tibble. A provider that cannot read a media type stops with a message before
 any request; \code{decide()} also checks image size, format and count against the
 provider's limits and never resizes an image. A PDF sent to a provider that
 does not read PDFs is replaced by its extracted text; a PDF made with
-\code{pdf_file(.text_extract = TRUE)} always goes as text.
+\code{pdf_file(.text_extract = TRUE)} always goes as text. Either way \code{decide()}
+tells you once per call, naming the provider and the files, that layout,
+tables and figures are lost. A PDF without extractable text stops the call.
 
 Images, audio and video leave your machine and go to the provider. Do not send
 restricted or personal data, such as survey photos with faces.

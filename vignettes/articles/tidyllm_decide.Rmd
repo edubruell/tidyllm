@@ -137,13 +137,13 @@ one <- decide(answers$text[1], questions, jev())
 ```
 
 ```{r one_call_saved, echo = FALSE}
-one <- read_rds("decide_one.rds")
+one <- read_rds("decide_one.rds") |> select(-any_of("score"))
 one
 ```
 
-The model says yes to the economy question at 0.96, names housing as the topic at 1.00, and reports strong dissatisfaction at 1.00. For a score question, `score` is the average level position, weighted by the probabilities and counted from zero. On three levels, 2 means strong.
+The model says yes to the economy question at 0.96, names housing as the topic at 1.00, and reports strong dissatisfaction at 1.00. For a score question, `answer` is the level with the highest probability, and `probabilities` holds the probability of every level.
 
-A current call returns two more columns that the saved result above predates. `confidence` is the model's own confidence in the answer. `probabilities` holds the probability of every option, so you can see the runner-up: a 0.55 answer with a 0.40 runner-up is a closer call than one with five options at 0.20 each.
+A current call returns two more columns that the saved result above predates, so run it yourself to see them. `confidence` is the model's own confidence in the answer. `probabilities` holds the probability of every option, so you can see the runner-up: a 0.55 answer with a 0.40 runner-up is a closer call than one with five options at 0.20 each.
 
 The tibble also carries three pieces of information that are not columns. R calls them attributes: `usage` (the tokens sent and returned), `latency` (the seconds the call took, from sending to reply) and `model` (the model that answered).
 
@@ -162,7 +162,7 @@ many <- decide(answers$text, questions, jev())
 ```
 
 ```{r code_all_saved, echo = FALSE}
-many <- read_rds("decide_many.rds")
+many <- read_rds("decide_many.rds") |> select(-any_of("score"))
 ```
 
 A list works too. Every element of `.state` is one item, and an item is a string, an image, a message built with `llm_message()`, or a list of parts that belong together. A named list uses its names as the `state` labels. One call with a single item, however you pass it, returns the plain tibble from the previous section, without `state` and `state_id`.
@@ -227,7 +227,7 @@ provider_capabilities(.what = "decide_media") |>
   summarise(reads = paste(media, collapse = ", "), .by = provider)
 ```
 
-Jev and OpenAI read images, and Gemini reads images, audio, video and PDFs. Ollama reads images through the same call; that route is new and has not run against a live server yet. A provider that cannot read a file type stops with a message before anything is sent. A PDF sent to a provider that does not read PDFs goes as its extracted text instead.
+Jev and OpenAI read images, and Gemini reads images, audio, video and PDFs. Ollama reads images through the same call; that route is new and has not run against a live server yet. A provider that cannot read a file type stops with a message before anything is sent. A PDF sent to a provider that does not read PDFs goes as its extracted text instead, and `decide()` tells you once per call that layout and figures are lost. A PDF without any text, such as a scan, stops the call.
 
 Wrap a file in `img()` to give `decide()` a picture. The question refers to "the picture" because the picture is the only thing the model sees.
 
@@ -312,7 +312,7 @@ providers_res <- imap(providers, run_provider) |> list_rbind()
 ```
 
 ```{r providers_run_saved, echo = FALSE}
-providers_res <- read_rds("decide_providers.rds")
+providers_res <- read_rds("decide_providers.rds") |> select(-any_of("score"))
 ```
 
 The summary gives the number of texts, the median latency, the mean input tokens per call and the model name for each provider.
@@ -361,7 +361,7 @@ decide(answers$text[1], one_level, jev())
 
 The first message ends with `` strings must be non-empty ``. The second ends with `` Question `a` needs field_fct(.levels = ) with at least two levels. `` With many texts, the message also names the position, such as "State 3 of 8", so you can find the bad entry.
 
-Other problems happen after sending: the provider is down, a request times out, or the model gives no answer to a question. Then `decide()` returns `NA` in `answer`, `probability` and `score` for what is missing, keeps everything else, and warns once.
+Other problems happen after sending: the provider is down, a request times out, or the model gives no answer to a question. Then `decide()` returns `NA` in `answer` and `probability` for what is missing, keeps everything else, and warns once.
 
 A *dry run* builds the request and stops before sending it. It needs no API key and costs nothing, so you can check what would be sent. With many texts it returns a list with one request per text.
 

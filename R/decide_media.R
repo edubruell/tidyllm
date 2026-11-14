@@ -106,6 +106,25 @@ decide_pdf_fallback <- function(.state, .meta) {
   .state
 }
 
+#' Tell the user once per call which PDFs go as text and that layout and figures are lost
+#' @param .states A list of parsed states, before the PDF fallback.
+#' @param .meta Provider metadata from `provider_metadata()`.
+#' @return The file names, invisibly.
+#' @noRd
+inform_pdf_text_fallback <- function(.states, .meta) {
+  native <- "pdf" %in% .meta$decide_media
+  parts <- unlist(lapply(.states, \(s) s$parts), recursive = FALSE)
+  files <- vapply(Filter(\(p) S7_inherits(p, tidyllm_pdf) && (p@text_extract || !native), parts),
+                  \(p) p@pdfname, character(1))
+  provider <- .meta$provider_name
+  if (length(files) > 0) {
+    cli::cli_inform(c(
+      "{.val {provider}} gets the text of {length(files)} PDF{?s} ({.file {unique(files)}}); layout, tables and figures are lost.",
+      i = "Use a provider that reads PDFs natively, such as gemini(), to keep them."))
+  }
+  invisible(files)
+}
+
 #' Providers whose decide registry lists a media type
 #' @param .type One of the decide media types.
 #' @noRd

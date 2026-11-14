@@ -927,7 +927,9 @@ validate_message_attachments <- function(.llm, provider) {
 #' any request; `decide()` also checks image size, format and count against the
 #' provider's limits and never resizes an image. A PDF sent to a provider that
 #' does not read PDFs is replaced by its extracted text; a PDF made with
-#' `pdf_file(.text_extract = TRUE)` always goes as text.
+#' `pdf_file(.text_extract = TRUE)` always goes as text. Either way `decide()`
+#' tells you once per call, naming the provider and the files, that layout,
+#' tables and figures are lost. A PDF without extractable text stops the call.
 #'
 #' Images, audio and video leave your machine and go to the provider. Do not send
 #' restricted or personal data, such as survey photos with faces.
@@ -969,10 +971,10 @@ validate_message_attachments <- function(.llm, provider) {
 #' @return A tibble with one row per question and the columns `question`, `type`
 #'   (`"yes_no"`, `"choice"` or `"score"`), `answer` (`"yes"` or `"no"`, the chosen
 #'   option, or the score level with the highest probability), `probability` (of
-#'   that answer), `score` (the expected level position as the backend reports
-#'   it, counted from 0; `NA` for other types), `confidence` (the backend's
+#'   that answer), `confidence` (the backend's
 #'   confidence in the answer; for yes/no questions the larger of the probability
-#'   of yes and of no when the backend gives none) and `probabilities` (a list
+#'   of yes and of no when the backend gives none, and `NA` for choice and score
+#'   questions) and `probabilities` (a list
 #'   column with one named numeric vector over the options for each row). For many
 #'   states, one block of rows per state with `state` and `state_id` in front.
 #'
@@ -1043,7 +1045,9 @@ decide <- function(.state,
     msg <- unsupported_verb_message(meta$provider_name, "decide")
     cli::cli_abort("{msg}", call = NULL)
   }
+  parsed_states <- states
   states <- purrr::imap(states, \(s, i) at_state(i, length(states), \() decide_checked(s, questions, meta)))
+  inform_pdf_text_fallback(parsed_states, meta)
 
   common_args <- list(
     .state = if (length(states) == 1) states[[1]] else decide_many(states, .max_active, .progress),
@@ -1054,4 +1058,19 @@ decide <- function(.state,
   )
   common_args <- common_args[!purrr::map_lgl(common_args, is.null)]
   dispatch_to_provider(provider_expr, "decide", common_args)
+}
+
+#' Removed: perplexity()
+#'
+#' `perplexity()` was removed in tidyllm 0.8.0 and always stops with a message.
+#'
+#' @param ... Ignored, so that old calls reach the message.
+#' @return Never returns.
+#' @keywords internal
+#' @export
+perplexity <- function(...) {
+  cli::cli_abort(c(
+    "{.fn perplexity} was removed in tidyllm 0.8.0.",
+    i = "Use {.fn openai}, {.fn claude}, {.fn gemini} or {.fn openrouter} instead; {.fn deep_research} works with {.fn openai}."
+  ), call = NULL)
 }

@@ -903,7 +903,7 @@ openai_decide_row <- function(.q, .answer) {
   }
   best <- which.max(probs)
   label <- .answer$probabilities[[best]]$label %||% .q$options[best]
-  decide_row(.q$name, "score", label, probs[[best]], .answer$score %||% NA_real_,
+  decide_row(.q$name, "score", label, probs[[best]],
              .confidence = decide_confidence(.answer), .probabilities = by_option)
 }
 
