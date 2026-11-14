@@ -45,12 +45,7 @@ file by hand if the fixtures were genuinely re-recorded.
 | groq, mistral (ChatCompletions) | 3 | SSE |
 | gemini | plain, multibyte × {json-array, sse}; thinking sse | both endpoints |
 | ollama | plain, multibyte, plain-cold | ndjson |
-| perplexity | **none** | no credits on this account |
 | claude, groq, mistral, openai, gemini, ollama | `*_tools_stream` | tool calls, see below |
-
-`perplexity()` is the one streaming provider with no fixture, so its
-`handle_stream()` will be refactored without a net. Verify that path with
-`.dry_run` and a manual read, or record a fixture if credits ever appear.
 
 Ollama is recorded with `.think = FALSE`. With the default thinking trace the
 fixture is 218 KB / 430 lines, and because the current loop sleeps 0.25s per

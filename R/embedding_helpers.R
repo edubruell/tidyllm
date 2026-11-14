@@ -40,15 +40,18 @@ parse_embedding_input <- function(.input) {
   return(message_texts)
 }
 
-#' Type of one embed part: text, image, audio or video
+#' Type of one media part: text, image, audio, video or pdf
+#'
+#' `embed()` never accepts `"pdf"`; `decide()` does.
 #' @param .part A character string or a tidyllm media object.
-#' @return One of `"text"`, `"image"`, `"audio"`, `"video"`.
+#' @return One of `"text"`, `"image"`, `"audio"`, `"video"`, `"pdf"`, or `NA`.
 #' @noRd
 embed_part_type <- function(.part) {
   if (is.character(.part)) return("text")
   if (S7_inherits(.part, tidyllm_image)) return("image")
   if (S7_inherits(.part, tidyllm_audio)) return("audio")
   if (S7_inherits(.part, tidyllm_video)) return("video")
+  if (S7_inherits(.part, tidyllm_pdf)) return("pdf")
   NA_character_
 }
 
@@ -61,7 +64,8 @@ embed_part_label <- function(.part) {
     text  = .part,
     image = paste0("[IMG] ", .part@imagename),
     audio = paste0("[AUDIO] ", .part@audioname),
-    video = paste0("[VIDEO] ", .part@videoname)
+    video = paste0("[VIDEO] ", .part@videoname),
+    pdf   = paste0("[PDF] ", .part@pdfname)
   )
 }
 
@@ -73,7 +77,8 @@ embed_part_path <- function(.part) {
   switch(embed_part_type(.part),
     image = .part@imagepath,
     audio = .part@audiopath,
-    video = .part@videopath
+    video = .part@videopath,
+    pdf   = .part@pdfpath
   )
 }
 
@@ -117,7 +122,7 @@ embed_audio_format <- function(.part) {
 embed_item_of <- function(.x) {
   parts <- if (is.list(.x) && !is.object(.x)) .x else list(.x)
   is_part <- function(p) {
-    if (is.character(p)) length(p) == 1 && !is.na(p) else !is.na(embed_part_type(p))
+    if (is.character(p)) length(p) == 1 && !is.na(p) else embed_part_type(p) %in% EMBED_MEDIA_TYPES
   }
   c(
     "Each element of an embed() list must be a single string, an img(), audio_file() or video_file() object, or a list of those for one fused item" =

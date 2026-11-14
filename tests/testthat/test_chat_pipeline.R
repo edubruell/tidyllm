@@ -8,7 +8,7 @@
 # absent: it delegates to an ellmer Chat object and builds no httr2 request, so
 # there is nothing for a driver to perform.
 SPLIT_PROVIDERS <- c("claude", "cc", "groq", "mistral", "deepseek", "openrouter",
-                     "llamacpp", "azure_openai", "ollama", "gemini", "perplexity",
+                     "llamacpp", "azure_openai", "ollama", "gemini",
                      "openai")
 
 test_that("every split provider has a builder", {
@@ -70,8 +70,7 @@ test_that("every builder sets a mode the pipeline understands", {
     expect_identical(plain$mode, "value", label = paste0(p, " non-streaming mode"))
     expect_false(tidyllm:::chat_request_streams(plain))
 
-    # Perplexity is the only provider that streams without a tools argument to
-    # conflict with, but all of them accept .stream on its own.
+    # All providers accept .stream on its own, tools aside.
     streamed <- do.call(b, c(args, list(.stream = TRUE)))
     expect_identical(streamed$mode, "stream", label = paste0(p, " streaming mode"))
     expect_true(tidyllm:::chat_request_streams(streamed))
@@ -98,16 +97,16 @@ test_that("rate limit and logprob support is decided by the provider class", {
     azure = tidyllm:::api_azure_openai, gemini = tidyllm:::api_gemini,
     ollama = tidyllm:::api_ollama, deepseek = tidyllm:::api_deepseek,
     openrouter = tidyllm:::api_openrouter, llamacpp = tidyllm:::api_llamacpp,
-    perplexity = tidyllm:::api_perplexity, compatible = tidyllm:::api_compatible
+    compatible = tidyllm:::api_compatible
   )
   expect_rl <- c(claude = TRUE, openai = TRUE, cc = TRUE, groq = TRUE,
                  mistral = TRUE, azure = TRUE, gemini = FALSE, ollama = FALSE,
                  deepseek = FALSE, openrouter = FALSE, llamacpp = FALSE,
-                 perplexity = FALSE, compatible = FALSE)
+                 compatible = FALSE)
   expect_lp <- c(cc = TRUE, azure = TRUE, deepseek = TRUE, llamacpp = TRUE,
                  compatible = TRUE, claude = FALSE, openai = FALSE, groq = FALSE,
                  mistral = FALSE, gemini = FALSE, ollama = FALSE,
-                 openrouter = FALSE, perplexity = FALSE)
+                 openrouter = FALSE)
 
   # Every provider's header dialect at once, so a method that legitimately
   # parses finds what it needs and only a real NULL override returns NULL.
@@ -145,8 +144,7 @@ test_that("rate limit and logprob support is decided by the provider class", {
 
 # `finish_chat_response()` is pure given a (built, response) pair, so every hook
 # it dispatches on can be exercised offline with a hand-built response. Without
-# this, `.meta_fn` has no exercised consumer anywhere: its only user is
-# perplexity, whose live suite is skipped for lack of account quota.
+# this, `.meta_fn` would have no exercised consumer outside the CLI providers.
 
 fake_response <- function(reply = "hello", meta = list(model = "m"),
                           raw = NULL, headers = NULL, ...) {
@@ -164,43 +162,16 @@ test_that("finish_chat_response appends the reply and metadata", {
   expect_identical(get_metadata(out)$model, "claude-sonnet-5")
 })
 
-test_that("finish_chat_response folds perplexity search results into metadata", {
-  withr::local_options(lifecycle_verbosity = "quiet")
-  built <- tidyllm:::perplexity_build_chat_request(llm_message("hi"), .dry_run = TRUE)
-  expect_false(is.null(built$meta_fn))
+test_that("finish_chat_response applies a meta_fn to the metadata", {
+  built <- tidyllm:::claude_build_chat_request(llm_message("hi"), .dry_run = TRUE)
+  built$meta_fn <- function(meta, response) {
+    meta$specific_metadata$extra_field <- "seen"
+    meta
+  }
 
-  results <- list(list(title = "A source", url = "https://example.org"))
-  # The shape matters and used to be wrong: the parsed body lives under
-  # `raw$content`, so a hook reading `response$search_results` found nothing and
-  # perplexity's search results never reached the metadata at all.
-  out <- tidyllm:::finish_chat_response(
-    built,
-    fake_response("answer", meta = list(model = "sonar"),
-                  raw = list(content = list(search_results = results)))
-  )
+  out <- tidyllm:::finish_chat_response(built, fake_response("answer"))
 
-  # api_specific is a list-column on the metadata tibble.
-  expect_identical(get_metadata(out)$api_specific[[1]]$search_results, results)
-})
-
-test_that("perplexity search results survive the streaming assembler", {
-  # Streamed chunks repeat the response-level fields, so the assembled body has
-  # to carry `search_results` through for the hook above to see anything.
-  results <- list(list(title = "A source", url = "https://example.org"))
-  events <- list(
-    list(id = "1", model = "sonar",
-         choices = list(list(delta = list(content = "an")))),
-    list(search_results = results, citations = list("https://example.org"),
-         choices = list(list(delta = list(content = "swer"),
-                             finish_reason = "stop")))
-  )
-  assembled <- assemble_stream_body(tidyllm:::api_perplexity(
-    short_name = "perplexity", long_name = "Perplexity",
-    api_key_env_var = "PERPLEXITY_API_KEY"
-  ), events)
-
-  expect_identical(assembled$search_results, results)
-  expect_identical(assembled$choices[[1]]$message$content, "answer")
+  expect_identical(get_metadata(out)$api_specific[[1]]$extra_field, "seen")
 })
 
 test_that("finish_chat_response leaves metadata alone without a meta_fn", {
@@ -300,7 +271,7 @@ test_that("an absent body reads as no tool calls on every provider", {
     azure = tidyllm:::api_azure_openai, gemini = tidyllm:::api_gemini,
     ollama = tidyllm:::api_ollama, deepseek = tidyllm:::api_deepseek,
     openrouter = tidyllm:::api_openrouter, llamacpp = tidyllm:::api_llamacpp,
-    perplexity = tidyllm:::api_perplexity, compatible = tidyllm:::api_compatible
+    compatible = tidyllm:::api_compatible
   )
   for (n in names(apis)) {
     api <- apis[[n]](short_name = "x", long_name = "X", api_key_env_var = "K")
@@ -327,7 +298,7 @@ test_that("every provider accepting streamed tools has its own assembler", {
   extra <- list(azure_openai = list(.deployment = "x",
                                     .endpoint_url = "https://x.openai.azure.com"))
 
-  for (p in setdiff(SPLIT_PROVIDERS, c("cc", "perplexity"))) {
+  for (p in setdiff(SPLIT_PROVIDERS, "cc")) {
     b <- get(paste0(p, "_build_chat_request"), asNamespace("tidyllm"))
     built <- do.call(b, c(list(llm, .tools = tool, .stream = TRUE, .dry_run = TRUE),
                           extra[[p]]))

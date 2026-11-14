@@ -9,7 +9,7 @@ deep_research(.llm, .provider, .background = FALSE, ...)
 \arguments{
 \item{.llm}{An \code{LLMMessage} object containing the research question.}
 
-\item{.provider}{A function or function call specifying the provider (e.g., \code{perplexity()}).}
+\item{.provider}{A function or function call specifying the provider (e.g., \code{openai()}).}
 
 \item{.background}{Logical; if TRUE, returns a \code{tidyllm_research_job} immediately (default: FALSE).}
 
@@ -21,5 +21,5 @@ If \code{.background = TRUE}, a \code{tidyllm_research_job} for use with \code{c
 }
 \description{
 The \code{deep_research()} function sends a message to a provider's deep research endpoint.
-Currently supported: Perplexity (\code{sonar-deep-research} via async API).
+Currently supported: OpenAI (deep research models via the background API).
 }

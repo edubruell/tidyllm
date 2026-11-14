@@ -10,6 +10,7 @@
 
 - **Multiple providers**: Switch between cloud and local models using the same verb + provider pattern.
 - **Unified media system**: Send images, audio, video, and PDFs to any provider that supports them via `.media`. Upload files to provider servers for reuse via `.files` and `upload_file()`.
+- **Closed questions with probabilities**: `decide()` puts yes/no, choice and score questions to a text or an image and returns a tibble with one row per question and the probability of each answer. It works with `jev()`, `openai()`, `gemini()` and `ollama()`.
 - **Interactive message history**: Manage multi-turn conversations with structured history automatically formatted for each API.
 - **Batch processing**: Handle large workloads with Anthropic, OpenAI, Mistral, Groq, and Gemini batch APIs, reducing costs by up to 50%.
 - **Tidy workflow**: Pipeline-oriented, side-effect-free design that integrates naturally with tidyverse data workflows.
@@ -79,6 +80,7 @@ Read the [Changelog](https://edubruell.github.io/tidyllm/news/) for the full lis
 - [Documentation](https://edubruell.github.io/tidyllm/)
 - Use-case oriented articles:
   - [Classifying Texts with tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_classifiers.html)
+  - [Decision Models with decide()](https://edubruell.github.io/tidyllm/articles/tidyllm_decide.html)
   - [Structured Question Answering from PDFs](https://edubruell.github.io/tidyllm/articles/tidyllm-pdfquestions.html)
   - [Embedding Models in tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_embed.html)
   - [Working with Files and Media](https://edubruell.github.io/tidyllm/articles/tidyllm_video.html)

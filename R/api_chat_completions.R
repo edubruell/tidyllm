@@ -283,7 +283,7 @@ method(assemble_stream_body, list(api_chat_completions, class_list)) <- function
   for (event in .events) {
     envelope <- merge_stream_envelope(
       envelope, event,
-      # `search_results` and `citations` are Perplexity's; they are response-level
+      # `search_results` and `citations` are response-level
       # in exactly the same way, and `intersect()` ignores them elsewhere.
       c("id", "model", "created", "object", "system_fingerprint", "usage",
         "search_results", "citations")

@@ -34,6 +34,7 @@ Supported Verbs:
 \itemize{
 \item \strong{\code{chat()}}: Sends a message to an Ollama model and retrieves the model's response.
 \item \strong{\code{embed()}}: Generates embeddings for input texts using an Ollama model.
+\item \strong{\code{decide()}}: Answers closed questions with a local decision model (default \code{clef-flash}) through the System One endpoint of the server.
 \item \strong{\code{send_batch()}}: Behaves different than the other \code{send_batch()} verbs since it immediately processes the answers
 }
 }

@@ -23,7 +23,7 @@ test_that("every provider with a builder registers it as a build action", {
   # so a provider that gains a builder but not the `build =` entry would be
   # silently unavailable to it, with an error that blames the provider.
   providers <- c("claude", "openai", "gemini", "ollama", "groq", "mistral",
-                 "deepseek", "openrouter", "llamacpp", "perplexity",
+                 "deepseek", "openrouter", "llamacpp",
                  "chat_completions", "azure_openai")
 
   for (p in providers) {

@@ -191,7 +191,7 @@ llt_test("every provider with a builder registers it for send_chat", {
   # so a provider that gains a builder but forgets the `build = ` entry would
   # be silently unavailable to it.
   providers <- c("claude", "openai", "gemini", "ollama", "groq", "mistral",
-                 "deepseek", "openrouter", "llamacpp", "perplexity",
+                 "deepseek", "openrouter", "llamacpp",
                  "chat_completions", "azure_openai")
   for (p in providers) {
     meta <- do.call(get(p), list(.called_from = "metadata"))

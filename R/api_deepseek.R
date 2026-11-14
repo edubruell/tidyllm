@@ -13,7 +13,7 @@ method(ratelimit_from_header, list(api_deepseek, class_any)) <- function(.api, .
 
 
 
-#' A function to get metadata from Perplexity responses
+#' A function to get metadata from DeepSeek responses
 #'
 #' @noRd
 method(extract_metadata, list(api_deepseek,class_list))<- function(.api,.response) {

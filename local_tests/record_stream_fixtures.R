@@ -152,11 +152,6 @@ if (cold_ok) {
   message("  skipping ollama_plain_cold (could not unload the model)")
 }
 
-# perplexity(): no credits on this account, so its stream cannot be recorded.
-# Its handle_stream() is therefore the one provider the refactor will land
-# without a fixture; see local_tests/fixtures/README.md.
-message("  skipping perplexity (no credits on this account)")
-
 # ── Summary ───────────────────────────────────────────────────────────────────
 
 files <- list.files(FIXTURE_DIR, pattern = "\\.rds$", full.names = TRUE)

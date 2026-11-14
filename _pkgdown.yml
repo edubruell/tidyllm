@@ -33,6 +33,7 @@ reference:
       - send_chat
       - parallel_chat
       - embed
+      - decide
       - deep_research
       - check_job
       - fetch_job
@@ -85,10 +86,10 @@ reference:
       - groq
       - mistral
       - ollama
-      - perplexity
       - deepseek
       - voyage
       - openrouter
+      - jev
       - llamacpp
       - azure_openai
       - chat_completions
@@ -199,14 +200,6 @@ reference:
       Find out which verbs, arguments and media types each provider supports.
     contents:
       - provider_capabilities
-  - title: "Perplexity-Specific Functions (deprecated)"
-    desc: >
-      Functions for Perplexity AI chat and asynchronous deep research.
-    contents:
-      - perplexity_chat
-      - perplexity_deep_research
-      - perplexity_check_research
-      - perplexity_fetch_research
 
   - title: "DeepSeek-Specific Functions"
     desc: >

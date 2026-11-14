@@ -2,7 +2,10 @@
 #' The OpenAI Responses API provider class
 #'
 #' @noRd
-api_openai <- new_class("OpenAI", APIProvider)
+api_openai <- new_class("OpenAI", APIProvider, properties = list(
+  model = class_character,
+  detail = class_character
+))
 
 #' Convert LLMMessage to OpenAI Responses API format
 #'
@@ -849,6 +852,110 @@ openai_delete_file <- function(.file_id, .called_from = NULL, ...) {
 }
 
 
+#' Question text for OpenAI, which has no field for what yes and no mean
+#' @noRd
+openai_decide_instructions <- function(.q) {
+  if (is.null(.q$true)) return(.q$instructions)
+  paste0(.q$instructions, " Yes means: ", .q$true, " No means: ", .q$false)
+}
+
+#' One question in the OpenAI decisions wire shape
+#' @noRd
+openai_decide_question <- function(.q) {
+  base <- list(name = .q$name, instructions = openai_decide_instructions(.q))
+  switch(.q$type,
+    yes_no = c(list(type = "predicate"), base),
+    choice = c(list(type = "choice"), base, list(choices = purrr::map2(
+      .q$options, .q$descriptions, \(o, d) list(value = o, description = d)))),
+    score = c(list(type = "score"), base, list(levels = purrr::map2(
+      .q$options, .q$descriptions, \(o, d) list(label = o, description = d))))
+  )
+}
+
+#' OpenAI decision request: unnamed question array, bearer key
+#' @noRd
+method(decide_request, api_openai) <- function(.api, .state, .questions, .dry_run = FALSE) {
+  body <- list(
+    model = .api@model,
+    input = openai_decide_input(.state, if (length(.api@detail) > 0) .api@detail),
+    questions = purrr::map(unname(.questions), openai_decide_question)
+  )
+  httr2::request("https://api.openai.com/v1/decisions") |>
+    httr2::req_headers("Content-Type" = "application/json") |>
+    httr2::req_headers_redacted(Authorization = paste("Bearer", get_api_key(.api, .dry_run))) |>
+    httr2::req_body_json(body, auto_unbox = TRUE)
+}
+
+#' Read one OpenAI answer into a result row
+#' @noRd
+openai_decide_row <- function(.q, .answer) {
+  field <- c(yes_no = "probability", choice = "choice", score = "probabilities")[[.q$type]]
+  if (decide_refused(.answer, field)) return(refused_row(.q))
+  if (.q$type == "yes_no") {
+    return(decide_yes_no_row(.q, as.numeric(.answer$probability), decide_confidence(.answer)))
+  }
+  probs <- purrr::map_dbl(.answer$probabilities, "probability")
+  labels <- purrr::map_chr(.answer$probabilities, \(x) as.character(x$label %||% x$value %||% NA_character_))
+  by_option <- decide_option_probs(.q, stats::setNames(probs, labels))
+  if (.q$type == "choice") {
+    return(decide_row(.q$name, "choice", .answer$choice, probs[match(.answer$choice, labels)],
+                      .confidence = decide_confidence(.answer), .probabilities = by_option))
+  }
+  best <- which.max(probs)
+  label <- .answer$probabilities[[best]]$label %||% .q$options[best]
+  decide_row(.q$name, "score", label, probs[[best]], .answer$score %||% NA_real_,
+             .confidence = decide_confidence(.answer), .probabilities = by_option)
+}
+
+#' Pair OpenAI answers with questions by answer name
+#' @return The answers in question order; a refused answer without a name is not matchable and errors.
+#' @noRd
+openai_match_answers <- function(.answers, .questions) {
+  names_in <- purrr::map_chr(.answers, \(a) as.character(a$name %||% NA_character_))
+  unnamed <- sum(is.na(names_in))
+  unknown <- setdiff(names_in[!is.na(names_in)], names(.questions))
+  missing <- setdiff(names(.questions), names_in)
+  stats::setNames(
+    c(unnamed == 0, length(unknown) == 0, length(missing) == 0),
+    c("An answer in the reply has no `name`",
+      glue::glue("The reply answers unknown questions: {paste(unknown, collapse = ', ')}"),
+      glue::glue("The reply has no answer for: {paste(missing, collapse = ', ')}"))
+  ) |> validate_inputs()
+  .answers[match(names(.questions), names_in)]
+}
+
+#' OpenAI reply: answers carry the question name and are matched by it
+#' @noRd
+method(parse_decide_response, api_openai) <- function(.api, .body, .questions) {
+  c("The reply is not a JSON object" = is.list(.body)) |> validate_inputs()
+  c("The reply has no `answers` array" = is.list(.body$answers)) |> validate_inputs()
+  answers <- openai_match_answers(unname(.body$answers), .questions)
+  rows <- purrr::map2(unname(.questions), answers, openai_decide_row) |>
+    purrr::list_rbind() |>
+    warn_refused()
+  usage <- decide_usage(.body$usage)
+  usage$cached_tokens <- as_token_count(.body$usage$input_tokens_details$cached_tokens)
+  usage$cache_write_tokens <- as_token_count(.body$usage$input_tokens_details$cache_write_tokens)
+  list(rows = rows, usage = usage, model = .body$model %||% NA_character_)
+}
+
+#' Answer yes/no, choice and score questions with OpenAI decisions
+#'
+#' @param .model Decision model name; default `"gpt-6-luna"`.
+#' @param .detail `NULL` (default, OpenAI decides) or the image detail level: `"low"`,
+#'   `"high"`, `"auto"` or `"original"`. `"low"` costs about a quarter of the tokens.
+#' @inheritParams run_decide
+#' @noRd
+openai_decide <- function(.state, .questions, .model = "gpt-6-luna", .detail = NULL,
+                          .dry_run = FALSE, .timeout = 60, .max_tries = 3) {
+  c(".detail must be NULL, \"low\", \"high\", \"auto\" or \"original\"" =
+      is.null(.detail) || (length(.detail) == 1 && .detail %in% c("low", "high", "auto", "original"))) |>
+    validate_inputs()
+  api <- api_openai(short_name = "openai", long_name = "OpenAI", api_key_env_var = "OPENAI_API_KEY",
+                   model = .model, detail = .detail %||% character(0))
+  run_decide(api, .state, .questions, .dry_run, .timeout, .max_tries)
+}
+
 #' The `openai()` function acts as an interface for interacting with the OpenAI API
 #' through main `tidyllm` verbs such as `chat()`, `embed()`, and `send_batch()`.
 #' Chat uses the Responses API (`POST /v1/responses`); embeddings and batch operations
@@ -871,10 +978,12 @@ openai <- create_provider_function(
   list_models    = openai_list_models,
   deep_research  = openai_deep_research,
   upload_file    = openai_upload_file,
+  decide         = openai_decide,
   list_files     = openai_list_files,
   file_info      = openai_file_info,
   delete_file    = openai_delete_file,
-  .media = c("image", "files")
+  .media = c("image", "files"),
+  .decide_media = c("image")
 )
 
 #' Alias for the OpenAI Provider Function

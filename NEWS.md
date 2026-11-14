@@ -1,4 +1,42 @@
-# tidyllm 0.7.2
+# tidyllm 0.8.0 (development version)
+
+## Ask closed questions with `decide()`
+
+Decision models answer fixed questions about a text and report how likely each answer is. `decide()` sends a text and a set of questions to such a model and returns one row per question. Use it to classify, screen or score texts when you want a probability rather than free text.
+
+The questions are the fields of a `tidyllm_schema()`: `field_lgl()` asks a yes/no question, `field_fct()` asks a choice question, and `field_fct(.ordered = TRUE)` asks a score question over ordered levels.
+
+```r
+questions <- tidyllm_schema(
+  late = field_lgl("Was the payment late?"),
+  tone = field_fct("Tone of the message", .levels = c("polite", "angry")),
+  severity = field_fct("How severe is the complaint?",
+    .levels = c("low", "medium", "high"), .ordered = TRUE)
+)
+
+decide("The invoice arrived three weeks late and nobody answers my mails.",
+       questions, jev())
+```
+
+The result is a tibble with the columns `question`, `type`, `answer`, `probability`, `score` (the expected level position for score questions), `confidence` and `probabilities` (a list-column with one named vector per question). The attributes `usage`, `latency` and `model` describe the call. The reply is not an LLM message, so `get_reply()` does not apply. `.dry_run = TRUE` returns the request without sending it.
+
+`jev()` is a new provider for TypeSafe AI's Jev models and for any server that speaks the same System One API (key in `TYPESAFE_API_KEY`; pass `.server` for another URL). `decide()` also works with `openai()`, `gemini()` and `ollama()`. With `ollama()` it uses the local `clef-flash` model by default; this path follows the documented API and has not been tested against a running model yet.
+
+`decide()` also reads media. `.state` can be an `img()`, `audio_file()`, `video_file()` or `pdf_file()` object, an `LLMMessage`, or a list of parts that belong together (strings and media objects, one level only, names label the parts) wrapped as one element of the outer list, as in `list(list(photo_a = img("a.jpg"), photo_b = img("b.jpg")))`. `openai()` and `jev()` read images, `ollama()` passes images to a local Clef model (not tested live yet), and `gemini()` reads images, audio, video and PDFs. `provider_capabilities(.what = "decide_media")` lists what each provider reads. `openai(.detail = "low")` and `gemini(.resolution = "low")` cut the token cost of images; size and format limits are checked before any request.
+
+Many texts at once: every element of `.state` is one item, and an item is a string, a media object, an `LLMMessage`, or a list of parts that belong together. Pass one item, a character vector or a list of items (a named list uses its names as the `state` labels), and `decide()` sends one request per item, in parallel (`.max_active`, default 5; `.progress`), and returns one tibble with a leading `state` label and an integer `state_id`. A state that fails after its retries, or that the model refuses, gives `NA` rows and one warning; the other states keep their results. One item, however given, returns the same tibble as before, without the two new columns. With many states `usage` sums the states that succeeded and `latency` is the time of the whole run; `.dry_run = TRUE` returns a list of requests. To decide on many images, pass a list of `img()` objects: each element is its own item. Requests that get HTTP 529 (overloaded) are now retried like 429 and 503.
+
+`field_fct()` gains two arguments. `.ordered = TRUE` marks the levels as a scale, and `.level_descriptions` gives one description per level so the model knows what each option means. Both are only used by `decide()`; schemas for structured chat output are unchanged.
+
+`field_lgl()` gains `.true` and `.false`, which tell the model what yes and no mean. They are only used by `decide()`.
+
+## Perplexity removed
+
+`perplexity()` and the `perplexity_*()` functions, deprecated since 0.7.0, are gone. Perplexity models stay available through `openrouter()`, for example `openrouter(.model = "perplexity/sonar")`, and `websearch_tool()` gives any provider web search. `deep_research()` now supports `openai()` only. Research jobs started with `perplexity()` can no longer be checked or fetched; start them again with `deep_research(.provider = openai())`.
+
+# tidyllm 0.7.2: GitHub-only release, never on CRAN
+
+Version 0.7.2 was released on GitHub only. Its changes reach CRAN with 0.8.0.
 
 ## Embed images, audio and video
 

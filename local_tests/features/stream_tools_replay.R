@@ -379,9 +379,7 @@ llt_test("assembly keeps gemini's thoughtSignature on the functionCall part", {
 
 llt_test("the base-class default is silent rather than an error", {
   # `perform_chat_request()` assembles on every stream, including providers that
-  # will never see a tool call, so the default has to return quietly. No shipped
-  # provider still inherits it: perplexity, the one provider with no tool
-  # support, is a ChatCompletions subclass and gets that family's assembler.
+  # will never see a tool call, so the default has to return quietly.
   api <- tidyllm:::APIProvider(short_name = "x", long_name = "X", api_key_env_var = "K")
   llt_expect_true(is.null(assemble_stream_body(api, list())),
                   "the APIProvider default no longer returns NULL")

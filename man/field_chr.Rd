@@ -9,11 +9,22 @@
 \usage{
 field_chr(.description = character(0), .vector = FALSE)
 
-field_fct(.description = character(0), .levels, .vector = FALSE)
+field_fct(
+  .description = character(0),
+  .levels,
+  .vector = FALSE,
+  .ordered = FALSE,
+  .level_descriptions = NULL
+)
 
 field_dbl(.description = character(0), .vector = FALSE)
 
-field_lgl(.description = character(0), .vector = FALSE)
+field_lgl(
+  .description = character(0),
+  .vector = FALSE,
+  .true = NULL,
+  .false = NULL
+)
 }
 \arguments{
 \item{.description}{A character string describing the field (optional).}
@@ -21,6 +32,17 @@ field_lgl(.description = character(0), .vector = FALSE)
 \item{.vector}{A logical value indicating if the field is a vector (default: FALSE).}
 
 \item{.levels}{A character vector specifying allowable values (for \code{field_fct()} only).}
+
+\item{.ordered}{For \code{field_fct()}: \code{TRUE} marks the levels as ordered, which
+\code{decide()} reads as a score question. Structured-output chat ignores it.}
+
+\item{.level_descriptions}{For \code{field_fct()}: \code{NULL} (default) or a character
+vector with one description per level, in the order of \code{.levels}. Only
+\code{decide()} sends it; structured-output chat ignores it.}
+
+\item{.true, .false}{For \code{field_lgl()}: \code{NULL} (default) or a string saying what
+a yes and a no mean. Give both or neither. Only \code{decide()} sends them;
+structured-output chat ignores them.}
 }
 \value{
 An S7 \code{tidyllm_field} object representing the field descriptor.

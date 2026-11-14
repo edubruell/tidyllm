@@ -47,10 +47,10 @@ Sys.setenv(OPENAI_API_KEY = "your-key-here")
 | **Google Gemini** | `GOOGLE_API_KEY` | [Google AI Studio](https://aistudio.google.com/app/apikey) |
 | **Mistral** | `MISTRAL_API_KEY` | [Mistral Console](https://console.mistral.ai/api-keys/) |
 | **Groq** | `GROQ_API_KEY` | [Groq Console](https://console.groq.com/playground) |
-| **Perplexity** (deprecated) | `PERPLEXITY_API_KEY` | [Perplexity API docs](https://docs.perplexity.ai/docs/getting-started/overview) |
 | **DeepSeek** | `DEEPSEEK_API_KEY` | [DeepSeek Platform](https://platform.deepseek.com/api_keys) |
 | **Voyage AI** | `VOYAGE_API_KEY` | [Voyage AI API key guide](https://docs.voyageai.com/docs/api-key-and-installation) |
 | **OpenRouter** | `OPENROUTER_API_KEY` | [OpenRouter Dashboard](https://openrouter.ai/keys) |
+| **TypeSafe AI** (`jev()`, for `decide()`) | `TYPESAFE_API_KEY` | [TypeSafe AI](https://typesafe.ai) |
 | **Azure OpenAI** | `AZURE_OPENAI_API_KEY` | [Azure Portal](https://portal.azure.com/) |
 | **Tavily** (web search for `websearch()` and `websearch_tool()`) | `TAVILY_API_KEY` | [Tavily](https://app.tavily.com) |
 | **SearXNG** (self-hosted web search for `websearch()` and `websearch_tool()`) | `SEARXNG_SERVER` (the server address, not a key) | [SearXNG](https://docs.searxng.org) |
@@ -104,8 +104,8 @@ c("A famous landmark in Paris is the Eiffel Tower.")
 
 All API interactions follow the **verb + provider** pattern:
 
-- **Verbs** define the action: `chat()`, `embed()`, `send_batch()`, `check_batch()`, `fetch_batch()`, `list_batches()`, `list_models()`, `deep_research()`, `check_job()`, `fetch_job()`, `upload_file()`, `list_files()`, `file_info()`, `delete_file()`
-- **Providers** specify the API: `openai()`, `claude()`, `claude_cli()`, `codex_cli()`, `vibe_cli()`, `gemini()`, `ollama()`, `mistral()`, `groq()`, `deepseek()`, `voyage()`, `openrouter()`, `llamacpp()`, `azure_openai()`, `ellmer()`
+- **Verbs** define the action: `chat()`, `embed()`, `send_batch()`, `check_batch()`, `fetch_batch()`, `list_batches()`, `list_models()`, `deep_research()`, `decide()`, `check_job()`, `fetch_job()`, `upload_file()`, `list_files()`, `file_info()`, `delete_file()`
+- **Providers** specify the API: `openai()`, `claude()`, `claude_cli()`, `codex_cli()`, `vibe_cli()`, `gemini()`, `ollama()`, `mistral()`, `groq()`, `deepseek()`, `voyage()`, `openrouter()`, `jev()`, `llamacpp()`, `azure_openai()`, `ellmer()`
 
 Provider-specific functions like `openai_chat()` or `claude_chat()` also work directly and expose the full range of parameters for each API.
 
@@ -267,7 +267,7 @@ tibble::tibble(
 ) |> print(width = 60)
 ```
 
-The `api_specific` list column holds provider-only metadata such as citations (Perplexity), thinking traces (Claude, Gemini, DeepSeek), or grounding information (Gemini).
+The `api_specific` list column holds provider-only metadata such as thinking traces (Claude, Gemini, DeepSeek), or grounding information (Gemini).
 
 ### Listing Available Models
 
@@ -518,7 +518,6 @@ To stream into a user interface rather than the console, use `send_chat()`, whic
 | `gemini()` | 1M-token context window; native image, audio, and video via `.media`; search grounding; `.thinking_level` for reasoning; Files API; batch |
 | `mistral()` | EU-hosted, GDPR-friendly; Magistral and Mistral Large 4 reasoning models (`.reasoning_effort = "none"` turns reasoning off on Large 4); Voxtral audio models (`.media = audio_file()`); embeddings; batch |
 | `groq()` | Fastest available inference (300-1200 tokens/s); `groq_transcribe()` for Whisper audio; `.json_schema`; batch |
-| `perplexity()` (deprecated since 0.7.0, removed in 0.8.0; use `openrouter(.model = "perplexity/sonar")`) | Real-time web search with citations in metadata; `deep_research()` for long-horizon research; search domain filter |
 | `deepseek()` | Top math and reasoning benchmarks at very low cost; `.thinking = TRUE` turns on thinking mode and returns the reasoning trace in metadata |
 | `voyage()` | State-of-the-art retrieval embeddings; `voyage_rerank()`; multimodal embeddings (text + images); `.output_dimension` |
 | `openrouter()` | 500+ models via one API key; audio and video support on Gemini, Qwen 3.6, and other multimodal routes; automatic fallback routing |
@@ -527,6 +526,7 @@ To stream into a user interface rather than the console, use `send_chat()`, whic
 | `vibe_cli()` | Runs your own installed Mistral `vibe` command line tool with `MISTRAL_API_KEY`; any Mistral model via `.model`; no token counts; its tools are off unless `.cli_tools = TRUE` |
 | `ellmer()` | Use any ellmer chat object as a tidyllm provider |
 | `ollama()` | Local models with full data privacy; no API costs; `ollama_download_model()` for model management |
+| `jev()` | Decision models from TypeSafe AI for `decide()` only: yes/no, choice and score questions with probabilities; reads images |
 | `llamacpp()` | Often the most performant local inference stack; audio input with Ultravox, Qwen2.5-Omni, Qwen3-Omni, and Gemma 4 models; BNF grammar constraints; logprobs; `llamacpp_rerank()` |
 | `azure_openai()` | Enterprise Azure deployments of OpenAI models; batch support |
 

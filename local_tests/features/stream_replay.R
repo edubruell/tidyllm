@@ -221,45 +221,4 @@ for (nm in setdiff(names(server$fixtures), GEMINI_LEGACY)) {
   })
 }
 
-# ── Perplexity: parser-level only ─────────────────────────────────────────────
-#
-# This account has no Perplexity credits, so no fixture could be recorded and
-# the pump cannot be driven end to end. Its parser is at least exercised
-# directly against hand-written events matching the documented shape. Replace
-# this block with a recorded fixture if credits ever appear.
-
-local({
-  api <- api_perplexity(short_name = "perplexity", long_name = "Perplexity",
-                        api_key_env_var = "PERPLEXITY_API_KEY")
-  # Literal wire JSON, not toJSON() of an R list: a NULL field round-trips to
-  # `{}` rather than `null`, which is not what the provider actually sends.
-  sse <- function(json) list(data = json)
-
-  llt_test("perplexity parser emits text deltas", {
-    ev <- parse_stream_event(api, sse(
-      '{"choices":[{"delta":{"content":"hello"},"finish_reason":null}]}'
-    ))
-    llt_expect_true(identical(ev$kind, "text"), "delta was not classified as text")
-    llt_expect_true(identical(ev$text, "hello"), "delta text lost")
-    llt_expect_true(!isTRUE(ev$done), "a plain delta ended the stream")
-    llt_expect_true(isTRUE(ev$keep), "a delta event was not kept for metadata")
-  })
-
-  llt_test("perplexity parser terminates on any finish_reason", {
-    for (reason in c("stop", "length")) {
-      ev <- parse_stream_event(api, sse(sprintf(
-        '{"choices":[{"delta":{"content":""},"finish_reason":"%s"}]}', reason
-      )))
-      llt_expect_true(isTRUE(ev$done),
-                      sprintf("finish_reason '%s' did not end the stream", reason))
-    }
-  })
-
-  llt_test("perplexity parser drops events without choices", {
-    ev <- parse_stream_event(api, sse('{"choices":[]}'))
-    llt_expect_true(!isTRUE(ev$keep), "an event with no choices was kept")
-    llt_expect_true(!isTRUE(ev$done), "an event with no choices ended the stream")
-  })
-})
-
 llt_report("stream_replay")

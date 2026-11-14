@@ -27,7 +27,7 @@ NULL
 #' not stream, so the perform step cannot be handed the choice.
 #'
 #' @param .meta_fn Optional; post-processes metadata, given `(meta, response)`.
-#'   Perplexity uses it to fold in search results.
+#'   The CLI providers use it to fold in usage and cost.
 #' @param .on_chunk Where streamed text deltas go. Carried on the built request
 #'   rather than passed at perform time so that it survives into the tool loop:
 #'   a job with a sink would otherwise stream its first round to the sink and

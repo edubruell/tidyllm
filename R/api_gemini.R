@@ -5,7 +5,75 @@
 #' At the moment this is just a stub but is needed for methods dispatch
 #'
 #' @noRd
-api_gemini <- new_class("Google Gemini", APIProvider)
+api_gemini <- new_class("Google Gemini", APIProvider, properties = list(
+  model = class_character,
+  resolution = class_character
+))
+
+#' Gemini decision request: System One body with `input`, key in a header
+#' @noRd
+method(decide_request, api_gemini) <- function(.api, .state, .questions, .dry_run = FALSE) {
+  httr2::request("https://generativelanguage.googleapis.com/v1beta/decisions") |>
+    httr2::req_headers("Content-Type" = "application/json") |>
+    httr2::req_headers_redacted("x-goog-api-key" = get_api_key(.api, .dry_run)) |>
+    httr2::req_body_json(
+      system_one_body(
+        gemini_decide_input(.state, if (length(.api@resolution) > 0) .api@resolution),
+        .questions, .api@model, .state_key = "input"
+      ),
+      auto_unbox = TRUE
+    )
+}
+
+#' Input tokens by modality as a named numeric vector
+#'
+#' The reply lists one `{modality, tokens}` entry per modality; a plain named
+#' object is read as is.
+#' @param .x The `input_tokens_by_modality` field of the reply.
+#' @return A named numeric vector, or NULL when the reply has none.
+#' @noRd
+gemini_modality_tokens <- function(.x) {
+  if (length(.x) == 0) return(NULL)
+  entries <- is.null(names(.x)) && all(vapply(.x, \(e) is.list(e) && !is.null(e$modality), logical(1)))
+  if (!entries) return(unlist(.x))
+  stats::setNames(vapply(.x, \(e) as.numeric(e$tokens), numeric(1)), vapply(.x, \(e) e$modality, character(1)))
+}
+
+#' Gemini decision reply: System One answers keyed by name, no model field
+#' @noRd
+method(parse_decide_response, api_gemini) <- function(.api, .body, .questions) {
+  modality_tokens <- gemini_modality_tokens(.body$usage$input_tokens_by_modality)
+  .body$usage <- list(
+    input_tokens = .body$usage$total_input_tokens,
+    output_tokens = .body$usage$total_output_tokens
+  )
+  parsed <- parse_system_one(.body, .questions)
+  parsed$usage$tokens_by_modality <- modality_tokens
+  parsed
+}
+
+#' Answer yes/no, choice and score questions with Gemini's decision model
+#'
+#' @param .model Decision model name; default `"gemini-decision-1"`.
+#' @param .resolution `NULL` (default, Gemini decides) or the image and video
+#'   resolution: `"low"`, `"medium"`, `"high"` or `"ultra_high"` (images only).
+#'   `"low"` costs about a quarter of the tokens.
+#' @inheritParams run_decide
+#' @noRd
+gemini_decide <- function(.state, .questions, .model = "gemini-decision-1", .resolution = NULL,
+                          .dry_run = FALSE, .timeout = 60, .max_tries = 3) {
+  c(".resolution must be NULL, \"low\", \"medium\", \"high\" or \"ultra_high\"" =
+      is.null(.resolution) || (length(.resolution) == 1 && .resolution %in% c("low", "medium", "high", "ultra_high"))) |>
+    validate_inputs()
+  api <- api_gemini(
+    short_name = "gemini",
+    long_name = "Google Gemini",
+    api_key_env_var = "GOOGLE_API_KEY",
+    model = .model,
+    resolution = .resolution %||% character(0)
+  )
+  run_decide(api, .state, .questions, .dry_run, .timeout, .max_tries)
+}
 
 #' Convert LLMMessage to Gemini API-Compatible Format
 #'
@@ -1526,6 +1594,7 @@ gemini <- create_provider_function(
   chat = gemini_chat,
   build = gemini_build_chat_request,
   embed = gemini_embedding,
+  decide = gemini_decide,
   send_batch = send_gemini_batch,
   check_batch = check_gemini_batch,
   list_batches = list_gemini_batches,
@@ -1536,5 +1605,6 @@ gemini <- create_provider_function(
   file_info   = gemini_file_info_verb,
   delete_file = gemini_delete_file_verb,
   .media = c("image", "pdf", "audio", "video", "files"),
-  .embed_media = c("image", "audio", "video")
+  .embed_media = c("image", "audio", "video"),
+  .decide_media = c("image", "audio", "video", "pdf")
 )

@@ -1,11 +1,53 @@
 
-#' The Ollama API provider stub
+#' The Ollama API provider
 #'
-#' At the moment this is just a stub but is needed for methods dispatch
+#' Carries the server and model for `decide()`; other verbs dispatch on it only
 #'
 #' @noRd
-api_ollama <- new_class("Ollama", APIProvider)
+api_ollama <- new_class("Ollama", APIProvider, properties = list(
+  server = class_character,
+  model = class_character
+))
 
+
+#' Ollama decision request: System One body on the local server, no key
+#' @noRd
+method(decide_request, api_ollama) <- function(.api, .state, .questions, .dry_run = FALSE) {
+  parts <- ollama_state_images(.state)
+  httr2::request(paste0(sub("/+$", "", .api@server), "/v1/systemone")) |>
+    httr2::req_headers("Content-Type" = "application/json") |>
+    httr2::req_body_json(
+      system_one_body(parts$state, .questions, .api@model, .extra = list(images = as.list(parts$images))),
+      auto_unbox = TRUE
+    )
+}
+
+#' Ollama decision reply: System One answers keyed by question name
+#' @noRd
+method(parse_decide_response, api_ollama) <- function(.api, .body, .questions) {
+  parse_system_one(.body, .questions)
+}
+
+#' Answer yes/no, choice and score questions with a local decision model (Ollama)
+#'
+#' Provider-level implementation behind `decide(.provider = ollama())`.
+#'
+#' @param .model Model name; default `"clef-flash"`.
+#' @param .ollama_server Base URL of the local Ollama server.
+#' @inheritParams run_decide
+#' @noRd
+ollama_decide <- function(.state, .questions, .model = "clef-flash",
+                          .ollama_server = "http://localhost:11434",
+                          .dry_run = FALSE, .timeout = 60, .max_tries = 3) {
+  api <- api_ollama(
+    short_name = "ollama",
+    long_name = "Ollama",
+    api_key_env_var = "",
+    server = .ollama_server,
+    model = .model
+  )
+  run_decide(api, .state, .questions, .dry_run, .timeout, .max_tries)
+}
 
 #' Convert LLMMessage to Ollama API-Compatible Format
 #'
@@ -863,6 +905,7 @@ ollama_delete_model <- function(.model, .ollama_server = "http://localhost:11434
 #' Supported Verbs:
 #' - **`chat()`**: Sends a message to an Ollama model and retrieves the model's response.
 #' - **`embed()`**: Generates embeddings for input texts using an Ollama model.
+#' - **`decide()`**: Answers closed questions with a local decision model (default `clef-flash`) through the System One endpoint of the server.
 #' - **`send_batch()`**: Behaves different than the other `send_batch()` verbs since it immediately processes the answers
 #' @export
 ollama <- create_provider_function(
@@ -871,7 +914,9 @@ ollama <- create_provider_function(
   build = ollama_build_chat_request,
   embed = ollama_embedding,
   send_batch = send_ollama_batch,
+  decide = ollama_decide,
   list_models = ollama_list_models,
   .media = c("image"),
-  .embed_media = c("image", "audio")
+  .embed_media = c("image", "audio"),
+  .decide_media = c("image")
 )

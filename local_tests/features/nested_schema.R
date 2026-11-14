@@ -94,8 +94,7 @@ nested_case("mistral: array of objects",
             mistral(.model = "mistral-small-latest"))
 
 # deepseek() has no .json_schema argument (JSON object mode only), so it is not
-# covered here. perplexity() cannot be called live (no credits on this account),
-# so its schema path is checked offline on the request body instead.
+# covered here.
 llt_test("raw list schemas get a usable schema name on every provider (dry run)", {
   raw_schema <- list(
     type = "object",
@@ -109,8 +108,6 @@ llt_test("raw list schemas get a usable schema name on every provider (dry run)"
                                             .json_schema = raw_schema),
     groq        = llm_message("hi") |> chat(groq(.dry_run = TRUE), .json_schema = raw_schema),
     openrouter  = llm_message("hi") |> chat(openrouter(.model = "openai/gpt-4o-mini", .dry_run = TRUE),
-                                            .json_schema = raw_schema),
-    perplexity  = llm_message("hi") |> chat(perplexity(.model = "sonar", .dry_run = TRUE),
                                             .json_schema = raw_schema)
   )
   for (provider in names(bodies)) {
@@ -120,18 +117,6 @@ llt_test("raw list schemas get a usable schema name on every provider (dry run)"
                     paste(provider, "must send a single non-empty schema name, got:",
                           paste(nm, collapse = ", ")))
   }
-})
-
-llt_test("perplexity: array of objects (dry run)", {
-  dry <- llm_message(nested_prompt) |>
-    chat(perplexity(.model = "sonar", .dry_run = TRUE), .json_schema = nested_schema)
-  schema <- dry$body$data$response_format$json_schema$schema
-  llt_expect_true(isFALSE(schema$additionalProperties),
-                  "root should have additionalProperties = FALSE")
-  llt_expect_true(isFALSE(schema$properties$classifications$items$additionalProperties),
-                  "array items should have additionalProperties = FALSE")
-  llt_expect_true(identical(dry$body$data$response_format$json_schema$name, "Classification"),
-                  "schema name must be the attribute, not the property names")
 })
 
 # ── raw list schemas (no "name" attribute) ────────────────────────────────────

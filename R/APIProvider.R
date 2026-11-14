@@ -25,6 +25,21 @@ assemble_stream_body   <- new_generic("assemble_stream_body", c(".api", ".events
 open_chat_stream       <- new_generic("open_chat_stream", ".api")
 start_async_request    <- new_generic("start_async_request", ".api")
 
+#' Build the httr2 request for one `decide()` call
+#'
+#' Contract: `(.api, .state, .questions, .dry_run)`. `.state` is the text,
+#' `.questions` the list from `decide_questions()`, and `.dry_run` tells the
+#' method not to require an API key; `run_decide()` always passes all four.
+#' @noRd
+decide_request        <- new_generic("decide_request", ".api")
+
+#' Turn a decoded decision reply into `list(rows, usage, model)`
+#'
+#' Contract: `(.api, .body, .questions)`. `.body` is the decoded JSON reply and
+#' `.questions` the list from `decide_questions()`.
+#' @noRd
+parse_decide_response <- new_generic("parse_decide_response", ".api")
+
 #' Defaults: a provider reports no rate limits and no logprobs
 #'
 #' Both generics used to be partial, defined only for the providers that had

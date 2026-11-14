@@ -62,14 +62,18 @@ all_provider_names <- function() {
 #'   keep. `NULL` keeps all arguments.
 #' @param .what `"arguments"` (default) for verbs and arguments, `"media"` for
 #'   one row per provider and media type a message can carry, or `"embed_media"` for
-#'   one row per provider and media type `embed()` accepts (`image`, `audio`, `video`).
+#'   one row per provider and media type `embed()` accepts (`image`, `audio`, `video`),
+#'   or `"decide_media"` for one row per provider that implements `decide()` and
+#'   media type it reads in a `decide()` state (`image`, `audio`, `video`, `pdf`).
 #' @param .internal Logical; if `TRUE`, include the internal `build` verb that
 #'   `send_chat()` and `parallel_chat()` use. Default `FALSE`.
 #'
 #' @return A tibble. For `.what = "arguments"`: `provider`, `verb`, `argument`,
 #'   `default`, `fn`. For `.what = "media"`: `provider`, `media` (`image`, `pdf`,
 #'   `audio`, `video`, `files`) and `supported`. For `.what = "embed_media"` the same
-#'   columns with `media` limited to `image`, `audio` and `video`.
+#'   columns with `media` limited to `image`, `audio` and `video`. For
+#'   `.what = "decide_media"` the same columns with `media` limited to `image`,
+#'   `audio`, `video` and `pdf`, for providers with a `decide()` method.
 #'
 #' @examples
 #' provider_capabilities(claude(), .verb = "chat")
@@ -81,7 +85,7 @@ all_provider_names <- function() {
 provider_capabilities <- function(.provider = NULL,
                                   .verb = NULL,
                                   .argument = NULL,
-                                  .what = c("arguments", "media", "embed_media"),
+                                  .what = c("arguments", "media", "embed_media", "decide_media"),
                                   .internal = FALSE) {
   .what <- rlang::arg_match(.what)
   c(".verb must be NULL or a character vector" = is.null(.verb) || is.character(.verb),
@@ -119,6 +123,18 @@ provider_capabilities <- function(.provider = NULL,
         provider  = m$provider_name,
         media     = EMBED_MEDIA_TYPES,
         supported = EMBED_MEDIA_TYPES %in% m$embed_media
+      )
+    }) |> purrr::list_rbind()
+    return(out)
+  }
+
+  if (.what == "decide_media") {
+    deciders <- Filter(\(m) "decide" %in% names(m$supported_args), metas)
+    out <- purrr::map(deciders, \(m) {
+      tibble::tibble(
+        provider  = m$provider_name,
+        media     = DECIDE_MEDIA_TYPES,
+        supported = DECIDE_MEDIA_TYPES %in% m$decide_media
       )
     }) |> purrr::list_rbind()
     return(out)
