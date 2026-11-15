@@ -444,7 +444,7 @@ gemini_inject_files <- function(.gemini_contents,
 
 
 
-gemini_thinking_levels <- c("minimal", "low", "medium", "high")
+gemini_thinking_levels <- c("minimal", "low", "medium", "high", "xhigh")
 
 #' Whether a Gemini model ignores temperature, top_p and top_k
 #'
@@ -504,8 +504,9 @@ warn_gemini_sampling <- function(.model, .temperature, .top_p, .top_k) {
 #' @param .max_tool_rounds Integer specifying the maximum number of tool use iterations (default: 10).
 #'   Set to 1 for single-round tool use, or higher for multi-turn agentic loops.
 #' @param .thinking_level How much the model reasons before answering: `"minimal"`, `"low"`,
-#'   `"medium"` or `"high"` (default: NULL, the model's own default). Supported levels
-#'   vary by model; `gemini-3.8-flash` accepts `"low"`, `"medium"` and `"high"`.
+#'   `"medium"`, `"high"` or `"xhigh"` (default: NULL, the model's own default). Supported
+#'   levels vary by model; `gemini-3.8-flash` and the Gemini 4 models accept `"low"`,
+#'   `"medium"` and `"high"`, and `gemini-4-hydrogen` also `"xhigh"`.
 #' @param .thinking_budget Deprecated. Token budget for internal reasoning
 #'   (default: NULL). Use `.thinking_level` instead; Google plans to reject token budgets on
 #'   upcoming models. Cannot be combined with `.thinking_level`.
@@ -587,7 +588,7 @@ gemini_build_chat_request <- function(.llm,
     "Input .stream must be logical" = is.logical(.verbose),
     "Input .tools must be NULL, a TOOL object, or a list of TOOL objects" = is.null(.tools) || S7_inherits(.tools, TOOL) || (is.list(.tools) && all(purrr::map_lgl(.tools, ~ S7_inherits(.x, TOOL)))),
     ".max_tool_rounds must be a positive integer" = is_integer_valued(.max_tool_rounds) && .max_tool_rounds >= 1,
-    ".thinking_level must be NULL or one of \"minimal\", \"low\", \"medium\", \"high\"" = is.null(.thinking_level) || (is.character(.thinking_level) && length(.thinking_level) == 1 && .thinking_level %in% gemini_thinking_levels),
+    ".thinking_level must be NULL or one of \"minimal\", \"low\", \"medium\", \"high\", \"xhigh\"" = is.null(.thinking_level) || (is.character(.thinking_level) && length(.thinking_level) == 1 && .thinking_level %in% gemini_thinking_levels),
     ".thinking_budget must be NULL or a non-negative integer" = is.null(.thinking_budget) || (is_integer_valued(.thinking_budget) && .thinking_budget >= 0),
     "Set only one of .thinking_level and .thinking_budget" = is.null(.thinking_level) || is.null(.thinking_budget)
   ) |>
@@ -1024,7 +1025,7 @@ gemini_embed_part <- function(.part) {
 #' @param .json_schema Optional schema to enforce output structure.
 #' @param .grounding_threshold Optional grounding threshold (0-1) to enable Google Search.
 #' @param .thinking_level How much the model reasons before answering: `"minimal"`, `"low"`,
-#'   `"medium"` or `"high"` (default: NULL, the model's own default). Supported levels vary by model.
+#'   `"medium"`, `"high"` or `"xhigh"` (default: NULL, the model's own default). Supported levels vary by model.
 #' @param .timeout Timeout in seconds (default: 120).
 #' @param .dry_run If TRUE, returns the constructed request (default: FALSE).
 #' @param .max_tries Maximum retry attempts (default: 3).
@@ -1076,7 +1077,7 @@ send_gemini_batch <- function(.llms,
       is.null(.json_schema) || is.list(.json_schema) || is_ellmer_type(.json_schema),
     "Input .grounding_threshold must be NULL or in [0.0, 1.0]" =
       is.null(.grounding_threshold) || (.grounding_threshold >= 0.0 && .grounding_threshold <= 1.0),
-    ".thinking_level must be NULL or one of \"minimal\", \"low\", \"medium\", \"high\"" =
+    ".thinking_level must be NULL or one of \"minimal\", \"low\", \"medium\", \"high\", \"xhigh\"" =
       is.null(.thinking_level) || (is.character(.thinking_level) && length(.thinking_level) == 1 && .thinking_level %in% gemini_thinking_levels),
     "Input .timeout must be a positive integer" =
       is_integer_valued(.timeout) && .timeout > 0,

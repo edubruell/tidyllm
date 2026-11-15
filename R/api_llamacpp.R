@@ -70,7 +70,7 @@ method(extract_metadata, list(api_llamacpp, class_list)) <- function(.api, .resp
 #' @param .thinking_budget Integer; maximum tokens the model may use for thinking when
 #'   `.thinking = TRUE`. `NULL` uses the server default (optional).
 #' @param .server Base URL of the llama.cpp server. Defaults to the `LLAMACPP_SERVER`
-#'   environment variable, falling back to `"http://localhost:8080"`.
+#'   environment variable, falling back to `"http://localhost:9931"`.
 #' @param .api_key API key for the llama.cpp server. Defaults to the `LLAMACPP_API_KEY`
 #'   environment variable. Leave unset if the server was started without `--api-key`.
 #' @param .timeout Request timeout in seconds (default: 120).
@@ -99,7 +99,7 @@ llamacpp_chat <- function(.llm,
                           .seed            = NULL,
                           .thinking        = NULL,
                           .thinking_budget = NULL,
-                          .server          = Sys.getenv("LLAMACPP_SERVER", "http://localhost:8080"),
+                          .server          = Sys.getenv("LLAMACPP_SERVER", "http://localhost:9931"),
                           .api_key        = Sys.getenv("LLAMACPP_API_KEY", ""),
                           .timeout        = 120,
                           .verbose        = FALSE,
@@ -129,7 +129,7 @@ llamacpp_build_chat_request <- function(.llm,
                           .seed            = NULL,
                           .thinking        = NULL,
                           .thinking_budget = NULL,
-                          .server          = Sys.getenv("LLAMACPP_SERVER", "http://localhost:8080"),
+                          .server          = Sys.getenv("LLAMACPP_SERVER", "http://localhost:9931"),
                           .api_key        = Sys.getenv("LLAMACPP_API_KEY", ""),
                           .timeout        = 120,
                           .verbose        = FALSE,
@@ -247,7 +247,7 @@ llamacpp_build_chat_request <- function(.llm,
 #' @param .model The model name (default: `"local-model"`). llama.cpp ignores this
 #'   and serves the loaded embedding model.
 #' @param .server Base URL of the llama.cpp server. Defaults to the `LLAMACPP_SERVER`
-#'   environment variable, falling back to `"http://localhost:8080"`.
+#'   environment variable, falling back to `"http://localhost:9931"`.
 #' @param .api_key API key for the server (default: `LLAMACPP_API_KEY` env var).
 #' @param .timeout Request timeout in seconds (default: 120).
 #' @param .dry_run If TRUE, returns the request object without executing it (default: FALSE).
@@ -261,7 +261,7 @@ llamacpp_build_chat_request <- function(.llm,
 #' @export
 llamacpp_embedding <- function(.input,
                                .model   = "local-model",
-                               .server  = Sys.getenv("LLAMACPP_SERVER", "http://localhost:8080"),
+                               .server  = Sys.getenv("LLAMACPP_SERVER", "http://localhost:9931"),
                                .api_key = Sys.getenv("LLAMACPP_API_KEY", ""),
                                .timeout = 120,
                                .dry_run = FALSE,
@@ -337,7 +337,7 @@ llamacpp_embed_part <- function(.part) {
 #' row; two rows appear when speculative decoding is active (main + draft model).
 #'
 #' @param .server Base URL of the llama.cpp server. Defaults to `LLAMACPP_SERVER`
-#'   env var, falling back to `"http://localhost:8080"`.
+#'   env var, falling back to `"http://localhost:9931"`.
 #' @param .api_key API key for the server (default: `LLAMACPP_API_KEY` env var).
 #' @param .timeout Request timeout in seconds (default: 30).
 #' @param .max_tries Maximum retries (default: 3).
@@ -345,7 +345,7 @@ llamacpp_embed_part <- function(.part) {
 #' @return A tibble with columns `id`, `object`, and `created`.
 #'
 #' @export
-llamacpp_list_models <- function(.server  = Sys.getenv("LLAMACPP_SERVER", "http://localhost:8080"),
+llamacpp_list_models <- function(.server  = Sys.getenv("LLAMACPP_SERVER", "http://localhost:9931"),
                                  .api_key = Sys.getenv("LLAMACPP_API_KEY", ""),
                                  .timeout = 30,
                                  .max_tries = 3) {
@@ -385,13 +385,13 @@ llamacpp_list_models <- function(.server  = Sys.getenv("LLAMACPP_SERVER", "http:
 #' or `"error"`) along with the full parsed response body as a named list.
 #'
 #' @param .server Base URL of the llama.cpp server. Defaults to `LLAMACPP_SERVER`
-#'   env var, falling back to `"http://localhost:8080"`.
+#'   env var, falling back to `"http://localhost:9931"`.
 #' @param .timeout Request timeout in seconds (default: 10).
 #'
 #' @return A named list with at least a `status` element.
 #'
 #' @export
-llamacpp_health <- function(.server  = Sys.getenv("LLAMACPP_SERVER", "http://localhost:8080"),
+llamacpp_health <- function(.server  = Sys.getenv("LLAMACPP_SERVER", "http://localhost:9931"),
                             .timeout = 10) {
   resp <- tryCatch(
     httr2::request(.server) |>
@@ -580,7 +580,7 @@ llamacpp_delete_model <- function(.path) {
 #' @param .documents A character vector of documents to rerank.
 #' @param .model The model name (default: `"local-model"`).
 #' @param .server Base URL of the llama.cpp server. Defaults to `LLAMACPP_SERVER`
-#'   env var, falling back to `"http://localhost:8080"`.
+#'   env var, falling back to `"http://localhost:9931"`.
 #' @param .api_key API key for the server (default: `LLAMACPP_API_KEY` env var).
 #' @param .timeout Request timeout in seconds (default: 60).
 #' @param .max_tries Maximum retries (default: 3).
@@ -593,7 +593,7 @@ llamacpp_delete_model <- function(.path) {
 llamacpp_rerank <- function(.query,
                             .documents,
                             .model   = "local-model",
-                            .server  = Sys.getenv("LLAMACPP_SERVER", "http://localhost:8080"),
+                            .server  = Sys.getenv("LLAMACPP_SERVER", "http://localhost:9931"),
                             .api_key = Sys.getenv("LLAMACPP_API_KEY", ""),
                             .timeout = 60,
                             .max_tries = 3,

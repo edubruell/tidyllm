@@ -7,7 +7,7 @@
 send_azure_openai_batch(
   .llms,
   .endpoint_url = Sys.getenv("AZURE_ENDPOINT_URL"),
-  .deployment = "gpt-4o-mini",
+  .deployment = "gpt-6-luna",
   .api_version = "2024-10-01-preview",
   .max_completion_tokens = NULL,
   .reasoning_effort = NULL,
@@ -34,7 +34,7 @@ send_azure_openai_batch(
 
 \item{.endpoint_url}{Base URL for the API (default: Sys.getenv("AZURE_ENDPOINT_URL")).}
 
-\item{.deployment}{The identifier of the model that is deployed (default: "gpt-4o-mini").}
+\item{.deployment}{The identifier of the model that is deployed (default: "gpt-6-luna").}
 
 \item{.api_version}{Which version of the API is deployed (default: "2024-10-01-preview")}
 

@@ -51,7 +51,7 @@ send_gemini_batch(
 \item{.grounding_threshold}{Optional grounding threshold (0-1) to enable Google Search.}
 
 \item{.thinking_level}{How much the model reasons before answering: \code{"minimal"}, \code{"low"},
-\code{"medium"} or \code{"high"} (default: NULL, the model's own default). Supported levels vary by model.}
+\code{"medium"}, \code{"high"} or \code{"xhigh"} (default: NULL, the model's own default). Supported levels vary by model.}
 
 \item{.timeout}{Timeout in seconds (default: 120).}
 

@@ -23,7 +23,7 @@ llt_test("streaming returns non-empty reply", {
 
 llt_test("reasoning model reply is text and thinking is in metadata", {
   result <- llm_message("Reply with the single word: pong") |>
-    chat(mistral(.model = "zai-glm-5-3"))
+    chat(mistral(.model = "mistral-large-4"))
   reply <- get_reply(result)
   llt_expect_true(is.character(reply) && length(reply) == 1, "Reply should be one string, not a chunk list")
   llt_expect_true(nzchar(get_metadata(result)$api_specific[[1]]$thinking %||% ""), "Thinking should be kept in metadata")
@@ -31,7 +31,7 @@ llt_test("reasoning model reply is text and thinking is in metadata", {
 
 llt_test("streaming a reasoning model returns text", {
   result <- llm_message("Reply with the single word: pong") |>
-    chat(mistral(.model = "zai-glm-5-3", .stream = TRUE))
+    chat(mistral(.model = "mistral-large-4", .stream = TRUE))
   llt_expect_true(is.character(get_reply(result)), "Streamed reply should be a string")
 })
 
@@ -140,22 +140,20 @@ llt_test("streamed tool use assembles and completes", {
                   "the streamed response produced no executed tool call")
 })
 
-llt_test("mistral-large-4 reasons by default and stops with effort none", {
+llt_test("mistral-large-4 reasons by default and accepts effort low", {
   thinking <- llm_message("What is 17 * 23? Answer with the number.") |>
     chat(mistral(.model = "mistral-large-4"))
   llt_expect_reply(thinking)
   llt_expect_true(nzchar(get_metadata(thinking)$api_specific[[1]]$thinking %||% ""),
                   "expected thinking text from mistral-large-4 by default")
-  plain <- llm_message("What is 17 * 23? Answer with the number.") |>
-    chat(mistral(.model = "mistral-large-4", .reasoning_effort = "none"))
-  llt_expect_reply(plain)
-  llt_expect_true(is.null(get_metadata(plain)$api_specific[[1]]$thinking),
-                  "expected no thinking text with .reasoning_effort = 'none'")
+  light <- llm_message("What is 17 * 23? Answer with the number.") |>
+    chat(mistral(.model = "mistral-large-4", .reasoning_effort = "low"))
+  llt_expect_reply(light)
 })
 
 llt_test("an unsupported reasoning effort surfaces Mistral's error message", {
   err <- tryCatch(
-    llm_message("x") |> chat(mistral(.model = "mistral-large-4", .reasoning_effort = "low")),
+    llm_message("x") |> chat(mistral(.model = "mistral-large-4", .reasoning_effort = "none")),
     error = function(e) conditionMessage(e)
   )
   llt_expect_true(grepl("not supported for this model", err),
@@ -176,17 +174,17 @@ llt_test("an invalid API key surfaces Mistral's detail message", {
 
 llt_test("batch request carries reasoning_effort", {
   req <- send_batch(list(llm_message("hi")),
-                    mistral(.model = "mistral-large-4", .reasoning_effort = "none"),
+                    mistral(.model = "mistral-large-4", .reasoning_effort = "low"),
                     .dry_run = TRUE)
   body <- jsonlite::fromJSON(req[[1]])$body
-  llt_expect_true(identical(body$reasoning_effort, "none"),
-                  "batch request line should carry reasoning_effort = 'none'")
+  llt_expect_true(identical(body$reasoning_effort, "low"),
+                  "batch request line should carry reasoning_effort = 'low'")
 })
 
 llt_test("a streamed request shows Mistral's error message", {
   err <- tryCatch(
     llm_message("x") |>
-      chat(mistral(.model = "mistral-large-4", .reasoning_effort = "low", .stream = TRUE)),
+      chat(mistral(.model = "mistral-large-4", .reasoning_effort = "none", .stream = TRUE)),
     error = function(e) conditionMessage(e)
   )
   llt_expect_true(grepl("not supported for this model", err), paste("Unexpected:", err))

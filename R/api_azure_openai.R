@@ -66,7 +66,7 @@ method(parse_chat_response, list(api_azure_openai,class_list)) <- function(.api,
 #'
 #' @param .llm An `LLMMessage` object containing the conversation history.
 #' @param .endpoint_url Base URL for the API (default: Sys.getenv("AZURE_ENDPOINT_URL")).
-#' @param .deployment The identifier of the model that is deployed (default: "gpt-4o-mini").
+#' @param .deployment The identifier of the model that is deployed (default: "gpt-6-luna").
 #' @param .api_version Which version of the API is deployed (default: "2024-08-01-preview").
 #' @param .max_completion_tokens An upper bound for the number of tokens that can be generated for a completion.
 #' @param .reasoning_effort How long should reasoning models reason (can either be "low","medium" or "high").
@@ -94,7 +94,7 @@ method(parse_chat_response, list(api_azure_openai,class_list)) <- function(.api,
 azure_openai_chat <- function(
     .llm,
     .endpoint_url = Sys.getenv("AZURE_ENDPOINT_URL"),
-    .deployment = "gpt-4o-mini",
+    .deployment = "gpt-6-luna",
     .api_version = "2024-08-01-preview",
     .max_completion_tokens = NULL,
     .reasoning_effort = NULL,
@@ -127,7 +127,7 @@ azure_openai_chat <- function(
 azure_openai_build_chat_request <- function(
     .llm,
     .endpoint_url = Sys.getenv("AZURE_ENDPOINT_URL"),
-    .deployment = "gpt-4o-mini",
+    .deployment = "gpt-6-luna",
     .api_version = "2024-08-01-preview",
     .max_completion_tokens = NULL,
     .reasoning_effort = NULL,
@@ -342,7 +342,7 @@ azure_openai_embedding <- function(.input,
 #'
 #' @param .llms A list of LLMMessage objects containing conversation histories.
 #' @param .endpoint_url Base URL for the API (default: Sys.getenv("AZURE_ENDPOINT_URL")).
-#' @param .deployment The identifier of the model that is deployed (default: "gpt-4o-mini").
+#' @param .deployment The identifier of the model that is deployed (default: "gpt-6-luna").
 #' @param .api_version Which version of the API is deployed (default: "2024-10-01-preview")
 #' @param .max_completion_tokens Integer specifying the maximum tokens per response (default: NULL).
 #' @param .reasoning_effort How long should reasoning models reason (can either be "low","medium" or "high")
@@ -367,7 +367,7 @@ azure_openai_embedding <- function(.input,
 #' @export
 send_azure_openai_batch <- function(.llms,
                                     .endpoint_url = Sys.getenv("AZURE_ENDPOINT_URL"),
-                                    .deployment = "gpt-4o-mini",
+                                    .deployment = "gpt-6-luna",
                                     .api_version = "2024-10-01-preview",
                                     .max_completion_tokens = NULL,
                                     .reasoning_effort = NULL,

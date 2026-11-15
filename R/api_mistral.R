@@ -183,7 +183,7 @@ method(ratelimit_from_header, list(api_mistral,new_S3_class("httr2_headers"))) <
 prepare_mistral_request <- function(
     .llm,
     .api,
-    .model = "zai-glm-5-3",
+    .model = "mistral-large-4",
     .min_tokens = NULL,
     .max_tokens = NULL,
     .frequency_penalty = NULL,
@@ -258,7 +258,7 @@ prepare_mistral_request <- function(
 #' Send LLMMessage to Mistral API
 #'
 #' @param .llm An `LLMMessage` object.
-#' @param .model The model identifier to use (default: `"zai-glm-5-3"`). 
+#' @param .model The model identifier to use (default: `"mistral-large-4"`). 
 #' @param .frequency_penalty Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency.
 #' @param .logit_bias A named list modifying the likelihood of specified tokens appearing in the completion.
 #' @param .presence_penalty Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far.
@@ -273,7 +273,7 @@ prepare_mistral_request <- function(
 #' @param .tool_choice A character string specifying the tool-calling behavior; valid values are "none", "auto", or "required".
 #' @param .json_schema A JSON schema object provided by tidyllm schema or ellmer schemata.
 #' @param .safe_prompt Whether to inject a safety prompt before all conversations (default: `FALSE`).
-#' @param .reasoning_effort Controls how much reasoning models think before answering; one of `"none"`, `"low"`, `"medium"`, or `"high"` (default: `NULL`, meaning the API default). Supported values vary by model: `mistral-large-4` accepts only `"high"` and `"none"`, and `"none"` turns reasoning off.
+#' @param .reasoning_effort Controls how much reasoning models think before answering; one of `"none"`, `"low"`, `"medium"`, or `"high"` (default: `NULL`, meaning the API default). Supported values vary by model: `mistral-large-4` accepts `"low"`, `"medium"` and `"high"`, always reasons, and rejects `"none"`.
 #' @param .timeout When should our connection time out in seconds (default: `120`).
 #' @param .verbose Should additional information be shown after the API call? (default: `FALSE`)
 #' @param .dry_run If `TRUE`, perform a dry run and return the request object (default: `FALSE`).
@@ -283,7 +283,7 @@ prepare_mistral_request <- function(
 #' @return Returns an updated `LLMMessage` object.
 #' @export
 mistral_chat <- function(.llm,
-                         .model = "zai-glm-5-3",
+                         .model = "mistral-large-4",
                          .frequency_penalty = NULL,
                          .logit_bias = NULL,
                          .presence_penalty = NULL,
@@ -312,7 +312,7 @@ mistral_chat <- function(.llm,
 #'
 #' @noRd
 mistral_build_chat_request <- function(.llm,
-                         .model = "zai-glm-5-3",
+                         .model = "mistral-large-4",
                          .frequency_penalty = NULL,
                          .logit_bias = NULL,
                          .presence_penalty = NULL,
@@ -534,7 +534,7 @@ mistral_embedding <- function(.input,
 #' @param .stop Sequence(s) at which to stop generation (optional).
 #' @param .safe_prompt Logical; if TRUE, injects a safety prompt (default: FALSE).
 #' @param .json_schema A JSON schema object for structured output (optional).
-#' @param .reasoning_effort How much reasoning models think before answering; one of `"none"`, `"low"`, `"medium"`, or `"high"` (default: `NULL`, meaning the API default). Supported values vary by model: `mistral-large-4` accepts only `"high"` and `"none"`.
+#' @param .reasoning_effort How much reasoning models think before answering; one of `"none"`, `"low"`, `"medium"`, or `"high"` (default: `NULL`, meaning the API default). Supported values vary by model: `mistral-large-4` accepts `"low"`, `"medium"` and `"high"`.
 #' @param .dry_run Logical; if TRUE, returns the prepared request without executing it (default: FALSE).
 #' @param .overwrite Logical; if TRUE, allows overwriting existing custom IDs (default: FALSE).
 #' @param .max_tries Maximum retry attempts for requests (default: 3).

@@ -30,7 +30,8 @@ openai_chat(
 
 \item{.max_output_tokens}{Maximum tokens to generate (caps reasoning + completion).}
 
-\item{.temperature}{Sampling temperature (0-2).}
+\item{.temperature}{Sampling temperature (0-2). Current OpenAI models reject it
+unless \code{.reasoning_effort} is \code{"none"}; leave it \code{NULL} otherwise.}
 
 \item{.seed}{Seed for deterministic sampling.}
 
@@ -46,7 +47,10 @@ openai_chat(
 
 \item{.dry_run}{If TRUE, return the request object without sending (default: FALSE).}
 
-\item{.reasoning_effort}{For o-series models: \code{"low"}, \code{"medium"}, or \code{"high"}.}
+\item{.reasoning_effort}{How much the model reasons before answering: \code{"none"},
+\code{"minimal"}, \code{"low"}, \code{"medium"}, \code{"high"}, \code{"xhigh"} or \code{"max"}. Each model accepts
+a subset (for example \code{gpt-6.1-sol} rejects \code{"none"}); the API names the allowed
+values when a model refuses one. Default \code{NULL} uses the model's own default.}
 
 \item{.tools}{A TOOL object or list of TOOL objects for function calling.}
 
@@ -66,5 +70,5 @@ A new \code{LLMMessage} object with the assistant's response appended.
 \description{
 Sends a message history to the OpenAI Responses API (\code{POST /v1/responses}) and
 returns the assistant's reply. Supports streaming, tool use, structured output,
-and reasoning models (o-series) via \code{.reasoning_effort}.
+and reasoning effort via \code{.reasoning_effort}.
 }

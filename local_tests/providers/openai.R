@@ -99,7 +99,7 @@ llt_test("parallel tool calls work", {
 llt_test("image input returns correct description", {
   result <- llm_message("What breed is this dog? Answer in one word.",
                         .imagefile = "local_tests/media/dog.jpg") |>
-    chat(openai(.model = "gpt-4o"))
+    chat(openai(.model = "gpt-6-luna"))
   reply <- get_reply(result)
   llt_expect_reply(result)
   llt_expect_true(grepl("labrador|retriever|golden", reply, ignore.case = TRUE),
@@ -109,10 +109,10 @@ llt_test("image input returns correct description", {
 llt_test("image in multi-turn conversation", {
   r1 <- llm_message("What is in this image? One sentence.",
                     .imagefile = "local_tests/media/hotdog.jpg") |>
-    chat(openai(.model = "gpt-4o"))
+    chat(openai(.model = "gpt-6-luna"))
   r2 <- r1 |>
     llm_message("Would a dog enjoy eating what you described?") |>
-    chat(openai(.model = "gpt-4o"))
+    chat(openai(.model = "gpt-6-luna"))
   llt_expect_reply(r2)
 })
 
@@ -126,9 +126,9 @@ llt_test("openai_websearch() built-in tool returns reply with web content", {
 
 # ── Reasoning models ──────────────────────────────────────────────────────────
 
-llt_test(".reasoning_effort works with o4-mini", {
+llt_test(".reasoning_effort works with gpt-6-luna", {
   result <- llm_message("What is 17 * 23?") |>
-    chat(openai(.model = "o4-mini", .reasoning_effort = "low"))
+    chat(openai(.model = "gpt-6-luna", .reasoning_effort = "low"))
   llt_expect_reply(result)
   meta <- get_metadata(result)
   llt_expect_true(!is.null(meta$api_specific[[1]]$reasoning_tokens),

@@ -6,7 +6,7 @@
 \usage{
 mistral_chat(
   .llm,
-  .model = "zai-glm-5-3",
+  .model = "mistral-large-4",
   .frequency_penalty = NULL,
   .logit_bias = NULL,
   .presence_penalty = NULL,
@@ -32,7 +32,7 @@ mistral_chat(
 \arguments{
 \item{.llm}{An \code{LLMMessage} object.}
 
-\item{.model}{The model identifier to use (default: \code{"zai-glm-5-3"}).}
+\item{.model}{The model identifier to use (default: \code{"mistral-large-4"}).}
 
 \item{.frequency_penalty}{Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency.}
 
@@ -58,7 +58,7 @@ mistral_chat(
 
 \item{.safe_prompt}{Whether to inject a safety prompt before all conversations (default: \code{FALSE}).}
 
-\item{.reasoning_effort}{Controls how much reasoning models think before answering; one of \code{"none"}, \code{"low"}, \code{"medium"}, or \code{"high"} (default: \code{NULL}, meaning the API default). Supported values vary by model: \code{mistral-large-4} accepts only \code{"high"} and \code{"none"}, and \code{"none"} turns reasoning off.}
+\item{.reasoning_effort}{Controls how much reasoning models think before answering; one of \code{"none"}, \code{"low"}, \code{"medium"}, or \code{"high"} (default: \code{NULL}, meaning the API default). Supported values vary by model: \code{mistral-large-4} accepts \code{"low"}, \code{"medium"} and \code{"high"}, always reasons, and rejects \code{"none"}.}
 
 \item{.timeout}{When should our connection time out in seconds (default: \code{120}).}
 

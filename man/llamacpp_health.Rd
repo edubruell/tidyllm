@@ -5,13 +5,13 @@
 \title{Check Health of the llama.cpp Server}
 \usage{
 llamacpp_health(
-  .server = Sys.getenv("LLAMACPP_SERVER", "http://localhost:8080"),
+  .server = Sys.getenv("LLAMACPP_SERVER", "http://localhost:9931"),
   .timeout = 10
 )
 }
 \arguments{
 \item{.server}{Base URL of the llama.cpp server. Defaults to \code{LLAMACPP_SERVER}
-env var, falling back to \code{"http://localhost:8080"}.}
+env var, falling back to \code{"http://localhost:9931"}.}
 
 \item{.timeout}{Request timeout in seconds (default: 10).}
 }

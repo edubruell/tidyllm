@@ -2,8 +2,8 @@ devtools::load_all(quiet = TRUE)
 source("local_tests/test_harness.R")
 llt_suite("llamacpp")
 
-# Requires: llama-server running on http://localhost:8080
-# Start with: llama-server -m ~/models/Qwen3-0.6B-Q8_0.gguf -c 8192 --port 8080
+# Requires: llama-server running on http://localhost:9931
+# Start with: llama-server -m ~/models/Qwen3-0.6B-Q8_0.gguf -c 8192 --port 9931
 #
 # NOTE: Qwen3 models use extended "thinking" by default, consuming tokens before
 # outputting a response. Tests pass .thinking = FALSE and use >=256 tokens

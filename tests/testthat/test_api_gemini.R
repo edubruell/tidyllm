@@ -66,3 +66,11 @@ test_that("gemini warns when sampling arguments reach a model that ignores them"
     class = "tidyllm_gemini_sampling_ignored"
   )
 })
+
+test_that("gemini() accepts the xhigh thinking level and rejects unknown levels", {
+  req <- llm_message("hi") |> chat(gemini(.thinking_level = "xhigh", .dry_run = TRUE))
+  body <- req$body$data
+  expect_equal(body$generationConfig$thinkingConfig$thinkingLevel, "xhigh")
+  expect_error(llm_message("hi") |> chat(gemini(.thinking_level = "extreme", .dry_run = TRUE)),
+               "xhigh")
+})

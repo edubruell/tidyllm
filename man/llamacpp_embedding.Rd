@@ -7,7 +7,7 @@
 llamacpp_embedding(
   .input,
   .model = "local-model",
-  .server = Sys.getenv("LLAMACPP_SERVER", "http://localhost:8080"),
+  .server = Sys.getenv("LLAMACPP_SERVER", "http://localhost:9931"),
   .api_key = Sys.getenv("LLAMACPP_API_KEY", ""),
   .timeout = 120,
   .dry_run = FALSE,
@@ -24,7 +24,7 @@ llamacpp_embedding(
 and serves the loaded embedding model.}
 
 \item{.server}{Base URL of the llama.cpp server. Defaults to the \code{LLAMACPP_SERVER}
-environment variable, falling back to \code{"http://localhost:8080"}.}
+environment variable, falling back to \code{"http://localhost:9931"}.}
 
 \item{.api_key}{API key for the server (default: \code{LLAMACPP_API_KEY} env var).}
 

@@ -32,7 +32,7 @@ openrouter_chat(
 \arguments{
 \item{.llm}{An \code{LLMMessage} object containing the conversation history.}
 
-\item{.model}{The model identifier to use (default: \code{"google/gemini-3.6-flash"}).
+\item{.model}{The model identifier to use (default: \code{"anthropic/claude-sonnet-5.5"}).
 Any model available on OpenRouter can be used.}
 
 \item{.max_tokens}{Maximum number of tokens in the response (default: 2048).}

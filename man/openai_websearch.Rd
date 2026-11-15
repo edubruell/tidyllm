@@ -7,7 +7,7 @@
 openai_websearch()
 }
 \value{
-A TOOL object declaring the web_search_preview built-in.
+A TOOL object declaring the \code{web_search} built-in.
 }
 \description{
 OpenAI built-in web search tool (server-executed)

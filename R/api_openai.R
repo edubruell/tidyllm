@@ -318,12 +318,13 @@ prepare_responses_request <- function(.llm,
 #' @description
 #' Sends a message history to the OpenAI Responses API (`POST /v1/responses`) and
 #' returns the assistant's reply. Supports streaming, tool use, structured output,
-#' and reasoning models (o-series) via `.reasoning_effort`.
+#' and reasoning effort via `.reasoning_effort`.
 #'
 #' @param .llm An `LLMMessage` object containing the conversation history.
 #' @param .model The model identifier (default: `"gpt-6-luna"`).
 #' @param .max_output_tokens Maximum tokens to generate (caps reasoning + completion).
-#' @param .temperature Sampling temperature (0-2).
+#' @param .temperature Sampling temperature (0-2). Current OpenAI models reject it
+#'   unless `.reasoning_effort` is `"none"`; leave it `NULL` otherwise.
 #' @param .seed Seed for deterministic sampling.
 #' @param .stream If TRUE, stream output to console (default: FALSE).
 #' @param .timeout Request timeout in seconds (default: 60).
@@ -331,7 +332,10 @@ prepare_responses_request <- function(.llm,
 #' @param .json_schema A tidyllm schema or ellmer type for structured output.
 #' @param .max_tries Maximum retry attempts (default: 3).
 #' @param .dry_run If TRUE, return the request object without sending (default: FALSE).
-#' @param .reasoning_effort For o-series models: `"low"`, `"medium"`, or `"high"`.
+#' @param .reasoning_effort How much the model reasons before answering: `"none"`,
+#'   `"minimal"`, `"low"`, `"medium"`, `"high"`, `"xhigh"` or `"max"`. Each model accepts
+#'   a subset (for example `gpt-6.1-sol` rejects `"none"`); the API names the allowed
+#'   values when a model refuses one. Default `NULL` uses the model's own default.
 #' @param .tools A TOOL object or list of TOOL objects for function calling.
 #' @param .tool_choice Tool selection behavior: `"none"`, `"auto"`, or `"required"`.
 #' @param .max_tool_rounds Maximum tool-loop iterations (default: 10).
@@ -398,7 +402,7 @@ openai_build_chat_request <- function(
     "Input .json_schema must be NULL, a list, or an ellmer type object"                   = is.null(.json_schema) | is.list(.json_schema) | is_ellmer_type(.json_schema),
     "Input .max_tries must be integer-valued numeric"                                     = is_integer_valued(.max_tries),
     "Input .dry_run must be logical"                                                      = is.logical(.dry_run),
-    "Input .reasoning_effort must be NULL or one of 'low', 'medium', 'high'"              = is.null(.reasoning_effort) | (.reasoning_effort %in% c("low", "medium", "high")),
+    "Input .reasoning_effort must be NULL or one of 'none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'" = is.null(.reasoning_effort) | (.reasoning_effort %in% c("none", "minimal", "low", "medium", "high", "xhigh", "max")),
     "Input .tools must be NULL, a TOOL object, or a list of TOOL objects"                 = is.null(.tools) || S7_inherits(.tools, TOOL) || (is.list(.tools) && all(purrr::map_lgl(.tools, ~ S7_inherits(.x, TOOL)))),
     "Input .tool_choice must be NULL or one of 'none', 'auto', 'required'"                = is.null(.tool_choice) || (.tool_choice %in% c("none", "auto", "required")),
     ".max_tool_rounds must be a positive integer"                                         = is_integer_valued(.max_tool_rounds) && .max_tool_rounds >= 1,
@@ -544,15 +548,15 @@ openai_build_chat_request <- function(
 
 #' OpenAI built-in web search tool (server-executed)
 #'
-#' @return A TOOL object declaring the web_search_preview built-in.
+#' @return A TOOL object declaring the `web_search` built-in.
 #' @export
 openai_websearch <- function() {
   TOOL(
     name         = "web_search",
-    description  = "Builtin: web_search_preview",
+    description  = "Builtin: web_search",
     input_schema = list(),
     func         = function() NULL,
-    builtin      = list(list(type = "web_search_preview"))
+    builtin      = list(list(type = "web_search"))
   )
 }
 
@@ -633,7 +637,7 @@ openai_deep_research <- function(.llm,
 
   request_body <- request_data$request_body
   request_body$background <- TRUE
-  request_body$tools <- list(list(type = "web_search_preview"))
+  request_body$tools <- list(list(type = "web_search"))
 
   response <- httr2::request("https://api.openai.com/v1/responses") |>
     httr2::req_headers(

@@ -60,14 +60,14 @@ llm_message("Explain what a tibble is in one sentence.") |>
   chat(vibe_cli(.model = "mistral-large-4"))
 ```
 
-**Control Gemini reasoning by level.** `gemini()` takes `.thinking_level` (`"minimal"`, `"low"`, `"medium"` or `"high"`). Google is replacing token budgets with these levels, so `.thinking_budget` now warns that it is deprecated.
+**Control Gemini reasoning by level.** `gemini()` takes `.thinking_level` (`"minimal"`, `"low"`, `"medium"`, `"high"` or `"xhigh"`; the model decides which it accepts). Google is replacing token budgets with these levels, so `.thinking_budget` now warns that it is deprecated.
 
 ```r
 llm_message("What is 17 * 23?") |>
   chat(gemini(.thinking_level = "high"))
 ```
 
-**Mistral Large 4.** `mistral()` works with `mistral-large-4`, a reasoning model with a 512K-token context. Set `.reasoning_effort = "none"` to turn its reasoning off.
+**Mistral Large 4.** `mistral()` works with `mistral-large-4`, a reasoning model with a 1M-token context that always reasons. It is the default model of `mistral()`. Set `.reasoning_effort` to `"low"`, `"medium"` or `"high"` to trade speed against depth.
 
 **Fix for `claude_cli()`.** With its tools off, `claude_cli()` could still read files. It no longer does. The 0.7.0 release on CRAN has the same leak.
 

@@ -61,8 +61,9 @@ before answering.  (default: NULL).}
 \item{.tools}{Either a single TOOL object or a list of TOOL objects representing the available functions for tool calls.}
 
 \item{.thinking_level}{How much the model reasons before answering: \code{"minimal"}, \code{"low"},
-\code{"medium"} or \code{"high"} (default: NULL, the model's own default). Supported levels
-vary by model; \code{gemini-3.8-flash} accepts \code{"low"}, \code{"medium"} and \code{"high"}.}
+\code{"medium"}, \code{"high"} or \code{"xhigh"} (default: NULL, the model's own default). Supported
+levels vary by model; \code{gemini-3.8-flash} and the Gemini 4 models accept \code{"low"},
+\code{"medium"} and \code{"high"}, and \code{gemini-4-hydrogen} also \code{"xhigh"}.}
 
 \item{.thinking_budget}{Deprecated. Token budget for internal reasoning
 (default: NULL). Use \code{.thinking_level} instead; Google plans to reject token budgets on

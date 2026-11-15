@@ -2,7 +2,7 @@ devtools::load_all(quiet = TRUE)
 source("local_tests/test_harness.R")
 llt_suite("openrouter")
 
-# Default chat model: anthropic/claude-sonnet-4-6
+# Default chat model: anthropic/claude-sonnet-5.5
 # Free model for some tests: meta-llama/llama-3.3-70b-instruct:free
 
 # ── list_models ───────────────────────────────────────────────────────────────
@@ -26,22 +26,22 @@ llt_test("free models appear in list_models", {
 
 llt_test("basic chat returns LLMMessage", {
   result <- llm_message("Say hello in one word.") |>
-    chat(openrouter(.model = "google/gemini-2.5-flash"))
+    chat(openrouter(.model = "google/gemini-3.8-flash"))
   llt_expect_s7(result, LLMMessage)
   llt_expect_reply(result)
 })
 
 llt_test("get_metadata returns token counts and model", {
   result <- llm_message("Hello") |>
-    chat(openrouter(.model = "google/gemini-2.5-flash"))
+    chat(openrouter(.model = "google/gemini-3.8-flash"))
   llt_expect_metadata(result, c("prompt_tokens", "completion_tokens", "model"))
   meta <- get_metadata(result)
-  llt_expect_true(meta$model == "google/gemini-2.5-flash", "model field should match requested model")
+  llt_expect_true(meta$model == "google/gemini-3.8-flash", "model field should match requested model")
 })
 
 llt_test("streaming returns non-empty reply", {
   result <- llm_message("Count to 3.") |>
-    chat(openrouter(.model = "google/gemini-2.5-flash", .stream = TRUE))
+    chat(openrouter(.model = "google/gemini-3.8-flash", .stream = TRUE))
   llt_expect_s7(result, LLMMessage)
   llt_expect_reply(result)
 })
@@ -50,9 +50,9 @@ llt_test("streaming returns non-empty reply", {
 
 llt_test("multi-turn conversation works", {
   result <- llm_message("My favourite colour is blue. Just say 'got it'.") |>
-    chat(openrouter(.model = "google/gemini-2.5-flash")) |>
+    chat(openrouter(.model = "google/gemini-3.8-flash")) |>
     llm_message("What is my favourite colour?") |>
-    chat(openrouter(.model = "google/gemini-2.5-flash"))
+    chat(openrouter(.model = "google/gemini-3.8-flash"))
   llt_expect_reply(result)
   reply <- get_reply(result)
   llt_expect_true(grepl("blue", reply, ignore.case = TRUE), "Should remember favourite colour")
@@ -63,9 +63,9 @@ llt_test("multi-turn conversation works", {
 llt_test("fallback routing with .route and .models works", {
   result <- llm_message("Say hello in one word.") |>
     chat(openrouter(
-      .model  = "google/gemini-2.5-flash",
+      .model  = "google/gemini-3.8-flash",
       .route  = "fallback",
-      .models = c("google/gemini-2.5-flash", "anthropic/claude-haiku-4-5")
+      .models = c("google/gemini-3.8-flash", "anthropic/claude-haiku-5.5")
     ))
   llt_expect_s7(result, LLMMessage)
   llt_expect_reply(result)
@@ -78,7 +78,7 @@ llt_test("single tool call returns reply", {
   weather_tool <- tidyllm_tool(get_weather, "Get weather for a location",
                                location = field_chr("City name"))
   result <- llm_message("What's the weather in Paris?") |>
-    chat(openrouter(.model = "google/gemini-2.5-flash"), .tools = weather_tool)
+    chat(openrouter(.model = "google/gemini-3.8-flash"), .tools = weather_tool)
   llt_expect_reply(result)
 })
 
@@ -87,7 +87,7 @@ llt_test("single tool call returns reply", {
 llt_test("reasoning with effort level returns reply and reasoning in metadata", {
   result <- llm_message("Is 9.11 or 9.9 larger? Think carefully.") |>
     chat(openrouter(
-      .model     = "anthropic/claude-sonnet-4-6",
+      .model     = "openai/gpt-6-luna",
       .reasoning = list(effort = "low")
     ))
   llt_expect_s7(result, LLMMessage)
@@ -104,7 +104,7 @@ llt_test("reasoning with exclude=TRUE is forwarded and still returns an answer",
   # tidyllm controls (the request body and a usable reply), not the upstream policy.
   dry <- llm_message("Is 9.11 or 9.9 larger?") |>
     chat(openrouter(
-      .model     = "anthropic/claude-sonnet-4-6",
+      .model     = "anthropic/claude-sonnet-5.5",
       .reasoning = list(effort = "low", exclude = TRUE),
       .dry_run   = TRUE
     ))
@@ -113,7 +113,7 @@ llt_test("reasoning with exclude=TRUE is forwarded and still returns an answer",
 
   result <- llm_message("Is 9.11 or 9.9 larger?") |>
     chat(openrouter(
-      .model     = "anthropic/claude-sonnet-4-6",
+      .model     = "anthropic/claude-sonnet-5.5",
       .reasoning = list(effort = "low", exclude = TRUE)
     ))
   llt_expect_s7(result, LLMMessage)
@@ -123,13 +123,13 @@ llt_test("reasoning with exclude=TRUE is forwarded and still returns an answer",
 llt_test("multi-turn with reasoning passes reasoning back correctly", {
   first <- llm_message("My favourite colour is blue. Just say 'got it'.") |>
     chat(openrouter(
-      .model     = "anthropic/claude-sonnet-4-6",
+      .model     = "anthropic/claude-sonnet-5.5",
       .reasoning = list(effort = "low")
     ))
   result <- first |>
     llm_message("What is my favourite colour?") |>
     chat(openrouter(
-      .model     = "anthropic/claude-sonnet-4-6",
+      .model     = "anthropic/claude-sonnet-5.5",
       .reasoning = list(effort = "low")
     ))
   llt_expect_reply(result)
@@ -151,7 +151,7 @@ llt_test("openrouter_credits returns balance info", {
 
 llt_test("openrouter_generation returns cost and provider", {
   result <- llm_message("Say hi.") |>
-    chat(openrouter(.model = "google/gemini-2.5-flash"))
+    chat(openrouter(.model = "google/gemini-3.8-flash"))
   gen_id <- get_metadata(result)$api_specific[[1]]$id
   llt_expect_true(nzchar(gen_id), "Generation ID should be non-empty")
   # generation stats are eventually consistent; a 404 right after the call is normal

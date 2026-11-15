@@ -34,7 +34,7 @@ Imports:
     jsonlite,
     coro,
     curl,
-    httr2 (>= 1.1.1),
+    httr2 (>= 1.2.3),
     lubridate,
     purrr,
     rlang,

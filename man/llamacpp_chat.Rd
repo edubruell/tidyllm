@@ -21,7 +21,7 @@ llamacpp_chat(
   .seed = NULL,
   .thinking = NULL,
   .thinking_budget = NULL,
-  .server = Sys.getenv("LLAMACPP_SERVER", "http://localhost:8080"),
+  .server = Sys.getenv("LLAMACPP_SERVER", "http://localhost:9931"),
   .api_key = Sys.getenv("LLAMACPP_API_KEY", ""),
   .timeout = 120,
   .verbose = FALSE,
@@ -73,7 +73,7 @@ trace is accessible via \code{get_metadata(result)$api_specific$thinking}.}
 \code{.thinking = TRUE}. \code{NULL} uses the server default (optional).}
 
 \item{.server}{Base URL of the llama.cpp server. Defaults to the \code{LLAMACPP_SERVER}
-environment variable, falling back to \code{"http://localhost:8080"}.}
+environment variable, falling back to \code{"http://localhost:9931"}.}
 
 \item{.api_key}{API key for the llama.cpp server. Defaults to the \code{LLAMACPP_API_KEY}
 environment variable. Leave unset if the server was started without \code{--api-key}.}

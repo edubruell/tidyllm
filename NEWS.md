@@ -45,6 +45,16 @@ replies <- parallel_chat(prompts, claude(.json_schema = schema))
 get_reply_data(replies)
 ```
 
+## Updated for current provider APIs
+
+- `mistral()` now defaults to `mistral-large-4`, which always reasons. It accepts `.reasoning_effort` values `"low"`, `"medium"` and `"high"` and rejects `"none"`. Pass `.model = "zai-glm-5-3"` for the previous default.
+- `openai()` accepts every reasoning effort the API names: `"none"`, `"minimal"`, `"low"`, `"medium"`, `"high"`, `"xhigh"` and `"max"`. Each model takes a subset, and the API error lists the allowed values. `.temperature` works only at effort `"none"` on current models.
+- `openai_websearch()` and `openai_deep_research()` use the `web_search` tool type; OpenAI keeps `web_search_preview` only as a legacy name.
+- `gemini()` accepts `.thinking_level = "xhigh"`, which `gemini-4-hydrogen` supports. `gemini-3.8-flash` and the Gemini 4 models reject `"minimal"`.
+- `llamacpp()` and the llama.cpp helpers fall back to `http://localhost:9931`, the port current `llama-server` builds listen on. Set `LLAMACPP_SERVER` to keep an older address.
+- `azure_openai()` and `send_azure_openai_batch()` default to a deployment named `gpt-6-luna`; the `gpt-4o` family retires on 2027-01-14. Deployment names are yours to choose, so pass `.deployment` if yours differs. The Azure path has no live test; the default `.api_version` is unchanged.
+- tidyllm requires httr2 1.2.3 or later.
+
 ## Perplexity removed
 
 `perplexity()` and the `perplexity_*()` functions, deprecated since 0.7.0, are gone. Perplexity models stay available through `openrouter()`, for example `openrouter(.model = "perplexity/sonar")`, and `websearch_tool()` gives any provider web search. `deep_research()` now supports `openai()` only. Research jobs started with `perplexity()` can no longer be checked or fetched; start them again with `deep_research(.provider = openai())`; `check_job()` and `fetch_job()` stop with a message that says so. `perplexity()` stays as a stub that stops with a pointer to `openai()`, `claude()`, `gemini()` and `openrouter()`, so old scripts fail with a clear message.

@@ -59,7 +59,7 @@ send_mistral_batch(
 
 \item{.json_schema}{A JSON schema object for structured output (optional).}
 
-\item{.reasoning_effort}{How much reasoning models think before answering; one of \code{"none"}, \code{"low"}, \code{"medium"}, or \code{"high"} (default: \code{NULL}, meaning the API default). Supported values vary by model: \code{mistral-large-4} accepts only \code{"high"} and \code{"none"}.}
+\item{.reasoning_effort}{How much reasoning models think before answering; one of \code{"none"}, \code{"low"}, \code{"medium"}, or \code{"high"} (default: \code{NULL}, meaning the API default). Supported values vary by model: \code{mistral-large-4} accepts \code{"low"}, \code{"medium"} and \code{"high"}.}
 
 \item{.dry_run}{Logical; if TRUE, returns the prepared request without executing it (default: FALSE).}
 

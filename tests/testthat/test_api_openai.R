@@ -330,3 +330,16 @@ test_that("openai_list_models returns expected data", {
     expect_true(any(stringr::str_detect(result$id, paste(common_models, collapse = "|"))))
   }, simplify = FALSE)
 })
+
+test_that("openai() sends every reasoning effort the API names and the web_search tool type", {
+  body_of <- function(...) {
+    req <- llm_message("hi") |> chat(openai(..., .dry_run = TRUE))
+    req$body$data
+  }
+  for (effort in c("none", "minimal", "xhigh", "max")) {
+    expect_equal(body_of(.reasoning_effort = effort)$reasoning$effort, effort)
+  }
+  expect_error(llm_message("hi") |> chat(openai(.reasoning_effort = "extreme", .dry_run = TRUE)),
+               "none")
+  expect_equal(openai_websearch()@builtin[[1]]$type, "web_search")
+})

@@ -146,13 +146,13 @@ For most research tasks, Q4_K_M on a model one size class larger than your first
 
 ### The current model landscape
 
-Model size is measured in *parameters*, the numerical weights learned during training. More parameters generally means more capable, but also more memory required and slower inference. As of September 2026, strong open-weight families come from a range of labs:
+Model size is measured in *parameters*, the numerical weights learned during training. More parameters generally means more capable, but also more memory required and slower inference. As of November 2026, strong open-weight families come from a range of labs:
 
 | Family | Lab | Sizes | Notes |
 |--------|-----|-------|-------|
-| **Qwen3.8** | Alibaba | 27B dense | Apache 2.0; newest Qwen open weight (August 2026); `qwen3.8:27b` needs about 18 GB |
+| **Qwen3.8** | Alibaba | 27B dense | Apache 2.0; newest Qwen open weight (August 2026) with a 256K context; `qwen3.8:27b` needs about 18 GB |
 | **Qwen3.6** | Alibaba | 27B dense, 35B-A3B (MoE) | Apache 2.0; no small sizes, so Qwen3.5 (0.8B to 9B) remains tidyllm's Ollama default line |
-| **Gemma 4** | Google | E2B, E4B, 12B, 26B-A4B (MoE), 31B dense | 140+ languages, native audio/video input; the 12B (June 2026) has a 256K context and fits a 16 GB laptop; Apache 2.0 |
+| **Gemma 4** | Google | E2B, E4B, 12B, 26B-A4B (MoE), 31B dense | 140+ languages, native audio/video input; the 12B (June 2026) has a 256K context and fits a 16 GB laptop, and `gemma4:e4b` is a smaller option; Apache 2.0 |
 | **GLM-5.3** | Z.ai | about 753B total (MoE); Flash: 320B total / 18B active | Successor to GLM-5.2 (August 2026); GLM-5.3 uses a custom license, GLM-5.3-Flash is MIT with a 1M context |
 | **Muse Glimmer** | Meta | 30B dense | Apache 2.0; multimodal (text and image), 131K context, runs on a single 24 GB GPU (August 2026); Meta's larger Muse Spark models are closed |
 | **Kimi K3** | Moonshot AI | 2.8T total / 104B active (MoE) | Largest open-weight model; weights released July 26, 2026 under a custom Kimi K3 License that requires a deal for hosted services above $20M a year |
@@ -246,7 +246,7 @@ On Linux, build from source or use a pre-built release from the [llama.cpp GitHu
 llama-server -m ~/models/Qwen3.5-8B-Q4_K_M.gguf -c 32768
 ```
 
-The `-c` flag sets the context window size in tokens (32768 is a good default for most tasks). Once started, the server listens on `http://localhost:8080` by default.
+The `-c` flag sets the context window size in tokens (32768 is a good default for most tasks). Once started, the server listens on `http://localhost:9931` by default.
 
 **Embeddings require a separate process.** The embedding endpoint uses a dedicated embedding model and must run on a different port:
 
@@ -261,7 +261,7 @@ You can run both commands in separate terminal tabs, or keep them running in the
 **Telling tidyllm where to look.** Add the following to your `.Renviron` file (run `usethis::edit_r_environ()` to open it, then restart R):
 
 ```
-LLAMACPP_SERVER=http://localhost:8080
+LLAMACPP_SERVER=http://localhost:9931
 LLAMACPP_MODEL_DIR=~/models
 ```
 

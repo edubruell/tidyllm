@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Start llama.cpp servers needed for local_tests/providers/llamacpp.R
 #
-# Chat server  — port 8080 — Qwen3-0.6B-Q8_0.gguf
+# Chat server  — port 9931 — Qwen3-0.6B-Q8_0.gguf
 # Embed server — port 8081 — Qwen3-Embedding-0.6B-Q8_0.gguf
 #
 # Usage: bash local_tests/start_llamacpp_servers.sh [model_dir]
@@ -10,7 +10,7 @@
 MODEL_DIR="${1:-${LLAMACPP_MODEL_DIR:-$HOME/models}}"
 CHAT_MODEL="$MODEL_DIR/Qwen3-0.6B-Q8_0.gguf"
 EMBED_MODEL="$MODEL_DIR/Qwen3-Embedding-0.6B-Q8_0.gguf"
-CHAT_PORT=8080
+CHAT_PORT=9931
 EMBED_PORT=8081
 
 die() { echo "ERROR: $*" >&2; exit 1; }

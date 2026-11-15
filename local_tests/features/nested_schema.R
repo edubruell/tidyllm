@@ -73,16 +73,16 @@ nested_case <- function(label, provider_call) {
 }
 
 nested_case("openai: array of objects",
-            openai(.model = "gpt-4o-mini"))
+            openai(.model = "gpt-6-luna"))
 
 nested_case("openrouter -> openai (strict mode)",
-            openrouter(.model = "openai/gpt-4o-mini"))
+            openrouter(.model = "openai/gpt-6-luna"))
 
 nested_case("openrouter -> gemini",
-            openrouter(.model = "google/gemini-2.5-flash"))
+            openrouter(.model = "google/gemini-3.8-flash"))
 
 nested_case("gemini: array of objects",
-            gemini(.model = "gemini-2.5-flash"))
+            gemini(.model = "gemini-3.8-flash"))
 
 nested_case("claude: array of objects",
             claude(.model = "claude-haiku-4-5"))
@@ -102,12 +102,12 @@ llt_test("raw list schemas get a usable schema name on every provider (dry run)"
     required = list("answer")
   )
   bodies <- list(
-    openai      = llm_message("hi") |> chat(openai(.model = "gpt-4o-mini", .dry_run = TRUE),
+    openai      = llm_message("hi") |> chat(openai(.model = "gpt-6-luna", .dry_run = TRUE),
                                             .json_schema = raw_schema),
     mistral     = llm_message("hi") |> chat(mistral(.model = "mistral-small-latest", .dry_run = TRUE),
                                             .json_schema = raw_schema),
     groq        = llm_message("hi") |> chat(groq(.dry_run = TRUE), .json_schema = raw_schema),
-    openrouter  = llm_message("hi") |> chat(openrouter(.model = "openai/gpt-4o-mini", .dry_run = TRUE),
+    openrouter  = llm_message("hi") |> chat(openrouter(.model = "openai/gpt-6-luna", .dry_run = TRUE),
                                             .json_schema = raw_schema)
   )
   for (provider in names(bodies)) {
@@ -130,7 +130,7 @@ llt_test("raw list schema without a name attribute is accepted", {
     required = list("answer")
   )
   result <- llm_message("Answer with the single word: ok") |>
-    chat(openrouter(.model = "openai/gpt-4o-mini"), .json_schema = raw_schema)
+    chat(openrouter(.model = "openai/gpt-6-luna"), .json_schema = raw_schema)
   llt_expect_true(!is.null(get_reply_data(result)$answer), "structured reply must parse")
 })
 
@@ -145,7 +145,7 @@ llt_test("openai tool with a nested object argument round trips", {
                        country = field_chr("Country name"))
   )
   result <- llm_message("What is the weather in Berlin, Germany?") |>
-    chat(openai(.model = "gpt-4o-mini"), .tools = weather_tool)
+    chat(openai(.model = "gpt-6-luna"), .tools = weather_tool)
   llt_expect_reply(result)
 })
 

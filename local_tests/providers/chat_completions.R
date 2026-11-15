@@ -10,7 +10,7 @@ llt_test("chat_completions basic chat via OpenAI endpoint", {
     chat(chat_completions(
       .api_url        = "https://api.openai.com/v1/chat/completions",
       .api_key_env_var = "OPENAI_API_KEY",
-      .model          = "gpt-4o-mini"
+      .model          = "gpt-6-luna"
     ))
   llt_expect_s7(result, LLMMessage)
   llt_expect_reply(result)
@@ -21,7 +21,7 @@ llt_test("chat_completions streaming via OpenAI endpoint", {
     chat(chat_completions(
       .api_url        = "https://api.openai.com/v1/chat/completions",
       .api_key_env_var = "OPENAI_API_KEY",
-      .model          = "gpt-4o-mini",
+      .model          = "gpt-6-luna",
       .stream         = TRUE
     ))
   llt_expect_reply(result)

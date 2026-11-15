@@ -132,7 +132,7 @@ llt_test("deprecated .thinking_budget still works and warns", {
   result <- tryCatch(
     withCallingHandlers(
       llm_message("What is 17 * 23?") |>
-        chat(gemini(.model = "gemini-2.5-flash", .thinking_budget = 512)),
+        chat(gemini(.model = "gemini-3.8-flash", .thinking_budget = 512)),
       lifecycle_warning_deprecated = function(w) {
         warned <<- TRUE
         invokeRestart("muffleWarning")
