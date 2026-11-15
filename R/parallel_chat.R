@@ -20,8 +20,11 @@
 #'
 #' @return A list the same length as `.llms`. Successful elements are
 #'   `LLMMessage` objects; failed ones, under `.on_error = "continue"`, are the
-#'   condition that failed, so nothing is silently dropped and a downstream
-#'   `get_reply()` fails loudly on exactly the elements that have no reply.
+#'   condition that failed, so nothing is silently dropped. Pass the list to
+#'   [get_reply()], [get_reply_data()] or [get_metadata()] to read all replies
+#'   at once; a failed request gives `NA` there, with its message in the
+#'   `error` column of the tables. A single failed element handed to
+#'   `get_reply()` fails loudly.
 #'
 #' @details
 #' Neither streaming nor tool calls are supported here, and both are refused
@@ -37,7 +40,7 @@
 #'   biology = llm_message("What is a ribosome?")
 #' )
 #' answers <- parallel_chat(questions, claude())
-#' purrr::map_chr(answers, get_reply)
+#' get_reply(answers)
 #' }
 #'
 #' @export

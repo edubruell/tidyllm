@@ -36,6 +36,15 @@ Many texts at once: every element of `.state` is one item, and an item is a stri
 
 This feature is experimental and works with `jev()` only; the vendor labels it a preview and its format may change. `openai()`, `gemini()` and `ollama()` stop with a message before any request, and so does a state without an image.
 
+## Read many replies at once
+
+`get_reply()`, `get_reply_data()` and `get_metadata()` now accept the list that `parallel_chat()` and `fetch_batch()` return. `get_reply()` gives one string per reply. `get_reply_data()` and `get_metadata()` give a tibble with one row per reply: `reply_id` (the position), `reply` (the names of the list, when it has names), `error`, then the schema fields or the metadata columns. A request that failed keeps its row, with the message in `error` and `NA` in the other columns, so the rows still match your inputs. One reply behaves as before, and a single failed element still stops `get_reply()`.
+
+```r
+replies <- parallel_chat(prompts, claude(.json_schema = schema))
+get_reply_data(replies)
+```
+
 ## Perplexity removed
 
 `perplexity()` and the `perplexity_*()` functions, deprecated since 0.7.0, are gone. Perplexity models stay available through `openrouter()`, for example `openrouter(.model = "perplexity/sonar")`, and `websearch_tool()` gives any provider web search. `deep_research()` now supports `openai()` only. Research jobs started with `perplexity()` can no longer be checked or fetched; start them again with `deep_research(.provider = openai())`; `check_job()` and `fetch_job()` stop with a message that says so. `perplexity()` stays as a stub that stops with a pointer to `openai()`, `claude()`, `gemini()` and `openrouter()`, so old scripts fail with a clear message.

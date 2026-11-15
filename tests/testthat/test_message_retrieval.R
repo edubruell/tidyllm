@@ -211,3 +211,92 @@ test_that("get_metadata returns empty tibble and warns when no assistant message
   expect_warning(metadata <- get_metadata(llm), "No assistant replies available in the message history.")
   expect_equal(nrow(metadata), 0)
 })
+
+json_reply <- function(.content) {
+  llm_message("Provide data") |>
+    add_message(.role = "assistant", .content = .content, .json = TRUE)
+}
+
+text_reply <- function(.content) {
+  llm_message("Hello") |> llm_message(.content, .role = "assistant")
+}
+
+test_that("get_reply returns one string per element of a list and NA for a failure", {
+  replies <- list(a = text_reply("one"), b = simpleError("rate limited"), c = text_reply("three"))
+  expect_equal(get_reply(replies), c(a = "one", b = NA_character_, c = "three"))
+  expect_equal(get_reply(list()), character())
+})
+
+test_that("get_reply_data on a list gives one tibble row per reply with error and key columns", {
+  replies <- list(
+    first  = json_reply('{"label": "47", "score": 0.9}'),
+    second = simpleError("rate limited"),
+    third  = json_reply('{"label": "11", "score": 0.4}')
+  )
+  out <- get_reply_data(replies)
+  expect_s3_class(out, "tbl_df")
+  expect_named(out, c("reply_id", "reply", "error", "label", "score"))
+  expect_equal(out$reply_id, 1:3)
+  expect_equal(out$reply, c("first", "second", "third"))
+  expect_equal(out$error, c(NA, "rate limited", NA))
+  expect_equal(out$label, c("47", NA, "11"))
+  expect_equal(out$score, c(0.9, NA, 0.4))
+})
+
+test_that("get_reply_data on an unnamed list has no reply column", {
+  out <- get_reply_data(list(json_reply('{"label": "47"}')))
+  expect_named(out, c("reply_id", "error", "label"))
+})
+
+test_that("get_reply_data on a list keeps nested fields as list-columns", {
+  out <- get_reply_data(list(json_reply('{"label": "47", "reasons": ["a", "b"]}')))
+  expect_type(out$reasons, "list")
+  expect_equal(out$reasons[[1]], c("a", "b"))
+})
+
+test_that("get_reply_data on a list reports replies without JSON in the error column", {
+  replies <- list(text_reply("no json here"), json_reply('{"label": "47"}'))
+  out <- get_reply_data(replies)
+  expect_false(is.na(out$error[1]))
+  expect_true(is.na(out$label[1]))
+  expect_equal(out$label[2], "47")
+})
+
+test_that("get_reply_data on a list stays a tibble when every element failed or the list is empty", {
+  all_failed <- get_reply_data(list(simpleError("a"), simpleError("b")))
+  expect_equal(all_failed$error, c("a", "b"))
+  expect_equal(nrow(get_reply_data(list())), 0)
+})
+
+test_that("get_reply_data on a list stops when a schema field uses a table column name", {
+  expect_error(get_reply_data(list(json_reply('{"reply": "x"}'))), "reply_id, reply or error")
+})
+
+test_that("get_metadata on a list adds the key columns and keeps failed rows", {
+  replies <- list(a = text_reply("one"), b = simpleError("rate limited"))
+  out <- get_metadata(replies)
+  expect_equal(out$reply_id, 1:2)
+  expect_equal(out$reply, c("a", "b"))
+  expect_equal(out$error[2], "rate limited")
+  expect_true("total_tokens" %in% names(out))
+})
+
+test_that("getters reject a list that holds something other than replies", {
+  expect_error(get_reply(list("text")), "must be an LLMMessage")
+  expect_error(get_reply_data(list(1)), "must be an LLMMessage")
+  expect_error(get_metadata(list(NULL)), "must be an LLMMessage")
+})
+
+test_that("get_reply_data on a list refuses reserved names in an array of objects too", {
+  expect_error(get_reply_data(list(json_reply('[{"error": "x"}, {"error": "y"}]'))), "reply_id, reply or error")
+})
+
+test_that("a data frame is not treated as a list of replies", {
+  expect_error(get_reply(data.frame(x = 1)), "must be an LLMMessage object")
+})
+
+test_that("get_reply_data on a list gives one row per object for an array of objects", {
+  out <- get_reply_data(list(json_reply('[{"a": 1}, {"a": 2}]')))
+  expect_equal(out$reply_id, c(1L, 1L))
+  expect_equal(out$a, 1:2)
+})

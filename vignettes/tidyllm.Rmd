@@ -470,8 +470,10 @@ tibble::tribble(
 conversations <- readRDS("claude_batch.rds") |>
   fetch_batch(claude())
 
-poems <- purrr::map_chr(conversations, get_reply)
+poems <- get_reply(conversations)
 ```
+
+`get_reply()`, `get_reply_data()` and `get_metadata()` read the whole list at once. With a schema, `get_reply_data(conversations)` returns a tibble with one row per reply; a request that failed keeps its row, with the message in the `error` column.
 
 `check_job()` and `fetch_job()` are type-dispatching aliases; they work on both batch objects and background research jobs (see `deep_research()` below).
 

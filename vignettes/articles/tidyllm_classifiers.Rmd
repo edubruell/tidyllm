@@ -7,21 +7,17 @@ knitr::opts_chunk$set(collapse = TRUE)
 options(width = 90)
 ```
 
-You have thousands of short free-text answers and a fixed list of categories. A language model can sort them in minutes, but a label is only as good as the check behind it. **tidyllm** gives you two ways to ask a model about them.
+You have thousands of short free-text answers and a fixed list of categories. A language model can label each answer in minutes. A single label can differ from run to run, though, and a label that comes back every time can still be wrong.
 
-With `chat()`, the model writes a reply; with `decide()`, it answers a closed question and returns a probability. A closed question has fixed possible answers, such as your list of 23 occupation codes; the probability is the model's score for its chosen answer, from 0 to 1. See the [decision models article](https://edubruell.github.io/tidyllm/articles/tidyllm_decision_models.html) for other question types.
+Here you write a codebook (a definition for each category), label every answer several times, and compare the runs. You send the answers where the runs disagree through a stronger second pass and check the result against a sample of answers coded by people.
 
-This article builds a workflow with a codebook, one closed question per answer using `decide()`, a look at the probabilities, a second provider, and three repeated `chat()` runs for comparison. It then uses a `chat()` pass with a written reason for doubtful rows, followed by a human-labelled sample.
+A faster, cheaper route is a *decision model*, a different kind of model that you call with `decide()` instead of `chat()`. It answers a closed question such as "which of these 23 codes?" with the code and a probability, and writes no text. The section "An alternative: decision models" runs it on the same sample.
 
-The second provider and the `chat()` pass are optional; the codebook and human sample are not. Agreement is not accuracy. Agreement between models shows where they are unsure; only comparison with human labels shows whether they are right.
-
-Every call that needs an API key appears in a chunk that is not evaluated. The next chunk loads the saved result and prints it, so you can follow the measured results without making a live call.
-
-A provider is the company whose server runs the model; an API key is a password that lets your R session use it. `decide()` needs one key for the provider you choose: `OPENAI_API_KEY`, `GOOGLE_API_KEY` or `TYPESAFE_API_KEY`. The key table in [Get Started](https://edubruell.github.io/tidyllm/articles/tidyllm.html) says where to get each one.
+Chunks that call an API (a model provider's web service) are not evaluated; the next chunk loads the saved results, so you can follow along without an API key, the password for that service. If you rerun them, they cost money. The [Get Started](https://edubruell.github.io/tidyllm/articles/tidyllm.html) article has a table of where to get a key for each provider.
 
 ## The task
 
-Seven thousand survey respondents described their job in their own words. We want each answer in one of the 22 two-digit SOC occupation groups, or in code 99 when the answer names no occupation.
+Seven thousand survey respondents described their job in their own words, which gives 2,209 distinct answers, since many people use the same words (for example "lawyer"). We sort each answer into one of 22 two-digit groups of the SOC (Standard Occupational Classification, the US scheme for job categories), or into code 99 when it names no occupation.
 
 ```{r setup, message = FALSE}
 library(tidyllm)
@@ -38,295 +34,30 @@ distinct_occupations <- occ_data |>
 print(distinct_occupations, n = 5)
 ```
 
-Classifying each distinct answer once is enough; the labels are joined back to the respondents at the end. Among the 7,000 respondents, there are 2,209 distinct answers to classify.
+We classify each distinct answer once and join the labels back at the end.
 
 ## Why a single answer is not enough
 
-Studies of LLM annotation find that repeated runs of the same prompt on the same text return different labels, especially for borderline texts (Barrie, Palaiologou and Törnberg, 2024; Haldar and Hockenmaier, 2025). An LLM label is only as good as its agreement with humans on your task (Pangakis, Wolken and Fasching, 2023).
+In 2026, most paid providers no longer let you set `temperature`, the setting that controls how much a model's answers vary for the same input. Most current paid models reject it. OpenAI and Claude models return an error, and recent Gemini models, including the default of `gemini()`, accept it and ignore it. `provider_capabilities()` lists which providers accept it.
 
-## Two ways to ask a model
+So you cannot make a model repeat itself, and the same prompt on the same text can return different labels, mostly on borderline texts (Barrie, Palaiologou and Törnberg, 2024; Haldar and Hockenmaier, 2025). The remedy is the one used with human coders: label each answer several times, compare the runs, and check the labels against a validation sample, a set of answers coded by people (Pangakis, Wolken and Fasching, 2023).
 
-A *decision model* answers closed questions with an answer and a probability and writes no text. Its probability is its own score, from 0 to 1: a high score means strong preference, not a promise of being right nine times in ten. Step 3 checks how well scores match reality; the [decision models article](https://edubruell.github.io/tidyllm/articles/tidyllm_decision_models.html) covers yes/no, choice and score questions.
-
-This article runs `openai()`, `gemini()` and `jev()`, a small model service from TypeSafe AI built for this kind of task; see the provider table in the [decision models article](https://edubruell.github.io/tidyllm/articles/tidyllm_decision_models.html). `ollama()` also works as a decision provider; the decision models article shows how.
-
-| Job | Use | Why |
-|---|---|---|
-| Sort texts into a fixed list of labels | `decide()` | one call gives a label and a probability, in about 0.2 seconds |
-| Screen texts with yes/no questions | `decide()` | one probability per question |
-| Score a text on an ordered scale | `decide()` with an ordered question | the scale order is the level order |
-| Write a reason, a summary or a free label | `chat()` | `decide()` returns no text |
-| Work with a PDF, image or file | `chat()` | `chat()` accepts files and images; `decide()` takes one piece of text per call |
-| Decide a hard case after thinking | `chat()` | a reasoning model works through the problem step by step before it answers; it is slower and costs more |
-
-For a hard case, switch reasoning on with `.thinking = TRUE` in the provider call, as Step 5 does.
+The chat examples use `claude(.model = "claude-sonnet-5-5")`.
 
 ## Step 1: Write a codebook, not a list
 
-A bare list of codes leaves the model to guess what "Management" or "Missing" means. A codebook gives each label a definition, a decision rule for overlaps, and one or two examples. A human coder would need the same thing.
+A codebook gives each label a definition, a rule for overlaps and one or two examples. Without one the model guesses what "Management" or "Missing" covers.
 
 ```{r codebook}
 codebook <- read_file("classifier_codebook.txt") |> trimws()
 cat(codebook)
 ```
 
-Keep the codebook in a file under version control. When you change it, you have changed the measurement, and the validation in step 6 has to be run again. The last section of this article shows what happens when you edit the codebook to fix the errors you found. We use the codebook twice: as the level descriptions in Step 2 and as the prompt in Step 5.
+Keep the codebook in a file under version control. Rerun step 6 after every edit, so the accuracy you report matches the codebook you use.
 
-## Step 2: Turn the codebook into a question
+## Step 2: Constrain the answer with a schema
 
-In R, a choice question is a factor, and its possible answers are called levels. Each level here is an occupation code with a one-sentence description from the codebook. The file has one line per code, with the code first and its definition after it.
-
-We split each line into `code` and `description`. The `extra = "merge"` setting keeps everything after the first space in the description.
-
-```{r codebook_levels}
-codebook_lines <- read_lines("classifier_codebook.txt") |>
-  keep(\(x) nzchar(trimws(x)))
-
-codebook_levels <- tibble(line = codebook_lines) |>
-  separate(line, c("code", "description"), sep = " ", extra = "merge")
-```
-
-`field_fct()` takes the codes as `.levels` and their definitions as `.level_descriptions`. The model reads the descriptions, and the returned answer is a code. The 22 occupation groups plus code 99 make 23 levels.
-
-```{r occ_questions}
-occ_questions <- tidyllm_schema(
-  name = "occupation_label",
-  occ2 = field_fct(
-    "The SOC two-digit occupation group of this survey answer.",
-    .levels             = codebook_levels$code,
-    .level_descriptions = codebook_levels$description
-  )
-)
-```
-
-```{r check_levels}
-nrow(codebook_levels)
-```
-
-Check that `nrow(codebook_levels)` is 23. Then inspect the table to confirm that the descriptions match the codebook text.
-
-`decide()` takes the text to judge in `.state`, the questions in `.questions`, and a provider. We put one framing line before the answer to tell the model what it is reading: "Survey question: What is your job? Answer: Residential roofer." Then we send that text and the occupation question to `gemini()`.
-
-```{r frame_answer}
-frame_answer <- \(x) paste0("Survey question: What is your job? Answer: ", x)
-```
-
-```{r decide_one, eval = FALSE}
-decide(frame_answer("Residential roofer"), occ_questions, gemini()) |>
-  select(question, type, answer, probability)
-```
-
-```
-# A tibble: 1 × 4
-  question type   answer probability
-  <chr>    <chr>  <chr>        <dbl>
-1 occ2     choice 47           0.998
-```
-
-The result has one row per question; we show its first four columns. For `occ2`, the model chooses code 47, Construction and Extraction, which fits a roofer, and assigns it probability 0.998.
-
-Code 99 is the codebook's "Missing" category: the answer names no occupation, or is too vague to place. The framing line tells the model what kind of text it is reading.
-
-> ⚠️ **Note:** Say in one line what the text is. Without it, `openai()` labelled 27 of 60 answers as 99 and reached 0.57; with it 0.87.
-
-`gemini()` scored 0.83 both ways; we tried one wording of the line. Without the line, `openai()` labelled answers such as "Doctor" as 99, although the answer names a codable occupation.
-
-A dry run builds the request `tidyllm` would send and stops before sending it, so you can check the codebook and text first. Set `.dry_run = TRUE`; it needs no API key. The [decision models article](https://edubruell.github.io/tidyllm/articles/tidyllm_decision_models.html) explains dry runs further.
-
-```{r dry_run}
-request <- decide(frame_answer("Doctor"), occ_questions, jev(), .dry_run = TRUE)
-request$url
-request$body$data$state
-head(request$body$data$questions$occ2$criteria, 2)
-```
-
-Check `state` for the text being sent. The `criteria` list contains all 23 codes, each beside its description; the output shows the first two. This lets you confirm the codebook text reached the request before making a live call.
-
-Because `decide()` handles one text per call, we wrap one answer in a small function, then use `map()` to apply it to each answer. `unnest()` unpacks the returned label and probability into separate columns.
-
-```{r label_one}
-label_one <- function(answer, provider) {
-  res <- decide(frame_answer(answer), occ_questions, provider)
-  tibble(label = res$answer, probability = res$probability)
-}
-```
-
-```{r three_answers, eval = FALSE}
-answers <- c("Residential roofer", "Keep things organized", "Barster")
-
-tibble(occupation = answers) |>
-  mutate(res = map(occupation, label_one, provider = gemini())) |>
-  unnest(res)
-```
-
-```
-# A tibble: 3 × 3
-  occupation            label probability
-  <chr>                 <chr>       <dbl>
-1 Residential roofer    47          0.998
-2 Keep things organized 99          0.806
-3 Barster               35          0.882
-```
-
-The model assigns the roofer code 47, matching the human label. It assigns "Keep things organized" code 99 with probability 0.806 (the human label is 43); "Barster" receives code 35 (the human label is 99).
-
-We check a random 60 of the 150 human-labelled answers, using seed 2026 and the saved `classifier_sample.rds` and `classifier_gold.rds` files. Sequential means one call after another: 60 answers took 12.0 seconds with `jev()` and 15.6 seconds with `gemini()`. At this sample size, one standard error is 4.6 percentage points.
-
-```{r sample_items}
-sample_df <- read_rds("classifier_sample.rds")
-gold      <- read_rds("classifier_gold.rds")
-
-set.seed(2026)
-items <- sample_df |>
-  inner_join(gold, by = "id") |>
-  slice_sample(n = 60)
-```
-
-```{r run_gemini, eval = FALSE}
-items |>
-  mutate(res = map(occupation, label_one, provider = gemini())) |>
-  unnest(res)
-```
-
-The same call runs with `openai()` and `jev()`; the saved results for all three providers are loaded below. This keeps the measured results available without making new calls when you build the article.
-
-```{r run_all, eval = FALSE}
-run_provider <- function(provider) {
-  items |>
-    mutate(res = map(occupation, label_one, provider = provider)) |>
-    unnest(res)
-}
-
-decide_runs <- list(
-  openai = run_provider(openai()),
-  gemini = run_provider(gemini()),
-  jev    = run_provider(jev())
-)
-write_rds(decide_runs, "classifier_decide_runs.rds")
-```
-
-```{r load_decide_runs}
-decide_runs <- read_rds("classifier_decide_runs.rds")
-```
-
-## Step 3: Read the probability
-
-For comparison, we use labels from three Claude Sonnet 5.5 runs per answer and take the majority, the label chosen most often. Step 5 shows how those labels were made. The table compares first-pass accuracy across providers and the Claude majority: `openai()` and `jev()` each get 52 of 60 right (0.867), while `gemini()` and Claude get 50 of 60 (0.833).
-
-```{r first_pass}
-claude_majority <- read_rds("classifier_runs.rds") |>
-  filter(!is.na(label)) |>
-  count(id, label) |>
-  group_by(id) |>
-  slice_max(n, n = 1, with_ties = FALSE) |>
-  ungroup() |>
-  select(id, majority = label)
-
-claude_row <- items |>
-  inner_join(claude_majority, by = "id") |>
-  summarise(
-    provider = "claude, majority of 3 runs",
-    answers  = n(),
-    correct  = sum(majority == gold),
-    accuracy = round(mean(majority == gold), 3)
-  )
-
-decide_runs |>
-  bind_rows(.id = "provider") |>
-  group_by(provider) |>
-  summarise(answers = n(), correct = sum(label == gold), accuracy = round(mean(label == gold), 3)) |>
-  bind_rows(claude_row)
-```
-
-The table compares accuracy across probability bands for each provider. Each cell gives the share of answers labelled correctly, followed by the number of answers in that band; for example `0.96 (23)`; empty bands are shown as "0 rows".
-
-```{r bands}
-decide_runs |>
-  bind_rows(.id = "provider") |>
-  mutate(band = cut(probability, c(0, 0.5, 0.8, 0.95, 1), include.lowest = TRUE)) |>
-  group_by(provider, band) |>
-  summarise(cell = str_glue("{sprintf('%.2f', mean(label == gold))} ({n()})"), .groups = "drop") |>
-  pivot_wider(names_from = provider, values_from = cell, values_fill = "0 rows")
-```
-
-We use 0.8 as a round cut-off. Rows below it were right 60 to 70 percent of the time, rows at or above it 90 to 92 percent. A row below 0.8 is flagged, meaning marked for a second look; use its probability to prioritise human or model review.
-
-```{r flagged}
-decide_runs |>
-  bind_rows(.id = "provider") |>
-  mutate(flagged = probability < 0.8) |>
-  group_by(provider, flagged) |>
-  summarise(items = n(), correct = sum(label == gold), accuracy = round(mean(label == gold), 2), .groups = "drop")
-```
-
-A probability is *calibrated* when it matches how often the answer is right (Guo et al., 2017). Above 0.95, match rates were 96% for `gemini()` (23 rows), 100% for `jev()` (23 rows) and 92% for `openai()` (39 rows); between 0.5 and 0.8, rates were 60 to 69% across 16, 13 and 10 rows. Check calibration on your own data with the validation sample in Step 6.
-
-In the `chat()` route the model writes a confidence word as one more field; `decide()` returns a number the provider computes for each answer.
-
-A language model can give different answers when you ask twice. We asked each provider the same 20 questions twice. `openai()` and `gemini()` gave exactly the same answer and probability every time, 20 of 20. `jev()` gave the same label 19 times out of 20; its probability differed between the two calls in 14 of the 20 answers, by at most 0.11. For `jev()`, repeated calls give a spread; for the other two, ask another provider for a second opinion.
-
-## Step 4: Ask a second decision model
-
-Agreement is the share of answers where two providers choose the same code. The table compares the three pairs: `openai()` and `gemini()` agree on 0.92 of answers, `openai()` and `jev()` on 0.85, and `gemini()` and `jev()` on 0.87.
-
-```{r agreement}
-labels_wide <- decide_runs |>
-  bind_rows(.id = "provider") |>
-  pivot_wider(id_cols = c(id, occupation, gold), names_from = provider, values_from = label)
-
-tibble(
-  pair      = c("openai and gemini", "openai and jev", "gemini and jev"),
-  agreement = c(
-    mean(labels_wide$openai == labels_wide$gemini),
-    mean(labels_wide$openai == labels_wide$jev),
-    mean(labels_wide$gemini == labels_wide$jev)
-  ) |> round(2)
-)
-```
-
-All three agreed on 49 of the 60 answers; on those 49, 94 percent matched the human label.
-
-```{r all_agree}
-labels_wide |>
-  filter(openai == gemini, gemini == jev) |>
-  summarise(answers = n(), correct = sum(openai == gold), accuracy = round(mean(openai == gold), 3))
-```
-
-The providers also agree on two answers that do not match the human labels. All three assign "Barster" code 35 and "Loundry Worker" code 37; the human labels are 99 and 51, respectively.
-
-```{r agree_examples}
-labels_wide |>
-  filter(occupation %in% c("Barster", "Loundry Worker")) |>
-  select(occupation, openai, gemini, jev, human = gold)
-```
-
-The providers disagree on 11 of the 60 answers. The flag marks a row when any provider's probability is below 0.8 or their labels differ; it marks 23 of the 60 answers, including every disagreement. Flagged rows are marked for a second look.
-
-```{r flag}
-flags <- decide_runs |>
-  bind_rows(.id = "provider") |>
-  group_by(id) |>
-  summarise(
-    low_probability  = any(probability < 0.8),
-    providers_differ = n_distinct(label) > 1,
-    .groups = "drop"
-  ) |>
-  mutate(flagged = low_probability | providers_differ)
-
-flags |>
-  summarise(
-    low_probability  = sum(low_probability),
-    providers_differ = sum(providers_differ),
-    flagged          = sum(flagged),
-    differ_not_flagged = sum(providers_differ & !flagged)
-  )
-```
-
-## Step 5: Send the doubtful rows to `chat()`
-
-For flagged rows, we want a written reason from a stronger model that thinks before answering. `decide()` returns no text; the schema `occ_schema` below makes `chat()` return a structured reply with a label, reason and confidence word.
-
-A reasoning model works through the problem before it answers and costs more per call, so we use it only on doubtful rows marked for review. Step 6 reports the accuracy of both routes.
+Asking for "only the code" breaks `parse_number()` when the model adds a word. A schema, a fixed list of fields the reply must fill, avoids this. `field_fct()` makes the label an enum, a field that takes only values from a fixed list. We add a one-sentence rationale to read when you audit a row and a three-level confidence to sort by.
 
 ```{r schema}
 label_levels <- as.character(c(occ_codes$occ2, 99)) |> unique()
@@ -340,7 +71,7 @@ occ_schema <- tidyllm_schema(
 ```
 
 ```{r prompt_fn}
-make_prompt <- function(occupation) {
+make_prompt <- function(occupation, codebook) {
   llm_message(glue(
     'You code survey answers into occupation groups.
      Use only the codebook below. Choose the single best group.
@@ -354,19 +85,32 @@ make_prompt <- function(occupation) {
 }
 ```
 
+A dry run, `.dry_run = TRUE`, shows the request that would be sent without sending it, so you can check it before spending anything.
+
+```{r dry_run, eval = FALSE}
+make_prompt(distinct_occupations$occupation[1], codebook) |>
+  chat(claude(.model = "claude-sonnet-5-5", .json_schema = occ_schema, .dry_run = TRUE))
+```
+
+Heavy output constraints can cost accuracy, the share of answers where the model's label equals the human label, on hard cases (Tam et al., 2024); the rationale field is there for that reason.
+
 One call looks like this:
 
 ```{r one_call, eval = FALSE}
-make_prompt("Doin' the numbers") |>
+make_prompt("Doin' the numbers", codebook) |>
   chat(claude(.model = "claude-sonnet-5-5", .json_schema = occ_schema)) |>
   get_reply_data()
 ```
 
-A strict answer format can lower accuracy on hard cases (Tam et al., 2024). The rationale field gives the model room to reason; Step 6 measures the result.
+`get_reply_data()` returns a named list with one element per schema field. The label stays a character string, because "99" and "11" are labels.
 
-### Repeated `chat()` runs, as a comparison
+## Step 3: Label every answer several times
 
-Repeated `chat()` runs fit tasks that need a written reason for each row. We ask Claude Sonnet 5.5 three times for each of 150 sampled answers and keep every run, naming each task with the answer ID and run number so the results stay linked.
+We ask for each answer `k` times and keep every run. Three runs give a majority; five give a finer agreement score at a higher price. We use a random sample of 150 distinct answers.
+
+`parallel_chat()` sends the requests concurrently and returns one reply per prompt, in the same order.
+
+The chunk below builds one ready-to-send prompt per answer and run and keeps it in a `prompt` column next to the answer.
 
 ```{r repeat_tasks, eval = FALSE}
 k <- 3
@@ -375,45 +119,42 @@ sample_df <- distinct_occupations |>
   slice_sample(n = 150)
 
 tasks <- sample_df |>
-  cross_join(tibble(run = seq_len(k))) |>
-  mutate(task_id = paste(id, run, sep = "__"))
-
-llms <- tasks$occupation |>
-  map(make_prompt) |>
-  set_names(tasks$task_id)
+  cross_join(tibble(run = 1:k)) |>
+  mutate(prompt = map(occupation, make_prompt, codebook = codebook))
 ```
 
 ```{r repeat_run, eval = FALSE}
 replies <- parallel_chat(
-  llms,
+  tasks$prompt,
   claude(.model = "claude-sonnet-5-5", .json_schema = occ_schema),
   .max_active = 4
 )
 write_rds(replies, "runs_claude.rds")
 ```
 
-Failed requests do not stop the call. `parallel_chat()` warns how many failed, and the failed elements of the list hold the error condition instead of a message. The extraction below turns those into missing values, so no row disappears silently.
+Failed requests do not stop the call; `parallel_chat()` warns how many failed, and you can run those prompts again.
+
+`get_reply_data()` turns the list of replies into a tibble with one row per reply, in the same order: `reply_id`, `error` and one column per schema field. A failed request keeps its row with the message in `error`. The chunk lists those rows in `failed`, so you can run them again, and drops them from `runs`.
 
 ```{r tidy_runs, eval = FALSE}
-extract_run <- function(reply) {
-  if (!inherits(reply, "tidyllm::LLMMessage")) {
-    return(tibble(rationale = NA_character_, occ2 = NA_character_, confidence = NA_character_))
-  }
-  as_tibble(get_reply_data(reply))
-}
+reply_data <- get_reply_data(replies)
 
-runs <- map(replies, extract_run) |>
-  bind_rows(.id = "task_id") |>
-  separate(task_id, c("id", "run"), sep = "__", convert = TRUE) |>
-  rename(label = occ2)
+failed <- filter(reply_data, !is.na(error))
+
+runs <- tasks |>
+  bind_cols(reply_data) |>
+  filter(is.na(error)) |>
+  select(id, run, label = occ2, rationale, confidence)
 ```
 
-The saved results of this run hold three labels for each of the 150 sampled answers.
+The saved results hold three labels for each of the 150 sampled answers.
 
 ```{r load_runs}
 sample_df <- read_rds("classifier_sample.rds")
 runs      <- read_rds("classifier_runs.rds")
 run_meta  <- read_rds("classifier_runs_meta.rds")
+run_tokens <- run_meta$tokens |>
+  rename(prompt_tokens = input_tokens, completion_tokens = output_tokens)
 
 runs |>
   left_join(sample_df, by = "id") |>
@@ -421,30 +162,96 @@ runs |>
   print(n = 6)
 ```
 
-The token counts of the 450 calls come from the response metadata of each call. The codebook is part of every request, so the prompt is much longer than the answer it labels.
+Tokens are the short pieces of text a model reads and writes, and providers charge by them. `get_metadata()` returns one row per reply with its `prompt_tokens` and `completion_tokens`:
+
+```{r repeat_meta, eval = FALSE}
+run_tokens <- get_metadata(replies)
+```
+
+The codebook is part of every request, so prompts are far longer than the answers. We count them for the 450 saved calls.
 
 ```{r tokens}
-tibble(
-  calls                = nrow(run_meta$tokens),
-  prompt_tokens        = sum(run_meta$tokens$input_tokens),
-  completion_tokens    = sum(run_meta$tokens$output_tokens),
-  prompt_per_call      = round(mean(run_meta$tokens$input_tokens)),
-  completion_per_call  = round(mean(run_meta$tokens$output_tokens))
-)
+run_tokens |>
+  summarise(
+    calls               = n(),
+    prompt_per_call     = round(mean(prompt_tokens)),
+    completion_per_call = round(mean(completion_tokens)),
+    prompt_tokens       = sum(prompt_tokens),
+    completion_tokens   = sum(completion_tokens)
+  ) |>
+  relocate(calls, prompt_tokens, completion_tokens)
 ```
+
+### The same job as a batch
+
+For a full dataset where a result an hour later is fine, `send_batch()` submits the same list as a batch, a job you collect later, at half the price. `check_batch()` reports the status and `fetch_batch()` returns the replies. We sent the first 20 requests as a test; the chunk submits the batch job, checks it, fetches the replies and reads them with `get_reply_data()` as before.
+
+```{r batch_variant, eval = FALSE}
+first20 <- slice(tasks, 1:20)
+
+job <- send_batch(first20$prompt, claude(.model = "claude-sonnet-5-5", .json_schema = occ_schema))
+write_rds(job, "runs_batch_job.rds")
+
+job <- read_rds("runs_batch_job.rds")
+check_batch(job, claude())
+
+replies <- fetch_batch(job, claude())
+
+batch_runs <- bind_cols(first20, get_reply_data(replies))
+```
+
+The two `check_batch()` outputs come from right after submission and three minutes later:
+
+```
+# A tibble: 1 x 8
+  batch_id          status      created_at          expires_at          req_succeeded
+  <chr>             <chr>       <dttm>              <dttm>                      <int>
+1 msgbatch_017iBx1… in_progress 2026-10-02 13:22:40 2026-10-03 13:22:40             0
+# i 3 more variables: req_errored <int>, req_expired <int>, req_canceled <int>
+
+# A tibble: 1 x 8
+  batch_id          status created_at          expires_at          req_succeeded
+  <chr>             <chr>  <dttm>              <dttm>                      <int>
+1 msgbatch_017iBx1… ended  2026-10-02 13:22:40 2026-10-03 13:22:40            20
+# i 3 more variables: req_errored <int>, req_expired <int>, req_canceled <int>
+```
+
+The batch reported 27,823 prompt tokens for 20 requests, about 1,390 each, matching the live calls. Its labels compare with the first live run:
+
+```{r batch_results}
+batch_runs <- read_rds("classifier_batch_results.rds")
+
+batch_runs |>
+  select(id, occupation, label = occ2, confidence) |>
+  inner_join(
+    runs |> filter(run == 1) |> select(id, live_label = label),
+    by = "id"
+  ) |>
+  summarise(answers = n(), same_label_as_live_run = sum(label == live_label))
+```
+
+### Using more than one model
+
+A second model shows whether two independent systems read the codebook the same way. Agreement across models is the stronger signal, because unrelated models fail less alike (Ziems et al., 2024). Running the same prompts through another provider adds its labels as extra runs. We did not run this here.
+
+```{r second_model, eval = FALSE}
+replies_gemini <- parallel_chat(tasks$prompt, gemini(.json_schema = occ_schema), .max_active = 4)
+```
+
+## Step 4: Summarise agreement and flag disagreements
+
+The next chunk counts the votes per label, puts the most-voted label first, and keeps it with its vote share. The `unstable` flag marks answers where the runs disagree.
 
 ```{r vote}
 vote <- runs |>
-  filter(!is.na(label)) |>
   count(id, label, name = "votes") |>
+  arrange(id, desc(votes)) |>
   group_by(id) |>
-  arrange(desc(votes), .by_group = TRUE) |>
   summarise(
     n_runs     = sum(votes),
     majority   = first(label),
     agreement  = first(votes) / sum(votes),
-    candidates = paste(label, collapse = "/"),
-    .groups    = "drop"
+    candidates = paste(label, collapse = "/")
   ) |>
   left_join(sample_df, by = "id") |>
   mutate(unstable = agreement < 1)
@@ -454,10 +261,19 @@ vote |>
   mutate(share = n / sum(n))
 ```
 
-The three runs chose the same label for 147 of 150 answers; the majority label supplies Claude's comparison row in the Step 3 and Step 6 tables. Krippendorff's alpha summarises agreement across runs, and the base R function below gives 0.983.
+Almost every answer gets the same label in all three runs. The rows where the runs differ form a short list to read; step 6 shows it catches only part of the errors.
 
-```{r alpha}
-kripp_nominal <- function(m) {
+A tie, such as one vote each for three labels, has no majority and `first()` picks one arbitrarily, so treat rows with `agreement < 0.5` as unresolved. A unanimous label can still be wrong.
+
+Krippendorff's alpha scores agreement beyond chance, with 1 as full agreement. Here the raters are the runs and the units the answers. The helper `kripp_nominal()` computes it for nominal labels and returns one number; its code sits in a hidden chunk in the source of this page.
+
+```{r helpers, echo = FALSE}
+kripp_nominal <- function(runs) {
+  m <- runs |>
+    select(run, id, label) |>
+    pivot_wider(names_from = id, values_from = label) |>
+    select(-run) |>
+    as.matrix()
   m  <- m[, colSums(!is.na(m)) >= 2, drop = FALSE]
   lv <- sort(unique(as.vector(m)))
   o  <- matrix(0, length(lv), length(lv))
@@ -471,22 +287,163 @@ kripp_nominal <- function(m) {
   1 - (n - 1) * (n - sum(diag(o))) / (n^2 - sum(rowSums(o)^2))
 }
 
-runs |>
-  select(run, id, label) |>
-  pivot_wider(names_from = id, values_from = label) |>
-  select(-run) |>
-  as.matrix() |>
-  kripp_nominal() |>
+cohen_kappa <- function(truth, estimate) {
+  lv <- sort(unique(c(truth, estimate)))
+  tb <- table(factor(truth, lv), factor(estimate, lv))
+  po <- sum(diag(tb)) / sum(tb)
+  pe <- sum(rowSums(tb) * colSums(tb)) / sum(tb)^2
+  (po - pe) / (1 - pe)
+}
+```
+
+```{r alpha}
+kripp_nominal(runs) |>
   round(3)
 ```
 
-### A second pass with a stronger model
+Rules of thumb call 0.8 reliable and 0.667 the lowest value for tentative conclusions (Krippendorff, 2004). Alpha measures agreement between runs only; human labels come in step 6.
 
-The rows that need a second look are the ones where the runs disagreed or where any run said "low". That is a small, concentrated set, which makes a second pass affordable. Instead of voting again with the same prompt, change the task: show the model the answer, the labels the first runs produced and their rationales, and ask for a decision with a stronger setting. Here we use a more capable model with reasoning turned on.
+### Self-reported confidence
 
-The review pass below uses the earlier flag (runs that disagreed or a confidence word of low); the `decide()` flag of Step 4 is a variant that marks 23 of the 60 answers, of which 3 were in the earlier review set.
+Does the confidence field carry a signal? We check against the maintainer's labels for the 150 answers, made with AI assistance and checked by hand (step 6). We call them gold labels: the labels a person assigned, which we treat as the truth to compare against.
 
-For a large flagged set, `send_batch()` sends all requests together; results come back when the batch has finished and cost half as much.
+```{r load_gold}
+gold <- read_rds("classifier_gold.rds")
+
+scored <- vote |>
+  left_join(gold, by = "id") |>
+  mutate(match = majority == gold)
+
+runs |>
+  left_join(select(scored, id, match), by = "id") |>
+  group_by(majority_matches_gold = match) |>
+  summarise(runs = n(), share_low_confidence = mean(confidence == "low"))
+```
+
+Runs on rows where the majority label disagrees with the human label are much more often marked "low". The field helps rank rows to read, but many mismatched rows still carry "medium" or "high".
+
+### Token probabilities, where the provider offers them
+
+Some providers report how likely each piece of the reply (each token) was, so the probability of the label token is a free confidence score. `openai()` and the Chat Completions based providers accept `.logprobs` and `.top_logprobs`; `claude()` has no such argument. They describe one run of one model and say less with structured output, where the label sits inside a JSON string. Decision models avoid that limit; see the next section.
+
+## An alternative: decision models
+
+`decide()` sends the text and a closed question to a decision model, a model that returns the chosen code and a probability (a score between 0 and 1) for every code, with no text. It is much faster and cheaper than a chat model. The [decision models article](https://edubruell.github.io/tidyllm/articles/tidyllm_decide.html) explains the question types and providers; here we use one choice question.
+
+The codebook becomes the question. In R a choice question is a factor and its possible answers are levels: each level is an occupation code, described by its codebook line. `field_fct()` takes the codes as `.levels` and the descriptions as `.level_descriptions`.
+
+This reads the codebook file, one line per code, and splits each line into a code and a description.
+
+```{r decide_question}
+codebook_levels <- tibble(line = read_lines("classifier_codebook.txt")) |>
+  filter(str_trim(line) != "") |>
+  separate(line, c("code", "description"), sep = " ", extra = "merge")
+
+occ_questions <- tidyllm_schema(
+  name = "occupation_label",
+  occ2 = field_fct(
+    "The SOC two-digit occupation group of this survey answer.",
+    .levels             = codebook_levels$code,
+    .level_descriptions = codebook_levels$description
+  )
+)
+```
+
+`decide()` takes the text in `.state`, the questions in `.questions` and a provider. One line before each answer says what the text is; without it, `openai()` labelled answers such as "Doctor" as code 99 ("no occupation").
+
+```{r decide_one, eval = FALSE}
+frame_answer <- \(x) paste0("Survey question: What is your job? Answer: ", x)
+
+decide(frame_answer("Residential roofer"), occ_questions, gemini()) |>
+  select(question, type, answer, probability)
+```
+
+```
+# A tibble: 1 x 4
+  question type   answer probability
+  <chr>    <chr>  <chr>        <dbl>
+1 occ2     choice 47           0.998
+```
+
+Code 47 is Construction and Extraction, which fits a roofer. A list of texts in `.state` returns one row per text and question. We run the 150 human-labelled answers of step 4 through `jev()` (the provider of the Jev decision model), `openai()` and `gemini()`; the three runs took 6.9, 10.5 and 7.7 seconds. In the next chunk, `label_all()` runs one provider over all 150 answers and joins the human labels; the `list()` call does this for the three providers.
+
+```{r decide_run, eval = FALSE}
+label_all <- function(provider) {
+  res <- decide(as.list(frame_answer(sample_df$occupation)), occ_questions, provider)
+  sample_df |>
+    mutate(label = res$answer, probability = res$probability, probs = res$probabilities) |>
+    inner_join(gold, by = "id")
+}
+
+decide_runs <- list(jev = label_all(jev()), openai = label_all(openai()), gemini = label_all(gemini()))
+write_rds(decide_runs, "classifier_decide_runs.rds")
+```
+
+```{r decide_load}
+decide_runs <- read_rds("classifier_decide_runs.rds")
+decide_all  <- bind_rows(decide_runs, .id = "provider")
+```
+
+First-pass accuracy against the human labels, next to the majority of the three Claude runs from step 4:
+
+```{r decide_accuracy}
+claude_row <- scored |>
+  summarise(provider = "claude, majority of 3 runs", answers = n(),
+            correct = sum(majority == gold), accuracy = round(mean(majority == gold), 3))
+
+decide_all |>
+  group_by(provider) |>
+  summarise(answers = n(), correct = sum(label == gold), accuracy = round(mean(label == gold), 3)) |>
+  bind_rows(claude_row)
+```
+
+All three decision models reach 0.83 to 0.84, level with the Claude majority, in seconds and with one call per answer instead of three. The table below groups the answers into probability bands. Each cell shows the share labelled correctly and, in brackets, the number of answers in the band.
+
+```{r decide_bands}
+decide_all |>
+  mutate(band = cut(probability, c(0, 0.5, 0.8, 0.95, 1), include.lowest = TRUE)) |>
+  group_by(provider, band) |>
+  summarise(cell = str_glue("{sprintf('%.2f', mean(label == gold))} ({n()})"), .groups = "drop") |>
+  pivot_wider(names_from = provider, values_from = cell, values_fill = "0 rows")
+```
+
+Above 0.95, 96 to 100 percent of the labels match the human label; below 0.5, fewer than half do. At a cut-off of 0.8, rows at or above it are right 93 to 96 percent of the time and rows below it 51 to 62 percent. Send the rows below the cut-off to a person or to step 5.
+
+```{r decide_flagged}
+decide_all |>
+  mutate(flagged = probability < 0.8) |>
+  group_by(provider, flagged) |>
+  summarise(answers = n(), correct = sum(label == gold), accuracy = round(mean(label == gold), 2), .groups = "drop")
+```
+
+The three providers are independent readers of the codebook, so the agreement logic of step 4 applies. `openai()` and `gemini()` choose the same code for 88 percent of the answers, `gemini()` and `jev()` for 87 and `openai()` and `jev()` for 82. All three agree on 119 of the 150 answers, and 92 percent of those match the human label. The 31 others are a short list to read by hand.
+
+A decision model returns no reason; use the `chat()` pass of step 5 for rows that need one. Its labels are only as good as the codebook, so steps 6 and 7 apply here too.
+
+### Hierarchical codes with a beam search
+
+The 22 groups are the top level of a taxonomy, a tree of categories with subcategories. Real codings, such as occupations or industries, go several levels deeper with hundreds of codes, and one question with that many levels is too long for the model to read well. The TypeSafe documentation calls the remedy a beam search: ask a choice question at the top level, keep the few top-scoring groups, ask a second question inside each, and continue down. A path scores the product of the probabilities along it, and you keep the few best paths at each level. The `probabilities` column holds one probability per code, including the runners-up.
+
+A small example: for one answer, level one gives codes A 0.6 and B 0.3. Inside A the best child scores 0.5 and inside B 0.9. The paths score 0.6 × 0.5 = 0.30 and 0.3 × 0.9 = 0.27, so keep both.
+
+The chunk below takes the answer where `jev()` is least sure and lists its three highest-probability codes.
+
+```{r decide_top3}
+doubtful <- decide_runs$jev |>
+  slice_min(probability, n = 1, with_ties = FALSE)
+
+enframe(doubtful$probs[[1]], name = "code", value = "probability") |>
+  slice_max(probability, n = 3, with_ties = FALSE) |>
+  mutate(occupation = doubtful$occupation, probability = round(probability, 3), .before = 1)
+```
+
+A beam search would carry these three codes into the next level.
+
+tidyllm has no helper for this yet, and we did not run a full beam search on this two-digit example. A deeper codebook needs a few lines of `decide()` and `map()` on top of the code above.
+
+## Step 5: Reclassify the disagreements
+
+Rows where the runs disagreed or any run said "low" get a second look. Instead of voting again, we show a more capable model the answer, the earlier labels and their rationales, and turn reasoning on.
 
 ```{r reclassify_prompt}
 make_review_prompt <- function(occupation, rationales) {
@@ -505,66 +462,58 @@ make_review_prompt <- function(occupation, rationales) {
 }
 ```
 
-```{r reclassify_run, eval = FALSE}
-any_low <- runs |>
+The next chunk adds the earlier labels and rationales to each flagged row, sends the rows to the stronger model and reads the replies as before.
+
+The next chunk keeps the answers where the runs disagreed or any run said "low".
+
+```{r reclassify_select}
+to_review <- runs |>
   group_by(id) |>
-  summarise(any_low = any(confidence == "low"))
+  summarise(any_low = any(confidence == "low")) |>
+  left_join(vote, by = "id") |>
+  filter(unstable | any_low)
+```
 
-to_review <- vote |>
-  left_join(any_low, by = "id") |>
-  filter(unstable | any_low) |>
-  left_join(
-    runs |>
-      group_by(id) |>
-      summarise(rationales = paste0("- ", label, ": ", rationale, collapse = "\n")),
-    by = "id"
-  )
+```{r reclassify_run, eval = FALSE}
+rationales <- runs |>
+  group_by(id) |>
+  summarise(rationales = paste0("- ", label, ": ", rationale, collapse = "\n"))
 
-review_llms <- map2(to_review$occupation, to_review$rationales, make_review_prompt) |>
-  set_names(to_review$id)
+review_prompts <- to_review |>
+  left_join(rationales, by = "id") |>
+  mutate(prompt = map2(occupation, rationales, make_review_prompt))
 
 review_replies <- parallel_chat(
-  review_llms,
+  review_prompts$prompt,
   claude(
-    .model      = "claude-opus-5-5",
+    .model       = "claude-opus-5-5",
     .json_schema = occ_schema,
-    .thinking   = TRUE,
-    .max_tokens = 4000
+    .thinking    = TRUE,
+    .max_tokens  = 4000
   ),
   .max_active = 4
 )
 
-reviewed <- map(review_replies, extract_run) |>
-  bind_rows(.id = "id") |>
-  transmute(
-    id                = as.integer(id),
-    review_label      = occ2,
-    review_rationale  = rationale,
-    review_confidence = confidence
-  )
+reviewed <- review_prompts |>
+  bind_cols(get_reply_data(review_replies)) |>
+  select(id, review_label = occ2, review_rationale = rationale, review_confidence = confidence)
 ```
 
-Keep `.max_tokens` generous when reasoning is on; the thinking tokens count against it.
+Keep `.max_tokens` generous with reasoning on, since thinking tokens count against it.
 
 ```{r reclassify_load}
 reviewed <- read_rds("classifier_reviewed.rds")
 
-any_low <- runs |>
-  group_by(id) |>
-  summarise(any_low = any(confidence == "low"))
-
-to_review <- vote |>
-  left_join(any_low, by = "id") |>
-  filter(unstable | any_low)
-
 tibble(
-  flagged_rows       = nrow(to_review),
-  runs_disagreed     = sum(to_review$unstable),
+  flagged_rows        = nrow(to_review),
+  runs_disagreed      = sum(to_review$unstable),
   only_low_confidence = sum(!to_review$unstable),
-  reviewed_rows      = nrow(reviewed),
-  same_ids           = setequal(to_review$id, reviewed$id)
+  reviewed_rows       = nrow(reviewed),
+  same_ids            = setequal(to_review$id, reviewed$id)
 )
 ```
+
+This keeps the review label where there is one and the majority label otherwise, and tags each row as unanimous, reviewed or human queue.
 
 ```{r final_labels}
 final <- vote |>
@@ -595,7 +544,7 @@ tibble(
 )
 ```
 
-The review is a second opinion from the same family of models, so it can repeat a shared misreading. Rows that the reviewer itself marks as low confidence go to a human queue; that is a short list to read by hand.
+The review is a second opinion from the same model family and can repeat a shared misreading. Rows the reviewer marks as low confidence go to a human queue:
 
 ```{r human_queue}
 final |>
@@ -605,47 +554,30 @@ final |>
 
 ## Step 6: Validate against human labels
 
-None of the above tells you whether the labels are right. Only a comparison with human coding does. Draw a random sample of answers, have one or two people code them from the same codebook without seeing the model labels, and resolve their differences. Two rules keep the check honest. The sample must be held out: do not take the codebook examples from it, and do not tune the codebook on it and then report the same sample as your accuracy. And draw it at random across all answers, not only from the flagged ones, or the estimate will be too pessimistic.
+Only human coding shows whether labels are right. Draw a random sample across all answers, since flagged rows alone make the estimate too pessimistic. One or two people code it from the same codebook without seeing the model labels and resolve their differences. Do not tune the codebook on this sample and then report it as your accuracy.
 
-For this article the 150 sampled answers were coded in a first pass with AI assistance and then checked by hand by the maintainer. Code 98 in the original file, used for answers that name no occupation, was recoded to 99 to match the codebook. Comparing the model with these labels turned up four labels where the model was right and the first hand label was wrong; they were corrected before the numbers below. That is a useful result in itself: a validation sample is a measurement too, and it has errors that the comparison can surface.
+The 150 answers here were coded with AI assistance and checked by hand by the maintainer. Code 98 in the original file, for answers that name no occupation, was recoded to 99 to match the codebook. The comparison turned up four labels where the model was right and the first hand label was wrong; we corrected them before the numbers below.
 
-Accuracy and Cohen's kappa come next, computed in base R. Kappa corrects for chance agreement, which matters with 22 groups of very different sizes, where accuracy is dominated by the frequent classes.
+We compute accuracy and Cohen's kappa, the agreement with the human labels beyond what chance gives, in base R. Kappa helps with 22 groups of very different sizes, where frequent classes dominate accuracy. The helper `cohen_kappa()` is in the same hidden chunk; the table compares the first run, the majority and the majority plus review.
 
 ```{r metrics}
-cohen_kappa <- function(truth, estimate) {
-  lv <- sort(unique(c(truth, estimate)))
-  tb <- table(factor(truth, lv), factor(estimate, lv))
-  po <- sum(diag(tb)) / sum(tb)
-  pe <- sum(rowSums(tb) * colSums(tb)) / sum(tb)^2
-  (po - pe) / (1 - pe)
-}
-
 first_run <- runs |>
   filter(run == 1) |>
   select(id, first_run = label) |>
   inner_join(gold, by = "id")
 
 bind_rows(
-  tibble(
-    pipeline = "first run only",
-    accuracy = mean(first_run$first_run == first_run$gold),
-    kappa    = cohen_kappa(first_run$gold, first_run$first_run)
-  ),
-  tibble(
-    pipeline = "majority of 3 runs",
-    accuracy = mean(final$majority == final$gold),
-    kappa    = cohen_kappa(final$gold, final$majority)
-  ),
-  tibble(
-    pipeline = "majority plus review",
-    accuracy = mean(final$occ2 == final$gold),
-    kappa    = cohen_kappa(final$gold, final$occ2)
-  )
+  first_run |>
+    summarise(pipeline = "first run only", accuracy = mean(first_run == gold), kappa = cohen_kappa(gold, first_run)),
+  final |>
+    summarise(pipeline = "majority of 3 runs", accuracy = mean(majority == gold), kappa = cohen_kappa(gold, majority)),
+  final |>
+    summarise(pipeline = "majority plus review", accuracy = mean(occ2 == gold), kappa = cohen_kappa(gold, occ2))
 ) |>
-  mutate(across(where(is.double), \(x) round(x, 3)))
+  mutate(accuracy = round(accuracy, 3), kappa = round(kappa, 3))
 ```
 
-The three rows are close. Voting over three runs and the review pass move the accuracy only slightly, because the model gave the same label in nearly all runs to begin with. The review only touches the flagged rows, and those are the hardest answers, so the gain there starts from a low base:
+The three rows are close, because the model gave the same label in nearly all runs from the start. The review touches only the hardest answers:
 
 ```{r review_effect}
 final |>
@@ -653,38 +585,7 @@ final |>
   summarise(rows = n(), before_review = mean(majority == gold), after_review = mean(occ2 == gold))
 ```
 
-The table compares accuracy on the same 60 answers: Claude's first run, majority of three runs, and majority plus review each get 50 right; `openai()` and `jev()` get 52, and `gemini()` gets 50. Four of the 60 answers were in the earlier review set.
-
-```{r same_sixty}
-claude_sixty <- bind_rows(
-  first_run |> filter(id %in% items$id) |> transmute(pipeline = "claude, first run", label = first_run, gold),
-  final     |> filter(id %in% items$id) |> transmute(pipeline = "claude, majority of 3 runs", label = majority, gold),
-  final     |> filter(id %in% items$id) |> transmute(pipeline = "claude, majority plus review", label = occ2, gold)
-)
-
-decide_sixty <- decide_runs |>
-  bind_rows(.id = "pipeline") |>
-  transmute(pipeline = paste0(pipeline, "()"), label, gold)
-
-bind_rows(claude_sixty, decide_sixty) |>
-  group_by(pipeline) |>
-  summarise(answers = n(), correct = sum(label == gold), accuracy = round(mean(label == gold), 3))
-```
-
-```{r review_overlap}
-tibble(
-  in_earlier_review_set         = sum(items$id %in% to_review$id),
-  flagged_and_in_earlier_review = sum(flags$flagged & flags$id %in% to_review$id)
-)
-```
-
-With only 60 answers, a difference of two or three answers is within chance, so the methods cannot be told apart. The chunk below computes one standard error for an accuracy of 0.85 across 60 answers.
-
-```{r se}
-round(sqrt(0.85 * 0.15 / 60), 3)
-```
-
-About one answer in six does not match the human label. Part of the errors sit in the flagged rows and part in rows where the model was unanimous:
+About one final label in six does not match the human label. The table shows which route the mismatches took:
 
 ```{r errors_by_source}
 final |>
@@ -702,13 +603,13 @@ final |>
   print(n = 30)
 ```
 
-The same answers fail with all or most decision models: "Barster" and "Private dick" are wrong for all three, with human labels of 99; "Keep things organized" and "Workforce Optimization" are wrong for two of three, though humans assigned them a group. The errors fall into two groups. The first is vague answers such as "Keep things organized", "Workforce Optimization" or "Buildin and fixin things", where the model chose 99 because the codebook says to prefer 99 over a guess, while the human coder placed the answer in a group from context. The second is the opposite: slang or terse answers such as "Private dick", "I haul" and "Barster", where the model guessed a group and the human coded 99. Between them sit real codebook ambiguities: whether bakery work is production (51) or food service (35), where "Lead mechanic supervisor" belongs, and whether massage is healthcare or personal care.
+Two groups dominate. The model gave vague answers such as "Keep things organized", "Workforce Optimization" or "Buildin and fixin things" code 99, because the codebook says to prefer 99 over a guess, while the human placed them from context. For slang or terse answers such as "Private dick", "I haul" and "Barster" the model guessed a group and the human coded 99. Some answers fit two groups under the codebook: whether bakery work is production (51) or food service (35), where "Lead mechanic supervisor" belongs, and whether massage is healthcare or personal care.
 
-None of these is random noise that more runs would average away. Most of the mismatches are rows where the model gave the same label every time, which is why the repetition in step 5 cannot find them. They are a mix of questions about what the codebook should say and answers that no coder could place with confidence.
+More runs would not average these errors away. Most are rows where the model gave the same label every time, so step 3 cannot find them.
 
-When you compare a model with human coders, compare it with the agreement between two humans on the same sample. If two careful coders only agree 0.85 with each other, a model at 0.85 is not failing; the categories are fuzzy. The model is one more coder whose reliability you estimate, and the evidence so far is that its quality depends on the task, the codebook and the data, so it has to be checked each time (Gilardi, Alizadeh and Kubli, 2023; Pangakis, Wolken and Fasching, 2023). Here only one human checked the labels, so that comparison is not possible, and the 83% should be read with that limit in mind.
+Compare the model with the agreement between two humans on the same sample: if two careful coders agree 0.85 with each other, a model at 0.85 matches them. A model's quality depends on the task, codebook and data, so check it each time (Gilardi, Alizadeh and Kubli, 2023; Pangakis, Wolken and Fasching, 2023). Only one human checked the labels here, so the 83% comes with that limit.
 
-Check also whether errors are spread evenly. If one group, one kind of respondent or one phrasing carries most of them, a downstream estimate that uses these labels can be biased even when overall accuracy looks high. Where the labels feed a regression or a share estimate, the validation sample can also be used to correct for misclassification instead of only reporting it.
+Check also whether errors are spread evenly: if one group or phrasing carries most of them, a downstream estimate can be biased even when overall accuracy looks high. The validation sample can also correct for misclassification.
 
 ```{r errors_by_group}
 final |>
@@ -720,44 +621,34 @@ final |>
 
 ## Step 7: Do not tune the codebook on your validation sample
 
-The mismatch table invites an obvious next step: edit the codebook so that these answers come out right. We tried it. Based on the mismatches above, version 2 of the codebook adds a rule for bakery and food batch work (51 unless it is retail counter work), puts massage under personal care (39), says that lead and supervisor titles and general operations work count as management (11), and counts electrical and mechanical upkeep as installation and repair (49). The 150 answers were labelled again three times with the new codebook.
+The mismatch table invites an edit to the codebook, so we made one. Version 2 adds a rule for bakery and food batch work (51 unless it is retail counter work), puts massage under personal care (39), counts lead and supervisor titles and general operations work as management (11), and counts electrical and mechanical upkeep as installation and repair (49). We labelled the 150 answers three more times with it.
 
 ```{r codebook_v2_run, eval = FALSE}
 codebook_v2 <- read_file("classifier_codebook_v2.txt") |> trimws()
 
-make_prompt_v2 <- function(occupation) {
-  llm_message(glue(
-    'You code survey answers into occupation groups.
-     Use only the codebook below. Choose the single best group.
-     If the answer names no occupation, use 99.
+prompts_v2 <- tasks |>
+  mutate(prompt = map(occupation, make_prompt, codebook = codebook_v2))
 
-     Codebook:
-     {codebook_v2}
+replies_v2 <- parallel_chat(
+  prompts_v2$prompt,
+  claude(.model = "claude-sonnet-5-5", .json_schema = occ_schema),
+  .max_active = 4
+)
 
-     Survey answer: "{occupation}"'
-  ))
-}
-
-replies_v2 <- tasks$occupation |>
-  map(make_prompt_v2) |>
-  set_names(tasks$task_id) |>
-  parallel_chat(
-    claude(.model = "claude-sonnet-5-5", .json_schema = occ_schema),
-    .max_active = 4
-  )
+runs_v2 <- prompts_v2 |>
+  bind_cols(get_reply_data(replies_v2)) |>
+  select(id, run, label = occ2, rationale, confidence)
 ```
 
-On the sample the edit was written from, version 2 looks better:
+The next chunk compares the majority label of each codebook version with the human labels, on the sample we wrote the edit from:
 
 ```{r codebook_v2_sample}
-majority_label <- function(x) names(which.max(table(x)))
-
 runs_v2 <- read_rds("classifier_runs_v2.rds")
 
-sample_comparison <- bind_rows(
-  runs    |> group_by(id) |> summarise(label = majority_label(label)) |> mutate(codebook = "v1"),
-  runs_v2 |> group_by(id) |> summarise(label = majority_label(label)) |> mutate(codebook = "v2")
-) |>
+sample_comparison <- bind_rows(v1 = runs, v2 = runs_v2, .id = "codebook") |>
+  count(codebook, id, label) |>
+  group_by(codebook, id) |>
+  slice_max(n, n = 1, with_ties = FALSE) |>
   inner_join(gold, by = "id") |>
   group_by(codebook) |>
   summarise(answers = n(), accuracy = mean(label == gold))
@@ -765,12 +656,24 @@ sample_comparison <- bind_rows(
 sample_comparison
 ```
 
-That gain is not evidence that the new codebook is better, because we wrote the edit while looking at these very errors. To find out, we took 292 further distinct answers with human labels that were not in the sample and labelled each once with each codebook.
+We wrote the edit while looking at these errors, so this gain is expected. To test the new codebook, we labelled 292 further distinct answers once with each codebook. These held-out answers were set aside and never used to build or change the codebook; the chunk that builds them takes a `heldout` table of these answers, and the next one loads their saved labels from `classifier_heldout_runs.rds` and the human labels from `classifier_heldout_gold.rds`.
 
 ```{r codebook_heldout_run, eval = FALSE}
-heldout_tasks <- heldout |>
-  cross_join(tibble(codebook = c("v1", "v2"))) |>
-  mutate(task_id = paste(id, codebook, sep = "__"))
+codebooks <- tibble(codebook = c("v1", "v2"), text = c(codebook, codebook_v2))
+
+heldout_prompts <- heldout |>
+  cross_join(codebooks) |>
+  mutate(prompt = map2(occupation, text, make_prompt))
+
+heldout_replies <- parallel_chat(
+  heldout_prompts$prompt,
+  claude(.model = "claude-sonnet-5-5", .json_schema = occ_schema),
+  .max_active = 4
+)
+
+heldout_runs <- heldout_prompts |>
+  bind_cols(get_reply_data(heldout_replies)) |>
+  select(id, occupation, codebook, label = occ2, rationale, confidence)
 ```
 
 ```{r codebook_heldout}
@@ -786,45 +689,18 @@ heldout_comparison <- heldout_runs |>
 heldout_comparison
 ```
 
-On the held-out answers version 2 is no better than version 1; it is slightly worse. The edits fitted the quirks of the 150 answers we looked at. This is the same problem as overfitting a model to a validation set: the sample you tune on stops being a measurement. If you want to improve the codebook, split the human-labelled answers first, tune on one part and report on the other, or label a fresh sample after every round of edits.
+On the held-out answers version 2 is slightly worse than version 1: the edits fitted the quirks of the 150 answers. Tune on one part of the human-labelled answers and report on another, or label a fresh sample after every round of edits.
 
 ## Cost and size
 
-Tokens are billable text pieces, each about three-quarters of a word. Labelling all 2,209 distinct answers once costs about 15 cents with `openai()` or `gemini()` and about 10 cents with `jev()`; three Claude runs over the same answers would cost 23.53 USD. The table uses list prices on 2026-11-13.
-
-```{r route_cost}
-per_call <- run_meta$tokens |>
-  summarise(prompt = mean(input_tokens), completion = mean(output_tokens))
-
-claude_three_runs <- nrow(distinct_occupations) * 3 *
-  (per_call$prompt * 2 + per_call$completion * 10) / 1e6
-
-tibble(
-  route               = c("decide() with openai()", "decide() with gemini()", "decide() with jev()", "chat() with Claude, three runs"),
-  usd_for_2209_answers = sprintf("%.2f", c(0.15, 0.15, 0.10, claude_three_runs))
-)
-```
-
-The next table shows tokens per answer and prices per million tokens for each provider, with the final column giving the one-pass price for all 2,209 distinct answers.
-
-```{r decide_cost}
-decide_cost <- tibble(
-  provider        = c("openai", "gemini", "jev"),
-  tokens_each     = c(666, 696, 1053),
-  usd_per_million = c(0.10, 0.10, 0.042),
-  usd_one_pass    = round(2209 * tokens_each * usd_per_million / 1e6, 2)
-)
-
-decide_cost
-```
-
-The token table in Step 5 gives the size of one `chat()` request: about 1,400 prompt tokens and about 75 completion tokens, depending on the rationale length. At that size the full dataset would look like this:
+The token table in step 3 gives the numbers for one prompt: about 1,400 prompt and 77 completion tokens. The next chunk multiplies the average tokens per call by the number of calls and the price per token:
 
 ```{r scale}
-per_call <- run_meta$tokens |>
-  summarise(prompt = mean(input_tokens), completion = mean(output_tokens))
+per_call <- run_tokens |>
+  summarise(prompt = mean(prompt_tokens), completion = mean(completion_tokens))
 
-price <- c(input = 2, output = 10)
+price_input  <- 2
+price_output <- 10
 
 tibble(
   distinct_answers  = nrow(distinct_occupations),
@@ -832,30 +708,25 @@ tibble(
   requests          = distinct_answers * runs,
   prompt_tokens     = round(requests * per_call$prompt),
   completion_tokens = round(requests * per_call$completion),
-  usd_standard      = round((prompt_tokens * price[["input"]] + completion_tokens * price[["output"]]) / 1e6, 2),
+  usd_standard      = round((prompt_tokens * price_input + completion_tokens * price_output) / 1e6, 2),
   usd_batch         = usd_standard / 2
 )
 ```
 
-The prices are those of `claude-sonnet-5-5` on 2026-10-02: 2 USD per million input tokens and 10 USD per million output tokens ([Anthropic pricing](https://platform.claude.com/docs/en/about-claude/pricing)). The batch API costs half as much at those rates.
+The prices are those of `claude-sonnet-5-5` on 2026-10-02: 2 USD per million input tokens and 10 USD per million output tokens, half through the batch API ([Anthropic pricing](https://platform.claude.com/docs/en/about-claude/pricing)). At these rates the 450 calls behind the three runs cost about 1.60 USD, the second pass with `claude-opus-5-5` (4 and 20 USD) about 0.20 USD, and the step 7 codebook experiment about 3.90 USD.
 
-The 450 calls behind this article's three runs cost about 1.60 USD. The second pass with `claude-opus-5-5`, at 4 USD per million input tokens and 20 USD per million output tokens, cost about 0.20 USD; the codebook experiment in Step 7 cost about 3.90 USD.
-
-Check your own estimate with `get_metadata()` on one reply before scaling up. Because the codebook repeats in every request, a provider with prefix caching charges less when the start of the request repeats; put the codebook before the survey answer.
-
-One `decide()` pass over all 2,209 answers costs less than the 0.20 USD the Opus review pass cost on our flagged rows. Run `decide()` on the full set, then reserve the stronger model for flagged rows.
+A decision model sends a shorter request: about 675 prompt tokens per answer with `openai()`, against about 1,400 for the chat prompt, and the reply is a code and a probability. The full 2,209 answers take under two minutes per provider at the speed measured above.
 
 ## What to take away
 
-- A decision model returns a label and a probability in one call; use `decide()` when the answer is one of a fixed list.
-- Put the codebook into `.level_descriptions` and add one line saying what the text is; on our sample the framing line alone lifted `openai()` from 0.57 to 0.87.
-- Use the probability to rank rows: below 0.8 the answers were right in 60 to 70 percent of cases, at or above it in 90 to 92 percent.
-- A second provider is the cheap second opinion; the three agreed on 49 of 60 answers and were right on 94 percent of those.
-- Keep `chat()` for reasons, free labels, files and a stronger model on the hard rows.
-- Agreement is not accuracy: validate on a random, held-out, human-coded sample and report how many coders are behind it.
-- Do not tune the codebook on the sample you validate with.
-
-The [decision models article](https://edubruell.github.io/tidyllm/articles/tidyllm_decision_models.html) covers yes/no and score questions, more than one question per call, and the providers in detail.
+- Label each answer several times and estimate how stable the model is.
+- Measure agreement between runs, and check accuracy against human labels. Here three runs gave the same label for nearly every answer, and about one in six of the final labels still differed from the human label.
+- Write a codebook with definitions and decision rules. It does more for agreement than any prompt trick, and most remaining errors sit there.
+- Use `field_fct()` to restrict labels to the codebook, and check accuracy in step 6.
+- Use a decision model as the quick alternative: one call per answer, a probability for every code, and on this sample the accuracy of three Claude runs. Use the probability to pick rows to review.
+- Repeat the call, vote and read the rows where runs disagree. Send those through a stronger second pass and keep a human queue for the rest.
+- Validate on a random, held-out, human-coded sample, and report agreement with the number of coders behind it. Check the human labels as carefully: validation found four errors in ours.
+- Tune the codebook on one set of answers and validate on another.
 
 ## References
 
@@ -866,4 +737,3 @@ The [decision models article](https://edubruell.github.io/tidyllm/articles/tidyl
 - Haldar, R. and Hockenmaier, J. (2025). Rating Roulette: Self-inconsistency in LLM-as-a-judge frameworks. *Findings of EMNLP 2025*; arXiv:2510.27106.
 - Tam, Z. R. et al. (2024). Let me speak freely? A study on the impact of format restrictions on performance of large language models. arXiv:2408.02442.
 - Krippendorff, K. (2004). *Content Analysis: An Introduction to Its Methodology*. 2nd ed. Sage.
-- Guo, C., Pleiss, G., Sun, Y. and Weinberger, K. Q. (2017). On calibration of modern neural networks. *Proceedings of the 34th International Conference on Machine Learning*; arXiv:1706.04599.

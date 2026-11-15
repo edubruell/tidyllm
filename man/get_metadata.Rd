@@ -10,7 +10,8 @@ get_metadata(.llm, .index = NULL)
 last_metadata(.llm)
 }
 \arguments{
-\item{.llm}{An \code{LLMMessage} object containing the message history.}
+\item{.llm}{An \code{LLMMessage} object containing the message history, or a list
+of them.}
 
 \item{.index}{A positive integer specifying which assistant reply's metadata to extract.
 If \code{NULL} (default), metadata for all replies is returned.}
@@ -39,6 +40,10 @@ provider-specific cache fields.
 }
 
 For convenience, \code{\link[=last_metadata]{last_metadata()}} is provided to retrieve the metadata for the last message.
+
+Given a list of replies, as returned by \code{\link[=parallel_chat]{parallel_chat()}} or \code{\link[=fetch_batch]{fetch_batch()}},
+the tibble starts with \code{reply_id}, \code{reply} and \code{error} as described in
+\code{\link[=get_reply_data]{get_reply_data()}}, one row per reply and turn.
 }
 \seealso{
 \code{\link[=last_metadata]{last_metadata()}}

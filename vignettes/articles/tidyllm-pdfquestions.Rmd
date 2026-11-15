@@ -146,12 +146,10 @@ results <- read_rds("document_batch.rds") |>
 results <- read_rds("document_results.rds")
 ```
 
-Map `get_reply_data()` and `as_tibble()` over the batch output to produce a tidy table:
+`get_reply_data()` reads the whole batch output and returns one row per document, with the model's answers as columns. If a request failed, its row stays and the `error` column holds the message.
 
 ```{r}
-document_table <- results |>
-  map(get_reply_data) |>
-  map_dfr(as_tibble)
+document_table <- get_reply_data(results)
 
 document_table
 ```

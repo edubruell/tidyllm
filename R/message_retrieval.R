@@ -7,14 +7,21 @@
 #' For convenience, [last_reply()] is provided as a wrapper to retrieve the 
 #' latest assistant reply.
 #'
-#' @param .llm An `LLMMessage` object containing the message history.
+#' Given a list of replies, as returned by [parallel_chat()] or [fetch_batch()],
+#' it returns one string per element, in the same order. A request that failed
+#' gives `NA`. An `.index` that is out of range for one element stops the call.
+#'
+#' @param .llm An `LLMMessage` object containing the message history, or a list
+#'   of them.
 #' @param .index A positive integer indicating the index of the assistant reply to retrieve.
 #'   Defaults to `NULL`, which retrieves the last reply.
-#' @return Returns a character string containing the assistant's reply, or `NA_character_` if no reply exists.
+#' @return A character string with the assistant's reply, or `NA_character_` if no reply
+#'   exists. For a list of replies, a character vector with one element per reply.
 #' @seealso [get_reply_data()], [last_reply()]
 #' @export
 #' @rdname get_reply
 get_reply <- function(.llm, .index = NULL) {
+  if (is_reply_list(.llm)) return(get_reply_list(.llm, .index))
   # Validate that .llm is an LLMMessage object and index is within bounds if provided
   validate_inputs(c(
     "Input .llm must be an LLMMessage object" = S7_inherits(.llm, LLMMessage),
@@ -52,14 +59,32 @@ last_reply <- function(.llm) {
 #' For convenience, [last_reply_data()] is provided as a wrapper to retrieve the 
 #' latest assistant reply's data.
 #'
-#' @param .llm An `LLMMessage` object containing the message history.
+#' Given a list of replies, as returned by [parallel_chat()] or [fetch_batch()],
+#' it returns a tibble with one row per reply, in the same order. See the section
+#' on lists below.
+#'
+#' @section A list of replies:
+#' The tibble starts with `reply_id` (the position in the list), `reply` (the
+#' names of the list, only when it has names) and `error`. The schema fields
+#' follow as columns; a field that holds several values becomes a list-column.
+#' `error` is `NA` when the reply could be read. A request that failed keeps its
+#' row, with the message of the failure in `error` and `NA` in the fields, so the
+#' rows still match your inputs and `filter(!is.na(error))` finds what to run
+#' again. A schema field called `reply_id`, `reply` or `error` stops the call,
+#' because the table already uses those names. A reply that holds an array of
+#' objects gives one row per object, all with the same `reply_id`.
+#'
+#' @param .llm An `LLMMessage` object containing the message history, or a list
+#'   of them.
 #' @param .index A positive integer indicating the index of the assistant reply to retrieve.
 #'   Defaults to `NULL`, which retrieves the last reply.
-#' @return Returns the parsed data from the assistant's reply, or `NULL` if parsing fails.
+#' @return The parsed data from the assistant's reply, or `NULL` if parsing fails. For a list
+#'   of replies, a tibble with one row per reply.
 #' @seealso [get_reply()], [last_reply_data()]
 #' @export
 #' @rdname get_reply_data
 get_reply_data <- function(.llm, .index = NULL) {
+  if (is_reply_list(.llm)) return(get_reply_data_list(.llm, .index))
   # Validate inputs for .llm and .index
   validate_inputs(c(
     "Input .llm must be an LLMMessage object" = S7_inherits(.llm, LLMMessage)
@@ -137,7 +162,12 @@ last_reply_data <- function(.llm) {
 #' 
 #' For convenience, [last_metadata()] is provided to retrieve the metadata for the last message.
 #'
-#' @param .llm An `LLMMessage` object containing the message history.
+#' Given a list of replies, as returned by [parallel_chat()] or [fetch_batch()],
+#' the tibble starts with `reply_id`, `reply` and `error` as described in
+#' [get_reply_data()], one row per reply and turn.
+#'
+#' @param .llm An `LLMMessage` object containing the message history, or a list
+#'   of them.
 #' @param .index A positive integer specifying which assistant reply's metadata to extract.
 #'   If `NULL` (default), metadata for all replies is returned.
 #' @return A tibble containing metadata for the specified assistant reply or all replies.
@@ -145,6 +175,7 @@ last_reply_data <- function(.llm) {
 #' @export
 #' @rdname get_metadata
 get_metadata <- function(.llm, .index = NULL) {
+  if (is_reply_list(.llm)) return(get_metadata_list(.llm, .index))
   # Validate input
   validate_inputs(c(
     "Input .llm must be an LLMMessage object" = S7_inherits(.llm, LLMMessage),
@@ -306,4 +337,71 @@ get_user_message <- function(.llm, .index = NULL) {
 #' @rdname get_user_message
 last_user_message <- function(.llm) {
   get_user_message(.llm = .llm, .index = NULL)
+}
+
+is_reply_list <- function(.x) {
+  is.list(.x) && !is.data.frame(.x) && !S7_inherits(.x, LLMMessage)
+}
+
+check_reply_list <- function(.llms) {
+  is_reply <- vapply(.llms, function(x) S7_inherits(x, LLMMessage) || inherits(x, "condition"), logical(1))
+  validate_inputs(c(
+    "Every element of the list must be an LLMMessage or the error that replaced one" = all(is_reply)
+  ))
+}
+
+reply_error <- function(.x) {
+  if (inherits(.x, "condition")) conditionMessage(.x) else NA_character_
+}
+
+reply_table <- function(.llms, .rows) {
+  if (length(.rows) == 0) {
+    return(tibble::tibble(reply_id = integer(), error = character()))
+  }
+  ids <- rep(seq_along(.rows), vapply(.rows, nrow, integer(1)))
+  keys <- tibble::tibble(reply_id = ids)
+  if (!is.null(names(.llms))) keys$reply <- names(.llms)[ids]
+  body <- purrr::list_rbind(.rows)
+  body <- body[c("error", setdiff(names(body), "error"))]
+  tibble::as_tibble(c(as.list(keys), as.list(body)))
+}
+
+get_reply_list <- function(.llms, .index) {
+  check_reply_list(.llms)
+  vapply(.llms, function(x) {
+    if (!S7_inherits(x, LLMMessage)) return(NA_character_)
+    suppressWarnings(get_reply(x, .index))
+  }, character(1))
+}
+
+reply_data_row <- function(.llm, .index) {
+  if (!S7_inherits(.llm, LLMMessage)) return(tibble::tibble(error = reply_error(.llm)))
+  parsed <- suppressWarnings(get_reply_data(.llm, .index))
+  if (!is.list(parsed) || is.null(names(parsed))) {
+    return(tibble::tibble(error = "The reply holds no JSON object."))
+  }
+  validate_inputs(c(
+    "A schema field is named reply_id, reply or error, which the table uses; rename the field" =
+      !any(names(parsed) %in% c("reply_id", "reply", "error"))
+  ))
+  if (is.data.frame(parsed)) return(tibble::as_tibble(c(list(error = NA_character_), as.list(parsed))))
+  fields <- lapply(parsed, function(x) if (is.atomic(x) && length(x) == 1) x else list(x))
+  tibble::as_tibble(c(list(error = NA_character_), fields))
+}
+
+get_reply_data_list <- function(.llms, .index) {
+  check_reply_list(.llms)
+  reply_table(.llms, lapply(.llms, reply_data_row, .index))
+}
+
+reply_metadata_rows <- function(.llm, .index) {
+  if (!S7_inherits(.llm, LLMMessage)) return(tibble::tibble(error = reply_error(.llm)))
+  meta <- suppressWarnings(get_metadata(.llm, .index))
+  if (nrow(meta) == 0) return(tibble::tibble(error = "The reply holds no assistant turn."))
+  tibble::as_tibble(c(list(error = NA_character_), as.list(meta)))
+}
+
+get_metadata_list <- function(.llms, .index) {
+  check_reply_list(.llms)
+  reply_table(.llms, lapply(.llms, reply_metadata_rows, .index))
 }

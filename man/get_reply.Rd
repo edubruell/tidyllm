@@ -10,13 +10,15 @@ get_reply(.llm, .index = NULL)
 last_reply(.llm)
 }
 \arguments{
-\item{.llm}{An \code{LLMMessage} object containing the message history.}
+\item{.llm}{An \code{LLMMessage} object containing the message history, or a list
+of them.}
 
 \item{.index}{A positive integer indicating the index of the assistant reply to retrieve.
 Defaults to \code{NULL}, which retrieves the last reply.}
 }
 \value{
-Returns a character string containing the assistant's reply, or \code{NA_character_} if no reply exists.
+A character string with the assistant's reply, or \code{NA_character_} if no reply
+exists. For a list of replies, a character vector with one element per reply.
 }
 \description{
 Extracts the plain text content of the assistant's reply from an \code{LLMMessage} object.
@@ -26,6 +28,10 @@ Use \code{\link[=get_reply_data]{get_reply_data()}} for structured replies in JS
 This function is the core utility for retrieving assistant replies by index.
 For convenience, \code{\link[=last_reply]{last_reply()}} is provided as a wrapper to retrieve the
 latest assistant reply.
+
+Given a list of replies, as returned by \code{\link[=parallel_chat]{parallel_chat()}} or \code{\link[=fetch_batch]{fetch_batch()}},
+it returns one string per element, in the same order. A request that failed
+gives \code{NA}. An \code{.index} that is out of range for one element stops the call.
 }
 \seealso{
 \code{\link[=get_reply_data]{get_reply_data()}}, \code{\link[=last_reply]{last_reply()}}

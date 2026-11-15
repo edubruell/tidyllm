@@ -191,7 +191,7 @@ list(
 )
 ```
 
-`get_reply_data()` returns a named list matching your schema. Wrap it in `as_tibble()` to get a single-row data frame, or use `purrr::map_dfr()` to process a whole folder of clips into a tidy table in one go.
+`get_reply_data()` returns a named list matching your schema. Wrap it in `as_tibble()` to get a single-row data frame. To process a whole folder of clips, collect the replies in a list and pass it to `get_reply_data()`, which returns one row per clip.
 
 For files up to around 20 MB for audio and 100 MB for video, sending inline is fine. For larger files, use the Files API described in the next section.
 

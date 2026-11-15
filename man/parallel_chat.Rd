@@ -70,8 +70,11 @@ that element's slot; \code{"stop"} aborts the whole set on the first failure.}
 \value{
 A list the same length as \code{.llms}. Successful elements are
 \code{LLMMessage} objects; failed ones, under \code{.on_error = "continue"}, are the
-condition that failed, so nothing is silently dropped and a downstream
-\code{get_reply()} fails loudly on exactly the elements that have no reply.
+condition that failed, so nothing is silently dropped. Pass the list to
+\code{\link[=get_reply]{get_reply()}}, \code{\link[=get_reply_data]{get_reply_data()}} or \code{\link[=get_metadata]{get_metadata()}} to read all replies
+at once; a failed request gives \code{NA} there, with its message in the
+\code{error} column of the tables. A single failed element handed to
+\code{get_reply()} fails loudly.
 }
 \description{
 Performs a list of \code{LLMMessage}s against one provider concurrently and
@@ -94,7 +97,7 @@ questions <- list(
   biology = llm_message("What is a ribosome?")
 )
 answers <- parallel_chat(questions, claude())
-purrr::map_chr(answers, get_reply)
+get_reply(answers)
 }
 
 }

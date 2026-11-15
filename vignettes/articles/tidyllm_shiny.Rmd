@@ -470,8 +470,9 @@ reply <- fetch_job(job)           # the LLMMessage chat() would have returned
 
 If your problem is many prompts rather than one slow prompt, `parallel_chat()` is
 the better verb. It takes a list of messages, runs them against one provider with
-a cap on how many go at once, and returns a tibble alongside the replies, which
-is the shape the rest of a data pipeline wants. And when the answers can wait
+a cap on how many go at once, and returns the replies as a list. `get_reply_data()`
+turns that list into a tibble with one row per reply, which is the shape the rest of
+a data pipeline wants. And when the answers can wait
 overnight, `send_batch()` remains the cheapest option of all.
 
 ## Where to Go Next
