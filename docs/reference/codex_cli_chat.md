@@ -1,9 +1,11 @@
 # Chat with OpenAI models through your own installed Codex CLI
 
 [`codex_cli()`](https://edubruell.github.io/tidyllm/reference/codex_cli.md)
-runs the `codex` command line tool installed on your machine and reads
-its JSON output back. It uses the login Codex already has, for example a
-ChatGPT plan, or your OpenAI API key if you set `.use_api_key = TRUE`.
+hands the chat to the `codex` terminal program installed on your
+machine. That program handles the connection to OpenAI, not tidyllm, and
+tidyllm reads its JSON output back. It uses the login Codex already has,
+for example a ChatGPT plan, or your OpenAI API key if you set
+`.use_api_key = TRUE`.
 
 ## Usage
 

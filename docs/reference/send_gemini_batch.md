@@ -83,8 +83,8 @@ send_gemini_batch(
 - .thinking_level:
 
   How much the model reasons before answering: `"minimal"`, `"low"`,
-  `"medium"` or `"high"` (default: NULL, the model's own default).
-  Supported levels vary by model.
+  `"medium"`, `"high"` or `"xhigh"` (default: NULL, the model's own
+  default). Supported levels vary by model.
 
 - .timeout:
 

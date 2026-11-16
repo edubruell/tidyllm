@@ -16,6 +16,9 @@
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Embedding Models in tidyllm">
+<meta name="description" content="Turn texts, images or recordings into numbers, then find similar items, group them or search them.">
+<meta property="og:description" content="Turn texts, images or recordings into numbers, then find similar items, group them or search them.">
+<meta property="og:image" content="https://edubruell.github.io/tidyllm/logo.png">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -25,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.7.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.8.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -39,14 +42,18 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/tidyllm_classifiers.html">Classifying Texts with tidyllm</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm_cli.html">Command Line Providers</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm_embed.html">Embedding Models in tidyllm</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm_local_models.html">Local Models with tidyllm</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm_shiny.html">Using tidyllm in Shiny</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm_tools.html">Using Tools with tidyllm</a></li>
+<li><h6 class="dropdown-header" data-toc-skip>Start here</h6></li>
     <li><a class="dropdown-item" href="../articles/tidyllm_video.html">Working with Files and Media</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_classifiers.html">Classifying Texts with tidyllm</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_decide.html">Decision Models with tidyllm</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_embed.html">Embedding Models in tidyllm</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm-pdfquestions.html">Structured Question Answering from PDFs</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Go deeper</h6></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_local_models.html">Local Models with tidyllm</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_cli.html">Command Line Providers</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_tools.html">Using Tools with tidyllm</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_shiny.html">Using tidyllm in Shiny</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -220,9 +227,7 @@ cosine similarity. <strong>Cosine similarity</strong> measures the
 similarity between two vectors by computing the cosine of the angle
 between them; it ranges from <strong>-1</strong> (opposite directions)
 to <strong>1</strong> (identical directions):</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">cosine_similarity</mtext><mo stretchy="false" form="prefix">(</mo><mi>𝐚</mi><mo>,</mo><mi>𝐛</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mfrac><mrow><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>n</mi></munderover><msub><mi>a</mi><mi>i</mi></msub><msub><mi>b</mi><mi>i</mi></msub></mrow><mrow><msqrt><mrow><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>n</mi></munderover><msubsup><mi>a</mi><mi>i</mi><mn>2</mn></msubsup></mrow></msqrt><mo>⋅</mo><msqrt><mrow><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>n</mi></munderover><msubsup><mi>b</mi><mi>i</mi><mn>2</mn></msubsup></mrow></msqrt></mrow></mfrac></mrow><annotation encoding="application/x-tex">
-\text{cosine\_similarity}(\mathbf{a}, \mathbf{b}) = \frac{\sum_{i=1}^n a_i b_i}{\sqrt{\sum_{i=1}^n a_i^2} \cdot \sqrt{\sum_{i=1}^n b_i^2}}
-</annotation></semantics></math></p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">cosine_similarity</mtext><mo stretchy="false" form="prefix">(</mo><mi mathvariant="bold-italic">𝒂</mi><mo>,</mo><mi mathvariant="bold-italic">𝒃</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mfrac><mrow><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>n</mi></munderover><msub><mi>a</mi><mi>i</mi></msub><msub><mi>b</mi><mi>i</mi></msub></mrow><mrow><msqrt><mrow><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>n</mi></munderover><msubsup><mi>a</mi><mi>i</mi><mn>2</mn></msubsup></mrow></msqrt><mo>⋅</mo><msqrt><mrow><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>n</mi></munderover><msubsup><mi>b</mi><mi>i</mi><mn>2</mn></msubsup></mrow></msqrt></mrow></mfrac></mrow><annotation encoding="application/x-tex">\text{cosine\_similarity}(\mathbf{a}, \mathbf{b}) = \frac{\sum_{i=1}^n a_i b_i}{\sqrt{\sum_{i=1}^n a_i^2} \cdot \sqrt{\sum_{i=1}^n b_i^2}}</annotation></semantics></math></p>
 <p>Vectors at 90 degrees (orthogonal, no semantic overlap) have cosine
 similarity of 0; vectors pointing in the same direction have similarity
 close to 1. We express this as a simple function:</p>

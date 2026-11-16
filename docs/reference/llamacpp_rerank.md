@@ -12,7 +12,7 @@ llamacpp_rerank(
   .query,
   .documents,
   .model = "local-model",
-  .server = Sys.getenv("LLAMACPP_SERVER", "http://localhost:8080"),
+  .server = Sys.getenv("LLAMACPP_SERVER", "http://localhost:9931"),
   .api_key = Sys.getenv("LLAMACPP_API_KEY", ""),
   .timeout = 60,
   .max_tries = 3,
@@ -37,7 +37,7 @@ llamacpp_rerank(
 - .server:
 
   Base URL of the llama.cpp server. Defaults to `LLAMACPP_SERVER` env
-  var, falling back to `"http://localhost:8080"`.
+  var, falling back to `"http://localhost:9931"`.
 
 - .api_key:
 

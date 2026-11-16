@@ -28,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.7.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.8.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -42,14 +42,18 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="articles/tidyllm_classifiers.html">Classifying Texts with tidyllm</a></li>
-    <li><a class="dropdown-item" href="articles/tidyllm_cli.html">Command Line Providers</a></li>
-    <li><a class="dropdown-item" href="articles/tidyllm_embed.html">Embedding Models in tidyllm</a></li>
-    <li><a class="dropdown-item" href="articles/tidyllm_local_models.html">Local Models with tidyllm</a></li>
-    <li><a class="dropdown-item" href="articles/tidyllm_shiny.html">Using tidyllm in Shiny</a></li>
-    <li><a class="dropdown-item" href="articles/tidyllm_tools.html">Using Tools with tidyllm</a></li>
+<li><h6 class="dropdown-header" data-toc-skip>Start here</h6></li>
     <li><a class="dropdown-item" href="articles/tidyllm_video.html">Working with Files and Media</a></li>
+    <li><a class="dropdown-item" href="articles/tidyllm_classifiers.html">Classifying Texts with tidyllm</a></li>
+    <li><a class="dropdown-item" href="articles/tidyllm_decide.html">Decision Models with tidyllm</a></li>
+    <li><a class="dropdown-item" href="articles/tidyllm_embed.html">Embedding Models in tidyllm</a></li>
     <li><a class="dropdown-item" href="articles/tidyllm-pdfquestions.html">Structured Question Answering from PDFs</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Go deeper</h6></li>
+    <li><a class="dropdown-item" href="articles/tidyllm_local_models.html">Local Models with tidyllm</a></li>
+    <li><a class="dropdown-item" href="articles/tidyllm_cli.html">Command Line Providers</a></li>
+    <li><a class="dropdown-item" href="articles/tidyllm_tools.html">Using Tools with tidyllm</a></li>
+    <li><a class="dropdown-item" href="articles/tidyllm_shiny.html">Using tidyllm in Shiny</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
@@ -73,7 +77,7 @@
 </h1>
 </div>
 <p><a href="https://opensource.org/licenses/MIT" class="external-link"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a> <a href="https://cran.r-project.org/package=tidyllm" class="external-link"><img src="https://www.r-pkg.org/badges/version/tidyllm" alt="CRAN Status"></a></p>
-<p><strong>tidyllm</strong> is an R package for working with large language model APIs in data analysis workflows. It supports <strong>Anthropic Claude</strong>, <strong>OpenAI</strong>, <strong>Google Gemini</strong>, <strong>Mistral</strong>, <strong>Groq</strong>, <strong>DeepSeek</strong>, <strong>OpenRouter</strong>, local models via <strong>Ollama</strong> and <strong>llama.cpp</strong>, and more, all through a single consistent interface.</p>
+<p><strong>tidyllm</strong> is an R package for working with large language model APIs in data analysis workflows. It supports <strong>Anthropic Claude</strong>, <strong>OpenAI</strong>, <strong>Google Gemini</strong>, <strong>Mistral</strong>, <strong>Groq</strong>, <strong>DeepSeek</strong>, <strong>OpenRouter</strong>, <strong>TypeSafe</strong> (decision models), local models via <strong>Ollama</strong> and <strong>llama.cpp</strong>, and more, all through a single consistent interface.</p>
 <div class="section level2">
 <h2 id="features">Features<a class="anchor" aria-label="anchor" href="#features"></a>
 </h2>
@@ -82,6 +86,8 @@
 <strong>Multiple providers</strong>: Switch between cloud and local models using the same verb + provider pattern.</li>
 <li>
 <strong>Unified media system</strong>: Send images, audio, video, and PDFs to any provider that supports them via <code>.media</code>. Upload files to provider servers for reuse via <code>.files</code> and <code><a href="reference/upload_file.html">upload_file()</a></code>.</li>
+<li>
+<strong>Closed questions with probabilities</strong>: <code><a href="reference/decide.html">decide()</a></code> puts yes/no, choice and score questions to a text or an image and returns a tibble with one row per question and the probability of each answer. It works with <code><a href="reference/jev.html">jev()</a></code>, <code><a href="reference/openai.html">openai()</a></code>, <code><a href="reference/gemini.html">gemini()</a></code> and <code><a href="reference/ollama.html">ollama()</a></code>.</li>
 <li>
 <strong>Interactive message history</strong>: Manage multi-turn conversations with structured history automatically formatted for each API.</li>
 <li>
@@ -118,40 +124,49 @@
 <p>Please note: To use <strong>tidyllm</strong> you need either a local Ollama or llama.cpp installation, or an active API key for one of the supported cloud providers. See the <a href="https://edubruell.github.io/tidyllm/articles/tidyllm.html">Get Started vignette</a> for setup instructions.</p>
 </div>
 <div class="section level2">
-<h2 id="whats-new-in-071">What’s new in 0.7.1<a class="anchor" aria-label="anchor" href="#whats-new-in-071"></a>
+<h2 id="whats-new-in-080">What’s new in 0.8.0<a class="anchor" aria-label="anchor" href="#whats-new-in-080"></a>
 </h2>
-<p><strong>Use your coding agent from R.</strong> <code><a href="reference/codex_cli.html">codex_cli()</a></code> runs OpenAI’s Codex CLI and <code><a href="reference/vibe_cli.html">vibe_cli()</a></code> runs Mistral’s Vibe CLI, both on your own machine, the same way <code><a href="reference/claude_cli.html">claude_cli()</a></code> runs Claude Code:</p>
+<p><strong>Closed questions with probabilities.</strong> <code><a href="reference/decide.html">decide()</a></code> puts yes/no, choice and score questions to a text, an image, a recording or a PDF. It returns a tibble with one row per question, the answer and its probability. You write the questions once as a <code><a href="reference/tidyllm_schema.html">tidyllm_schema()</a></code> and switch between <code><a href="reference/jev.html">jev()</a></code>, <code><a href="reference/openai.html">openai()</a></code>, <code><a href="reference/gemini.html">gemini()</a></code> and <code><a href="reference/ollama.html">ollama()</a></code>.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Explain what a tibble is in one sentence."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="reference/codex_cli.html">codex_cli</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">questions</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/tidyllm_schema.html">tidyllm_schema</a></span><span class="op">(</span></span>
+<span>  late <span class="op">=</span> <span class="fu"><a href="reference/field_chr.html">field_lgl</a></span><span class="op">(</span><span class="st">"Was the payment late?"</span><span class="op">)</span>,</span>
+<span>  tone <span class="op">=</span> <span class="fu"><a href="reference/field_chr.html">field_fct</a></span><span class="op">(</span><span class="st">"Tone of the message"</span>, .levels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"polite"</span>, <span class="st">"angry"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Explain what a tibble is in one sentence."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="reference/vibe_cli.html">vibe_cli</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"mistral-large-4"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><strong>Control Gemini reasoning by level.</strong> <code><a href="reference/gemini.html">gemini()</a></code> takes <code>.thinking_level</code> (<code>"minimal"</code>, <code>"low"</code>, <code>"medium"</code> or <code>"high"</code>). Google is replacing token budgets with these levels, so <code>.thinking_budget</code> now warns that it is deprecated.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"What is 17 * 23?"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="reference/gemini.html">gemini</a></span><span class="op">(</span>.thinking_level <span class="op">=</span> <span class="st">"high"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><strong>Mistral Large 4.</strong> <code><a href="reference/mistral.html">mistral()</a></code> works with <code>mistral-large-4</code>, a reasoning model with a 512K-token context. Set <code>.reasoning_effort = "none"</code> to turn its reasoning off.</p>
-<p><strong>Fix for <code><a href="reference/claude_cli.html">claude_cli()</a></code>.</strong> With its tools off, <code><a href="reference/claude_cli.html">claude_cli()</a></code> could still read files. It no longer does. The 0.7.0 release on CRAN has the same leak.</p>
+<span><span class="fu"><a href="reference/decide.html">decide</a></span><span class="op">(</span><span class="st">"Your invoice is two weeks overdue and I am furious."</span>, <span class="va">questions</span>, <span class="fu"><a href="reference/jev.html">jev</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>Pass a character vector to code many texts in parallel. <code><a href="reference/field_box.html">field_box()</a></code> asks where something is in a picture (experimental, <code><a href="reference/jev.html">jev()</a></code> only). The <a href="https://edubruell.github.io/tidyllm/articles/tidyllm_decide.html">decision models article</a> walks through it.</p>
+<p><strong>Read many replies at once.</strong> <code><a href="reference/get_reply.html">get_reply()</a></code>, <code><a href="reference/get_reply_data.html">get_reply_data()</a></code> and <code><a href="reference/get_metadata.html">get_metadata()</a></code> accept the list that <code><a href="reference/parallel_chat.html">parallel_chat()</a></code> and <code><a href="reference/fetch_batch.html">fetch_batch()</a></code> return.</p>
+<p><strong>Current provider defaults.</strong> <code><a href="reference/mistral.html">mistral()</a></code> defaults to <code>mistral-large-4</code>, which always reasons (<code>.reasoning_effort</code> of <code>"low"</code>, <code>"medium"</code> or <code>"high"</code>). <code><a href="reference/openai.html">openai()</a></code> accepts every reasoning effort the API names, and <code><a href="reference/gemini.html">gemini()</a></code> accepts <code>.thinking_level = "xhigh"</code>. <code><a href="reference/llamacpp.html">llamacpp()</a></code> looks for the server on port 9931.</p>
+<p><strong>Perplexity removed.</strong> <code><a href="reference/perplexity.html">perplexity()</a></code> is gone. Use Perplexity models through <code><a href="reference/openrouter.html">openrouter()</a></code> and web search through <code><a href="reference/websearch_tool.html">websearch_tool()</a></code>.</p>
 <p>Read the <a href="https://edubruell.github.io/tidyllm/news/">Changelog</a> for the full list of changes.</p>
 </div>
 <div class="section level2">
 <h2 id="learn-more">Learn More<a class="anchor" aria-label="anchor" href="#learn-more"></a>
 </h2>
+<p><a href="https://edubruell.github.io/tidyllm/articles/tidyllm.html">Get Started with tidyllm</a> covers setup, your first chat and the basic verbs. Read it first, then pick the article that matches your task. The <a href="https://edubruell.github.io/tidyllm/news/">Changelog</a> lists every change, and the <a href="https://edubruell.github.io/tidyllm/">documentation</a> holds the function reference.</p>
+<p><strong>Start here: the common research tasks, simplest first</strong></p>
 <ul>
-<li><a href="https://edubruell.github.io/tidyllm/articles/tidyllm.html">Get Started with tidyllm</a></li>
-<li><a href="https://edubruell.github.io/tidyllm/news/">Changelog</a></li>
-<li><a href="https://edubruell.github.io/tidyllm/">Documentation</a></li>
-<li>Use-case oriented articles:
-<ul>
-<li><a href="https://edubruell.github.io/tidyllm/articles/tidyllm_classifiers.html">Classifying Texts with tidyllm</a></li>
-<li><a href="https://edubruell.github.io/tidyllm/articles/tidyllm-pdfquestions.html">Structured Question Answering from PDFs</a></li>
-<li><a href="https://edubruell.github.io/tidyllm/articles/tidyllm_embed.html">Embedding Models in tidyllm</a></li>
-<li><a href="https://edubruell.github.io/tidyllm/articles/tidyllm_video.html">Working with Files and Media</a></li>
-<li><a href="https://edubruell.github.io/tidyllm/articles/tidyllm_local_models.html">Local Models with tidyllm</a></li>
-<li><a href="https://edubruell.github.io/tidyllm/articles/tidyllm_cli.html">Command Line Providers</a></li>
+<li>
+<a href="https://edubruell.github.io/tidyllm/articles/tidyllm_video.html">Working with Files and Media</a>: Ask a model about an image, a recording, a video or a PDF page.</li>
+<li>
+<a href="https://edubruell.github.io/tidyllm/articles/tidyllm_classifiers.html">Classifying Texts with tidyllm</a>: Label thousands of free-text answers with a codebook, and check the labels against a sample coded by people.</li>
+<li>
+<a href="https://edubruell.github.io/tidyllm/articles/tidyllm_decide.html">Decision Models with tidyllm</a>: Not a chat model: a cheap model that answers fixed yes/no, choice or score questions about a text or image and returns a probability for each answer. Use it to code many texts quickly.</li>
+<li>
+<a href="https://edubruell.github.io/tidyllm/articles/tidyllm_embed.html">Embedding Models in tidyllm</a>: Models that translate texts into numbers, which you can use to find similar texts, group them or search them.</li>
+<li>
+<a href="https://edubruell.github.io/tidyllm/articles/tidyllm-pdfquestions.html">Structured Question Answering from PDFs</a>: Ask the same questions of a folder of papers and get a table with one row per paper.</li>
 </ul>
-</li>
+<p><strong>Go deeper: setup choices and larger builds</strong></p>
+<ul>
+<li>
+<a href="https://edubruell.github.io/tidyllm/articles/tidyllm_local_models.html">Local Models with tidyllm</a>: Run models on your own computer, for confidential data.</li>
+<li>
+<a href="https://edubruell.github.io/tidyllm/articles/tidyllm_cli.html">Command Line Providers</a>: Chat through a coding agent you already pay for, such as Claude Code, Codex or Vibe, without an API key.</li>
+<li>
+<a href="https://edubruell.github.io/tidyllm/articles/tidyllm_tools.html">Using Tools with tidyllm</a>: Let a model call your own R functions or search the web while it answers.</li>
+<li>
+<a href="https://edubruell.github.io/tidyllm/articles/tidyllm_shiny.html">Using tidyllm in Shiny</a>: Build an app in which many users call models without freezing it.</li>
 </ul>
 </div>
 <div class="section level2">

@@ -1,8 +1,9 @@
 # Chat with Mistral models through your own installed Mistral Vibe CLI
 
 [`vibe_cli()`](https://edubruell.github.io/tidyllm/reference/vibe_cli.md)
-runs Mistral's `vibe` command line tool installed on your machine and
-reads its JSON output back. Vibe uses the API key stored by
+hands the chat to Mistral's `vibe` terminal program installed on your
+machine. That program handles the connection to Mistral, not tidyllm,
+and tidyllm reads its JSON output back. Vibe uses the API key stored by
 `vibe --setup`, or your `MISTRAL_API_KEY`.
 
 ## Usage

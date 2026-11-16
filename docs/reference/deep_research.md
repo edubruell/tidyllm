@@ -1,8 +1,8 @@
 # Run Deep Research via a Provider
 
 The `deep_research()` function sends a message to a provider's deep
-research endpoint. Currently supported: Perplexity
-(`sonar-deep-research` via async API).
+research endpoint. Currently supported: OpenAI (deep research models via
+the background API).
 
 ## Usage
 
@@ -19,7 +19,7 @@ deep_research(.llm, .provider, .background = FALSE, ...)
 - .provider:
 
   A function or function call specifying the provider (e.g.,
-  [`perplexity()`](https://edubruell.github.io/tidyllm/reference/perplexity.md)).
+  [`openai()`](https://edubruell.github.io/tidyllm/reference/openai.md)).
 
 - .background:
 

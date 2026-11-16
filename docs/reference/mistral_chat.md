@@ -7,7 +7,7 @@ Send LLMMessage to Mistral API
 ``` r
 mistral_chat(
   .llm,
-  .model = "zai-glm-5-3",
+  .model = "mistral-large-4",
   .frequency_penalty = NULL,
   .logit_bias = NULL,
   .presence_penalty = NULL,
@@ -39,7 +39,7 @@ mistral_chat(
 
 - .model:
 
-  The model identifier to use (default: `"zai-glm-5-3"`).
+  The model identifier to use (default: `"mistral-large-4"`).
 
 - .frequency_penalty:
 
@@ -103,7 +103,8 @@ mistral_chat(
   Controls how much reasoning models think before answering; one of
   `"none"`, `"low"`, `"medium"`, or `"high"` (default: `NULL`, meaning
   the API default). Supported values vary by model: `mistral-large-4`
-  accepts only `"high"` and `"none"`, and `"none"` turns reasoning off.
+  accepts `"low"`, `"medium"` and `"high"`, always reasons, and rejects
+  `"none"`.
 
 - .timeout:
 

@@ -17,7 +17,8 @@ last_reply(.llm)
 
 - .llm:
 
-  An `LLMMessage` object containing the message history.
+  An `LLMMessage` object containing the message history, or a list of
+  them.
 
 - .index:
 
@@ -26,14 +27,23 @@ last_reply(.llm)
 
 ## Value
 
-Returns a character string containing the assistant's reply, or
-`NA_character_` if no reply exists.
+A character string with the assistant's reply, or `NA_character_` if no
+reply exists. For a list of replies, a character vector with one element
+per reply.
 
 ## Details
 
 This function is the core utility for retrieving assistant replies by
 index. For convenience, `last_reply()` is provided as a wrapper to
 retrieve the latest assistant reply.
+
+Given a list of replies, as returned by
+[`parallel_chat()`](https://edubruell.github.io/tidyllm/reference/parallel_chat.md)
+or
+[`fetch_batch()`](https://edubruell.github.io/tidyllm/reference/fetch_batch.md),
+it returns one string per element, in the same order. A request that
+failed gives `NA`. An `.index` that is out of range for one element
+stops the call.
 
 ## See also
 

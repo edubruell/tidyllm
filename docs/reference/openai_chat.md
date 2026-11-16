@@ -2,8 +2,8 @@
 
 Sends a message history to the OpenAI Responses API
 (`POST /v1/responses`) and returns the assistant's reply. Supports
-streaming, tool use, structured output, and reasoning models (o-series)
-via `.reasoning_effort`.
+streaming, tool use, structured output, and reasoning effort via
+`.reasoning_effort`.
 
 ## Usage
 
@@ -44,7 +44,8 @@ openai_chat(
 
 - .temperature:
 
-  Sampling temperature (0-2).
+  Sampling temperature (0-2). Current OpenAI models reject it unless
+  `.reasoning_effort` is `"none"`; leave it `NULL` otherwise.
 
 - .seed:
 
@@ -76,7 +77,11 @@ openai_chat(
 
 - .reasoning_effort:
 
-  For o-series models: `"low"`, `"medium"`, or `"high"`.
+  How much the model reasons before answering: `"none"`, `"minimal"`,
+  `"low"`, `"medium"`, `"high"`, `"xhigh"` or `"max"`. Each model
+  accepts a subset (for example `gpt-6.1-sol` rejects `"none"`); the API
+  names the allowed values when a model refuses one. Default `NULL` uses
+  the model's own default.
 
 - .tools:
 

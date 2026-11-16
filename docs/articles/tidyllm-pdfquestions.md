@@ -20,37 +20,35 @@ analysis.
 Imagine your folder looks something like this, many downloaded papers
 but no structure yet:
 
-``` r
-
-library(tidyverse)
-library(tidyllm)
-dir("aipapers")
-##  [1] "2018_Felten_etal_AILinkOccupations.pdf"                                                           
-##  [2] "2024_Bick_etal_RapidAdoption.pdf"                                                                 
-##  [3] "2024_Caplin_etal_ABCsofAI.pdf"                                                                    
-##  [4] "2301.07543v1.pdf"                                                                                 
-##  [5] "2302.06590v1.pdf"                                                                                 
-##  [6] "2303.10130v5.pdf"                                                                                 
-##  [7] "488.pdf"                                                                                          
-##  [8] "88684e36-en.pdf"                                                                                  
-##  [9] "ABCs_AI_Oct2024.pdf"                                                                              
-## [10] "acemoglu-restrepo-2019-automation-and-new-tasks-how-technology-displaces-and-reinstates-labor.pdf"
-## [11] "BBD_GenAI_NBER_Sept2024.pdf"                                                                      
-## [12] "Deming-Ong-Summers-AESG-2024.pdf"                                                                 
-## [13] "dp22036.pdf"                                                                                      
-## [14] "FeltenRajSeamans_AIAbilities_AEA.pdf"                                                             
-## [15] "JEL-2023-1736_published_version.pdf"                                                              
-## [16] "Noy_Zhang_1.pdf"                                                                                  
-## [17] "pb01-25.pdf"                                                                                      
-## [18] "sd-2024-09-falck-etal-kuenstliche-intelligenz-unternehmen.pdf"                                    
-## [19] "ssrn-4700751.pdf"                                                                                 
-## [20] "SSRN-id4573321.pdf"                                                                               
-## [21] "The Simple Macroeconomics of AI.pdf"                                                              
-## [22] "w24001.pdf"                                                                                       
-## [23] "w24871.pdf"                                                                                       
-## [24] "w31161.pdf"                                                                                       
-## [25] "w32430.pdf"
-```
+\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`tidyverse`](https://tidyverse.tidyverse.org)`)`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`tidyllm`](https://edubruell.github.io/tidyllm/)`)`\
+[`dir`](https://rdrr.io/r/base/list.files.html)`(``"aipapers"``)`\
+`##  [1] "2018_Felten_etal_AILinkOccupations.pdf"                                                           `\
+`##  [2] "2024_Bick_etal_RapidAdoption.pdf"                                                                 `\
+`##  [3] "2024_Caplin_etal_ABCsofAI.pdf"                                                                    `\
+`##  [4] "2301.07543v1.pdf"                                                                                 `\
+`##  [5] "2302.06590v1.pdf"                                                                                 `\
+`##  [6] "2303.10130v5.pdf"                                                                                 `\
+`##  [7] "488.pdf"                                                                                          `\
+`##  [8] "88684e36-en.pdf"                                                                                  `\
+`##  [9] "ABCs_AI_Oct2024.pdf"                                                                              `\
+`## [10] "acemoglu-restrepo-2019-automation-and-new-tasks-how-technology-displaces-and-reinstates-labor.pdf"`\
+`## [11] "BBD_GenAI_NBER_Sept2024.pdf"                                                                      `\
+`## [12] "Deming-Ong-Summers-AESG-2024.pdf"                                                                 `\
+`## [13] "dp22036.pdf"                                                                                      `\
+`## [14] "FeltenRajSeamans_AIAbilities_AEA.pdf"                                                             `\
+`## [15] "JEL-2023-1736_published_version.pdf"                                                              `\
+`## [16] "Noy_Zhang_1.pdf"                                                                                  `\
+`## [17] "pb01-25.pdf"                                                                                      `\
+`## [18] "sd-2024-09-falck-etal-kuenstliche-intelligenz-unternehmen.pdf"                                    `\
+`## [19] "ssrn-4700751.pdf"                                                                                 `\
+`## [20] "SSRN-id4573321.pdf"                                                                               `\
+`## [21] "The Simple Macroeconomics of AI.pdf"                                                              `\
+`## [22] "w24001.pdf"                                                                                       `\
+`## [23] "w24871.pdf"                                                                                       `\
+`## [24] "w31161.pdf"                                                                                       `\
+`## [25] "w32430.pdf"`
 
 Our goal is to get a first overview of these papers and to give them
 good file names.
@@ -74,17 +72,15 @@ extracted automatically and wrapped in `<pdf>` tags in the prompt. Pass
 `.text_extract = TRUE` to always force text extraction regardless of the
 provider:
 
-``` r
-
-files <- list.files("aipapers", full.names = TRUE, pattern = "\\.pdf$")
-
-document_tasks <- files |>
-  map(\(f) llm_message(
-    "Below are the first 5 pages of a document.
-     Summarise the document based on the provided schema.",
-    .media = pdf_file(f, pages = 1:5)
-  ))
-```
+\
+`files`` ``<-`` `[`list.files`](https://rdrr.io/r/base/list.files.html)`(``"aipapers"``, full.names ``=`` ``TRUE``, pattern ``=`` ``"\\.pdf$"``)`\
+\
+`document_tasks`` ``<-`` ``files`` ``|>`\
+`  `[`map`](https://purrr.tidyverse.org/reference/map.html)`(``\``(``f``)`` `[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(`\
+`    ``"Below are the first 5 pages of a document.`\
+`     Summarise the document based on the provided schema."``,`\
+`    .media ``=`` `[`pdf_file`](https://edubruell.github.io/tidyllm/reference/pdf_file.md)`(``f``, pages ``=`` ``1``:``5``)`\
+`  ``)``)`
 
 ### Step 2: Defining the Schema for Structured Output
 
@@ -92,22 +88,20 @@ We define a schema that outlines the expected data types for each field
 in the model’s responses. This enables the model to return answers in a
 consistent, structured format that converts directly into a tibble.
 
-``` r
-
-document_schema <- tidyllm_schema(
-  name             = "DocumentAnalysisSchema",
-  Title            = field_chr("The full title of the provided document"),
-  Authors          = field_chr("A semicolon-separated list of authors"),
-  SuggestedFilename = field_chr("Suggest a filename in the format \"ReleaseYear_Author_etal_ShortTitle.pdf\". Use the publication year if available; otherwise, use XXXX."),
-  Type             = field_fct("Is the document a Policy Report or a Research Paper based on its style, structure, and purpose?",
-                               .levels = c("Policy", "Research")),
-  Empirics         = field_chr("A 100 word description of empirical methods used, including data collection, statistical techniques, or analysis methods mentioned."),
-  Theory           = field_chr("A 100 word outline of the primary theoretical framework or models discussed, if any."),
-  MainPoint        = field_chr("A one-sentence summary of the main point raised"),
-  Contribution     = field_chr("A short explanation of the main contributions claimed in the document"),
-  KeyCitations     = field_chr("The four most frequently cited or critical references in the first 5 pages")
-)
-```
+\
+`document_schema`` ``<-`` `[`tidyllm_schema`](https://edubruell.github.io/tidyllm/reference/tidyllm_schema.md)`(`\
+`  name             ``=`` ``"DocumentAnalysisSchema"``,`\
+`  Title            ``=`` `[`field_chr`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(``"The full title of the provided document"``)``,`\
+`  Authors          ``=`` `[`field_chr`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(``"A semicolon-separated list of authors"``)``,`\
+`  SuggestedFilename ``=`` `[`field_chr`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(``"Suggest a filename in the format \"ReleaseYear_Author_etal_ShortTitle.pdf\". Use the publication year if available; otherwise, use XXXX."``)``,`\
+`  Type             ``=`` `[`field_fct`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(``"Is the document a Policy Report or a Research Paper based on its style, structure, and purpose?"``,`\
+`                               .levels ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"Policy"``, ``"Research"``)``)``,`\
+`  Empirics         ``=`` `[`field_chr`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(``"A 100 word description of empirical methods used, including data collection, statistical techniques, or analysis methods mentioned."``)``,`\
+`  Theory           ``=`` `[`field_chr`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(``"A 100 word outline of the primary theoretical framework or models discussed, if any."``)``,`\
+`  MainPoint        ``=`` `[`field_chr`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(``"A one-sentence summary of the main point raised"``)``,`\
+`  Contribution     ``=`` `[`field_chr`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(``"A short explanation of the main contributions claimed in the document"``)``,`\
+`  KeyCitations     ``=`` `[`field_chr`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(``"The four most frequently cited or critical references in the first 5 pages"``)`\
+`)`
 
 [`field_chr()`](https://edubruell.github.io/tidyllm/reference/field_chr.md)
 returns text,
@@ -125,57 +119,51 @@ To test the setup, we run the analysis on a single document with
 [`chat()`](https://edubruell.github.io/tidyllm/reference/chat.md) and
 the schema:
 
-``` r
-
-example_task <- document_tasks[[1]] |>
-  chat(openai(.json_schema = document_schema,
-              .model       = "gpt-6-luna"))
-```
+\
+`example_task`` ``<-`` ``document_tasks``[[``1``]``]`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`openai`](https://edubruell.github.io/tidyllm/reference/openai.md)`(``.json_schema ``=`` ``document_schema``,`\
+`              .model       ``=`` ``"gpt-6-luna"``)``)`
 
 ### Step 4: Extracting and Formatting the Results
 
 [`get_reply_data()`](https://edubruell.github.io/tidyllm/reference/get_reply_data.md)
 extracts the model’s structured response:
 
-``` r
-
-get_reply_data(example_task)
-## $Title
-## [1] "A Method to Link Advances in Artificial Intelligence to Occupational Abilities"
-## 
-## $Authors
-## [1] "Edward W. Felten; Manav Raj; Robert Seamans"
-## 
-## $SuggestedFilename
-## [1] "2018_Felten_etal_AI_Occupational_Abilities.pdf"
-## 
-## $Type
-## [1] "Research"
-## 
-## $Empirics
-## [1] "The study combines the Electronic Frontier Foundation’s AI Progress Measurement data with the US Department of Labor’s O*NET occupational database. For 16 AI categories, the authors scale different performance metrics, estimate progress trends using a common linear rate with metric-specific offsets, and set progress to zero where historical data are insufficient. Computer science PhD students help map AI categories to 52 O*NET abilities. The authors weight estimated ability effects by each ability’s importance and prevalence across nearly 1,000 occupations, then aggregate occupation scores. As a validation test, they correlate 2010–2015 scores with planned 2018 BLS definition revisions: the correlation is 0.074 (p = 0.041)."
-## 
-## $Theory
-## [1] "The paper uses a skills- and abilities-based view of labor: an occupation is understood as a bundle of abilities, with each ability varying in importance and prevalence across jobs. Advances in particular AI domains may affect the abilities used in occupations, so mapping AI progress to abilities and then to occupational requirements provides a way to compare relative exposure. This framework complements approaches that predict future automation susceptibility at the occupation level and those emphasizing variation in tasks among workers with the same occupational title. It does not provide a formal model of labor-market adjustment or determine whether AI substitutes for or complements workers; either outcome may occur."
-## 
-## $MainPoint
-## [1] "The authors propose a method for linking measured advances in specific AI domains to occupational abilities and aggregating those links to compare which occupations may be affected."
-## 
-## $Contribution
-## [1] "The paper introduces a reproducible framework that combines historical AI performance trends with O*NET ability requirements, enabling researchers and policymakers to assess the relative exposure of occupations and industries to advances in particular AI technologies. It also offers an initial validation: occupations with higher impact scores were modestly more likely to be scheduled for updated BLS definitions."
-## 
-## $KeyCitations
-## [1] "Frey and Osborne (2017), “The Future of Employment,” provides an occupation-level automation-susceptibility approach that this method complements. Arntz, Gregory, and Zierahn (2016), “The Risk of Automation for Jobs in OECD Countries,” highlights task variation within occupations. Autor and Handel (2013), “Putting Tasks to the Test,” supports describing labor through job tasks and skills. Brynjolfsson, Mitchell, and Rock (2018), “What Can Machines Learn, and What Does it Mean for the Occupations and Industries?,” is a related approach to assessing AI and occupational effects."
-```
+\
+[`get_reply_data`](https://edubruell.github.io/tidyllm/reference/get_reply_data.md)`(``example_task``)`\
+`## $Title`\
+`## [1] "A Method to Link Advances in Artificial Intelligence to Occupational Abilities"`\
+`## `\
+`## $Authors`\
+`## [1] "Edward W. Felten; Manav Raj; Robert Seamans"`\
+`## `\
+`## $SuggestedFilename`\
+`## [1] "2018_Felten_etal_AI_Occupational_Abilities.pdf"`\
+`## `\
+`## $Type`\
+`## [1] "Research"`\
+`## `\
+`## $Empirics`\
+`## [1] "The study combines the Electronic Frontier Foundation’s AI Progress Measurement data with the US Department of Labor’s O*NET occupational database. For 16 AI categories, the authors scale different performance metrics, estimate progress trends using a common linear rate with metric-specific offsets, and set progress to zero where historical data are insufficient. Computer science PhD students help map AI categories to 52 O*NET abilities. The authors weight estimated ability effects by each ability’s importance and prevalence across nearly 1,000 occupations, then aggregate occupation scores. As a validation test, they correlate 2010–2015 scores with planned 2018 BLS definition revisions: the correlation is 0.074 (p = 0.041)."`\
+`## `\
+`## $Theory`\
+`## [1] "The paper uses a skills- and abilities-based view of labor: an occupation is understood as a bundle of abilities, with each ability varying in importance and prevalence across jobs. Advances in particular AI domains may affect the abilities used in occupations, so mapping AI progress to abilities and then to occupational requirements provides a way to compare relative exposure. This framework complements approaches that predict future automation susceptibility at the occupation level and those emphasizing variation in tasks among workers with the same occupational title. It does not provide a formal model of labor-market adjustment or determine whether AI substitutes for or complements workers; either outcome may occur."`\
+`## `\
+`## $MainPoint`\
+`## [1] "The authors propose a method for linking measured advances in specific AI domains to occupational abilities and aggregating those links to compare which occupations may be affected."`\
+`## `\
+`## $Contribution`\
+`## [1] "The paper introduces a reproducible framework that combines historical AI performance trends with O*NET ability requirements, enabling researchers and policymakers to assess the relative exposure of occupations and industries to advances in particular AI technologies. It also offers an initial validation: occupations with higher impact scores were modestly more likely to be scheduled for updated BLS definitions."`\
+`## `\
+`## $KeyCitations`\
+`## [1] "Frey and Osborne (2017), “The Future of Employment,” provides an occupation-level automation-susceptibility approach that this method complements. Arntz, Gregory, and Zierahn (2016), “The Risk of Automation for Jobs in OECD Countries,” highlights task variation within occupations. Autor and Handel (2013), “Putting Tasks to the Test,” supports describing labor through job tasks and skills. Brynjolfsson, Mitchell, and Rock (2018), “What Can Machines Learn, and What Does it Mean for the Occupations and Industries?,” is a related approach to assessing AI and occupational effects."`
 
 The model returns a named list matching our schema, which
 [`as_tibble()`](https://tibble.tidyverse.org/reference/as_tibble.html)
 converts to a single row. We can also inspect token usage:
 
-``` r
-
-get_metadata(example_task)
-```
+\
+[`get_metadata`](https://edubruell.github.io/tidyllm/reference/get_metadata.md)`(``example_task``)`
 
     ## # A tibble: 1 × 7
     ##   model  timestamp           prompt_tokens completion_tokens total_tokens stream
@@ -196,13 +184,11 @@ offer up to 50% savings compared to single requests, and batch rate
 limits are separate from standard per-model limits so they don’t affect
 your regular quota.
 
-``` r
-
-document_tasks |>
-  send_batch(openai(.json_schema = document_schema,
-                    .model       = "gpt-6-luna")) |>
-  write_rds("document_batch.rds")
-```
+\
+`document_tasks`` ``|>`\
+`  `[`send_batch`](https://edubruell.github.io/tidyllm/reference/send_batch.md)`(`[`openai`](https://edubruell.github.io/tidyllm/reference/openai.md)`(``.json_schema ``=`` ``document_schema``,`\
+`                    .model       ``=`` ``"gpt-6-luna"``)``)`` ``|>`\
+`  `[`write_rds`](https://readr.tidyverse.org/reference/read_rds.html)`(``"document_batch.rds"``)`
 
 The output of
 [`send_batch()`](https://edubruell.github.io/tidyllm/reference/send_batch.md)
@@ -216,11 +202,9 @@ within 24 hours; the example here completed in about 10 minutes.
 
 Check whether a batch has completed:
 
-``` r
-
-read_rds("document_batch.rds") |>
-  check_job(openai())
-```
+\
+[`read_rds`](https://readr.tidyverse.org/reference/read_rds.html)`(``"document_batch.rds"``)`` ``|>`\
+`  `[`check_job`](https://edubruell.github.io/tidyllm/reference/check_job.md)`(`[`openai`](https://edubruell.github.io/tidyllm/reference/openai.md)`(``)``)`
 
 You can also list all OpenAI batches with `list_batches(openai())` or
 view them in the [OpenAI batches
@@ -231,44 +215,37 @@ dashboard](https://platform.openai.com/batches/).
 Once the batch is complete, fetch all responses with
 [`fetch_batch()`](https://edubruell.github.io/tidyllm/reference/fetch_batch.md):
 
-``` r
+\
+`results`` ``<-`` `[`read_rds`](https://readr.tidyverse.org/reference/read_rds.html)`(``"document_batch.rds"``)`` ``|>`\
+`  `[`fetch_batch`](https://edubruell.github.io/tidyllm/reference/fetch_batch.md)`(`[`openai`](https://edubruell.github.io/tidyllm/reference/openai.md)`(``)``)`
 
-results <- read_rds("document_batch.rds") |>
-  fetch_batch(openai())
-```
-
-Map
 [`get_reply_data()`](https://edubruell.github.io/tidyllm/reference/get_reply_data.md)
-and
-[`as_tibble()`](https://tibble.tidyverse.org/reference/as_tibble.html)
-over the batch output to produce a tidy table:
+reads the whole batch output and returns one row per document, with the
+model’s answers as columns. If a request failed, its row stays and the
+`error` column holds the message.
 
-``` r
-
-document_table <- results |>
-  map(get_reply_data) |>
-  map_dfr(as_tibble)
-
-document_table
-## # A tibble: 25 × 9
-##    Title  Authors SuggestedFilename Type  Empirics Theory MainPoint Contribution
-##    <chr>  <chr>   <chr>             <chr> <chr>    <chr>  <chr>     <chr>       
-##  1 A Met… Edward… 2018_Felten_etal… Rese… The aut… The p… The pape… The authors…
-##  2 The R… Alexan… 2024_Bick_etal_R… Rese… The stu… The p… Generati… The paper p…
-##  3 The A… Andrew… 2024_Caplin_etal… Rese… The aut… The p… AI assis… The study i…
-##  4 Large… John J… 2023_Horton_Larg… Rese… The pap… The p… Large la… The paper d…
-##  5 The I… Sida P… 2023_Peng_etal_A… Rese… Researc… No fo… In a con… The study p…
-##  6 GPTs … Tyna E… 2023_Eloundou_et… Rese… The stu… The p… LLMs cou… The paper i…
-##  7 Autom… Philip… 2023_Lergetporer… Rese… The aut… The p… Workers … The study d…
-##  8 Artif… Andrew… 2024_Green_etal_… Rese… The rep… The p… AI is ch… The report …
-##  9 The A… Andrew… 2024_Caplin_etal… Rese… The aut… The p… AI benef… The study p…
-## 10 Autom… Daron … 2019_Acemoglu_et… Rese… The pap… The f… Automati… The authors…
-## # ℹ 15 more rows
-## # ℹ 1 more variable: KeyCitations <chr>
-```
+\
+`document_table`` ``<-`` `[`get_reply_data`](https://edubruell.github.io/tidyllm/reference/get_reply_data.md)`(``results``)`\
+\
+`document_table`\
+`## ``# A tibble: 25 × 12`\
+`##    reply_id reply    error Title Authors SuggestedFilename Type  Empirics Theory`\
+`##       ``<int>`` ``<chr>``    ``<chr>`` ``<chr>`` ``<chr>``   ``<chr>``             ``<chr>`` ``<chr>``    ``<chr>`` `\
+`## `` 1``        1 tidyllm… ``NA``    A Me… Edward… 2018_Felten_etal… Rese… The aut… The p…`\
+`## `` 2``        2 tidyllm… ``NA``    The … Alexan… 2024_Bick_etal_R… Rese… The stu… The p…`\
+`## `` 3``        3 tidyllm… ``NA``    The … Andrew… 2024_Caplin_etal… Rese… The aut… The p…`\
+`## `` 4``        4 tidyllm… ``NA``    Larg… John J… 2023_Horton_Larg… Rese… The pap… The p…`\
+`## `` 5``        5 tidyllm… ``NA``    The … Sida P… 2023_Peng_etal_A… Rese… Researc… No fo…`\
+`## `` 6``        6 tidyllm… ``NA``    GPTs… Tyna E… 2023_Eloundou_et… Rese… The stu… The p…`\
+`## `` 7``        7 tidyllm… ``NA``    Auto… Philip… 2023_Lergetporer… Rese… The aut… The p…`\
+`## `` 8``        8 tidyllm… ``NA``    Arti… Andrew… 2024_Green_etal_… Rese… The rep… The p…`\
+`## `` 9``        9 tidyllm… ``NA``    The … Andrew… 2024_Caplin_etal… Rese… The aut… The p…`\
+`## ``10``       10 tidyllm… ``NA``    Auto… Daron … 2019_Acemoglu_et… Rese… The pap… The f…`\
+`## ``# ℹ 15 more rows`\
+`## ``# ℹ 3 more variables: MainPoint <chr>, Contribution <chr>, KeyCitations <chr>`
 
 This table can be exported to Excel with
-[`writexl::write_xlsx()`](https://docs.ropensci.org/writexl//reference/write_xlsx.html)
+[`writexl::write_xlsx()`](https://docs.ropensci.org/writexl/reference/write_xlsx.html)
 for further review, or used to programmatically rename the PDFs using
 the model’s suggested filenames.
 
@@ -312,13 +289,11 @@ XLSX), source code, ZIP archives, and more. This makes
 [`upload_file()`](https://edubruell.github.io/tidyllm/reference/upload_file.md)
 useful for workflows that go beyond plain PDFs.
 
-``` r
-
-report <- upload_file(claude(), .path = "annual_report.pdf")
-
-llm_message("Summarise the key risks.", .files = report) |>
-  chat(claude())
-```
+\
+`report`` ``<-`` `[`upload_file`](https://edubruell.github.io/tidyllm/reference/upload_file.md)`(`[`claude`](https://edubruell.github.io/tidyllm/reference/claude.md)`(``)``, .path ``=`` ``"annual_report.pdf"``)`\
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Summarise the key risks."``, .files ``=`` ``report``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`claude`](https://edubruell.github.io/tidyllm/reference/claude.md)`(``)``)`
 
 See the [Working with Files and
 Media](https://edubruell.github.io/tidyllm/articles/tidyllm_video.html)

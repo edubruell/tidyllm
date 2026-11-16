@@ -16,6 +16,9 @@
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Classifying Texts with tidyllm">
+<meta name="description" content="Label thousands of free-text answers with a codebook and check the labels against a sample coded by people.">
+<meta property="og:description" content="Label thousands of free-text answers with a codebook and check the labels against a sample coded by people.">
+<meta property="og:image" content="https://edubruell.github.io/tidyllm/logo.png">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -25,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.7.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.8.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -39,14 +42,18 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/tidyllm_classifiers.html">Classifying Texts with tidyllm</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm_cli.html">Command Line Providers</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm_embed.html">Embedding Models in tidyllm</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm_local_models.html">Local Models with tidyllm</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm_shiny.html">Using tidyllm in Shiny</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm_tools.html">Using Tools with tidyllm</a></li>
+<li><h6 class="dropdown-header" data-toc-skip>Start here</h6></li>
     <li><a class="dropdown-item" href="../articles/tidyllm_video.html">Working with Files and Media</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_classifiers.html">Classifying Texts with tidyllm</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_decide.html">Decision Models with tidyllm</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_embed.html">Embedding Models in tidyllm</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm-pdfquestions.html">Structured Question Answering from PDFs</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Go deeper</h6></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_local_models.html">Local Models with tidyllm</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_cli.html">Command Line Providers</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_tools.html">Using Tools with tidyllm</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_shiny.html">Using tidyllm in Shiny</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -78,34 +85,39 @@
     
     
 <p>You have thousands of short free-text answers and a fixed list of
-categories. A language model can sort them in minutes, but the result is
-less solid than it looks. The model decides what a label means from your
-instructions, and a vague instruction gets a different reading from case
-to case. Most current frontier models also no longer let you set
-<code>temperature</code>, so asking the same question twice does not
-guarantee the same answer. And a label that the model gives every time
-can still be wrong.</p>
-<p>This article builds a workflow that treats these as things to
-measure: a codebook the model can follow, labels the model cannot
-misspell, repeated runs to see where it disagrees with itself, a second
-pass for the disagreements, and a human-labelled sample to check the
-whole thing against. The central point is that agreement is not
-accuracy. Repeated runs tell you how stable the model is; only a
-comparison with human labels tells you whether it is right.</p>
-<p>Every call that needs an API key is shown in a chunk that is not
-evaluated. Right after it, a second chunk loads the saved results of
-that call and computes the numbers and tables, so you can follow the
-article without a key and see what the real run produced.</p>
+categories. A language model can label each answer in minutes. A single
+label can differ from run to run, though, and a label that comes back
+every time can still be wrong.</p>
+<p>Here you write a codebook (a definition for each category), label
+every answer several times, and compare the runs. You send the answers
+where the runs disagree through a stronger second pass and check the
+result against a sample of answers coded by people.</p>
+<p>A faster, cheaper route is a <em>decision model</em>, a different
+kind of model that you call with <code><a href="../reference/decide.html">decide()</a></code> instead of
+<code><a href="../reference/chat.html">chat()</a></code>. It answers a closed question such as “which of
+these 23 codes?” with the code and a probability, and writes no text.
+The section “An alternative: decision models” runs it on the same
+sample.</p>
+<p>Chunks that call an API (a model provider’s web service) are not
+evaluated; the next chunk loads the saved results, so you can follow
+along without an API key, the password for that service. If you rerun
+them, they cost money. The <a href="https://edubruell.github.io/tidyllm/articles/tidyllm.html">Get
+Started</a> article has a table of where to get a key for each
+provider.</p>
 <div class="section level2">
 <h2 id="the-task">The task<a class="anchor" aria-label="anchor" href="#the-task"></a>
 </h2>
 <p>Seven thousand survey respondents described their job in their own
-words. We want each answer in one of the 22 two-digit SOC occupation
-groups, or in code 99 when the answer names no occupation.</p>
+words, which gives 2,209 distinct answers, since many people use the
+same words (for example “lawyer”). We sort each answer into one of 22
+two-digit groups of the SOC (Standard Occupational Classification, the
+US scheme for job categories), or into code 99 when it names no
+occupation.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://edubruell.github.io/tidyllm/">tidyllm</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tidyverse.tidyverse.org" class="external-link">tidyverse</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://glue.tidyverse.org/" class="external-link">glue</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://www.r-project.org" class="external-link">irr</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">occ_data</span>  <span class="op">&lt;-</span> <span class="fu"><a href="https://readr.tidyverse.org/reference/read_rds.html" class="external-link">read_rds</a></span><span class="op">(</span><span class="st">"occupation_data.rds"</span><span class="op">)</span></span>
 <span><span class="va">occ_codes</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://readr.tidyverse.org/reference/read_rds.html" class="external-link">read_rds</a></span><span class="op">(</span><span class="st">"occ_codes_2digits.rds"</span><span class="op">)</span></span>
@@ -124,41 +136,35 @@ groups, or in code 99 when the answer names no occupation.</p>
 <span><span class="co">## <span style="color: #BCBCBC;">4</span> Building and demolition         4</span></span>
 <span><span class="co">## <span style="color: #BCBCBC;">5</span> Help lawyers with cases         5</span></span>
 <span><span class="co">## <span style="color: #949494;"># ℹ 2,204 more rows</span></span></span></code></pre></div>
-<p>Classifying each distinct answer once is enough; the labels are
-joined back to the respondents at the end.</p>
+<p>We classify each distinct answer once and join the labels back at the
+end.</p>
 </div>
 <div class="section level2">
 <h2 id="why-a-single-answer-is-not-enough">Why a single answer is not enough<a class="anchor" aria-label="anchor" href="#why-a-single-answer-is-not-enough"></a>
 </h2>
-<p>Earlier versions of this article set <code>.temperature = 0</code>
-and treated the reply as fixed, which no longer holds. Claude 5 models,
-recent Gemini models and several OpenAI models reject or ignore sampling
-parameters, and <code>chat(openai(), .temperature = 0)</code> stops with
-an error for them. <code><a href="../reference/provider_capabilities.html">provider_capabilities()</a></code> shows which
-provider functions still accept the argument. That does not mean the
-model uses it: Gemini 3.6 Flash and later, including the default model
-of <code><a href="../reference/gemini.html">gemini()</a></code>, accept <code>.temperature</code> and ignore
+<p>In 2026, most paid providers no longer let you set
+<code>temperature</code>, the setting that controls how much a model’s
+answers vary for the same input. Most current paid models reject it.
+OpenAI and Claude models return an error, and recent Gemini models,
+including the default of <code><a href="../reference/gemini.html">gemini()</a></code>, accept it and ignore it.
+<code><a href="../reference/provider_capabilities.html">provider_capabilities()</a></code> lists which providers accept
 it.</p>
-<p>Even where <code>temperature</code> is accepted, the literature on
-LLM annotation reports that repeated runs of the same prompt on the same
-text can return different labels, and that the instability is largest on
-borderline texts (Barrie, Palaiologou and Törnberg, 2024; Haldar and
-Hockenmaier, 2025). The practical answer in applied work is the one
-social scientists already use for human coders: label more than once,
-measure agreement, and look closely at the disagreements. Separately, an
-LLM label is only as good as its agreement with humans on your task, so
-the workflow always ends with a validation sample (Pangakis, Wolken and
-Fasching, 2023).</p>
-<p>We use <code>claude(.model = "claude-sonnet-5-5")</code> throughout
-and set no temperature.</p>
+<p>So you cannot make a model repeat itself, and the same prompt on the
+same text can return different labels, mostly on borderline texts
+(Barrie, Palaiologou and Törnberg, 2024; Haldar and Hockenmaier, 2025).
+The remedy is the one used with human coders: label each answer several
+times, compare the runs, and check the labels against a validation
+sample, a set of answers coded by people (Pangakis, Wolken and Fasching,
+2023).</p>
+<p>The chat examples use
+<code>claude(.model = "claude-sonnet-5-5")</code>.</p>
 </div>
 <div class="section level2">
 <h2 id="step-1-write-a-codebook-not-a-list">Step 1: Write a codebook, not a list<a class="anchor" aria-label="anchor" href="#step-1-write-a-codebook-not-a-list"></a>
 </h2>
-<p>A bare list of codes leaves the model to guess what “Management” or
-“Missing” means. A codebook gives each label a definition, a decision
-rule for overlaps, and one or two examples. A human coder would need the
-same thing.</p>
+<p>A codebook gives each label a definition, a rule for overlaps and one
+or two examples. Without one the model guesses what “Management” or
+“Missing” covers.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">codebook</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://readr.tidyverse.org/reference/read_file.html" class="external-link">read_file</a></span><span class="op">(</span><span class="st">"classifier_codebook.txt"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/trimws.html" class="external-link">trimws</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="va">codebook</span><span class="op">)</span></span>
@@ -185,22 +191,18 @@ same thing.</p>
 <span><span class="co">## 51 Production: manufacturing, assembly, machine operation, craft production. Example: "Eyeglass makin'".</span></span>
 <span><span class="co">## 53 Transportation and Material Moving: drivers, pilots, warehouse movers.</span></span>
 <span><span class="co">## 99 Missing: the answer names no occupation, or is too vague to place (for example "Doin' the numbers", "stuff"). Prefer 99 over a guess.</span></span></code></pre></div>
-<p>Keep the codebook in a file under version control. When you change
-it, you have changed the measurement, and the validation in step 6 has
-to be run again. The last section of this article shows what happens
-when you edit the codebook to fix the errors you found.</p>
+<p>Keep the codebook in a file under version control. Rerun step 6 after
+every edit, so the accuracy you report matches the codebook you use.</p>
 </div>
 <div class="section level2">
 <h2 id="step-2-constrain-the-answer-with-a-schema">Step 2: Constrain the answer with a schema<a class="anchor" aria-label="anchor" href="#step-2-constrain-the-answer-with-a-schema"></a>
 </h2>
-<p>Asking for “only the code” and parsing the reply with
-<code><a href="https://readr.tidyverse.org/reference/parse_number.html" class="external-link">parse_number()</a></code> breaks when the model adds a word. A schema
-removes the problem: <code><a href="../reference/field_chr.html">field_fct()</a></code> makes the label an enum,
-so the provider only accepts one of the listed codes. We add two more
-fields. A short rationale gives you something to read when you audit a
-row, and a three-level confidence gives a coarse signal to sort by. Do
-not treat the self-reported confidence as a probability; step 4 shows
-how much it is worth.</p>
+<p>Asking for “only the code” breaks <code><a href="https://readr.tidyverse.org/reference/parse_number.html" class="external-link">parse_number()</a></code> when
+the model adds a word. A schema, a fixed list of fields the reply must
+fill, avoids this. <code><a href="../reference/field_chr.html">field_fct()</a></code> makes the label an enum, a
+field that takes only values from a fixed list. We add a one-sentence
+rationale to read when you audit a row and a three-level confidence to
+sort by.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">label_levels</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">occ_codes</span><span class="op">$</span><span class="va">occ2</span>, <span class="fl">99</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
@@ -211,7 +213,7 @@ how much it is worth.</p>
 <span>  confidence <span class="op">=</span> <span class="fu"><a href="../reference/field_chr.html">field_fct</a></span><span class="op">(</span><span class="st">"How clear the answer is."</span>, .levels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"low"</span>, <span class="st">"medium"</span>, <span class="st">"high"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">make_prompt</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">occupation</span><span class="op">)</span> <span class="op">{</span></span>
+<code class="sourceCode R"><span><span class="va">make_prompt</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">occupation</span>, <span class="va">codebook</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="fu"><a href="https://glue.tidyverse.org/reference/glue.html" class="external-link">glue</a></span><span class="op">(</span></span>
 <span>    <span class="st">'You code survey answers into occupation groups.</span></span>
 <span><span class="st">     Use only the codebook below. Choose the single best group.</span></span>
@@ -223,38 +225,34 @@ how much it is worth.</p>
 <span><span class="st">     Survey answer: "{occupation}"'</span></span>
 <span>  <span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
-<p>Look at the request before spending anything on it.
-<code>.dry_run = TRUE</code> returns the request object that would be
-sent.</p>
+<p>A dry run, <code>.dry_run = TRUE</code>, shows the request that would
+be sent without sending it, so you can check it before spending
+anything.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">make_prompt</span><span class="op">(</span><span class="va">distinct_occupations</span><span class="op">$</span><span class="va">occupation</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<code class="sourceCode R"><span><span class="fu">make_prompt</span><span class="op">(</span><span class="va">distinct_occupations</span><span class="op">$</span><span class="va">occupation</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="va">codebook</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"claude-sonnet-5-5"</span>, .json_schema <span class="op">=</span> <span class="va">occ_schema</span>, .dry_run <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p>Enum-constrained output guarantees a valid label, not a correct one.
-Some work reports that heavy output constraints can cost accuracy on
-hard cases (Tam et al., 2024, on format restrictions and reasoning),
-which is why the rationale field exists and why step 6 measures
-accuracy.</p>
+<p>Heavy output constraints can cost accuracy, the share of answers
+where the model’s label equals the human label, on hard cases (Tam et
+al., 2024); the rationale field is there for that reason.</p>
 <p>One call looks like this:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">make_prompt</span><span class="op">(</span><span class="st">"Doin' the numbers"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<code class="sourceCode R"><span><span class="fu">make_prompt</span><span class="op">(</span><span class="st">"Doin' the numbers"</span>, <span class="va">codebook</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"claude-sonnet-5-5"</span>, .json_schema <span class="op">=</span> <span class="va">occ_schema</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/get_reply_data.html">get_reply_data</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p><code><a href="../reference/get_reply_data.html">get_reply_data()</a></code> returns a plain named list with one
-element per schema field. The label stays a character string, because
-“99” and “11” are labels and not numbers.</p>
+<p><code><a href="../reference/get_reply_data.html">get_reply_data()</a></code> returns a named list with one element
+per schema field. The label stays a character string, because “99” and
+“11” are labels.</p>
 </div>
 <div class="section level2">
 <h2 id="step-3-label-every-answer-several-times">Step 3: Label every answer several times<a class="anchor" aria-label="anchor" href="#step-3-label-every-answer-several-times"></a>
 </h2>
-<p>Because replies can differ between runs, we ask for each answer
-<code>k</code> times and keep every run. Three runs is the smallest
-number that gives a majority; five gives a finer agreement score at a
-higher price. We validate on a random sample of 150 distinct answers, so
-the full dataset is never sent while we are still learning how well the
-method works. <code><a href="../reference/parallel_chat.html">parallel_chat()</a></code> runs the requests
-concurrently and returns the replies in input order, with the names of
-the input list kept, so we name each task <code>id__run</code> and split
-the name afterwards.</p>
+<p>We ask for each answer <code>k</code> times and keep every run. Three
+runs give a majority; five give a finer agreement score at a higher
+price. We use a random sample of 150 distinct answers.</p>
+<p><code><a href="../reference/parallel_chat.html">parallel_chat()</a></code> sends the requests concurrently and
+returns one reply per prompt, in the same order.</p>
+<p>The chunk below builds one ready-to-send prompt per answer and run
+and keeps it in a <code>prompt</code> column next to the answer.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">k</span> <span class="op">&lt;-</span> <span class="fl">3</span></span>
 <span></span>
@@ -262,41 +260,40 @@ the name afterwards.</p>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/slice.html" class="external-link">slice_sample</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">150</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">tasks</span> <span class="op">&lt;-</span> <span class="va">sample_df</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/cross_join.html" class="external-link">cross_join</a></span><span class="op">(</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>run <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">k</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>task_id <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">id</span>, <span class="va">run</span>, sep <span class="op">=</span> <span class="st">"__"</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">llms</span> <span class="op">&lt;-</span> <span class="va">tasks</span><span class="op">$</span><span class="va">occupation</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="va">make_prompt</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://rlang.r-lib.org/reference/set_names.html" class="external-link">set_names</a></span><span class="op">(</span><span class="va">tasks</span><span class="op">$</span><span class="va">task_id</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/cross_join.html" class="external-link">cross_join</a></span><span class="op">(</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>run <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="va">k</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>prompt <span class="op">=</span> <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="va">occupation</span>, <span class="va">make_prompt</span>, codebook <span class="op">=</span> <span class="va">codebook</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">replies</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/parallel_chat.html">parallel_chat</a></span><span class="op">(</span></span>
-<span>  <span class="va">llms</span>,</span>
+<span>  <span class="va">tasks</span><span class="op">$</span><span class="va">prompt</span>,</span>
 <span>  <span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"claude-sonnet-5-5"</span>, .json_schema <span class="op">=</span> <span class="va">occ_schema</span><span class="op">)</span>,</span>
 <span>  .max_active <span class="op">=</span> <span class="fl">4</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://readr.tidyverse.org/reference/read_rds.html" class="external-link">write_rds</a></span><span class="op">(</span><span class="va">replies</span>, <span class="st">"runs_claude.rds"</span><span class="op">)</span></span></code></pre></div>
-<p>Failed requests do not stop the call. <code><a href="../reference/parallel_chat.html">parallel_chat()</a></code>
-warns how many failed, and the failed elements of the list hold the
-error condition instead of a message. The extraction below turns those
-into missing values, so no row disappears silently.</p>
+<p>Failed requests do not stop the call; <code><a href="../reference/parallel_chat.html">parallel_chat()</a></code>
+warns how many failed, and you can run those prompts again.</p>
+<p><code><a href="../reference/get_reply_data.html">get_reply_data()</a></code> turns the list of replies into a tibble
+with one row per reply, in the same order: <code>reply_id</code>,
+<code>error</code> and one column per schema field. A failed request
+keeps its row with the message in <code>error</code>. The chunk lists
+those rows in <code>failed</code>, so you can run them again, and drops
+them from <code>runs</code>.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">extract_run</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">reply</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">inherits</a></span><span class="op">(</span><span class="va">reply</span>, <span class="st">"tidyllm::LLMMessage"</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>rationale <span class="op">=</span> <span class="cn">NA_character_</span>, occ2 <span class="op">=</span> <span class="cn">NA_character_</span>, confidence <span class="op">=</span> <span class="cn">NA_character_</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="op">}</span></span>
-<span>  <span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="fu"><a href="../reference/get_reply_data.html">get_reply_data</a></span><span class="op">(</span><span class="va">reply</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
+<code class="sourceCode R"><span><span class="va">reply_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_reply_data.html">get_reply_data</a></span><span class="op">(</span><span class="va">replies</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">runs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="va">replies</span>, <span class="va">extract_run</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span>.id <span class="op">=</span> <span class="st">"task_id"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/separate.html" class="external-link">separate</a></span><span class="op">(</span><span class="va">task_id</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"id"</span>, <span class="st">"run"</span><span class="op">)</span>, sep <span class="op">=</span> <span class="st">"__"</span>, convert <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/rename.html" class="external-link">rename</a></span><span class="op">(</span>label <span class="op">=</span> <span class="va">occ2</span><span class="op">)</span></span></code></pre></div>
-<p>The saved results of this run hold three labels for each of the 150
-sampled answers.</p>
+<span><span class="va">failed</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">reply_data</span>, <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">error</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">runs</span> <span class="op">&lt;-</span> <span class="va">tasks</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_cols.html" class="external-link">bind_cols</a></span><span class="op">(</span><span class="va">reply_data</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">error</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">id</span>, <span class="va">run</span>, label <span class="op">=</span> <span class="va">occ2</span>, <span class="va">rationale</span>, <span class="va">confidence</span><span class="op">)</span></span></code></pre></div>
+<p>The saved results hold three labels for each of the 150 sampled
+answers.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sample_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://readr.tidyverse.org/reference/read_rds.html" class="external-link">read_rds</a></span><span class="op">(</span><span class="st">"classifier_sample.rds"</span><span class="op">)</span></span>
 <span><span class="va">runs</span>      <span class="op">&lt;-</span> <span class="fu"><a href="https://readr.tidyverse.org/reference/read_rds.html" class="external-link">read_rds</a></span><span class="op">(</span><span class="st">"classifier_runs.rds"</span><span class="op">)</span></span>
 <span><span class="va">run_meta</span>  <span class="op">&lt;-</span> <span class="fu"><a href="https://readr.tidyverse.org/reference/read_rds.html" class="external-link">read_rds</a></span><span class="op">(</span><span class="st">"classifier_runs_meta.rds"</span><span class="op">)</span></span>
+<span><span class="va">run_tokens</span> <span class="op">&lt;-</span> <span class="va">run_meta</span><span class="op">$</span><span class="va">tokens</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/rename.html" class="external-link">rename</a></span><span class="op">(</span>prompt_tokens <span class="op">=</span> <span class="va">input_tokens</span>, completion_tokens <span class="op">=</span> <span class="va">output_tokens</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">runs</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html" class="external-link">left_join</a></span><span class="op">(</span><span class="va">sample_df</span>, by <span class="op">=</span> <span class="st">"id"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -312,17 +309,24 @@ sampled answers.</p>
 <span><span class="co">## <span style="color: #BCBCBC;">5</span>    53 Jailer         2 33    high      </span></span>
 <span><span class="co">## <span style="color: #BCBCBC;">6</span>    53 Jailer         3 33    high      </span></span>
 <span><span class="co">## <span style="color: #949494;"># ℹ 444 more rows</span></span></span></code></pre></div>
-<p>The token counts of the 450 calls come from the response metadata of
-each call. The codebook is part of every request, so the prompt is much
-longer than the answer it labels.</p>
+<p>Tokens are the short pieces of text a model reads and writes, and
+providers charge by them. <code><a href="../reference/get_metadata.html">get_metadata()</a></code> returns one row
+per reply with its <code>prompt_tokens</code> and
+<code>completion_tokens</code>:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
-<span>  calls                <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">run_meta</span><span class="op">$</span><span class="va">tokens</span><span class="op">)</span>,</span>
-<span>  prompt_tokens        <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">run_meta</span><span class="op">$</span><span class="va">tokens</span><span class="op">$</span><span class="va">input_tokens</span><span class="op">)</span>,</span>
-<span>  completion_tokens    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">run_meta</span><span class="op">$</span><span class="va">tokens</span><span class="op">$</span><span class="va">output_tokens</span><span class="op">)</span>,</span>
-<span>  prompt_per_call      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">run_meta</span><span class="op">$</span><span class="va">tokens</span><span class="op">$</span><span class="va">input_tokens</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  completion_per_call  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">run_meta</span><span class="op">$</span><span class="va">tokens</span><span class="op">$</span><span class="va">output_tokens</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">run_tokens</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_metadata.html">get_metadata</a></span><span class="op">(</span><span class="va">replies</span><span class="op">)</span></span></code></pre></div>
+<p>The codebook is part of every request, so prompts are far longer than
+the answers. We count them for the 450 saved calls.</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">run_tokens</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span></span>
+<span>    calls               <span class="op">=</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/context.html" class="external-link">n</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>    prompt_per_call     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">prompt_tokens</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    completion_per_call <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">completion_tokens</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    prompt_tokens       <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">prompt_tokens</span><span class="op">)</span>,</span>
+<span>    completion_tokens   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">completion_tokens</span><span class="op">)</span></span>
+<span>  <span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/relocate.html" class="external-link">relocate</a></span><span class="op">(</span><span class="va">calls</span>, <span class="va">prompt_tokens</span>, <span class="va">completion_tokens</span><span class="op">)</span></span>
 <span><span class="co">## <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">##   calls prompt_tokens completion_tokens prompt_per_call completion_per_call</span></span>
 <span><span class="co">##   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>               <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
@@ -330,15 +334,17 @@ longer than the answer it labels.</p>
 <div class="section level3">
 <h3 id="the-same-job-as-a-batch">The same job as a batch<a class="anchor" aria-label="anchor" href="#the-same-job-as-a-batch"></a>
 </h3>
-<p>For a full dataset where a result an hour later is acceptable, the
-same list goes through <code><a href="../reference/send_batch.html">send_batch()</a></code> at half the price.
-<code><a href="../reference/check_batch.html">check_batch()</a></code> reports the status, and
-<code><a href="../reference/fetch_batch.html">fetch_batch()</a></code> returns the replies once the batch has ended.
-The names of the list survive the round trip, so the extraction code is
-nearly unchanged. We sent the first 20 requests of the sample as a batch
-to test it.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">job</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/send_batch.html">send_batch</a></span><span class="op">(</span><span class="va">llms</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">20</span><span class="op">]</span>, <span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"claude-sonnet-5-5"</span>, .json_schema <span class="op">=</span> <span class="va">occ_schema</span><span class="op">)</span><span class="op">)</span></span>
+<p>For a full dataset where a result an hour later is fine,
+<code><a href="../reference/send_batch.html">send_batch()</a></code> submits the same list as a batch, a job you
+collect later, at half the price. <code><a href="../reference/check_batch.html">check_batch()</a></code> reports the
+status and <code><a href="../reference/fetch_batch.html">fetch_batch()</a></code> returns the replies. We sent the
+first 20 requests as a test; the chunk submits the batch job, checks it,
+fetches the replies and reads them with <code><a href="../reference/get_reply_data.html">get_reply_data()</a></code> as
+before.</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">first20</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/slice.html" class="external-link">slice</a></span><span class="op">(</span><span class="va">tasks</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">20</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">job</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/send_batch.html">send_batch</a></span><span class="op">(</span><span class="va">first20</span><span class="op">$</span><span class="va">prompt</span>, <span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"claude-sonnet-5-5"</span>, .json_schema <span class="op">=</span> <span class="va">occ_schema</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://readr.tidyverse.org/reference/read_rds.html" class="external-link">write_rds</a></span><span class="op">(</span><span class="va">job</span>, <span class="st">"runs_batch_job.rds"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">job</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://readr.tidyverse.org/reference/read_rds.html" class="external-link">read_rds</a></span><span class="op">(</span><span class="st">"runs_batch_job.rds"</span><span class="op">)</span></span>
@@ -346,12 +352,9 @@ to test it.</p>
 <span></span>
 <span><span class="va">replies</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fetch_batch.html">fetch_batch</a></span><span class="op">(</span><span class="va">job</span>, <span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">runs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="va">replies</span>, <span class="va">get_reply_data</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span>.id <span class="op">=</span> <span class="st">"task_id"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/separate.html" class="external-link">separate</a></span><span class="op">(</span><span class="va">task_id</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"id"</span>, <span class="st">"run"</span><span class="op">)</span>, sep <span class="op">=</span> <span class="st">"__"</span>, convert <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html" class="external-link">left_join</a></span><span class="op">(</span><span class="va">distinct_occupations</span>, by <span class="op">=</span> <span class="st">"id"</span><span class="op">)</span></span></code></pre></div>
-<p>Here are the two <code><a href="../reference/check_batch.html">check_batch()</a></code> outputs of that batch,
-the first right after submission and the second three minutes later:</p>
+<span><span class="va">batch_runs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_cols.html" class="external-link">bind_cols</a></span><span class="op">(</span><span class="va">first20</span>, <span class="fu"><a href="../reference/get_reply_data.html">get_reply_data</a></span><span class="op">(</span><span class="va">replies</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>The two <code><a href="../reference/check_batch.html">check_batch()</a></code> outputs come from right after
+submission and three minutes later:</p>
 <pre><code># A tibble: 1 x 8
   batch_id          status      created_at          expires_at          req_succeeded
   &lt;chr&gt;             &lt;chr&gt;       &lt;dttm&gt;              &lt;dttm&gt;                      &lt;int&gt;
@@ -363,11 +366,10 @@ the first right after submission and the second three minutes later:</p>
   &lt;chr&gt;             &lt;chr&gt;  &lt;dttm&gt;              &lt;dttm&gt;                      &lt;int&gt;
 1 msgbatch_017iBx1… ended  2026-10-02 13:22:40 2026-10-03 13:22:40            20
 # i 3 more variables: req_errored &lt;int&gt;, req_expired &lt;int&gt;, req_canceled &lt;int&gt;</code></pre>
-<p>The batch reported 27,823 prompt tokens for its 20 requests, about
-1,390 per request. That matches the live calls above, because the
-codebook dominates the prompt. The saved batch results can be compared
-with the first live run of the same answers:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<p>The batch reported 27,823 prompt tokens for 20 requests, about 1,390
+each, matching the live calls. Its labels compare with the first live
+run:</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">batch_runs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://readr.tidyverse.org/reference/read_rds.html" class="external-link">read_rds</a></span><span class="op">(</span><span class="st">"classifier_batch_results.rds"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">batch_runs</span> <span class="op">|&gt;</span></span>
@@ -385,35 +387,31 @@ with the first live run of the same answers:</p>
 <div class="section level3">
 <h3 id="using-more-than-one-model">Using more than one model<a class="anchor" aria-label="anchor" href="#using-more-than-one-model"></a>
 </h3>
-<p>Repeating one model measures how stable it is with itself. A
-different model measures something else: whether two independent systems
-read the codebook the same way. Run the same <code>llms</code> through a
-second provider and add its labels as extra runs. Agreement across
-models is a stronger signal than agreement within one, because the
-failures of two unrelated models are less correlated (Ziems et al.,
-2024, report model-dependent results across tasks). We did not run this
-here.</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">replies_gemini</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/parallel_chat.html">parallel_chat</a></span><span class="op">(</span><span class="va">llms</span>, <span class="fu"><a href="../reference/gemini.html">gemini</a></span><span class="op">(</span>.json_schema <span class="op">=</span> <span class="va">occ_schema</span><span class="op">)</span>, .max_active <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span></code></pre></div>
+<p>A second model shows whether two independent systems read the
+codebook the same way. Agreement across models is the stronger signal,
+because unrelated models fail less alike (Ziems et al., 2024). Running
+the same prompts through another provider adds its labels as extra runs.
+We did not run this here.</p>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">replies_gemini</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/parallel_chat.html">parallel_chat</a></span><span class="op">(</span><span class="va">tasks</span><span class="op">$</span><span class="va">prompt</span>, <span class="fu"><a href="../reference/gemini.html">gemini</a></span><span class="op">(</span>.json_schema <span class="op">=</span> <span class="va">occ_schema</span><span class="op">)</span>, .max_active <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
 <h2 id="step-4-summarise-agreement-and-flag-disagreements">Step 4: Summarise agreement and flag disagreements<a class="anchor" aria-label="anchor" href="#step-4-summarise-agreement-and-flag-disagreements"></a>
 </h2>
-<p>For each answer we take the majority label, the share of runs that
-voted for it, and a flag for rows where the runs did not all agree.</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<p>The next chunk counts the votes per label, puts the most-voted label
+first, and keeps it with its vote share. The <code>unstable</code> flag
+marks answers where the runs disagree.</p>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">vote</span> <span class="op">&lt;-</span> <span class="va">runs</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">label</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/count.html" class="external-link">count</a></span><span class="op">(</span><span class="va">id</span>, <span class="va">label</span>, name <span class="op">=</span> <span class="st">"votes"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html" class="external-link">arrange</a></span><span class="op">(</span><span class="va">id</span>, <span class="fu"><a href="https://dplyr.tidyverse.org/reference/desc.html" class="external-link">desc</a></span><span class="op">(</span><span class="va">votes</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">id</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html" class="external-link">arrange</a></span><span class="op">(</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/desc.html" class="external-link">desc</a></span><span class="op">(</span><span class="va">votes</span><span class="op">)</span>, .by_group <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span></span>
 <span>    n_runs     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">votes</span><span class="op">)</span>,</span>
 <span>    majority   <span class="op">=</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/nth.html" class="external-link">first</a></span><span class="op">(</span><span class="va">label</span><span class="op">)</span>,</span>
 <span>    agreement  <span class="op">=</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/nth.html" class="external-link">first</a></span><span class="op">(</span><span class="va">votes</span><span class="op">)</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">votes</span><span class="op">)</span>,</span>
-<span>    candidates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">label</span>, collapse <span class="op">=</span> <span class="st">"/"</span><span class="op">)</span>,</span>
-<span>    .groups    <span class="op">=</span> <span class="st">"drop"</span></span>
+<span>    candidates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">label</span>, collapse <span class="op">=</span> <span class="st">"/"</span><span class="op">)</span></span>
 <span>  <span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html" class="external-link">left_join</a></span><span class="op">(</span><span class="va">sample_df</span>, by <span class="op">=</span> <span class="st">"id"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>unstable <span class="op">=</span> <span class="va">agreement</span> <span class="op">&lt;</span> <span class="fl">1</span><span class="op">)</span></span>
@@ -426,60 +424,51 @@ voted for it, and a flag for rows where the runs did not all agree.</p>
 <span><span class="co">##   <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
 <span><span class="co">## <span style="color: #BCBCBC;">1</span> FALSE      147  0.98</span></span>
 <span><span class="co">## <span style="color: #BCBCBC;">2</span> TRUE         3  0.02</span></span></code></pre></div>
-<p>Almost every answer gets the same label in all three runs. Three runs
-of the same prompt barely change the label, so on this task the
-repetition buys little by itself. Its value is the short list of rows
-where the runs differ, and step 6 shows that this list catches only part
-of the errors.</p>
-<p>Two points about reading this table. A tie, such as one vote each for
-three labels, has no majority; <code><a href="https://dplyr.tidyverse.org/reference/nth.html" class="external-link">first()</a></code> picks one
-arbitrarily, so treat every row with <code>agreement &lt; 0.5</code> as
-unresolved. And a unanimous label can still be wrong: agreement shows
-where the model is unsure of itself and says nothing about the
-codebook.</p>
-<p>The overall agreement across runs can be summarised with
-Krippendorff’s alpha, which handles missing values and works for any
-number of runs. Here the raters are the <code>k</code> runs and the
-units are the answers. The function below implements alpha for nominal
-labels in base R, so no extra package is needed.</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">kripp_nominal</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">m</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">m</span>  <span class="op">&lt;-</span> <span class="va">m</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colSums</a></span><span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span><span class="op">)</span> <span class="op">&gt;=</span> <span class="fl">2</span>, drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span></span>
-<span>  <span class="va">lv</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">as.vector</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="va">o</span>  <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">lv</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">lv</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">j</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="va">v</span>   <span class="op">&lt;-</span> <span class="va">m</span><span class="op">[</span>, <span class="va">j</span><span class="op">]</span></span>
-<span>    <span class="va">v</span>   <span class="op">&lt;-</span> <span class="va">v</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">v</span><span class="op">)</span><span class="op">]</span></span>
-<span>    <span class="va">tab</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">v</span>, <span class="va">lv</span><span class="op">)</span><span class="op">)</span></span>
-<span>    <span class="va">o</span>   <span class="op">&lt;-</span> <span class="va">o</span> <span class="op">+</span> <span class="op">(</span><span class="va">tab</span> <span class="op"><a href="https://rdrr.io/r/base/outer.html" class="external-link">%o%</a></span> <span class="va">tab</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="va">tab</span><span class="op">)</span><span class="op">)</span> <span class="op">/</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">v</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span></span>
-<span>  <span class="op">}</span></span>
-<span>  <span class="va">n</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">o</span><span class="op">)</span></span>
-<span>  <span class="fl">1</span> <span class="op">-</span> <span class="op">(</span><span class="va">n</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span> <span class="op">*</span> <span class="op">(</span><span class="va">n</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="va">o</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">/</span> <span class="op">(</span><span class="va">n</span><span class="op">^</span><span class="fl">2</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">rowSums</a></span><span class="op">(</span><span class="va">o</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span></span>
-<span><span class="va">runs</span> <span class="op">|&gt;</span></span>
+<p>Almost every answer gets the same label in all three runs. The rows
+where the runs differ form a short list to read; step 6 shows it catches
+only part of the errors.</p>
+<p>A tie, such as one vote each for three labels, has no majority and
+<code><a href="https://dplyr.tidyverse.org/reference/nth.html" class="external-link">first()</a></code> picks one arbitrarily, so treat rows with
+<code>agreement &lt; 0.5</code> as unresolved. A unanimous label can
+still be wrong.</p>
+<p>Coders who pick from 22 categories agree sometimes by luck alone,
+more often when a few categories are very frequent. Agreement statistics
+that correct for this luck use a scale where 0 means no better than
+chance and 1 means perfect agreement. The <code>irr</code> package
+computes both statistics we use in this article:</p>
+<ul>
+<li>
+<strong>Krippendorff’s alpha</strong> measures how much several
+coders agree. Here the coders are the three runs and the units are the
+answers. Rules of thumb call 0.8 reliable and 0.667 the lowest value for
+tentative conclusions (Krippendorff, 2004).</li>
+<li>
+<strong>Cohen’s kappa</strong> measures how much two coders agree.
+We use it in step 6 for the model and the human coder.</li>
+</ul>
+<p><code><a href="https://rdrr.io/pkg/irr/man/kripp.alpha.html" class="external-link">kripp.alpha()</a></code> wants one row per coder and one column per
+answer, so we reshape the runs first. Alpha measures agreement between
+runs only; human labels come in step 6.</p>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">runs</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">run</span>, <span class="va">id</span>, <span class="va">label</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/pivot_wider.html" class="external-link">pivot_wider</a></span><span class="op">(</span>names_from <span class="op">=</span> <span class="va">id</span>, values_from <span class="op">=</span> <span class="va">label</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="op">-</span><span class="va">run</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">kripp_nominal</span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fl">3</span><span class="op">)</span></span>
-<span><span class="co">## [1] 0.983</span></span></code></pre></div>
-<p>Alpha near 1 means the runs agree beyond chance. Common rules of
-thumb call 0.8 reliable and 0.667 the lowest value worth drawing
-tentative conclusions from (Krippendorff, 2004), but the right bar
-depends on what you will do with the labels. A high alpha here says the
-model is consistent with itself. It says nothing yet about the
-humans.</p>
+<span>  <span class="fu"><a href="https://rdrr.io/pkg/irr/man/kripp.alpha.html" class="external-link">kripp.alpha</a></span><span class="op">(</span>method <span class="op">=</span> <span class="st">"nominal"</span><span class="op">)</span></span>
+<span><span class="co">##  Krippendorff's alpha</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">##  Subjects = 150 </span></span>
+<span><span class="co">##    Raters = 3 </span></span>
+<span><span class="co">##     alpha = 0.983</span></span></code></pre></div>
 <div class="section level3">
 <h3 id="self-reported-confidence">Self-reported confidence<a class="anchor" aria-label="anchor" href="#self-reported-confidence"></a>
 </h3>
-<p>The confidence field is cheap, so it is worth checking whether it
-carries any signal. We can only do that once we have human labels, so
-here we load the maintainer’s hand-checked labels for the 150 sampled
-answers. They were produced AI-assisted and then checked by hand; step 6
-explains how they were made.</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<p>Does the confidence field carry a signal? We check against the labels
+for the 150 answers, made with AI assistance and checked by a human
+coder (step 6). We call them gold labels: the labels a person assigned,
+which we treat as the truth to compare against.</p>
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">gold</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://readr.tidyverse.org/reference/read_rds.html" class="external-link">read_rds</a></span><span class="op">(</span><span class="st">"classifier_gold.rds"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">scored</span> <span class="op">&lt;-</span> <span class="va">vote</span> <span class="op">|&gt;</span></span>
@@ -496,36 +485,193 @@ explains how they were made.</p>
 <span><span class="co">## <span style="color: #BCBCBC;">1</span> FALSE                    75                0.413</span></span>
 <span><span class="co">## <span style="color: #BCBCBC;">2</span> TRUE                    375                0.032</span></span></code></pre></div>
 <p>Runs on rows where the majority label disagrees with the human label
-are much more often marked “low”. That makes the field useful for
-ranking rows to read. It does not make it a probability: many mismatched
-rows still carry “medium” or “high”.</p>
+are much more often marked “low”. The field helps rank rows to read, but
+many mismatched rows still carry “medium” or “high”.</p>
 </div>
 <div class="section level3">
 <h3 id="token-probabilities-where-the-provider-offers-them">Token probabilities, where the provider offers them<a class="anchor" aria-label="anchor" href="#token-probabilities-where-the-provider-offers-them"></a>
 </h3>
-<p>For models that return token log probabilities, the probability of
-the label token is a continuous confidence score that costs nothing
-extra. In tidyllm, <code><a href="../reference/openai.html">openai()</a></code> and the Chat Completions based
-providers accept <code>.logprobs</code> and <code>.top_logprobs</code>;
-<code><a href="../reference/claude.html">claude()</a></code> has no such argument, so check
-<code><a href="../reference/provider_capabilities.html">provider_capabilities()</a></code> for your provider first. Log
-probabilities describe one run of one model, so they complement
-agreement across runs and do not replace it. They are also less
-informative with structured output, where the label token sits inside a
-JSON string.</p>
+<p>Some providers report how likely each piece of the reply (each token)
+was, so the probability of the label token is a free confidence score.
+<code><a href="../reference/openai.html">openai()</a></code> and the Chat Completions based providers accept
+<code>.logprobs</code> and <code>.top_logprobs</code>;
+<code><a href="../reference/claude.html">claude()</a></code> has no such argument. They describe one run of one
+model and say less with structured output, where the label sits inside a
+JSON string. Decision models avoid that limit; see the next section.</p>
+</div>
+</div>
+<div class="section level2">
+<h2 id="an-alternative-decision-models">An alternative: decision models<a class="anchor" aria-label="anchor" href="#an-alternative-decision-models"></a>
+</h2>
+<p><code><a href="../reference/decide.html">decide()</a></code> sends the text and a closed question to a
+decision model, a model that returns the chosen code and a probability
+(a score between 0 and 1) for every code, with no text. It is much
+faster and cheaper than a chat model. The <a href="https://edubruell.github.io/tidyllm/articles/tidyllm_decide.html">decision
+models article</a> explains the question types and providers; here we
+use one choice question.</p>
+<p>The codebook becomes the question. In R a choice question is a factor
+and its possible answers are levels: each level is an occupation code,
+described by its codebook line. <code><a href="../reference/field_chr.html">field_fct()</a></code> takes the codes
+as <code>.levels</code> and the descriptions as
+<code>.level_descriptions</code>.</p>
+<p>This reads the codebook file, one line per code, and splits each line
+into a code and a description.</p>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">codebook_levels</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>line <span class="op">=</span> <span class="fu"><a href="https://readr.tidyverse.org/reference/read_lines.html" class="external-link">read_lines</a></span><span class="op">(</span><span class="st">"classifier_codebook.txt"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="fu"><a href="https://stringr.tidyverse.org/reference/str_trim.html" class="external-link">str_trim</a></span><span class="op">(</span><span class="va">line</span><span class="op">)</span> <span class="op">!=</span> <span class="st">""</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/separate.html" class="external-link">separate</a></span><span class="op">(</span><span class="va">line</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"code"</span>, <span class="st">"description"</span><span class="op">)</span>, sep <span class="op">=</span> <span class="st">" "</span>, extra <span class="op">=</span> <span class="st">"merge"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">occ_questions</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tidyllm_schema.html">tidyllm_schema</a></span><span class="op">(</span></span>
+<span>  name <span class="op">=</span> <span class="st">"occupation_label"</span>,</span>
+<span>  occ2 <span class="op">=</span> <span class="fu"><a href="../reference/field_chr.html">field_fct</a></span><span class="op">(</span></span>
+<span>    <span class="st">"The SOC two-digit occupation group of this survey answer."</span>,</span>
+<span>    .levels             <span class="op">=</span> <span class="va">codebook_levels</span><span class="op">$</span><span class="va">code</span>,</span>
+<span>    .level_descriptions <span class="op">=</span> <span class="va">codebook_levels</span><span class="op">$</span><span class="va">description</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><code><a href="../reference/decide.html">decide()</a></code> takes the text in <code>.state</code>, the
+questions in <code>.questions</code> and a provider. One line before
+each answer says what the text is; without it, <code><a href="../reference/openai.html">openai()</a></code>
+labelled answers such as “Doctor” as code 99 (“no occupation”).</p>
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">frame_answer</span> <span class="op">&lt;-</span> \<span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Survey question: What is your job? Answer: "</span>, <span class="va">x</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/decide.html">decide</a></span><span class="op">(</span><span class="fu">frame_answer</span><span class="op">(</span><span class="st">"Residential roofer"</span><span class="op">)</span>, <span class="va">occ_questions</span>, <span class="fu"><a href="../reference/gemini.html">gemini</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">question</span>, <span class="va">type</span>, <span class="va">answer</span>, <span class="va">probability</span><span class="op">)</span></span></code></pre></div>
+<pre><code># A tibble: 1 x 4
+  question type   answer probability
+  &lt;chr&gt;    &lt;chr&gt;  &lt;chr&gt;        &lt;dbl&gt;
+1 occ2     choice 47           0.998</code></pre>
+<p>Code 47 is Construction and Extraction, which fits a roofer. A list
+of texts in <code>.state</code> returns one row per text and question.
+We run the same 150 human-labelled answers through <code><a href="../reference/jev.html">jev()</a></code>
+(the provider of the Jev decision model), <code><a href="../reference/openai.html">openai()</a></code> and
+<code><a href="../reference/gemini.html">gemini()</a></code>; the three runs took 6.9, 10.5 and 7.7 seconds. In
+the next chunk, <code>label_all()</code> runs one provider over all 150
+answers and joins the human labels; the <code><a href="https://rdrr.io/r/base/list.html" class="external-link">list()</a></code> call does
+this for the three providers.</p>
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">label_all</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">provider</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/decide.html">decide</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">as.list</a></span><span class="op">(</span><span class="fu">frame_answer</span><span class="op">(</span><span class="va">sample_df</span><span class="op">$</span><span class="va">occupation</span><span class="op">)</span><span class="op">)</span>, <span class="va">occ_questions</span>, <span class="va">provider</span><span class="op">)</span></span>
+<span>  <span class="va">sample_df</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>label <span class="op">=</span> <span class="va">res</span><span class="op">$</span><span class="va">answer</span>, probability <span class="op">=</span> <span class="va">res</span><span class="op">$</span><span class="va">probability</span>, probs <span class="op">=</span> <span class="va">res</span><span class="op">$</span><span class="va">probabilities</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html" class="external-link">inner_join</a></span><span class="op">(</span><span class="va">gold</span>, by <span class="op">=</span> <span class="st">"id"</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="va">decide_runs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>jev <span class="op">=</span> <span class="fu">label_all</span><span class="op">(</span><span class="fu"><a href="../reference/jev.html">jev</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>, openai <span class="op">=</span> <span class="fu">label_all</span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>, gemini <span class="op">=</span> <span class="fu">label_all</span><span class="op">(</span><span class="fu"><a href="../reference/gemini.html">gemini</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://readr.tidyverse.org/reference/read_rds.html" class="external-link">write_rds</a></span><span class="op">(</span><span class="va">decide_runs</span>, <span class="st">"classifier_decide_runs.rds"</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">decide_runs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://readr.tidyverse.org/reference/read_rds.html" class="external-link">read_rds</a></span><span class="op">(</span><span class="st">"classifier_decide_runs.rds"</span><span class="op">)</span></span>
+<span><span class="va">decide_all</span>  <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span><span class="va">decide_runs</span>, .id <span class="op">=</span> <span class="st">"provider"</span><span class="op">)</span></span></code></pre></div>
+<p>First-pass accuracy against the human labels, next to the majority of
+the three Claude runs from step 4:</p>
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">claude_row</span> <span class="op">&lt;-</span> <span class="va">scored</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span>provider <span class="op">=</span> <span class="st">"claude, majority of 3 runs"</span>, answers <span class="op">=</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/context.html" class="external-link">n</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>            correct <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">majority</span> <span class="op">==</span> <span class="va">gold</span><span class="op">)</span>, accuracy <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">majority</span> <span class="op">==</span> <span class="va">gold</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">decide_all</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">provider</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span>answers <span class="op">=</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/context.html" class="external-link">n</a></span><span class="op">(</span><span class="op">)</span>, correct <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">label</span> <span class="op">==</span> <span class="va">gold</span><span class="op">)</span>, accuracy <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">label</span> <span class="op">==</span> <span class="va">gold</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span><span class="va">claude_row</span><span class="op">)</span></span>
+<span><span class="co">## <span style="color: #949494;"># A tibble: 4 × 4</span></span></span>
+<span><span class="co">##   provider                   answers correct accuracy</span></span>
+<span><span class="co">##   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                        <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">1</span> gemini                         150     124    0.827</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">2</span> jev                            150     126    0.84 </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">3</span> openai                         150     125    0.833</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">4</span> claude, majority of 3 runs     150     125    0.833</span></span></code></pre></div>
+<p>All three decision models reach 0.83 to 0.84, level with the Claude
+majority, in seconds and with one call per answer instead of three. The
+table below groups the answers into probability bands. Each cell shows
+the share labelled correctly and, in brackets, the number of answers in
+the band.</p>
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">decide_all</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>band <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/cut.html" class="external-link">cut</a></span><span class="op">(</span><span class="va">probability</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.5</span>, <span class="fl">0.8</span>, <span class="fl">0.95</span>, <span class="fl">1</span><span class="op">)</span>, include.lowest <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">provider</span>, <span class="va">band</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span>cell <span class="op">=</span> <span class="fu"><a href="https://stringr.tidyverse.org/reference/str_glue.html" class="external-link">str_glue</a></span><span class="op">(</span><span class="st">"{sprintf('%.2f', mean(label == gold))} ({n()})"</span><span class="op">)</span>, .groups <span class="op">=</span> <span class="st">"drop"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/pivot_wider.html" class="external-link">pivot_wider</a></span><span class="op">(</span>names_from <span class="op">=</span> <span class="va">provider</span>, values_from <span class="op">=</span> <span class="va">cell</span>, values_fill <span class="op">=</span> <span class="st">"0 rows"</span><span class="op">)</span></span>
+<span><span class="co">## <span style="color: #949494;"># A tibble: 4 × 4</span></span></span>
+<span><span class="co">##   band       gemini    jev       openai   </span></span>
+<span><span class="co">##   <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;glue&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;glue&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;glue&gt;</span>   </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">1</span> [0,0.5]    0.44 (16) 0.46 (13) 0.44 (9) </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">2</span> (0.5,0.8]  0.69 (39) 0.65 (37) 0.52 (27)</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">3</span> (0.8,0.95] 0.89 (37) 0.89 (38) 0.86 (22)</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">4</span> (0.95,1]   0.98 (58) 1.00 (62) 0.96 (92)</span></span></code></pre></div>
+<p>Above 0.95, 96 to 100 per cent of the labels match the human label;
+below 0.5, fewer than half do. At a cut-off of 0.8, rows at or above it
+are right 93 to 96 per cent of the time and rows below it 51 to 62 per
+cent. Send the rows below the cut-off to a person or to step 5.</p>
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">decide_all</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>flagged <span class="op">=</span> <span class="va">probability</span> <span class="op">&lt;</span> <span class="fl">0.8</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">provider</span>, <span class="va">flagged</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span>answers <span class="op">=</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/context.html" class="external-link">n</a></span><span class="op">(</span><span class="op">)</span>, correct <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">label</span> <span class="op">==</span> <span class="va">gold</span><span class="op">)</span>, accuracy <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">label</span> <span class="op">==</span> <span class="va">gold</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span>, .groups <span class="op">=</span> <span class="st">"drop"</span><span class="op">)</span></span>
+<span><span class="co">## <span style="color: #949494;"># A tibble: 6 × 5</span></span></span>
+<span><span class="co">##   provider flagged answers correct accuracy</span></span>
+<span><span class="co">##   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">1</span> gemini   FALSE        95      90     0.95</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">2</span> gemini   TRUE         55      34     0.62</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">3</span> jev      FALSE       101      97     0.96</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">4</span> jev      TRUE         49      29     0.59</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">5</span> openai   FALSE       115     107     0.93</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">6</span> openai   TRUE         35      18     0.51</span></span></code></pre></div>
+<p>The three providers are independent readers of the codebook, so the
+agreement logic of step 4 applies. <code><a href="../reference/openai.html">openai()</a></code> and
+<code><a href="../reference/gemini.html">gemini()</a></code> choose the same code for 88 per cent of the
+answers, <code><a href="../reference/gemini.html">gemini()</a></code> and <code><a href="../reference/jev.html">jev()</a></code> for 87 and
+<code><a href="../reference/openai.html">openai()</a></code> and <code><a href="../reference/jev.html">jev()</a></code> for 82. All three agree on
+119 of the 150 answers, and 92 per cent of those match the human label.
+The 31 others are a short list to read by hand.</p>
+<p>A decision model returns no reason; use the <code><a href="../reference/chat.html">chat()</a></code> pass
+of step 5 for rows that need one. Its labels are only as good as the
+codebook, so steps 6 and 7 apply here too.</p>
+<div class="section level3">
+<h3 id="hierarchical-codes-with-a-beam-search">Hierarchical codes with a beam search<a class="anchor" aria-label="anchor" href="#hierarchical-codes-with-a-beam-search"></a>
+</h3>
+<p>The 22 groups are the top level of a taxonomy, a tree of categories
+with subcategories. Real codings, such as occupations or industries, go
+several levels deeper with hundreds of codes, and one question with that
+many levels is too long for the model to read well. The TypeSafe
+documentation calls the remedy a beam search: ask a choice question at
+the top level, keep the few top-scoring groups, ask a second question
+inside each, and continue down. A path scores the product of the
+probabilities along it, and you keep the few best paths at each level.
+The <code>probabilities</code> column holds one probability per code,
+including the runners-up.</p>
+<p>A small example: for one answer, level one gives codes A 0.6 and B
+0.3. Inside A the best child scores 0.5 and inside B 0.9. The paths
+score 0.6 × 0.5 = 0.30 and 0.3 × 0.9 = 0.27, so keep both.</p>
+<p>The chunk below takes the answer where <code><a href="../reference/jev.html">jev()</a></code> is least
+sure and lists its three highest-probability codes.</p>
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">doubtful</span> <span class="op">&lt;-</span> <span class="va">decide_runs</span><span class="op">$</span><span class="va">jev</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/slice.html" class="external-link">slice_min</a></span><span class="op">(</span><span class="va">probability</span>, n <span class="op">=</span> <span class="fl">1</span>, with_ties <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://tibble.tidyverse.org/reference/enframe.html" class="external-link">enframe</a></span><span class="op">(</span><span class="va">doubtful</span><span class="op">$</span><span class="va">probs</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>, name <span class="op">=</span> <span class="st">"code"</span>, value <span class="op">=</span> <span class="st">"probability"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/slice.html" class="external-link">slice_max</a></span><span class="op">(</span><span class="va">probability</span>, n <span class="op">=</span> <span class="fl">3</span>, with_ties <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>occupation <span class="op">=</span> <span class="va">doubtful</span><span class="op">$</span><span class="va">occupation</span>, probability <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">probability</span>, <span class="fl">3</span><span class="op">)</span>, .before <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="co">## <span style="color: #949494;"># A tibble: 3 × 3</span></span></span>
+<span><span class="co">##   occupation  code  probability</span></span>
+<span><span class="co">##   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">1</span> Saftey tech 15           0.3 </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">2</span> Saftey tech 99           0.29</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">3</span> Saftey tech 33           0.24</span></span></code></pre></div>
+<p>A beam search would carry these three codes into the next level.</p>
+<p>tidyllm has no helper for this yet, and we did not run a full beam
+search on this two-digit example. A deeper codebook needs a few lines of
+<code><a href="../reference/decide.html">decide()</a></code> and <code><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map()</a></code> on top of the code
+above.</p>
 </div>
 </div>
 <div class="section level2">
 <h2 id="step-5-reclassify-the-disagreements">Step 5: Reclassify the disagreements<a class="anchor" aria-label="anchor" href="#step-5-reclassify-the-disagreements"></a>
 </h2>
-<p>The rows that need a second look are the ones where the runs
-disagreed or where any run said “low”. That is a small, concentrated
-set, which makes a second pass affordable. Instead of voting again with
-the same prompt, change the task: show the model the answer, the labels
-the first runs produced and their rationales, and ask for a decision
-with a stronger setting. Here we use a more capable model with reasoning
-turned on.</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<p>Rows where the runs disagreed or any run said “low” get a second
+look. Instead of voting again, we show a more capable model the answer,
+the earlier labels and their rationales, and turn reasoning on.</p>
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">make_review_prompt</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">occupation</span>, <span class="va">rationales</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="fu"><a href="https://glue.tidyverse.org/reference/glue.html" class="external-link">glue</a></span><span class="op">(</span></span>
 <span>    <span class="st">'Earlier independent attempts coded this survey answer; they disagreed or were unsure.</span></span>
@@ -540,68 +686,59 @@ turned on.</p>
 <span><span class="st">     {rationales}'</span></span>
 <span>  <span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">any_low</span> <span class="op">&lt;-</span> <span class="va">runs</span> <span class="op">|&gt;</span></span>
+<p>The next chunk adds the earlier labels and rationales to each flagged
+row, sends the rows to the stronger model and reads the replies as
+before.</p>
+<p>The next chunk keeps the answers where the runs disagreed or any run
+said “low”.</p>
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">to_review</span> <span class="op">&lt;-</span> <span class="va">runs</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">id</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span>any_low <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/any.html" class="external-link">any</a></span><span class="op">(</span><span class="va">confidence</span> <span class="op">==</span> <span class="st">"low"</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span>any_low <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/any.html" class="external-link">any</a></span><span class="op">(</span><span class="va">confidence</span> <span class="op">==</span> <span class="st">"low"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html" class="external-link">left_join</a></span><span class="op">(</span><span class="va">vote</span>, by <span class="op">=</span> <span class="st">"id"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">unstable</span> <span class="op">|</span> <span class="va">any_low</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">rationales</span> <span class="op">&lt;-</span> <span class="va">runs</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">id</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span>rationales <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"- "</span>, <span class="va">label</span>, <span class="st">": "</span>, <span class="va">rationale</span>, collapse <span class="op">=</span> <span class="st">"\n"</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">to_review</span> <span class="op">&lt;-</span> <span class="va">vote</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html" class="external-link">left_join</a></span><span class="op">(</span><span class="va">any_low</span>, by <span class="op">=</span> <span class="st">"id"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">unstable</span> <span class="op">|</span> <span class="va">any_low</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html" class="external-link">left_join</a></span><span class="op">(</span></span>
-<span>    <span class="va">runs</span> <span class="op">|&gt;</span></span>
-<span>      <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">id</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>      <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span>rationales <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"- "</span>, <span class="va">label</span>, <span class="st">": "</span>, <span class="va">rationale</span>, collapse <span class="op">=</span> <span class="st">"\n"</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>    by <span class="op">=</span> <span class="st">"id"</span></span>
-<span>  <span class="op">)</span></span>
-<span></span>
-<span><span class="va">review_llms</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://purrr.tidyverse.org/reference/map2.html" class="external-link">map2</a></span><span class="op">(</span><span class="va">to_review</span><span class="op">$</span><span class="va">occupation</span>, <span class="va">to_review</span><span class="op">$</span><span class="va">rationales</span>, <span class="va">make_review_prompt</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://rlang.r-lib.org/reference/set_names.html" class="external-link">set_names</a></span><span class="op">(</span><span class="va">to_review</span><span class="op">$</span><span class="va">id</span><span class="op">)</span></span>
+<span><span class="va">review_prompts</span> <span class="op">&lt;-</span> <span class="va">to_review</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html" class="external-link">left_join</a></span><span class="op">(</span><span class="va">rationales</span>, by <span class="op">=</span> <span class="st">"id"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>prompt <span class="op">=</span> <span class="fu"><a href="https://purrr.tidyverse.org/reference/map2.html" class="external-link">map2</a></span><span class="op">(</span><span class="va">occupation</span>, <span class="va">rationales</span>, <span class="va">make_review_prompt</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">review_replies</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/parallel_chat.html">parallel_chat</a></span><span class="op">(</span></span>
-<span>  <span class="va">review_llms</span>,</span>
+<span>  <span class="va">review_prompts</span><span class="op">$</span><span class="va">prompt</span>,</span>
 <span>  <span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span></span>
-<span>    .model      <span class="op">=</span> <span class="st">"claude-opus-5-5"</span>,</span>
+<span>    .model       <span class="op">=</span> <span class="st">"claude-opus-5-5"</span>,</span>
 <span>    .json_schema <span class="op">=</span> <span class="va">occ_schema</span>,</span>
-<span>    .thinking   <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>    .max_tokens <span class="op">=</span> <span class="fl">4000</span></span>
+<span>    .thinking    <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>    .max_tokens  <span class="op">=</span> <span class="fl">4000</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  .max_active <span class="op">=</span> <span class="fl">4</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">reviewed</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="va">review_replies</span>, <span class="va">extract_run</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span>.id <span class="op">=</span> <span class="st">"id"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/transmute.html" class="external-link">transmute</a></span><span class="op">(</span></span>
-<span>    id                <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="va">id</span><span class="op">)</span>,</span>
-<span>    review_label      <span class="op">=</span> <span class="va">occ2</span>,</span>
-<span>    review_rationale  <span class="op">=</span> <span class="va">rationale</span>,</span>
-<span>    review_confidence <span class="op">=</span> <span class="va">confidence</span></span>
-<span>  <span class="op">)</span></span></code></pre></div>
-<p>Keep <code>.max_tokens</code> generous when reasoning is on; the
+<span><span class="va">reviewed</span> <span class="op">&lt;-</span> <span class="va">review_prompts</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_cols.html" class="external-link">bind_cols</a></span><span class="op">(</span><span class="fu"><a href="../reference/get_reply_data.html">get_reply_data</a></span><span class="op">(</span><span class="va">review_replies</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">id</span>, review_label <span class="op">=</span> <span class="va">occ2</span>, review_rationale <span class="op">=</span> <span class="va">rationale</span>, review_confidence <span class="op">=</span> <span class="va">confidence</span><span class="op">)</span></span></code></pre></div>
+<p>Keep <code>.max_tokens</code> generous with reasoning on, since
 thinking tokens count against it.</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">reviewed</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://readr.tidyverse.org/reference/read_rds.html" class="external-link">read_rds</a></span><span class="op">(</span><span class="st">"classifier_reviewed.rds"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">any_low</span> <span class="op">&lt;-</span> <span class="va">runs</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">id</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span>any_low <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/any.html" class="external-link">any</a></span><span class="op">(</span><span class="va">confidence</span> <span class="op">==</span> <span class="st">"low"</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">to_review</span> <span class="op">&lt;-</span> <span class="va">vote</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html" class="external-link">left_join</a></span><span class="op">(</span><span class="va">any_low</span>, by <span class="op">=</span> <span class="st">"id"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">unstable</span> <span class="op">|</span> <span class="va">any_low</span><span class="op">)</span></span>
-<span></span>
 <span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
-<span>  flagged_rows       <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">to_review</span><span class="op">)</span>,</span>
-<span>  runs_disagreed     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">to_review</span><span class="op">$</span><span class="va">unstable</span><span class="op">)</span>,</span>
+<span>  flagged_rows        <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">to_review</span><span class="op">)</span>,</span>
+<span>  runs_disagreed      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">to_review</span><span class="op">$</span><span class="va">unstable</span><span class="op">)</span>,</span>
 <span>  only_low_confidence <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="op">!</span><span class="va">to_review</span><span class="op">$</span><span class="va">unstable</span><span class="op">)</span>,</span>
-<span>  reviewed_rows      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">reviewed</span><span class="op">)</span>,</span>
-<span>  same_ids           <span class="op">=</span> <span class="fu"><a href="https://generics.r-lib.org/reference/setops.html" class="external-link">setequal</a></span><span class="op">(</span><span class="va">to_review</span><span class="op">$</span><span class="va">id</span>, <span class="va">reviewed</span><span class="op">$</span><span class="va">id</span><span class="op">)</span></span>
+<span>  reviewed_rows       <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">reviewed</span><span class="op">)</span>,</span>
+<span>  same_ids            <span class="op">=</span> <span class="fu"><a href="https://generics.r-lib.org/reference/setops.html" class="external-link">setequal</a></span><span class="op">(</span><span class="va">to_review</span><span class="op">$</span><span class="va">id</span>, <span class="va">reviewed</span><span class="op">$</span><span class="va">id</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">## <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">##   flagged_rows runs_disagreed only_low_confidence reviewed_rows same_ids</span></span>
 <span><span class="co">##          <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>               <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>   </span></span>
 <span><span class="co">## <span style="color: #BCBCBC;">1</span>           18              3                  15            18 TRUE</span></span></code></pre></div>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<p>This keeps the review label where there is one and the majority label
+otherwise, and tags each row as unanimous, reviewed or human queue.</p>
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">final</span> <span class="op">&lt;-</span> <span class="va">vote</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html" class="external-link">left_join</a></span><span class="op">(</span><span class="va">reviewed</span>, by <span class="op">=</span> <span class="st">"id"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html" class="external-link">left_join</a></span><span class="op">(</span><span class="va">gold</span>, by <span class="op">=</span> <span class="st">"id"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -622,7 +759,7 @@ thinking tokens count against it.</p>
 <span><span class="co">## <span style="color: #BCBCBC;">2</span> reviewed       13</span></span>
 <span><span class="co">## <span style="color: #BCBCBC;">3</span> unanimous     132</span></span></code></pre></div>
 <p>The review changed the label of a few rows:</p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">final</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">review_label</span><span class="op">)</span>, <span class="va">review_label</span> <span class="op">!=</span> <span class="va">majority</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">occupation</span>, <span class="va">majority</span>, <span class="va">review_label</span>, <span class="va">gold</span>, <span class="va">review_confidence</span><span class="op">)</span></span>
@@ -641,11 +778,10 @@ thinking tokens count against it.</p>
 <span><span class="co">##   changed reviewed_rows</span></span>
 <span><span class="co">##     <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
 <span><span class="co">## <span style="color: #BCBCBC;">1</span>       3            18</span></span></code></pre></div>
-<p>The review is a second opinion from the same family of models, so it
-can repeat a shared misreading. Rows that the reviewer itself marks as
-low confidence go to a human queue; that is a short list to read by
-hand.</p>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<p>The review is a second opinion from the same model family and can
+repeat a shared misreading. Rows the reviewer marks as low confidence go
+to a human queue:</p>
+<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">final</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">source</span> <span class="op">==</span> <span class="st">"human_queue"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">occupation</span>, <span class="va">candidates</span>, <span class="va">review_label</span>, <span class="va">gold</span><span class="op">)</span></span>
@@ -661,70 +797,45 @@ hand.</p>
 <div class="section level2">
 <h2 id="step-6-validate-against-human-labels">Step 6: Validate against human labels<a class="anchor" aria-label="anchor" href="#step-6-validate-against-human-labels"></a>
 </h2>
-<p>None of the above tells you whether the labels are right. Only a
-comparison with human coding does. Draw a random sample of answers, have
-one or two people code them from the same codebook without seeing the
-model labels, and resolve their differences. Two rules keep the check
-honest. The sample must be held out: do not take the codebook examples
-from it, and do not tune the codebook on it and then report the same
-sample as your accuracy. And draw it at random across all answers, not
-only from the flagged ones, or the estimate will be too pessimistic.</p>
-<p>For this article the 150 sampled answers were coded in a first pass
-with AI assistance and then checked by hand by the maintainer. Code 98
-in the original file, used for answers that name no occupation, was
-recoded to 99 to match the codebook. Comparing the model with these
-labels turned up four labels where the model was right and the first
-hand label was wrong; they were corrected before the numbers below. That
-is a useful result in itself: a validation sample is a measurement too,
-and it has errors that the comparison can surface.</p>
-<p>Accuracy and Cohen’s kappa come next, computed in base R. Kappa
-corrects for chance agreement, which matters with 22 groups of very
-different sizes, where accuracy is dominated by the frequent
-classes.</p>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">cohen_kappa</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">truth</span>, <span class="va">estimate</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">lv</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">truth</span>, <span class="va">estimate</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="va">tb</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">truth</span>, <span class="va">lv</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">estimate</span>, <span class="va">lv</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="va">po</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="va">tb</span><span class="op">)</span><span class="op">)</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">tb</span><span class="op">)</span></span>
-<span>  <span class="va">pe</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">rowSums</a></span><span class="op">(</span><span class="va">tb</span><span class="op">)</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colSums</a></span><span class="op">(</span><span class="va">tb</span><span class="op">)</span><span class="op">)</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">tb</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span></span>
-<span>  <span class="op">(</span><span class="va">po</span> <span class="op">-</span> <span class="va">pe</span><span class="op">)</span> <span class="op">/</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">pe</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span></span>
-<span><span class="va">first_run</span> <span class="op">&lt;-</span> <span class="va">runs</span> <span class="op">|&gt;</span></span>
+<p>Only human coding shows whether labels are right. Draw a random
+sample across all answers, since flagged rows alone make the estimate
+too pessimistic. One or two people code it from the same codebook
+without seeing the model labels and resolve their differences. Do not
+tune the codebook on this sample and then report it as your
+accuracy.</p>
+<p>These 150 answers were coded with AI assistance and each one was
+checked by a human coder.</p>
+<p>We measure accuracy, the share of answers whose label equals the
+human label, and Cohen’s kappa from step 4. Kappa adds information
+because the 22 groups differ a lot in size: a coder who always picks the
+frequent groups gets a high accuracy but a low kappa. The table compares
+the first run, the majority of the three runs and the majority plus
+review.</p>
+<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">first_run</span> <span class="op">&lt;-</span> <span class="va">runs</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">run</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">id</span>, first_run <span class="op">=</span> <span class="va">label</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html" class="external-link">inner_join</a></span><span class="op">(</span><span class="va">gold</span>, by <span class="op">=</span> <span class="st">"id"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span></span>
-<span>  <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
-<span>    pipeline <span class="op">=</span> <span class="st">"first run only"</span>,</span>
-<span>    accuracy <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">first_run</span><span class="op">$</span><span class="va">first_run</span> <span class="op">==</span> <span class="va">first_run</span><span class="op">$</span><span class="va">gold</span><span class="op">)</span>,</span>
-<span>    kappa    <span class="op">=</span> <span class="fu">cohen_kappa</span><span class="op">(</span><span class="va">first_run</span><span class="op">$</span><span class="va">gold</span>, <span class="va">first_run</span><span class="op">$</span><span class="va">first_run</span><span class="op">)</span></span>
-<span>  <span class="op">)</span>,</span>
-<span>  <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
-<span>    pipeline <span class="op">=</span> <span class="st">"majority of 3 runs"</span>,</span>
-<span>    accuracy <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">final</span><span class="op">$</span><span class="va">majority</span> <span class="op">==</span> <span class="va">final</span><span class="op">$</span><span class="va">gold</span><span class="op">)</span>,</span>
-<span>    kappa    <span class="op">=</span> <span class="fu">cohen_kappa</span><span class="op">(</span><span class="va">final</span><span class="op">$</span><span class="va">gold</span>, <span class="va">final</span><span class="op">$</span><span class="va">majority</span><span class="op">)</span></span>
-<span>  <span class="op">)</span>,</span>
-<span>  <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
-<span>    pipeline <span class="op">=</span> <span class="st">"majority plus review"</span>,</span>
-<span>    accuracy <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">final</span><span class="op">$</span><span class="va">occ2</span> <span class="op">==</span> <span class="va">final</span><span class="op">$</span><span class="va">gold</span><span class="op">)</span>,</span>
-<span>    kappa    <span class="op">=</span> <span class="fu">cohen_kappa</span><span class="op">(</span><span class="va">final</span><span class="op">$</span><span class="va">gold</span>, <span class="va">final</span><span class="op">$</span><span class="va">occ2</span><span class="op">)</span></span>
-<span>  <span class="op">)</span></span>
+<span>  <span class="va">first_run</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span>pipeline <span class="op">=</span> <span class="st">"first run only"</span>, accuracy <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">first_run</span> <span class="op">==</span> <span class="va">gold</span><span class="op">)</span>, kappa <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/irr/man/kappa2.html" class="external-link">kappa2</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">gold</span>, <span class="va">first_run</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">value</span><span class="op">)</span>,</span>
+<span>  <span class="va">final</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span>pipeline <span class="op">=</span> <span class="st">"majority of 3 runs"</span>, accuracy <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">majority</span> <span class="op">==</span> <span class="va">gold</span><span class="op">)</span>, kappa <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/irr/man/kappa2.html" class="external-link">kappa2</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">gold</span>, <span class="va">majority</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">value</span><span class="op">)</span>,</span>
+<span>  <span class="va">final</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span>pipeline <span class="op">=</span> <span class="st">"majority plus review"</span>, accuracy <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">occ2</span> <span class="op">==</span> <span class="va">gold</span><span class="op">)</span>, kappa <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/irr/man/kappa2.html" class="external-link">kappa2</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">gold</span>, <span class="va">occ2</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">value</span><span class="op">)</span></span>
 <span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/across.html" class="external-link">across</a></span><span class="op">(</span><span class="fu"><a href="https://tidyselect.r-lib.org/reference/where.html" class="external-link">where</a></span><span class="op">(</span><span class="va">is.double</span><span class="op">)</span>, \<span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">x</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>accuracy <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">accuracy</span>, <span class="fl">3</span><span class="op">)</span>, kappa <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">kappa</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">## <span style="color: #949494;"># A tibble: 3 × 3</span></span></span>
 <span><span class="co">##   pipeline             accuracy kappa</span></span>
 <span><span class="co">##   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
 <span><span class="co">## <span style="color: #BCBCBC;">1</span> first run only          0.833 0.821</span></span>
 <span><span class="co">## <span style="color: #BCBCBC;">2</span> majority of 3 runs      0.833 0.821</span></span>
 <span><span class="co">## <span style="color: #BCBCBC;">3</span> majority plus review    0.84  0.829</span></span></code></pre></div>
-<p>The three rows are close. Voting over three runs and the review pass
-move the accuracy only slightly, because the model gave the same label
-in nearly all runs to begin with. The review only touches the flagged
-rows, and those are the hardest answers, so the gain there starts from a
-low base:</p>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<p>The three rows are close, because the model gave the same label in
+nearly all runs from the start. The review touches only the hardest
+answers:</p>
+<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">final</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">review_label</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span>rows <span class="op">=</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/context.html" class="external-link">n</a></span><span class="op">(</span><span class="op">)</span>, before_review <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">majority</span> <span class="op">==</span> <span class="va">gold</span><span class="op">)</span>, after_review <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">occ2</span> <span class="op">==</span> <span class="va">gold</span><span class="op">)</span><span class="op">)</span></span>
@@ -732,10 +843,9 @@ low base:</p>
 <span><span class="co">##    rows before_review after_review</span></span>
 <span><span class="co">##   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
 <span><span class="co">## <span style="color: #BCBCBC;">1</span>    18         0.278        0.333</span></span></code></pre></div>
-<p>About one answer in six does not match the human label. Part of the
-errors sit in the flagged rows and part in rows where the model was
-unanimous:</p>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<p>About one final label in six does not match the human label. The
+table shows which route the mismatches took:</p>
+<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">final</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">source</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span>answers <span class="op">=</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/context.html" class="external-link">n</a></span><span class="op">(</span><span class="op">)</span>, mismatches <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">occ2</span> <span class="op">!=</span> <span class="va">gold</span><span class="op">)</span>, accuracy <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">occ2</span> <span class="op">==</span> <span class="va">gold</span><span class="op">)</span><span class="op">)</span></span>
@@ -746,7 +856,7 @@ unanimous:</p>
 <span><span class="co">## <span style="color: #BCBCBC;">2</span> reviewed         13         10    0.231</span></span>
 <span><span class="co">## <span style="color: #BCBCBC;">3</span> unanimous       132         12    0.909</span></span></code></pre></div>
 <p>Where do the mismatches come from?</p>
-<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">final</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">occ2</span> <span class="op">!=</span> <span class="va">gold</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html" class="external-link">arrange</a></span><span class="op">(</span><span class="va">gold</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -779,37 +889,30 @@ unanimous:</p>
 <span><span class="co">## <span style="color: #BCBCBC;">22</span> Private dick                     33    99    33        </span></span>
 <span><span class="co">## <span style="color: #BCBCBC;">23</span> I haul                           53    99    53        </span></span>
 <span><span class="co">## <span style="color: #BCBCBC;">24</span> Barster                          35    99    35</span></span></code></pre></div>
-<p>Two groups dominate. The first is vague answers such as “Keep things
-organized”, “Workforce Optimization” or “Buildin and fixin things”,
-where the model chose 99 because the codebook says to prefer 99 over a
-guess, while the human coder placed the answer in a group from context.
-The second is the opposite: slang or terse answers such as “Private
-dick”, “I haul” and “Barster”, where the model guessed a group and the
-human coded 99. Between them sit real codebook ambiguities: whether
-bakery work is production (51) or food service (35), where “Lead
+<p>Two groups dominate. The model gave vague answers such as “Keep
+things organized”, “Workforce Optimization” or “Buildin and fixin
+things” code 99, because the codebook says to prefer 99 over a guess,
+while the human placed them from context. For slang or terse answers
+such as “Private dick”, “I haul” and “Barster” the model guessed a group
+and the human coded 99. Some answers fit two groups under the codebook:
+whether bakery work is production (51) or food service (35), where “Lead
 mechanic supervisor” belongs, and whether massage is healthcare or
 personal care.</p>
-<p>None of these is random noise that more runs would average away. Most
-of the mismatches are rows where the model gave the same label every
-time, which is why the repetition in step 3 cannot find them. They are a
-mix of questions about what the codebook should say and answers that no
-coder could place with confidence.</p>
-<p>When you compare a model with human coders, compare it with the
-agreement between two humans on the same sample. If two careful coders
-only agree 0.85 with each other, a model at 0.85 is not failing; the
-categories are fuzzy. The model is one more coder whose reliability you
-estimate, and the evidence so far is that its quality depends on the
-task, the codebook and the data, so it has to be checked each time
+<p>More runs would not average these errors away. Most are rows where
+the model gave the same label every time, so step 3 cannot find
+them.</p>
+<p>Compare the model with the agreement between two humans on the same
+sample: if two careful coders give the same label for 85 per cent of the
+answers, a model with an accuracy of 85 per cent matches them. A model’s
+quality depends on the task, codebook and data, so check it each time
 (Gilardi, Alizadeh and Kubli, 2023; Pangakis, Wolken and Fasching,
-2023). Here only one human checked the labels, so that comparison is not
-possible, and the 83% should be read with that limit in mind.</p>
-<p>Check also whether errors are spread evenly. If one group, one kind
-of respondent or one phrasing carries most of them, a downstream
-estimate that uses these labels can be biased even when overall accuracy
-looks high. Where the labels feed a regression or a share estimate, the
-validation sample can also be used to correct for misclassification
-instead of only reporting it.</p>
-<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+2023). Only one human checked the labels here, so the 83 per cent comes
+with that limit.</p>
+<p>Check also whether errors are spread evenly: if one group or phrasing
+carries most of them, a downstream estimate can be biased even when
+overall accuracy looks high. The validation sample can also correct for
+misclassification.</p>
+<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">final</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span>human_group <span class="op">=</span> <span class="va">gold</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span>answers <span class="op">=</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/context.html" class="external-link">n</a></span><span class="op">(</span><span class="op">)</span>, accuracy <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">occ2</span> <span class="op">==</span> <span class="va">gold</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -830,47 +933,36 @@ instead of only reporting it.</p>
 <div class="section level2">
 <h2 id="step-7-do-not-tune-the-codebook-on-your-validation-sample">Step 7: Do not tune the codebook on your validation sample<a class="anchor" aria-label="anchor" href="#step-7-do-not-tune-the-codebook-on-your-validation-sample"></a>
 </h2>
-<p>The mismatch table invites an obvious next step: edit the codebook so
-that these answers come out right. We tried it. Based on the mismatches
-above, version 2 of the codebook adds a rule for bakery and food batch
-work (51 unless it is retail counter work), puts massage under personal
-care (39), says that lead and supervisor titles and general operations
-work count as management (11), and counts electrical and mechanical
-upkeep as installation and repair (49). The 150 answers were labelled
-again three times with the new codebook.</p>
-<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<p>The mismatch table invites an edit to the codebook, so we made one.
+Version 2 adds a rule for bakery and food batch work (51 unless it is
+retail counter work), puts massage under personal care (39), counts lead
+and supervisor titles and general operations work as management (11),
+and counts electrical and mechanical upkeep as installation and repair
+(49). We labelled the 150 answers three more times with it.</p>
+<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">codebook_v2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://readr.tidyverse.org/reference/read_file.html" class="external-link">read_file</a></span><span class="op">(</span><span class="st">"classifier_codebook_v2.txt"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/trimws.html" class="external-link">trimws</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">make_prompt_v2</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">occupation</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="fu"><a href="https://glue.tidyverse.org/reference/glue.html" class="external-link">glue</a></span><span class="op">(</span></span>
-<span>    <span class="st">'You code survey answers into occupation groups.</span></span>
-<span><span class="st">     Use only the codebook below. Choose the single best group.</span></span>
-<span><span class="st">     If the answer names no occupation, use 99.</span></span>
-<span><span class="st"></span></span>
-<span><span class="st">     Codebook:</span></span>
-<span><span class="st">     {codebook_v2}</span></span>
-<span><span class="st"></span></span>
-<span><span class="st">     Survey answer: "{occupation}"'</span></span>
-<span>  <span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
+<span><span class="va">prompts_v2</span> <span class="op">&lt;-</span> <span class="va">tasks</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>prompt <span class="op">=</span> <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="va">occupation</span>, <span class="va">make_prompt</span>, codebook <span class="op">=</span> <span class="va">codebook_v2</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">replies_v2</span> <span class="op">&lt;-</span> <span class="va">tasks</span><span class="op">$</span><span class="va">occupation</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="va">make_prompt_v2</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://rlang.r-lib.org/reference/set_names.html" class="external-link">set_names</a></span><span class="op">(</span><span class="va">tasks</span><span class="op">$</span><span class="va">task_id</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/parallel_chat.html">parallel_chat</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"claude-sonnet-5-5"</span>, .json_schema <span class="op">=</span> <span class="va">occ_schema</span><span class="op">)</span>,</span>
-<span>    .max_active <span class="op">=</span> <span class="fl">4</span></span>
-<span>  <span class="op">)</span></span></code></pre></div>
-<p>On the sample the edit was written from, version 2 looks better:</p>
-<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">majority_label</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/which.min.html" class="external-link">which.max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">replies_v2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/parallel_chat.html">parallel_chat</a></span><span class="op">(</span></span>
+<span>  <span class="va">prompts_v2</span><span class="op">$</span><span class="va">prompt</span>,</span>
+<span>  <span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"claude-sonnet-5-5"</span>, .json_schema <span class="op">=</span> <span class="va">occ_schema</span><span class="op">)</span>,</span>
+<span>  .max_active <span class="op">=</span> <span class="fl">4</span></span>
+<span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">runs_v2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://readr.tidyverse.org/reference/read_rds.html" class="external-link">read_rds</a></span><span class="op">(</span><span class="st">"classifier_runs_v2.rds"</span><span class="op">)</span></span>
+<span><span class="va">runs_v2</span> <span class="op">&lt;-</span> <span class="va">prompts_v2</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_cols.html" class="external-link">bind_cols</a></span><span class="op">(</span><span class="fu"><a href="../reference/get_reply_data.html">get_reply_data</a></span><span class="op">(</span><span class="va">replies_v2</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">id</span>, <span class="va">run</span>, label <span class="op">=</span> <span class="va">occ2</span>, <span class="va">rationale</span>, <span class="va">confidence</span><span class="op">)</span></span></code></pre></div>
+<p>The next chunk compares the majority label of each codebook version
+with the human labels, on the sample we wrote the edit from:</p>
+<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">runs_v2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://readr.tidyverse.org/reference/read_rds.html" class="external-link">read_rds</a></span><span class="op">(</span><span class="st">"classifier_runs_v2.rds"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">sample_comparison</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span></span>
-<span>  <span class="va">runs</span>    <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">id</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span>label <span class="op">=</span> <span class="fu">majority_label</span><span class="op">(</span><span class="va">label</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>codebook <span class="op">=</span> <span class="st">"v1"</span><span class="op">)</span>,</span>
-<span>  <span class="va">runs_v2</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">id</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span>label <span class="op">=</span> <span class="fu">majority_label</span><span class="op">(</span><span class="va">label</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>codebook <span class="op">=</span> <span class="st">"v2"</span><span class="op">)</span></span>
-<span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span><span class="va">sample_comparison</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span>v1 <span class="op">=</span> <span class="va">runs</span>, v2 <span class="op">=</span> <span class="va">runs_v2</span>, .id <span class="op">=</span> <span class="st">"codebook"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/count.html" class="external-link">count</a></span><span class="op">(</span><span class="va">codebook</span>, <span class="va">id</span>, <span class="va">label</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">codebook</span>, <span class="va">id</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/slice.html" class="external-link">slice_max</a></span><span class="op">(</span><span class="va">n</span>, n <span class="op">=</span> <span class="fl">1</span>, with_ties <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html" class="external-link">inner_join</a></span><span class="op">(</span><span class="va">gold</span>, by <span class="op">=</span> <span class="st">"id"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">codebook</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span>answers <span class="op">=</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/context.html" class="external-link">n</a></span><span class="op">(</span><span class="op">)</span>, accuracy <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">label</span> <span class="op">==</span> <span class="va">gold</span><span class="op">)</span><span class="op">)</span></span>
@@ -881,18 +973,33 @@ again three times with the new codebook.</p>
 <span><span class="co">##   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
 <span><span class="co">## <span style="color: #BCBCBC;">1</span> v1           150    0.833</span></span>
 <span><span class="co">## <span style="color: #BCBCBC;">2</span> v2           150    0.86</span></span></code></pre></div>
-<p>That gain is not evidence that the new codebook is better, because we
-wrote the edit while looking at these very errors. To find out, we took
-292 further distinct answers with human labels that were not in the
-sample and labelled each once with each codebook.</p>
-<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">heldout_tasks</span> <span class="op">&lt;-</span> <span class="va">heldout</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/cross_join.html" class="external-link">cross_join</a></span><span class="op">(</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>codebook <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"v1"</span>, <span class="st">"v2"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>task_id <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">id</span>, <span class="va">codebook</span>, sep <span class="op">=</span> <span class="st">"__"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<p>We wrote the edit while looking at these errors, so this gain is
+expected. To test the new codebook, we labelled 292 further distinct
+answers once with each codebook. These held-out answers were set aside
+and never used to build or change the codebook; the chunk that builds
+them takes a <code>heldout</code> table of these answers, and the next
+one loads their saved labels from
+<code>classifier_heldout_runs.rds</code> and the human labels from
+<code>classifier_heldout_gold.rds</code>.</p>
+<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">codebooks</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>codebook <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"v1"</span>, <span class="st">"v2"</span><span class="op">)</span>, text <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">codebook</span>, <span class="va">codebook_v2</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">heldout_prompts</span> <span class="op">&lt;-</span> <span class="va">heldout</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/cross_join.html" class="external-link">cross_join</a></span><span class="op">(</span><span class="va">codebooks</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>prompt <span class="op">=</span> <span class="fu"><a href="https://purrr.tidyverse.org/reference/map2.html" class="external-link">map2</a></span><span class="op">(</span><span class="va">occupation</span>, <span class="va">text</span>, <span class="va">make_prompt</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">heldout_replies</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/parallel_chat.html">parallel_chat</a></span><span class="op">(</span></span>
+<span>  <span class="va">heldout_prompts</span><span class="op">$</span><span class="va">prompt</span>,</span>
+<span>  <span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"claude-sonnet-5-5"</span>, .json_schema <span class="op">=</span> <span class="va">occ_schema</span><span class="op">)</span>,</span>
+<span>  .max_active <span class="op">=</span> <span class="fl">4</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">heldout_runs</span> <span class="op">&lt;-</span> <span class="va">heldout_prompts</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_cols.html" class="external-link">bind_cols</a></span><span class="op">(</span><span class="fu"><a href="../reference/get_reply_data.html">get_reply_data</a></span><span class="op">(</span><span class="va">heldout_replies</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">id</span>, <span class="va">occupation</span>, <span class="va">codebook</span>, label <span class="op">=</span> <span class="va">occ2</span>, <span class="va">rationale</span>, <span class="va">confidence</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">heldout_runs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://readr.tidyverse.org/reference/read_rds.html" class="external-link">read_rds</a></span><span class="op">(</span><span class="st">"classifier_heldout_runs.rds"</span><span class="op">)</span></span>
-<span><span class="va">heldout_gold</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://readr.tidyverse.org/reference/read_rds.html" class="external-link">read_rds</a></span><span class="op">(</span><span class="st">"classifier_heldout_gold.rds"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>gold <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">gold</span> <span class="op">==</span> <span class="st">"98"</span>, <span class="st">"99"</span>, <span class="va">gold</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">heldout_gold</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://readr.tidyverse.org/reference/read_rds.html" class="external-link">read_rds</a></span><span class="op">(</span><span class="st">"classifier_heldout_gold.rds"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">heldout_comparison</span> <span class="op">&lt;-</span> <span class="va">heldout_runs</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html" class="external-link">inner_join</a></span><span class="op">(</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">heldout_gold</span>, <span class="va">id</span>, <span class="va">gold</span><span class="op">)</span>, by <span class="op">=</span> <span class="st">"id"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -905,26 +1012,24 @@ sample and labelled each once with each codebook.</p>
 <span><span class="co">##   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
 <span><span class="co">## <span style="color: #BCBCBC;">1</span> v1           292    0.866</span></span>
 <span><span class="co">## <span style="color: #BCBCBC;">2</span> v2           292    0.860</span></span></code></pre></div>
-<p>On the held-out answers version 2 is no better than version 1; it is
-slightly worse. The edits fitted the quirks of the 150 answers we looked
-at. This is the same problem as overfitting a model to a validation set:
-the sample you tune on stops being a measurement. If you want to improve
-the codebook, split the human-labelled answers first, tune on one part
-and report on the other, or label a fresh sample after every round of
-edits.</p>
+<p>On the held-out answers version 2 is slightly worse than version 1:
+the edits fitted the quirks of the 150 answers. Tune on one part of the
+human-labelled answers and report on another, or label a fresh sample
+after every round of edits.</p>
 </div>
 <div class="section level2">
 <h2 id="cost-and-size">Cost and size<a class="anchor" aria-label="anchor" href="#cost-and-size"></a>
 </h2>
-<p>The token table in step 3 gives the numbers for one prompt. A request
-with this codebook uses roughly 1,400 prompt tokens and about 75
-completion tokens, depending on how long the rationale runs. At that
-size the full dataset would look like this:</p>
-<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">per_call</span> <span class="op">&lt;-</span> <span class="va">run_meta</span><span class="op">$</span><span class="va">tokens</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span>prompt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">input_tokens</span><span class="op">)</span>, completion <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">output_tokens</span><span class="op">)</span><span class="op">)</span></span>
+<p>The token table in step 3 gives the numbers for one prompt: about
+1,400 prompt and 77 completion tokens. The next chunk multiplies the
+average tokens per call by the number of calls and the price per
+token:</p>
+<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">per_call</span> <span class="op">&lt;-</span> <span class="va">run_tokens</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span>prompt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">prompt_tokens</span><span class="op">)</span>, completion <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">completion_tokens</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">price</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>input <span class="op">=</span> <span class="fl">2</span>, output <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span>
+<span><span class="va">price_input</span>  <span class="op">&lt;-</span> <span class="fl">2</span></span>
+<span><span class="va">price_output</span> <span class="op">&lt;-</span> <span class="fl">10</span></span>
 <span></span>
 <span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
 <span>  distinct_answers  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">distinct_occupations</span><span class="op">)</span>,</span>
@@ -932,7 +1037,7 @@ size the full dataset would look like this:</p>
 <span>  requests          <span class="op">=</span> <span class="va">distinct_answers</span> <span class="op">*</span> <span class="va">runs</span>,</span>
 <span>  prompt_tokens     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">requests</span> <span class="op">*</span> <span class="va">per_call</span><span class="op">$</span><span class="va">prompt</span><span class="op">)</span>,</span>
 <span>  completion_tokens <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">requests</span> <span class="op">*</span> <span class="va">per_call</span><span class="op">$</span><span class="va">completion</span><span class="op">)</span>,</span>
-<span>  usd_standard      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="op">(</span><span class="va">prompt_tokens</span> <span class="op">*</span> <span class="va">price</span><span class="op">[[</span><span class="st">"input"</span><span class="op">]</span><span class="op">]</span> <span class="op">+</span> <span class="va">completion_tokens</span> <span class="op">*</span> <span class="va">price</span><span class="op">[[</span><span class="st">"output"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op">/</span> <span class="fl">1e6</span>, <span class="fl">2</span><span class="op">)</span>,</span>
+<span>  usd_standard      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="op">(</span><span class="va">prompt_tokens</span> <span class="op">*</span> <span class="va">price_input</span> <span class="op">+</span> <span class="va">completion_tokens</span> <span class="op">*</span> <span class="va">price_output</span><span class="op">)</span> <span class="op">/</span> <span class="fl">1e6</span>, <span class="fl">2</span><span class="op">)</span>,</span>
 <span>  usd_batch         <span class="op">=</span> <span class="va">usd_standard</span> <span class="op">/</span> <span class="fl">2</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">## <span style="color: #949494;"># A tibble: 1 × 7</span></span></span>
@@ -941,39 +1046,42 @@ size the full dataset would look like this:</p>
 <span><span class="co">## <span style="color: #BCBCBC;">1</span>             <span style="text-decoration: underline;">2</span>209     3     <span style="text-decoration: underline;">6</span>627       9<span style="text-decoration: underline;">221</span>338            <span style="text-decoration: underline;">508</span>335         23.5      11.8</span></span></code></pre></div>
 <p>The prices are those of <code>claude-sonnet-5-5</code> on 2026-10-02:
 2 USD per million input tokens and 10 USD per million output tokens,
-half of that through the batch API (<a href="https://platform.claude.com/docs/en/about-claude/pricing" class="external-link">Anthropic
-pricing</a>). Prices change, so replace <code>price</code> with your
-provider’s current rates. At these rates the 450 calls behind this
-article’s three runs cost about 1.60 USD, the second pass with
-<code>claude-opus-5-5</code> (4 and 20 USD) about 0.20 USD, and the
-codebook experiment in step 7 about 3.90 USD. Check your own numbers
-with <code><a href="../reference/get_metadata.html">get_metadata()</a></code> on one reply before scaling up. Because
-the codebook is identical in every request, providers that cache a
-shared prompt prefix will charge less for most of it; put the codebook
-before the survey answer, as the prompt above does.</p>
+half through the batch API (<a href="https://platform.claude.com/docs/en/about-claude/pricing" class="external-link">Anthropic
+pricing</a>). At these rates the 450 calls behind the three runs cost
+about 1.60 USD, the second pass with <code>claude-opus-5-5</code> (4 and
+20 USD) about 0.20 USD, and the step 7 codebook experiment about 3.90
+USD.</p>
+<p>A decision model sends a shorter request: about 675 prompt tokens per
+answer with <code><a href="../reference/openai.html">openai()</a></code>, against about 1,400 for the chat
+prompt, and the reply is a code and a probability. The full 2,209
+answers take under two minutes per provider at the speed measured
+above.</p>
 </div>
 <div class="section level2">
 <h2 id="what-to-take-away">What to take away<a class="anchor" aria-label="anchor" href="#what-to-take-away"></a>
 </h2>
 <ul>
-<li>A single reply is a sample. Without <code>temperature</code> you
-cannot pin it down, so estimate its stability instead.</li>
-<li>Agreement is not accuracy. On this task three runs gave the same
-label for nearly every answer, and about one in six of those labels
-still differed from the human label.</li>
-<li>A codebook with definitions and decision rules does more for
-agreement than any prompt wording trick, and it is also where most of
-the remaining errors sit.</li>
-<li>
-<code><a href="../reference/field_chr.html">field_fct()</a></code> makes invalid labels impossible; it does
-not make wrong labels impossible.</li>
-<li>Repeat the call, vote, and read the rows where the runs disagree.
-Send those through a stronger second pass and keep a human queue for
-what is still unclear.</li>
-<li>Validate on a random, held-out, human-coded sample, and report kappa
-or alpha with the number of coders behind it. Treat the human labels
-with the same suspicion: validation found four errors in ours.</li>
-<li>Do not tune the codebook on the sample you validate with.</li>
+<li>Label each answer several times and estimate how stable the model
+is.</li>
+<li>Measure agreement between runs, and check accuracy against human
+labels. Here three runs gave the same label for nearly every answer, and
+about one in six of the final labels still differed from the human
+label.</li>
+<li>Write a codebook with definitions and decision rules. It does more
+for agreement than any prompt trick, and most remaining errors sit
+there.</li>
+<li>Use <code><a href="../reference/field_chr.html">field_fct()</a></code> to restrict labels to the codebook, and
+check accuracy in step 6.</li>
+<li>Use a decision model as the quick alternative: one call per answer,
+a probability for every code, and on this sample the accuracy of three
+Claude runs. Use the probability to pick rows to review.</li>
+<li>Repeat the call, vote and read the rows where runs disagree. Send
+those through a stronger second pass and keep a human queue for the
+rest.</li>
+<li>Validate on a random, held-out, human-coded sample, and report
+agreement with the number of coders behind it.</li>
+<li>Tune the codebook on one set of answers and validate on
+another.</li>
 </ul>
 </div>
 <div class="section level2">

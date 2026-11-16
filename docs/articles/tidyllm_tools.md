@@ -12,13 +12,11 @@ orchestrating multi-step and parallel tool calls.
 
 A model without tools has no access to live data:
 
-``` r
-
-library(tidyllm)
-
-llm_message("What time is it in Stuttgart right now?") |>
-  chat(openai())
-```
+\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`tidyllm`](https://edubruell.github.io/tidyllm/)`)`\
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"What time is it in Stuttgart right now?"``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`openai`](https://edubruell.github.io/tidyllm/reference/openai.md)`(``)``)`
 
     ## 
     ## Attaching package: 'tidyllm'
@@ -57,22 +55,20 @@ only define the function and its parameter schema.
 [`tidyllm_tool()`](https://edubruell.github.io/tidyllm/reference/tidyllm_tool.md)
 wraps any R function with a schema that the model can read:
 
-``` r
-
-get_current_time <- function(tz, format = "%Y-%m-%d %H:%M:%S") {
-  format(Sys.time(), tz = tz, format = format, usetz = TRUE)
-}
-
-time_tool <- tidyllm_tool(
-  .f           = get_current_time,
-  .description = "Returns the current time in a specified timezone.",
-  tz     = field_chr("The timezone identifier, e.g. 'Europe/Berlin'."),
-  format = field_chr("strftime format string. Default: '%Y-%m-%d %H:%M:%S'.")
-)
-
-llm_message("What time is it in Stuttgart right now?") |>
-  chat(openai(), .tools = time_tool)
-```
+\
+`get_current_time`` ``<-`` ``function``(``tz``, ``format`` ``=`` ``"%Y-%m-%d %H:%M:%S"``)`` ``{`\
+`  `[`format`](https://rdrr.io/r/base/format.html)`(`[`Sys.time`](https://rdrr.io/r/base/Sys.time.html)`(``)``, tz ``=`` ``tz``, format ``=`` ``format``, usetz ``=`` ``TRUE``)`\
+`}`\
+\
+`time_tool`` ``<-`` `[`tidyllm_tool`](https://edubruell.github.io/tidyllm/reference/tidyllm_tool.md)`(`\
+`  .f           ``=`` ``get_current_time``,`\
+`  .description ``=`` ``"Returns the current time in a specified timezone."``,`\
+`  tz     ``=`` `[`field_chr`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(``"The timezone identifier, e.g. 'Europe/Berlin'."``)``,`\
+`  format ``=`` `[`field_chr`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(``"strftime format string. Default: '%Y-%m-%d %H:%M:%S'."``)`\
+`)`\
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"What time is it in Stuttgart right now?"``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`openai`](https://edubruell.github.io/tidyllm/reference/openai.md)`(``)``, .tools ``=`` ``time_tool``)`
 
     ## Message History:
     ## system:
@@ -103,28 +99,26 @@ helpers correspond to R types:
 
 Here is a function with several parameters of different types:
 
-``` r
-
-query_products <- function(category, max_price, in_stock_only = TRUE) {
-  products |>
-    filter(
-      category == category,
-      price <= max_price,
-      if (in_stock_only) stock > 0 else TRUE
-    )
-}
-
-product_tool <- tidyllm_tool(
-  .f           = query_products,
-  .description = "Query the product catalogue by category and price.",
-  category     = field_fct(
-    "Product category to filter on.",
-    .levels = c("electronics", "clothing", "books", "home")
-  ),
-  max_price    = field_dbl("Maximum price in USD."),
-  in_stock_only = field_lgl("If TRUE, only return products currently in stock.")
-)
-```
+\
+`query_products`` ``<-`` ``function``(``category``, ``max_price``, ``in_stock_only`` ``=`` ``TRUE``)`` ``{`\
+`  ``products`` ``|>`\
+`    `[`filter`](https://dplyr.tidyverse.org/reference/filter.html)`(`\
+`      ``category`` ``==`` ``category``,`\
+`      ``price`` ``<=`` ``max_price``,`\
+`      ``if`` ``(``in_stock_only``)`` ``stock`` ``>`` ``0`` ``else`` ``TRUE`\
+`    ``)`\
+`}`\
+\
+`product_tool`` ``<-`` `[`tidyllm_tool`](https://edubruell.github.io/tidyllm/reference/tidyllm_tool.md)`(`\
+`  .f           ``=`` ``query_products``,`\
+`  .description ``=`` ``"Query the product catalogue by category and price."``,`\
+`  category     ``=`` `[`field_fct`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(`\
+`    ``"Product category to filter on."``,`\
+`    .levels ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"electronics"``, ``"clothing"``, ``"books"``, ``"home"``)`\
+`  ``)``,`\
+`  max_price    ``=`` `[`field_dbl`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(``"Maximum price in USD."``)``,`\
+`  in_stock_only ``=`` `[`field_lgl`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(``"If TRUE, only return products currently in stock."``)`\
+`)`
 
 [`field_fct()`](https://edubruell.github.io/tidyllm/reference/field_chr.md)
 is particularly useful: by passing `.levels`, you tell the model exactly
@@ -137,38 +131,36 @@ your session: data frames, database connections, API wrappers, or file
 system paths. The following example lets a model answer questions about
 employee records stored in a tibble:
 
-``` r
-
-library(tidyverse)
-
-employees <- tribble(
-  ~id, ~name,           ~department,   ~salary,
-  1L,  "Alice Müller",  "Engineering", 82000,
-  2L,  "Bob Schmidt",   "Marketing",   65000,
-  3L,  "Clara Fischer", "Engineering", 91000,
-  4L,  "David Braun",   "HR",          58000
-)
-
-get_employee <- function(department) {
-  employees |>
-    filter(department == department) |>
-    select(name, salary) |>
-    purrr::pmap_chr(\(name, salary) glue::glue("{name}: ${salary}")) |>
-    paste(collapse = "\n")
-}
-
-employee_tool <- tidyllm_tool(
-  .f           = get_employee,
-  .description = "Return name and salary for all employees in a department.",
-  department   = field_fct(
-    "The department to query.",
-    .levels = c("Engineering", "Marketing", "HR")
-  )
-)
-
-llm_message("Who works in Engineering and what do they earn?") |>
-  chat(claude(), .tools = employee_tool)
-```
+\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`tidyverse`](https://tidyverse.tidyverse.org)`)`\
+\
+`employees`` ``<-`` `[`tribble`](https://tibble.tidyverse.org/reference/tribble.html)`(`\
+`  ``~``id``, ``~``name``,           ``~``department``,   ``~``salary``,`\
+`  ``1L``,  ``"Alice Müller"``,  ``"Engineering"``, ``82000``,`\
+`  ``2L``,  ``"Bob Schmidt"``,   ``"Marketing"``,   ``65000``,`\
+`  ``3L``,  ``"Clara Fischer"``, ``"Engineering"``, ``91000``,`\
+`  ``4L``,  ``"David Braun"``,   ``"HR"``,          ``58000`\
+`)`\
+\
+`get_employee`` ``<-`` ``function``(``department``)`` ``{`\
+`  ``employees`` ``|>`\
+`    `[`filter`](https://dplyr.tidyverse.org/reference/filter.html)`(``department`` ``==`` ``department``)`` ``|>`\
+`    `[`select`](https://dplyr.tidyverse.org/reference/select.html)`(``name``, ``salary``)`` ``|>`\
+`    ``purrr``::`[`pmap_chr`](https://purrr.tidyverse.org/reference/pmap.html)`(``\``(``name``, ``salary``)`` ``glue``::`[`glue`](https://glue.tidyverse.org/reference/glue.html)`(``"{name}: ${salary}"``)``)`` ``|>`\
+`    `[`paste`](https://rdrr.io/r/base/paste.html)`(``collapse ``=`` ``"\n"``)`\
+`}`\
+\
+`employee_tool`` ``<-`` `[`tidyllm_tool`](https://edubruell.github.io/tidyllm/reference/tidyllm_tool.md)`(`\
+`  .f           ``=`` ``get_employee``,`\
+`  .description ``=`` ``"Return name and salary for all employees in a department."``,`\
+`  department   ``=`` `[`field_fct`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(`\
+`    ``"The department to query."``,`\
+`    .levels ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"Engineering"``, ``"Marketing"``, ``"HR"``)`\
+`  ``)`\
+`)`\
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Who works in Engineering and what do they earn?"``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`claude`](https://edubruell.github.io/tidyllm/reference/claude.md)`(``)``, .tools ``=`` ``employee_tool``)`
 
     ## Message History:
     ## system:
@@ -193,15 +185,13 @@ R packages can expose ready-made tool definitions. If those definitions
 were written for **ellmer**, convert them to tidyllm with
 [`ellmer_tool()`](https://edubruell.github.io/tidyllm/reference/ellmer_tool.md):
 
-``` r
-
-library(ellmer)
-
-btw_tool <- ellmer_tool(btw::btw_tool_files_list_files)
-
-llm_message("List the files in the R/ folder.") |>
-  chat(claude(), .tools = btw_tool)
-```
+\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`ellmer`](https://ellmer.tidyverse.org)`)`\
+\
+`btw_tool`` ``<-`` `[`ellmer_tool`](https://edubruell.github.io/tidyllm/reference/ellmer_tool.md)`(``btw``::`[`btw_tool_files_list_files`](https://posit-dev.github.io/btw/reference/deprecated.html)`)`\
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"List the files in the R/ folder."``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`claude`](https://edubruell.github.io/tidyllm/reference/claude.md)`(``)``, .tools ``=`` ``btw_tool``)`
 
     ## Message History:
     ## system:
@@ -231,13 +221,11 @@ also supports provider-native builtin tools. For example, Claude’s
 built-in web search is exposed by ellmer and can be passed directly to
 [`chat()`](https://edubruell.github.io/tidyllm/reference/chat.md):
 
-``` r
-
-web_search <- ellmer_tool(ellmer::claude_tool_web_search())
-
-llm_message("What are the latest developments in R package tooling?") |>
-  chat(claude(), .tools = web_search)
-```
+\
+`web_search`` ``<-`` `[`ellmer_tool`](https://edubruell.github.io/tidyllm/reference/ellmer_tool.md)`(``ellmer``::`[`claude_tool_web_search`](https://ellmer.tidyverse.org/reference/claude_tool_web_search.html)`(``)``)`\
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"What are the latest developments in R package tooling?"``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`claude`](https://edubruell.github.io/tidyllm/reference/claude.md)`(``)``, .tools ``=`` ``web_search``)`
 
 The same route works for tools served over the Model Context Protocol
 (MCP). The **mcptools** package reads your MCP server configuration and
@@ -245,14 +233,12 @@ returns the servers’ tools as ellmer tools, which
 [`ellmer_tool()`](https://edubruell.github.io/tidyllm/reference/ellmer_tool.md)
 converts:
 
-``` r
-
-mcp_tools <- mcptools::mcp_tools() |>
-  lapply(ellmer_tool)
-
-llm_message("Which files are in my Documents folder?") |>
-  chat(claude(), .tools = mcp_tools)
-```
+\
+`mcp_tools`` ``<-`` ``mcptools``::`[`mcp_tools`](https://posit-dev.github.io/mcptools/reference/client.html)`(``)`` ``|>`\
+`  `[`lapply`](https://rdrr.io/r/base/lapply.html)`(``ellmer_tool``)`\
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Which files are in my Documents folder?"``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`claude`](https://edubruell.github.io/tidyllm/reference/claude.md)`(``)``, .tools ``=`` ``mcp_tools``)`
 
 mcptools waits only a few seconds for each server to answer. A server
 that must first download itself, such as a first run of `npx -y`, can
@@ -270,11 +256,9 @@ that have no web access of their own. The search runs through
 free plan gives 1,000 credits a month without a credit card, and a basic
 search costs one.
 
-``` r
-
-llm_message("What is the latest R release, and when did it come out?") |>
-  chat(claude(), .tools = websearch_tool())
-```
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"What is the latest R release, and when did it come out?"``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`claude`](https://edubruell.github.io/tidyllm/reference/claude.md)`(``)``, .tools ``=`` `[`websearch_tool`](https://edubruell.github.io/tidyllm/reference/websearch_tool.md)`(``)``)`
 
     ## Message History:
     ## system:
@@ -302,13 +286,11 @@ when you create the tool, so a model cannot run up your search bill.
 Tavily’s own options pass through, for example to search only recent
 news:
 
-``` r
-
-news_search <- websearch_tool(.max_results = 8, topic = "news", time_range = "week")
-
-llm_message("Summarise this week's news on EU AI regulation.") |>
-  chat(ollama(), .tools = news_search)
-```
+\
+`news_search`` ``<-`` `[`websearch_tool`](https://edubruell.github.io/tidyllm/reference/websearch_tool.md)`(``.max_results ``=`` ``8``, topic ``=`` ``"news"``, time_range ``=`` ``"week"``)`\
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Summarise this week's news on EU AI regulation."``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`ollama`](https://edubruell.github.io/tidyllm/reference/ollama.md)`(``)``, .tools ``=`` ``news_search``)`
 
 If a search fails, for example because the monthly credits are used up,
 the model receives the error as its search result and can tell you what
@@ -321,13 +303,11 @@ list `json` under `search: formats:`, and for a server only you use,
 `server: limiter: false` stops it from blocking repeated searches. Then
 point the tool at it:
 
-``` r
-
-Sys.setenv(SEARXNG_SERVER = "http://localhost:8888")
-
-llm_message("What is the latest R release, and when did it come out?") |>
-  chat(ollama(), .tools = websearch_tool("searxng", language = "en"))
-```
+\
+[`Sys.setenv`](https://rdrr.io/r/base/Sys.setenv.html)`(``SEARXNG_SERVER ``=`` ``"http://localhost:8888"``)`\
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"What is the latest R release, and when did it come out?"``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`ollama`](https://edubruell.github.io/tidyllm/reference/ollama.md)`(``)``, .tools ``=`` `[`websearch_tool`](https://edubruell.github.io/tidyllm/reference/websearch_tool.md)`(``"searxng"``, language ``=`` ``"en"``)``)`
 
 SearXNG returns short excerpts only, never the full page text.
 
@@ -337,10 +317,8 @@ runs the same search directly and returns a tibble. It takes the same
 arguments as
 [`websearch_tool()`](https://edubruell.github.io/tidyllm/reference/websearch_tool.md):
 
-``` r
-
-websearch("R 4.5 release", .max_results = 3)
-```
+\
+[`websearch`](https://edubruell.github.io/tidyllm/reference/websearch.md)`(``"R 4.5 release"``, .max_results ``=`` ``3``)`
 
     ## # A tibble: 3 × 6
     ##   query         title                             url   published  snippet text 
@@ -376,43 +354,41 @@ is needed before it can answer.
 The `.max_tool_rounds` argument (default `10`) caps the number of rounds
 to prevent runaway loops:
 
-``` r
-
-get_country_capital <- function(country) {
-  capitals <- c(
-    France  = "Paris",
-    Germany = "Berlin",
-    Japan   = "Tokyo",
-    Brazil  = "Brasilia"
-  )
-  unname(capitals[country]) %||% "Unknown"
-}
-
-get_city_population <- function(city) {
-  populations <- c(
-    Paris    = "2.1 million (city), 12 million (metro)",
-    Berlin   = "3.7 million (city), 6 million (metro)",
-    Tokyo    = "14 million (city), 37 million (metro)",
-    Brasilia = "3.1 million (city)"
-  )
-  unname(populations[city]) %||% "Unknown"
-}
-
-capital_tool <- tidyllm_tool(
-  .f           = get_country_capital,
-  .description = "Return the capital city of a country.",
-  country      = field_chr("Country name, e.g. 'France'.")
-)
-
-population_tool <- tidyllm_tool(
-  .f           = get_city_population,
-  .description = "Return the population of a city.",
-  city         = field_chr("City name, e.g. 'Paris'.")
-)
-
-llm_message("What is the population of the capital of Japan?") |>
-  chat(openai(), .tools = list(capital_tool, population_tool), .max_tool_rounds = 5)
-```
+\
+`get_country_capital`` ``<-`` ``function``(``country``)`` ``{`\
+`  ``capitals`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(`\
+`    France  ``=`` ``"Paris"``,`\
+`    Germany ``=`` ``"Berlin"``,`\
+`    Japan   ``=`` ``"Tokyo"``,`\
+`    Brazil  ``=`` ``"Brasilia"`\
+`  ``)`\
+`  `[`unname`](https://rdrr.io/r/base/unname.html)`(``capitals``[``country``]``)`` `[`%||%`](https://rdrr.io/r/base/Control.html)` ``"Unknown"`\
+`}`\
+\
+`get_city_population`` ``<-`` ``function``(``city``)`` ``{`\
+`  ``populations`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(`\
+`    Paris    ``=`` ``"2.1 million (city), 12 million (metro)"``,`\
+`    Berlin   ``=`` ``"3.7 million (city), 6 million (metro)"``,`\
+`    Tokyo    ``=`` ``"14 million (city), 37 million (metro)"``,`\
+`    Brasilia ``=`` ``"3.1 million (city)"`\
+`  ``)`\
+`  `[`unname`](https://rdrr.io/r/base/unname.html)`(``populations``[``city``]``)`` `[`%||%`](https://rdrr.io/r/base/Control.html)` ``"Unknown"`\
+`}`\
+\
+`capital_tool`` ``<-`` `[`tidyllm_tool`](https://edubruell.github.io/tidyllm/reference/tidyllm_tool.md)`(`\
+`  .f           ``=`` ``get_country_capital``,`\
+`  .description ``=`` ``"Return the capital city of a country."``,`\
+`  country      ``=`` `[`field_chr`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(``"Country name, e.g. 'France'."``)`\
+`)`\
+\
+`population_tool`` ``<-`` `[`tidyllm_tool`](https://edubruell.github.io/tidyllm/reference/tidyllm_tool.md)`(`\
+`  .f           ``=`` ``get_city_population``,`\
+`  .description ``=`` ``"Return the population of a city."``,`\
+`  city         ``=`` `[`field_chr`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(``"City name, e.g. 'Paris'."``)`\
+`)`\
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"What is the population of the capital of Japan?"``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`openai`](https://edubruell.github.io/tidyllm/reference/openai.md)`(``)``, .tools ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``capital_tool``, ``population_tool``)``, .max_tool_rounds ``=`` ``5``)`
 
     ## Message History:
     ## system:
@@ -440,26 +416,24 @@ waiting for any results. tidyllm executes all of them and returns all
 results together, which reduces the number of API round-trips for
 independent lookups:
 
-``` r
-
-get_weather <- function(city) {
-  weather <- c(
-    Paris  = "15°C, partly cloudy",
-    London = "9°C, overcast with light rain",
-    Tokyo  = "22°C, clear and sunny"
-  )
-  unname(weather[city]) %||% "No data available"
-}
-
-weather_tool <- tidyllm_tool(
-  .f           = get_weather,
-  .description = "Return the current weather for a city.",
-  city         = field_chr("City name.")
-)
-
-llm_message("What is the weather like in Paris, London, and Tokyo right now?") |>
-  chat(openai(), .tools = weather_tool)
-```
+\
+`get_weather`` ``<-`` ``function``(``city``)`` ``{`\
+`  ``weather`` ``<-`` `[`c`](https://rdrr.io/r/base/c.html)`(`\
+`    Paris  ``=`` ``"15°C, partly cloudy"``,`\
+`    London ``=`` ``"9°C, overcast with light rain"``,`\
+`    Tokyo  ``=`` ``"22°C, clear and sunny"`\
+`  ``)`\
+`  `[`unname`](https://rdrr.io/r/base/unname.html)`(``weather``[``city``]``)`` `[`%||%`](https://rdrr.io/r/base/Control.html)` ``"No data available"`\
+`}`\
+\
+`weather_tool`` ``<-`` `[`tidyllm_tool`](https://edubruell.github.io/tidyllm/reference/tidyllm_tool.md)`(`\
+`  .f           ``=`` ``get_weather``,`\
+`  .description ``=`` ``"Return the current weather for a city."``,`\
+`  city         ``=`` `[`field_chr`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(``"City name."``)`\
+`)`\
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"What is the weather like in Paris, London, and Tokyo right now?"``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`openai`](https://edubruell.github.io/tidyllm/reference/openai.md)`(``)``, .tools ``=`` ``weather_tool``)`
 
     ## Message History:
     ## system:

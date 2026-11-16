@@ -16,6 +16,9 @@
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Local Models with tidyllm">
+<meta name="description" content="Run models on your own computer, for confidential data.">
+<meta property="og:description" content="Run models on your own computer, for confidential data.">
+<meta property="og:image" content="https://edubruell.github.io/tidyllm/logo.png">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -25,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.7.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.8.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -39,14 +42,18 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/tidyllm_classifiers.html">Classifying Texts with tidyllm</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm_cli.html">Command Line Providers</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm_embed.html">Embedding Models in tidyllm</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm_local_models.html">Local Models with tidyllm</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm_shiny.html">Using tidyllm in Shiny</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm_tools.html">Using Tools with tidyllm</a></li>
+<li><h6 class="dropdown-header" data-toc-skip>Start here</h6></li>
     <li><a class="dropdown-item" href="../articles/tidyllm_video.html">Working with Files and Media</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_classifiers.html">Classifying Texts with tidyllm</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_decide.html">Decision Models with tidyllm</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_embed.html">Embedding Models in tidyllm</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm-pdfquestions.html">Structured Question Answering from PDFs</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Go deeper</h6></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_local_models.html">Local Models with tidyllm</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_cli.html">Command Line Providers</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_tools.html">Using Tools with tidyllm</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_shiny.html">Using tidyllm in Shiny</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -277,8 +284,8 @@ upgrading to Q8_0 on the 7B.</p>
 </h3>
 <p>Model size is measured in <em>parameters</em>, the numerical weights
 learned during training. More parameters generally means more capable,
-but also more memory required and slower inference. As of September
-2026, strong open-weight families come from a range of labs:</p>
+but also more memory required and slower inference. As of November 2026,
+strong open-weight families come from a range of labs:</p>
 <table class="table">
 <colgroup>
 <col width="29%">
@@ -297,8 +304,8 @@ but also more memory required and slower inference. As of September
 <td><strong>Qwen3.8</strong></td>
 <td>Alibaba</td>
 <td>27B dense</td>
-<td>Apache 2.0; newest Qwen open weight (August 2026);
-<code>qwen3.8:27b</code> needs about 18 GB</td>
+<td>Apache 2.0; newest Qwen open weight (August 2026) with a 256K
+context; <code>qwen3.8:27b</code> needs about 18 GB</td>
 </tr>
 <tr class="even">
 <td><strong>Qwen3.6</strong></td>
@@ -312,7 +319,8 @@ tidyllm’s Ollama default line</td>
 <td>Google</td>
 <td>E2B, E4B, 12B, 26B-A4B (MoE), 31B dense</td>
 <td>140+ languages, native audio/video input; the 12B (June 2026) has a
-256K context and fits a 16 GB laptop; Apache 2.0</td>
+256K context and fits a 16 GB laptop, and <code>gemma4:e4b</code> is a
+smaller option; Apache 2.0</td>
 </tr>
 <tr class="even">
 <td><strong>GLM-5.3</strong></td>
@@ -466,7 +474,7 @@ that model until you stop the process. The server command is
 <div class="sourceCode" id="cb21"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a><span class="ex">llama-server</span> <span class="at">-m</span> ~/models/Qwen3.5-8B-Q4_K_M.gguf <span class="at">-c</span> 32768</span></code></pre></div>
 <p>The <code>-c</code> flag sets the context window size in tokens
 (32768 is a good default for most tasks). Once started, the server
-listens on <code>http://localhost:8080</code> by default.</p>
+listens on <code>http://localhost:9931</code> by default.</p>
 <p><strong>Embeddings require a separate process.</strong> The embedding
 endpoint uses a dedicated embedding model and must run on a different
 port:</p>
@@ -478,7 +486,7 @@ running in the background using a terminal multiplexer like <a href="https://git
 <p><strong>Telling tidyllm where to look.</strong> Add the following to
 your <code>.Renviron</code> file (run
 <code><a href="https://usethis.r-lib.org/reference/edit.html" class="external-link">usethis::edit_r_environ()</a></code> to open it, then restart R):</p>
-<pre><code>LLAMACPP_SERVER=http://localhost:8080
+<pre><code>LLAMACPP_SERVER=http://localhost:9931
 LLAMACPP_MODEL_DIR=~/models</code></pre>
 <p><code>LLAMACPP_SERVER</code> is the address tidyllm uses to reach the
 chat server. <code>LLAMACPP_MODEL_DIR</code> is the folder where model

@@ -39,6 +39,11 @@ provider-hosted files.
   : Send many chats at once
 - [`embed()`](https://edubruell.github.io/tidyllm/reference/embed.md) :
   Generate text embeddings
+- [`decide()`](https://edubruell.github.io/tidyllm/reference/decide.md)
+  : Answer questions about a text, an image or a recording with a
+  decision model
+- [`box_to_pixels()`](https://edubruell.github.io/tidyllm/reference/box_to_pixels.md)
+  : Turn the fractions of box answers into pixel positions
 - [`deep_research()`](https://edubruell.github.io/tidyllm/reference/deep_research.md)
   : Run Deep Research via a Provider
 - [`check_job()`](https://edubruell.github.io/tidyllm/reference/check_job.md)
@@ -87,27 +92,44 @@ Functions for JSON schemas, tool definitions, and media attachments.
 
 - [`tidyllm_schema()`](https://edubruell.github.io/tidyllm/reference/tidyllm_schema.md)
   : Create a JSON Schema for Structured Outputs
+
+- [`field_box()`](https://edubruell.github.io/tidyllm/reference/field_box.md)
+  :
+
+  Ask
+  [`decide()`](https://edubruell.github.io/tidyllm/reference/decide.md)
+  to find something in an image (experimental)
+
 - [`field_chr()`](https://edubruell.github.io/tidyllm/reference/field_chr.md)
   [`field_fct()`](https://edubruell.github.io/tidyllm/reference/field_chr.md)
   [`field_dbl()`](https://edubruell.github.io/tidyllm/reference/field_chr.md)
   [`field_lgl()`](https://edubruell.github.io/tidyllm/reference/field_chr.md)
   : Define Field Descriptors for JSON Schema
+
 - [`field_object()`](https://edubruell.github.io/tidyllm/reference/field_object.md)
   : Define a nested object field
+
 - [`tidyllm_tool()`](https://edubruell.github.io/tidyllm/reference/tidyllm_tool.md)
   : Create a Tool Definition for tidyllm
+
 - [`ellmer_tool()`](https://edubruell.github.io/tidyllm/reference/ellmer_tool.md)
   : Convert an ellmer Tool to a tidyllm TOOL
+
 - [`websearch_tool()`](https://edubruell.github.io/tidyllm/reference/websearch_tool.md)
   : Give a Model Web Search
+
 - [`websearch()`](https://edubruell.github.io/tidyllm/reference/websearch.md)
   : Search the Web
+
 - [`img()`](https://edubruell.github.io/tidyllm/reference/img.md) :
   Create an Image Object
+
 - [`audio_file()`](https://edubruell.github.io/tidyllm/reference/audio_file.md)
   : Create an Audio Object
+
 - [`video_file()`](https://edubruell.github.io/tidyllm/reference/video_file.md)
   : Create a Video Object
+
 - [`pdf_file()`](https://edubruell.github.io/tidyllm/reference/pdf_file.md)
   : Create a PDF Object
 
@@ -159,9 +181,6 @@ etc.
 - [`ollama()`](https://edubruell.github.io/tidyllm/reference/ollama.md)
   : Ollama API Provider Function
 
-- [`perplexity()`](https://edubruell.github.io/tidyllm/reference/perplexity.md)
-  : Perplexity Provider Function
-
 - [`deepseek()`](https://edubruell.github.io/tidyllm/reference/deepseek.md)
   : Deepseek Provider Function
 
@@ -170,6 +189,9 @@ etc.
 
 - [`openrouter()`](https://edubruell.github.io/tidyllm/reference/openrouter.md)
   : OpenRouter Provider Function
+
+- [`jev()`](https://edubruell.github.io/tidyllm/reference/jev.md) : Jev
+  and System One compatible servers
 
 - [`llamacpp()`](https://edubruell.github.io/tidyllm/reference/llamacpp.md)
   : llama.cpp Provider Function
@@ -351,19 +373,6 @@ Find out which verbs, arguments and media types each provider supports.
 
 - [`provider_capabilities()`](https://edubruell.github.io/tidyllm/reference/provider_capabilities.md)
   : What each provider supports
-
-## Perplexity-Specific Functions (deprecated)
-
-Functions for Perplexity AI chat and asynchronous deep research.
-
-- [`perplexity_chat()`](https://edubruell.github.io/tidyllm/reference/perplexity_chat.md)
-  : Send LLM Messages to the Perplexity Chat API
-- [`perplexity_deep_research()`](https://edubruell.github.io/tidyllm/reference/perplexity_deep_research.md)
-  : Submit a Deep Research Request to Perplexity
-- [`perplexity_check_research()`](https://edubruell.github.io/tidyllm/reference/perplexity_check_research.md)
-  : Check the Status of a Perplexity Deep Research Job
-- [`perplexity_fetch_research()`](https://edubruell.github.io/tidyllm/reference/perplexity_fetch_research.md)
-  : Fetch Results from a Completed Perplexity Deep Research Job
 
 ## DeepSeek-Specific Functions
 

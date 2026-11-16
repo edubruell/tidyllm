@@ -53,6 +53,10 @@ Supported Verbs:
 - **[`embed()`](https://edubruell.github.io/tidyllm/reference/embed.md)**:
   Generates embeddings for input texts using an Ollama model.
 
+- **[`decide()`](https://edubruell.github.io/tidyllm/reference/decide.md)**:
+  Answers closed questions with a local decision model (default
+  `clef-flash`) through the System One endpoint of the server.
+
 - **[`send_batch()`](https://edubruell.github.io/tidyllm/reference/send_batch.md)**:
   Behaves different than the other
   [`send_batch()`](https://edubruell.github.io/tidyllm/reference/send_batch.md)

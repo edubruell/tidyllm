@@ -10,4 +10,4 @@ openai_websearch()
 
 ## Value
 
-A TOOL object declaring the web_search_preview built-in.
+A TOOL object declaring the `web_search` built-in.

@@ -13,14 +13,12 @@ The simplest way to send an image is with
 the path to a local image file, attach it to a message with `.media`,
 and tidyllm takes care of the rest:
 
-``` r
-
-library(tidyllm)
-
-llm_message("What food is in this image?",
-            .media = img("hotdog.jpg")) |>
-  chat(claude())
-```
+\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`tidyllm`](https://edubruell.github.io/tidyllm/)`)`\
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"What food is in this image?"``,`\
+`            .media ``=`` `[`img`](https://edubruell.github.io/tidyllm/reference/img.md)`(``"hotdog.jpg"``)``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`claude`](https://edubruell.github.io/tidyllm/reference/claude.md)`(``)``)`
 
 Images work with all major providers that support vision: Claude,
 Gemini, OpenAI, Mistral, Groq, Ollama (with a vision-capable model), and
@@ -28,12 +26,10 @@ OpenRouter.
 
 To send multiple images in a single message, pass them as a list:
 
-``` r
-
-llm_message("Describe the difference between these two images.",
-            .media = list(img("photo_a.jpg"), img("photo_b.jpg"))) |>
-  chat(openai())
-```
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Describe the difference between these two images."``,`\
+`            .media ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`img`](https://edubruell.github.io/tidyllm/reference/img.md)`(``"photo_a.jpg"``)``, `[`img`](https://edubruell.github.io/tidyllm/reference/img.md)`(``"photo_b.jpg"``)``)``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`openai`](https://edubruell.github.io/tidyllm/reference/openai.md)`(``)``)`
 
 ### Mixing media types
 
@@ -42,27 +38,23 @@ mixed content most flexibly: you can send images, PDFs, audio, and video
 together in a single message. Here we ask a model to cross-reference a
 figure against the paper it came from:
 
-``` r
-
-llm_message("The figure is from this paper. Does it accurately represent the results in Table 2?",
-            .media = list(
-              img("figure_3.png"),
-              pdf_file("paper.pdf", pages = 1:8)
-            )) |>
-  chat(gemini())
-```
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"The figure is from this paper. Does it accurately represent the results in Table 2?"``,`\
+`            .media ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`\
+`              `[`img`](https://edubruell.github.io/tidyllm/reference/img.md)`(``"figure_3.png"``)``,`\
+`              `[`pdf_file`](https://edubruell.github.io/tidyllm/reference/pdf_file.md)`(``"paper.pdf"``, pages ``=`` ``1``:``8``)`\
+`            ``)``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`gemini`](https://edubruell.github.io/tidyllm/reference/gemini.md)`(``)``)`
 
 Or combine a chart with an audio commentary on it:
 
-``` r
-
-llm_message("The audio is my verbal annotation of this chart. Summarise both together.",
-            .media = list(
-              img("quarterly_results.png"),
-              audio_file("my_notes.mp3")
-            )) |>
-  chat(gemini())
-```
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"The audio is my verbal annotation of this chart. Summarise both together."``,`\
+`            .media ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`\
+`              `[`img`](https://edubruell.github.io/tidyllm/reference/img.md)`(``"quarterly_results.png"``)``,`\
+`              `[`audio_file`](https://edubruell.github.io/tidyllm/reference/audio_file.md)`(``"my_notes.mp3"``)`\
+`            ``)``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`gemini`](https://edubruell.github.io/tidyllm/reference/gemini.md)`(``)``)`
 
 Each item in the list is processed in order and all items end up in the
 same message. The provider sees them as one multi-part input alongside
@@ -78,33 +70,27 @@ figures, and formatting just as a human reader would. On other
 providers, tidyllm automatically extracts the text and passes it to the
 model instead. Either way, you write the same code:
 
-``` r
-
-llm_message("Summarise the key findings from this report.",
-            .media = pdf_file("annual_report.pdf")) |>
-  chat(claude())
-```
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Summarise the key findings from this report."``,`\
+`            .media ``=`` `[`pdf_file`](https://edubruell.github.io/tidyllm/reference/pdf_file.md)`(``"annual_report.pdf"``)``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`claude`](https://edubruell.github.io/tidyllm/reference/claude.md)`(``)``)`
 
 To always use the text extraction path regardless of the provider, pass
 `.text_extract = TRUE`. This is useful when you want consistent
 behaviour across providers or when a document is text-heavy and layout
 does not matter:
 
-``` r
-
-llm_message("Summarise the key findings.",
-            .media = pdf_file("annual_report.pdf", .text_extract = TRUE)) |>
-  chat(openai())
-```
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Summarise the key findings."``,`\
+`            .media ``=`` `[`pdf_file`](https://edubruell.github.io/tidyllm/reference/pdf_file.md)`(``"annual_report.pdf"``, .text_extract ``=`` ``TRUE``)``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`openai`](https://edubruell.github.io/tidyllm/reference/openai.md)`(``)``)`
 
 Limit the pages sent to the model with the `pages` argument:
 
-``` r
-
-llm_message("What does the introduction argue?",
-            .media = pdf_file("paper.pdf", pages = 1:5)) |>
-  chat(claude())
-```
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"What does the introduction argue?"``,`\
+`            .media ``=`` `[`pdf_file`](https://edubruell.github.io/tidyllm/reference/pdf_file.md)`(``"paper.pdf"``, pages ``=`` ``1``:``5``)``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`claude`](https://edubruell.github.io/tidyllm/reference/claude.md)`(``)``)`
 
 ### Scanned documents
 
@@ -118,19 +104,17 @@ photographs rather than typeset text.
 Here we use a scanned copy of a 1995 economics paper and ask Claude to
 extract all references in APA format:
 
-``` r
-
-ref_schema <- tidyllm_schema(
-  apa_references = field_chr("All references in APA format, one entry",
-                             .vector = TRUE)
-)
-
-result <- llm_message("Extract all the references from this paper.",
-                      .media = pdf_file("1995_Neal_Industry_Specific.pdf")) |>
-  chat(claude(), .json_schema = ref_schema)
-
-get_reply_data(result)$apa_references[1:3]
-```
+\
+`ref_schema`` ``<-`` `[`tidyllm_schema`](https://edubruell.github.io/tidyllm/reference/tidyllm_schema.md)`(`\
+`  apa_references ``=`` `[`field_chr`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(``"All references in APA format, one entry"``,`\
+`                             .vector ``=`` ``TRUE``)`\
+`)`\
+\
+`result`` ``<-`` `[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Extract all the references from this paper."``,`\
+`                      .media ``=`` `[`pdf_file`](https://edubruell.github.io/tidyllm/reference/pdf_file.md)`(``"1995_Neal_Industry_Specific.pdf"``)``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`claude`](https://edubruell.github.io/tidyllm/reference/claude.md)`(``)``, .json_schema ``=`` ``ref_schema``)`\
+\
+[`get_reply_data`](https://edubruell.github.io/tidyllm/reference/get_reply_data.md)`(``result``)``$``apa_references``[``1``:``3``]`
 
     ## [1] "Addison, J., & Portugal, P. (1989). Job displacement, relative wage changes, and duration of unemployment. Journal of Labor Economics, 7(3), 281-302."
     ## [2] "Altonji, J., & Shakotko, R. (1987). Do wages rise with seniority? Review of Economic Studies, 54(3), 437-459."                                        
@@ -163,13 +147,11 @@ and other early AI researchers.
 
 JavaScript kann nicht ausgeführt werden.
 
-``` r
-
-# Describe or transcribe an audio recording
-llm_message("Summarise what is discussed in this recording.",
-            .media = audio_file("bosch_interview.mp3")) |>
-  chat(gemini())
-```
+\
+`# Describe or transcribe an audio recording`\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Summarise what is discussed in this recording."``,`\
+`            .media ``=`` `[`audio_file`](https://edubruell.github.io/tidyllm/reference/audio_file.md)`(``"bosch_interview.mp3"``)``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`gemini`](https://edubruell.github.io/tidyllm/reference/gemini.md)`(``)``)`
 
     ## Message History:
     ## system:
@@ -190,22 +172,18 @@ llm_message("Summarise what is discussed in this recording.",
     ## business dealings.
     ## --------------------------------------------------------------
 
-``` r
-
-# Route to a Gemini model via OpenRouter
-llm_message("Summarise this recording.",
-            .media = audio_file("bosch_interview.mp3")) |>
-  chat(openrouter(.model = "google/gemini-3.8-flash"))
-```
+\
+`# Route to a Gemini model via OpenRouter`\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Summarise this recording."``,`\
+`            .media ``=`` `[`audio_file`](https://edubruell.github.io/tidyllm/reference/audio_file.md)`(``"bosch_interview.mp3"``)``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`openrouter`](https://edubruell.github.io/tidyllm/reference/openrouter.md)`(``.model ``=`` ``"google/gemini-3.8-flash"``)``)`
 
 Video works the same way:
 
-``` r
-
-llm_message("Give a two-sentence summary of what happens in this video.",
-            .media = video_file("documentary.mp4")) |>
-  chat(gemini())
-```
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Give a two-sentence summary of what happens in this video."``,`\
+`            .media ``=`` `[`video_file`](https://edubruell.github.io/tidyllm/reference/video_file.md)`(``"documentary.mp4"``)``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`gemini`](https://edubruell.github.io/tidyllm/reference/gemini.md)`(``)``)`
 
 ### Structured output from video
 
@@ -214,23 +192,21 @@ a clip, just as you would with text. This is useful for cataloguing
 video archives or extracting metadata at scale. Here we define a schema
 for a short documentary clip and ask Gemini to populate it:
 
-``` r
-
-video_schema <- tidyllm_schema(
-  title       = field_chr("The title or subject of the clip, as best you can tell"),
-  era         = field_chr("The approximate decade or period depicted"),
-  format      = field_fct("What type of content is this?",
-                           .levels = c("Documentary", "Interview", "Lecture", "News", "Other")),
-  key_people  = field_chr("Names of people who appear or are mentioned, semicolon-separated"),
-  main_topics = field_chr("The two or three main topics covered, semicolon-separated")
-)
-
-result <- llm_message("Analyse this video clip and fill in the schema.",
-                      .media = video_file("the_thinking_machine.mp4")) |>
-  chat(gemini(), .json_schema = video_schema)
-
-get_reply_data(result)
-```
+\
+`video_schema`` ``<-`` `[`tidyllm_schema`](https://edubruell.github.io/tidyllm/reference/tidyllm_schema.md)`(`\
+`  title       ``=`` `[`field_chr`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(``"The title or subject of the clip, as best you can tell"``)``,`\
+`  era         ``=`` `[`field_chr`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(``"The approximate decade or period depicted"``)``,`\
+`  format      ``=`` `[`field_fct`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(``"What type of content is this?"``,`\
+`                           .levels ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"Documentary"``, ``"Interview"``, ``"Lecture"``, ``"News"``, ``"Other"``)``)``,`\
+`  key_people  ``=`` `[`field_chr`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(``"Names of people who appear or are mentioned, semicolon-separated"``)``,`\
+`  main_topics ``=`` `[`field_chr`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(``"The two or three main topics covered, semicolon-separated"``)`\
+`)`\
+\
+`result`` ``<-`` `[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Analyse this video clip and fill in the schema."``,`\
+`                      .media ``=`` `[`video_file`](https://edubruell.github.io/tidyllm/reference/video_file.md)`(``"the_thinking_machine.mp4"``)``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`gemini`](https://edubruell.github.io/tidyllm/reference/gemini.md)`(``)``, .json_schema ``=`` ``video_schema``)`\
+\
+[`get_reply_data`](https://edubruell.github.io/tidyllm/reference/get_reply_data.md)`(``result``)`
 
     ## $title
     ## [1] "The Thinking Machine"
@@ -250,9 +226,10 @@ get_reply_data(result)
 [`get_reply_data()`](https://edubruell.github.io/tidyllm/reference/get_reply_data.md)
 returns a named list matching your schema. Wrap it in
 [`as_tibble()`](https://tibble.tidyverse.org/reference/as_tibble.html)
-to get a single-row data frame, or use
-[`purrr::map_dfr()`](https://purrr.tidyverse.org/reference/map_dfr.html)
-to process a whole folder of clips into a tidy table in one go.
+to get a single-row data frame. To process a whole folder of clips,
+collect the replies in a list and pass it to
+[`get_reply_data()`](https://edubruell.github.io/tidyllm/reference/get_reply_data.md),
+which returns one row per clip.
 
 For files up to around 20 MB for audio and 100 MB for video, sending
 inline is fine. For larger files, use the Files API described in the
@@ -266,27 +243,23 @@ slow, you can upload it once to the provider’s servers and keep a
 reference to it. That reference can then be included in any number of
 messages without re-sending the file.
 
-``` r
-
-# Upload a file; returns a handle you can reuse
-report <- upload_file(gemini(), .path = "quarterly_report.pdf")
-report
-```
+\
+`# Upload a file; returns a handle you can reuse`\
+`report`` ``<-`` `[`upload_file`](https://edubruell.github.io/tidyllm/reference/upload_file.md)`(`[`gemini`](https://edubruell.github.io/tidyllm/reference/gemini.md)`(``)``, .path ``=`` ``"quarterly_report.pdf"``)`\
+`report`
 
     ## <tidyllm_file [gemini] id=files/abc123 mime=application/pdf file=quarterly_report.pdf>
 
 Attach the handle to messages with the `.files` argument:
 
-``` r
-
-llm_message("What were the key financial results this quarter?",
-            .files = report) |>
-  chat(gemini())
-
-llm_message("List the top three risks mentioned in the document.",
-            .files = report) |>
-  chat(gemini())
-```
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"What were the key financial results this quarter?"``,`\
+`            .files ``=`` ``report``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`gemini`](https://edubruell.github.io/tidyllm/reference/gemini.md)`(``)``)`\
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"List the top three risks mentioned in the document."``,`\
+`            .files ``=`` ``report``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`gemini`](https://edubruell.github.io/tidyllm/reference/gemini.md)`(``)``)`
 
 Providers also expose file management functions.
 [`list_files()`](https://edubruell.github.io/tidyllm/reference/list_files.md)
@@ -296,12 +269,10 @@ retrieves details for a single file, and
 [`delete_file()`](https://edubruell.github.io/tidyllm/reference/delete_file.md)
 removes it:
 
-``` r
-
-list_files(gemini())
-file_info(gemini(), report)
-delete_file(gemini(), report)
-```
+\
+[`list_files`](https://edubruell.github.io/tidyllm/reference/list_files.md)`(`[`gemini`](https://edubruell.github.io/tidyllm/reference/gemini.md)`(``)``)`\
+[`file_info`](https://edubruell.github.io/tidyllm/reference/file_info.md)`(`[`gemini`](https://edubruell.github.io/tidyllm/reference/gemini.md)`(``)``, ``report``)`\
+[`delete_file`](https://edubruell.github.io/tidyllm/reference/delete_file.md)`(`[`gemini`](https://edubruell.github.io/tidyllm/reference/gemini.md)`(``)``, ``report``)`
 
     ## # A tibble: 1 × 7
     ##   file_id  filename size_bytes mime_type created_at          expires_at         
@@ -311,22 +282,20 @@ delete_file(gemini(), report)
 
 The same pattern works with Claude and OpenAI:
 
-``` r
-
-# Claude: well suited for dense academic or legal text
-doc <- upload_file(claude(), .path = "paper.pdf")
-llm_message("What is the main contribution of this paper?",
-            .files = doc) |>
-  chat(claude())
-delete_file(claude(), doc)
-
-# OpenAI: accepts a wide range of formats beyond PDFs
-slides <- upload_file(openai(), .path = "presentation.pptx")
-llm_message("Summarise these slides in five bullet points.",
-            .files = slides) |>
-  chat(openai())
-delete_file(openai(), slides)
-```
+\
+`# Claude: well suited for dense academic or legal text`\
+`doc`` ``<-`` `[`upload_file`](https://edubruell.github.io/tidyllm/reference/upload_file.md)`(`[`claude`](https://edubruell.github.io/tidyllm/reference/claude.md)`(``)``, .path ``=`` ``"paper.pdf"``)`\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"What is the main contribution of this paper?"``,`\
+`            .files ``=`` ``doc``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`claude`](https://edubruell.github.io/tidyllm/reference/claude.md)`(``)``)`\
+[`delete_file`](https://edubruell.github.io/tidyllm/reference/delete_file.md)`(`[`claude`](https://edubruell.github.io/tidyllm/reference/claude.md)`(``)``, ``doc``)`\
+\
+`# OpenAI: accepts a wide range of formats beyond PDFs`\
+`slides`` ``<-`` `[`upload_file`](https://edubruell.github.io/tidyllm/reference/upload_file.md)`(`[`openai`](https://edubruell.github.io/tidyllm/reference/openai.md)`(``)``, .path ``=`` ``"presentation.pptx"``)`\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Summarise these slides in five bullet points."``,`\
+`            .files ``=`` ``slides``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`openai`](https://edubruell.github.io/tidyllm/reference/openai.md)`(``)``)`\
+[`delete_file`](https://edubruell.github.io/tidyllm/reference/delete_file.md)`(`[`openai`](https://edubruell.github.io/tidyllm/reference/openai.md)`(``)``, ``slides``)`
 
 ### What each provider supports
 

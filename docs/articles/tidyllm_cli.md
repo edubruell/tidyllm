@@ -73,16 +73,14 @@ tool is missing, do this:
 
 The three providers work like any other in tidyllm:
 
-``` r
-
-library(tidyllm)
-
-question <- llm_message("In two sentences: what is a tibble in R?")
-
-question |> chat(claude_cli(.model = "claude-haiku-4-5-20251001"))
-question |> chat(codex_cli(.use_api_key = TRUE, .reasoning_effort = "low"))
-question |> chat(vibe_cli())
-```
+\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`tidyllm`](https://edubruell.github.io/tidyllm/)`)`\
+\
+`question`` ``<-`` `[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"In two sentences: what is a tibble in R?"``)`\
+\
+`question`` ``|>`` `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`claude_cli`](https://edubruell.github.io/tidyllm/reference/claude_cli.md)`(``.model ``=`` ``"claude-haiku-4-5-20251001"``)``)`\
+`question`` ``|>`` `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`codex_cli`](https://edubruell.github.io/tidyllm/reference/codex_cli.md)`(``.use_api_key ``=`` ``TRUE``, .reasoning_effort ``=`` ``"low"``)``)`\
+`question`` ``|>`` `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`vibe_cli`](https://edubruell.github.io/tidyllm/reference/vibe_cli.md)`(``)``)`
 
 The answers are much alike. The metadata is not:
 
@@ -126,15 +124,13 @@ The examples read three sample scripts from a folder called
 the package’s GitHub repository. The prompt names `02_weights.R`, one of
 the three sample scripts.
 
-``` r
-
-old_wd <- setwd("cli_scripts")
-ask <- llm_message("Read 02_weights.R and list the packages it uses.")
-
-ask |> chat(claude_cli(.model = "claude-haiku-4-5-20251001"))
-ask |> chat(claude_cli(.model = "claude-haiku-4-5-20251001", .cli_tools = c("Read")))
-setwd(old_wd)
-```
+\
+`old_wd`` ``<-`` `[`setwd`](https://rdrr.io/r/base/getwd.html)`(``"cli_scripts"``)`\
+`ask`` ``<-`` `[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Read 02_weights.R and list the packages it uses."``)`\
+\
+`ask`` ``|>`` `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`claude_cli`](https://edubruell.github.io/tidyllm/reference/claude_cli.md)`(``.model ``=`` ``"claude-haiku-4-5-20251001"``)``)`\
+`ask`` ``|>`` `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`claude_cli`](https://edubruell.github.io/tidyllm/reference/claude_cli.md)`(``.model ``=`` ``"claude-haiku-4-5-20251001"``, .cli_tools ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"Read"``)``)``)`\
+[`setwd`](https://rdrr.io/r/base/getwd.html)`(``old_wd``)`
 
     ## Tools off:
     ## 
@@ -190,68 +186,60 @@ The folder in this example holds three short scripts:
 
 The schema says what to report for each file:
 
-``` r
-
-audit_schema <- tidyllm_schema(
-  file                   = field_chr("The file name"),
-  undocumented_functions = field_chr("Functions defined without roxygen documentation", .vector = TRUE),
-  hardcoded_paths        = field_chr("Absolute file paths written into the code", .vector = TRUE),
-  uses_setwd             = field_lgl("Does the script call setwd()?"),
-  hidden_dependencies    = field_chr("Packages loaded with require() or library() inside a function", .vector = TRUE),
-  summary                = field_chr("One sentence on the most important problem")
-)
-```
+\
+`audit_schema`` ``<-`` `[`tidyllm_schema`](https://edubruell.github.io/tidyllm/reference/tidyllm_schema.md)`(`\
+`  file                   ``=`` `[`field_chr`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(``"The file name"``)``,`\
+`  undocumented_functions ``=`` `[`field_chr`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(``"Functions defined without roxygen documentation"``, .vector ``=`` ``TRUE``)``,`\
+`  hardcoded_paths        ``=`` `[`field_chr`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(``"Absolute file paths written into the code"``, .vector ``=`` ``TRUE``)``,`\
+`  uses_setwd             ``=`` `[`field_lgl`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(``"Does the script call setwd()?"``)``,`\
+`  hidden_dependencies    ``=`` `[`field_chr`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(``"Packages loaded with require() or library() inside a function"``, .vector ``=`` ``TRUE``)``,`\
+`  summary                ``=`` `[`field_chr`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(``"One sentence on the most important problem"``)`\
+`)`
 
 One function asks the agent to audit a file, and
 [`purrr::map()`](https://purrr.tidyverse.org/reference/map.html) runs it
 over the folder:
 
-``` r
-
-audit_file <- function(.file, .provider) {
-  llm_message(paste0(
-    "Read the R script ", .file, " in the current folder and audit it. ",
-    "Report only what is in the file."
-  )) |>
-    chat(.provider, .json_schema = audit_schema) |>
-    get_reply_data()
-}
-
-old_wd <- setwd("cli_scripts")
-files <- list.files(pattern = "\\.R$")
-audit <- purrr::map(files, audit_file,
-                    claude_cli(.model = "claude-haiku-4-5-20251001", .cli_tools = c("Read")))
-setwd(old_wd)
-```
+\
+`audit_file`` ``<-`` ``function``(``.file``, ``.provider``)`` ``{`\
+`  `[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(`[`paste0`](https://rdrr.io/r/base/paste.html)`(`\
+`    ``"Read the R script "``, ``.file``, ``" in the current folder and audit it. "``,`\
+`    ``"Report only what is in the file."`\
+`  ``)``)`` ``|>`\
+`    `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(``.provider``, .json_schema ``=`` ``audit_schema``)`` ``|>`\
+`    `[`get_reply_data`](https://edubruell.github.io/tidyllm/reference/get_reply_data.md)`(``)`\
+`}`\
+\
+`old_wd`` ``<-`` `[`setwd`](https://rdrr.io/r/base/getwd.html)`(``"cli_scripts"``)`\
+`files`` ``<-`` `[`list.files`](https://rdrr.io/r/base/list.files.html)`(``pattern ``=`` ``"\\.R$"``)`\
+`audit`` ``<-`` ``purrr``::`[`map`](https://purrr.tidyverse.org/reference/map.html)`(``files``, ``audit_file``,`\
+`                    `[`claude_cli`](https://edubruell.github.io/tidyllm/reference/claude_cli.md)`(``.model ``=`` ``"claude-haiku-4-5-20251001"``, .cli_tools ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"Read"``)``)``)`\
+[`setwd`](https://rdrr.io/r/base/getwd.html)`(``old_wd``)`
 
 Each reply comes back as a list that follows the schema. A few lines
 make it a tibble with one row per file:
 
-``` r
+\
+`audit_tbl`` ``<-`` ``tibble``::`[`tibble`](https://tibble.tidyverse.org/reference/tibble.html)`(`\
+`  file                   ``=`` ``purrr``::`[`map_chr`](https://purrr.tidyverse.org/reference/map.html)`(``audit``, ``"file"``)``,`\
+`  uses_setwd             ``=`` ``purrr``::`[`map_lgl`](https://purrr.tidyverse.org/reference/map.html)`(``audit``, ``"uses_setwd"``)``,`\
+`  hardcoded_paths        ``=`` ``purrr``::`[`map_int`](https://purrr.tidyverse.org/reference/map.html)`(``audit``, ``~`` `[`length`](https://rdrr.io/r/base/length.html)`(``.x``$``hardcoded_paths``)``)``,`\
+`  undocumented_functions ``=`` ``purrr``::`[`map_chr`](https://purrr.tidyverse.org/reference/map.html)`(``audit``, ``~`` `[`paste`](https://rdrr.io/r/base/paste.html)`(`[`unlist`](https://rdrr.io/r/base/unlist.html)`(``.x``$``undocumented_functions``)``, collapse ``=`` ``", "``)``)``,`\
+`  hidden_dependencies    ``=`` ``purrr``::`[`map_chr`](https://purrr.tidyverse.org/reference/map.html)`(``audit``, ``~`` `[`paste`](https://rdrr.io/r/base/paste.html)`(`[`unlist`](https://rdrr.io/r/base/unlist.html)`(``.x``$``hidden_dependencies``)``, collapse ``=`` ``", "``)``)`\
+`)`\
+`audit_tbl`\
+`## ``# A tibble: 3 × 5`\
+`##   file     uses_setwd hardcoded_paths undocumented_functions hidden_dependencies`\
+`##   ``<chr>``    ``<lgl>``                ``<int>`` ``<chr>``                  ``<chr>``              `\
+`## ``1`` 01_clea… TRUE                     2 clean_income           ``""``                 `\
+`## ``2`` 02_weig… FALSE                    0 make_weights, check_w… ``"``survey``"``           `\
+`## ``3`` 03_repo… FALSE                    2 wide_table             ``""`
 
-audit_tbl <- tibble::tibble(
-  file                   = purrr::map_chr(audit, "file"),
-  uses_setwd             = purrr::map_lgl(audit, "uses_setwd"),
-  hardcoded_paths        = purrr::map_int(audit, ~ length(.x$hardcoded_paths)),
-  undocumented_functions = purrr::map_chr(audit, ~ paste(unlist(.x$undocumented_functions), collapse = ", ")),
-  hidden_dependencies    = purrr::map_chr(audit, ~ paste(unlist(.x$hidden_dependencies), collapse = ", "))
-)
-audit_tbl
-## # A tibble: 3 × 5
-##   file     uses_setwd hardcoded_paths undocumented_functions hidden_dependencies
-##   <chr>    <lgl>                <int> <chr>                  <chr>              
-## 1 01_clea… TRUE                     2 clean_income           ""                 
-## 2 02_weig… FALSE                    0 make_weights, check_w… "survey"           
-## 3 03_repo… FALSE                    2 wide_table             ""
-```
-
-``` r
-
-purrr::map_chr(audit, "summary")
-## [1] "The script uses hardcoded Windows file paths specific to one user's machine and calls setwd() with an absolute path."                           
-## [2] "The survey package is loaded inside make_weights via require() at runtime, making it a hidden dependency not visible at the function signature."
-## [3] "The script reads from hardcoded relative and absolute paths and defines an unused wide_table function without documentation."
-```
+\
+`purrr``::`[`map_chr`](https://purrr.tidyverse.org/reference/map.html)`(``audit``, ``"summary"``)`\
+`## [1] "The script uses hardcoded Windows file paths specific to one user's machine and calls setwd() with an absolute path."                           `\
+`## [2] "The survey package is loaded inside make_weights via require() at runtime, making it a hidden dependency not visible at the function signature."`\
+`## [3] "The script reads from hardcoded relative and absolute paths and defines an unused wide_table function without documentation."`
 
 Check the result before you act on it. In this run Claude counted
 `output/survey_clean.csv` among the absolute paths of the third script.
@@ -276,22 +264,20 @@ lets the tool find the conversation again) in the metadata (the details
 each reply carries). Later calls continue that session and send only the
 new message.
 
-``` r
-
-old_wd <- setwd("cli_scripts")
-agent <- claude_cli(.model = "claude-haiku-4-5-20251001",
-                    .cli_tools = c("Read", "Glob"), .stateful = TRUE)
-
-first <- llm_message(
-  "Read the three R scripts in this folder. Which one would break first on a colleague's computer? Two sentences."
-) |>
-  chat(agent)
-
-second <- first |>
-  llm_message("Show how its first line should look instead. Code only.") |>
-  chat(agent)
-setwd(old_wd)
-```
+\
+`old_wd`` ``<-`` `[`setwd`](https://rdrr.io/r/base/getwd.html)`(``"cli_scripts"``)`\
+`agent`` ``<-`` `[`claude_cli`](https://edubruell.github.io/tidyllm/reference/claude_cli.md)`(``.model ``=`` ``"claude-haiku-4-5-20251001"``,`\
+`                    .cli_tools ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"Read"``, ``"Glob"``)``, .stateful ``=`` ``TRUE``)`\
+\
+`first`` ``<-`` `[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(`\
+`  ``"Read the three R scripts in this folder. Which one would break first on a colleague's computer? Two sentences."`\
+`)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(``agent``)`\
+\
+`second`` ``<-`` ``first`` ``|>`\
+`  `[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Show how its first line should look instead. Code only."``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(``agent``)`\
+[`setwd`](https://rdrr.io/r/base/getwd.html)`(``old_wd``)`
 
     ## **01_clean_survey.R** would break first because it hardcodes `C:/Users/anna/Documents/survey_project`, a path specific to one machine and user. On any other computer, even Anna's, that directory does not exist and the script fails on line 1.
     ## 

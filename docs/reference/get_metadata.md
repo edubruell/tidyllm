@@ -15,7 +15,8 @@ last_metadata(.llm)
 
 - .llm:
 
-  An `LLMMessage` object containing the message history.
+  An `LLMMessage` object containing the message history, or a list of
+  them.
 
 - .index:
 
@@ -55,6 +56,14 @@ Metadata columns may include:
 
 For convenience, `last_metadata()` is provided to retrieve the metadata
 for the last message.
+
+Given a list of replies, as returned by
+[`parallel_chat()`](https://edubruell.github.io/tidyllm/reference/parallel_chat.md)
+or
+[`fetch_batch()`](https://edubruell.github.io/tidyllm/reference/fetch_batch.md),
+the tibble starts with `reply_id`, `reply` and `error` as described in
+[`get_reply_data()`](https://edubruell.github.io/tidyllm/reference/get_reply_data.md),
+one row per reply and turn.
 
 ## See also
 

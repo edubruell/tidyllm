@@ -1,15 +1,11 @@
 # Chat with Claude through your own installed Claude CLI
 
-[`claude_cli()`](https://edubruell.github.io/tidyllm/reference/claude_cli.md),
-like
-[`codex_cli()`](https://edubruell.github.io/tidyllm/reference/codex_cli.md)
-and
-[`vibe_cli()`](https://edubruell.github.io/tidyllm/reference/vibe_cli.md),
-sends nothing over the network itself. It runs the `claude` command line
-tool that is already installed and signed in on your machine, and reads
-its JSON output back. There is no API key to set, and usage counts
-against whatever plan the CLI is logged in to rather than against an
-Anthropic API key.
+[`claude_cli()`](https://edubruell.github.io/tidyllm/reference/claude_cli.md)
+hands the chat to the `claude` terminal program that is already
+installed and signed in on your machine. That program handles the
+connection to Claude, not tidyllm, and tidyllm reads its JSON output
+back. There is no API key to set, and usage counts against whatever plan
+the CLI is logged in to rather than against an Anthropic API key.
 
 ## Usage
 

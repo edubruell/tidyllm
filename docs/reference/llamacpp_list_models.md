@@ -9,7 +9,7 @@ this is one row; two rows appear when speculative decoding is active
 
 ``` r
 llamacpp_list_models(
-  .server = Sys.getenv("LLAMACPP_SERVER", "http://localhost:8080"),
+  .server = Sys.getenv("LLAMACPP_SERVER", "http://localhost:9931"),
   .api_key = Sys.getenv("LLAMACPP_API_KEY", ""),
   .timeout = 30,
   .max_tries = 3
@@ -21,7 +21,7 @@ llamacpp_list_models(
 - .server:
 
   Base URL of the llama.cpp server. Defaults to `LLAMACPP_SERVER` env
-  var, falling back to `"http://localhost:8080"`.
+  var, falling back to `"http://localhost:9931"`.
 
 - .api_key:
 

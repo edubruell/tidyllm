@@ -1,4 +1,4 @@
 # License
 
-    YEAR: 2026
-    COPYRIGHT HOLDER: Eduard Brüll
+YEAR: 2026\
+COPYRIGHT HOLDER: Eduard Brüll\

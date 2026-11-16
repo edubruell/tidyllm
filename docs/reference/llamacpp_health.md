@@ -8,7 +8,7 @@ status string (`"ok"`, `"loading model"`, `"no model loaded"`, or
 
 ``` r
 llamacpp_health(
-  .server = Sys.getenv("LLAMACPP_SERVER", "http://localhost:8080"),
+  .server = Sys.getenv("LLAMACPP_SERVER", "http://localhost:9931"),
   .timeout = 10
 )
 ```
@@ -18,7 +18,7 @@ llamacpp_health(
 - .server:
 
   Base URL of the llama.cpp server. Defaults to `LLAMACPP_SERVER` env
-  var, falling back to `"http://localhost:8080"`.
+  var, falling back to `"http://localhost:9931"`.
 
 - .timeout:
 

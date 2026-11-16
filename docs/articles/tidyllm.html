@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.7.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.8.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -39,14 +39,18 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/tidyllm_classifiers.html">Classifying Texts with tidyllm</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm_cli.html">Command Line Providers</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm_embed.html">Embedding Models in tidyllm</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm_local_models.html">Local Models with tidyllm</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm_shiny.html">Using tidyllm in Shiny</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm_tools.html">Using Tools with tidyllm</a></li>
+<li><h6 class="dropdown-header" data-toc-skip>Start here</h6></li>
     <li><a class="dropdown-item" href="../articles/tidyllm_video.html">Working with Files and Media</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_classifiers.html">Classifying Texts with tidyllm</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_decide.html">Decision Models with tidyllm</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_embed.html">Embedding Models in tidyllm</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm-pdfquestions.html">Structured Question Answering from PDFs</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Go deeper</h6></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_local_models.html">Local Models with tidyllm</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_cli.html">Command Line Providers</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_tools.html">Using Tools with tidyllm</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_shiny.html">Using tidyllm in Shiny</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -147,48 +151,33 @@ Console</a></td>
 <td><a href="https://console.groq.com/playground" class="external-link">Groq Console</a></td>
 </tr>
 <tr class="even">
-<td>
-<strong>Perplexity</strong> (deprecated)</td>
-<td><code>PERPLEXITY_API_KEY</code></td>
-<td><a href="https://docs.perplexity.ai/docs/getting-started/overview" class="external-link">Perplexity
-API docs</a></td>
-</tr>
-<tr class="odd">
 <td><strong>DeepSeek</strong></td>
 <td><code>DEEPSEEK_API_KEY</code></td>
 <td><a href="https://platform.deepseek.com/api_keys" class="external-link">DeepSeek
 Platform</a></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><strong>Voyage AI</strong></td>
 <td><code>VOYAGE_API_KEY</code></td>
 <td><a href="https://docs.voyageai.com/docs/api-key-and-installation" class="external-link">Voyage AI
 API key guide</a></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><strong>OpenRouter</strong></td>
 <td><code>OPENROUTER_API_KEY</code></td>
 <td><a href="https://openrouter.ai/keys" class="external-link">OpenRouter Dashboard</a></td>
+</tr>
+<tr class="odd">
+<td>
+<strong>TypeSafe AI</strong> (<code><a href="../reference/jev.html">jev()</a></code>, for
+<code><a href="../reference/decide.html">decide()</a></code>)</td>
+<td><code>TYPESAFE_API_KEY</code></td>
+<td><a href="https://typesafe.ai" class="external-link">TypeSafe AI</a></td>
 </tr>
 <tr class="even">
 <td><strong>Azure OpenAI</strong></td>
 <td><code>AZURE_OPENAI_API_KEY</code></td>
 <td><a href="https://portal.azure.com/" class="external-link">Azure Portal</a></td>
-</tr>
-<tr class="odd">
-<td>
-<strong>Tavily</strong> (web search for <code><a href="../reference/websearch.html">websearch()</a></code> and
-<code><a href="../reference/websearch_tool.html">websearch_tool()</a></code>)</td>
-<td><code>TAVILY_API_KEY</code></td>
-<td><a href="https://app.tavily.com" class="external-link">Tavily</a></td>
-</tr>
-<tr class="even">
-<td>
-<strong>SearXNG</strong> (self-hosted web search for
-<code><a href="../reference/websearch.html">websearch()</a></code> and <code><a href="../reference/websearch_tool.html">websearch_tool()</a></code>)</td>
-<td>
-<code>SEARXNG_SERVER</code> (the server address, not a key)</td>
-<td><a href="https://docs.searxng.org" class="external-link">SearXNG</a></td>
 </tr>
 </tbody>
 </table>
@@ -199,6 +188,10 @@ login of the <code>claude</code> tool and needs no key.
 <code>OPENAI_API_KEY</code> with <code>.use_api_key = TRUE</code>.
 <code><a href="../reference/vibe_cli.html">vibe_cli()</a></code> uses <code>MISTRAL_API_KEY</code>, or the key
 Vibe saved during its own setup.</p>
+<p>Hosted providers receive every text, image and file you send them.
+For restricted or personal data, use a local model through
+<code><a href="../reference/ollama.html">ollama()</a></code> or <code><a href="../reference/llamacpp.html">llamacpp()</a></code> (next section); the
+command line providers still pass your text on to their vendor.</p>
 </div>
 <div class="section level4">
 <h4 id="running-local-models">Running Local Models<a class="anchor" aria-label="anchor" href="#running-local-models"></a>
@@ -253,10 +246,10 @@ pattern:</p>
 <code><a href="../reference/embed.html">embed()</a></code>, <code><a href="../reference/send_batch.html">send_batch()</a></code>,
 <code><a href="../reference/check_batch.html">check_batch()</a></code>, <code><a href="../reference/fetch_batch.html">fetch_batch()</a></code>,
 <code><a href="../reference/list_batches.html">list_batches()</a></code>, <code><a href="../reference/list_models.html">list_models()</a></code>,
-<code><a href="../reference/deep_research.html">deep_research()</a></code>, <code><a href="../reference/check_job.html">check_job()</a></code>,
-<code><a href="../reference/fetch_job.html">fetch_job()</a></code>, <code><a href="../reference/upload_file.html">upload_file()</a></code>,
-<code><a href="../reference/list_files.html">list_files()</a></code>, <code><a href="../reference/file_info.html">file_info()</a></code>,
-<code><a href="../reference/delete_file.html">delete_file()</a></code>
+<code><a href="../reference/deep_research.html">deep_research()</a></code>, <code><a href="../reference/decide.html">decide()</a></code>,
+<code><a href="../reference/check_job.html">check_job()</a></code>, <code><a href="../reference/fetch_job.html">fetch_job()</a></code>,
+<code><a href="../reference/upload_file.html">upload_file()</a></code>, <code><a href="../reference/list_files.html">list_files()</a></code>,
+<code><a href="../reference/file_info.html">file_info()</a></code>, <code><a href="../reference/delete_file.html">delete_file()</a></code>
 </li>
 <li>
 <strong>Providers</strong> specify the API: <code><a href="../reference/openai.html">openai()</a></code>,
@@ -264,7 +257,7 @@ pattern:</p>
 <code><a href="../reference/codex_cli.html">codex_cli()</a></code>, <code><a href="../reference/vibe_cli.html">vibe_cli()</a></code>,
 <code><a href="../reference/gemini.html">gemini()</a></code>, <code><a href="../reference/ollama.html">ollama()</a></code>, <code><a href="../reference/mistral.html">mistral()</a></code>,
 <code><a href="../reference/groq.html">groq()</a></code>, <code><a href="../reference/deepseek.html">deepseek()</a></code>, <code><a href="../reference/voyage.html">voyage()</a></code>,
-<code><a href="../reference/openrouter.html">openrouter()</a></code>, <code><a href="../reference/llamacpp.html">llamacpp()</a></code>,
+<code><a href="../reference/openrouter.html">openrouter()</a></code>, <code><a href="../reference/jev.html">jev()</a></code>, <code><a href="../reference/llamacpp.html">llamacpp()</a></code>,
 <code><a href="../reference/azure_openai.html">azure_openai()</a></code>, <code><a href="../reference/ellmer.html">ellmer()</a></code>
 </li>
 </ul>
@@ -463,8 +456,8 @@ API-specific metadata for all assistant replies:</p>
 <span><span class="co">## <span style="color: #949494;"># ℹ 2 more variables: total_tokens &lt;int&gt;,</span></span></span>
 <span><span class="co">## <span style="color: #949494;">#   api_specific &lt;list&gt;</span></span></span></code></pre>
 <p>The <code>api_specific</code> list column holds provider-only
-metadata such as citations (Perplexity), thinking traces (Claude,
-Gemini, DeepSeek), or grounding information (Gemini).</p>
+metadata such as thinking traces (Claude, Gemini, DeepSeek), or
+grounding information (Gemini).</p>
 <div class="section level4">
 <h4 id="listing-available-models">Listing Available Models<a class="anchor" aria-label="anchor" href="#listing-available-models"></a>
 </h4>
@@ -624,12 +617,28 @@ Wrap them with <code><a href="../reference/tidyllm_tool.html">tidyllm_tool()</a>
 runs it in your R session, and the result is fed back automatically.
 Multi-turn tool loops (where the model makes several tool calls) are
 handled transparently.</p>
-<p>For provider-independent web search with
-<code><a href="../reference/websearch_tool.html">websearch_tool()</a></code> and tools served over MCP, see the <a href="https://edubruell.github.io/tidyllm/articles/tidyllm_tools.html">tools
+<div class="section level4">
+<h4 id="web-search">Web Search<a class="anchor" aria-label="anchor" href="#web-search"></a>
+</h4>
+<p>Models do not know about events after their training date. Some
+providers run a search for you: <code><a href="../reference/claude_websearch.html">claude_websearch()</a></code> and
+<code><a href="../reference/openai_websearch.html">openai_websearch()</a></code> are built-in tools that the provider’s
+own server executes. tidyllm also ships a search tool that works with
+any provider that supports tools, <code><a href="../reference/websearch_tool.html">websearch_tool()</a></code>, and a
+plain <code><a href="../reference/websearch.html">websearch()</a></code> function that returns results to R.</p>
+<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"What is the latest R release, and when did it come out?"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span>, .tools <span class="op">=</span> <span class="fu"><a href="../reference/websearch_tool.html">websearch_tool</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>The provider-independent search needs its own setup.
+<code><a href="../reference/websearch_tool.html">websearch_tool()</a></code> and <code><a href="../reference/websearch.html">websearch()</a></code> use <a href="https://app.tavily.com" class="external-link">Tavily</a> by default, which reads your
+key from <code>TAVILY_API_KEY</code>. A self-hosted <a href="https://docs.searxng.org" class="external-link">SearXNG</a> server is the alternative
+(<code>.backend = "searxng"</code>); its address goes in
+<code>SEARXNG_SERVER</code> and is not a key.</p>
+<p>For more on web search and on tools served over MCP, see the <a href="https://edubruell.github.io/tidyllm/articles/tidyllm_tools.html">tools
 article</a>.</p>
 <p>If you use <strong>ellmer</strong>, convert existing ellmer tool
 definitions with <code><a href="../reference/ellmer_tool.html">ellmer_tool()</a></code>:</p>
-<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ellmer.tidyverse.org" class="external-link">ellmer</a></span><span class="op">)</span></span>
 <span><span class="va">btw_tool</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ellmer_tool.html">ellmer_tool</a></span><span class="op">(</span><span class="fu">btw</span><span class="fu">::</span><span class="va"><a href="https://posit-dev.github.io/btw/reference/deprecated.html" class="external-link">btw_tool_files_list_files</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"List files in the R/ folder."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -637,12 +646,13 @@ definitions with <code><a href="../reference/ellmer_tool.html">ellmer_tool()</a>
 <p>For a detailed guide, see the Tool Use article on the tidyllm
 website.</p>
 </div>
+</div>
 <div class="section level3">
 <h3 id="embeddings">Embeddings<a class="anchor" aria-label="anchor" href="#embeddings"></a>
 </h3>
 <p>Generate vector representations of text with <code><a href="../reference/embed.html">embed()</a></code>.
 The output is a tibble with one row per input:</p>
-<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"What is the meaning of life?"</span>,</span>
 <span>  <span class="st">"How much wood would a woodchuck chuck?"</span>,</span>
 <span>  <span class="st">"How does the brain work?"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -655,12 +665,12 @@ The output is a tibble with one row per input:</p>
 <span><span class="co">## <span style="color: #BCBCBC;">3</span> How does the brain work?               <span style="color: #949494;">&lt;dbl [384]&gt;</span></span></span></code></pre>
 <p>Voyage AI supports <strong>multimodal embeddings</strong>, meaning
 text and images share the same vector space:</p>
-<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"tidyllm logo"</span>, <span class="fu"><a href="../reference/img.html">img</a></span><span class="op">(</span><span class="st">"docs/logo.png"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/embed.html">embed</a></span><span class="op">(</span><span class="fu"><a href="../reference/voyage.html">voyage</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><code><a href="../reference/voyage_rerank.html">voyage_rerank()</a></code> re-orders documents by relevance to a
 query:</p>
-<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/voyage_rerank.html">voyage_rerank</a></span><span class="op">(</span></span>
 <span>  <span class="st">"best R package for LLMs"</span>,</span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"tidyllm"</span>, <span class="st">"ellmer"</span>, <span class="st">"httr2"</span>, <span class="st">"rvest"</span><span class="op">)</span></span>
@@ -674,13 +684,13 @@ numbers of requests overnight at roughly half the cost of standard
 calls. Use <code><a href="../reference/send_batch.html">send_batch()</a></code> to submit,
 <code><a href="../reference/check_batch.html">check_batch()</a></code> to poll status, and
 <code><a href="../reference/fetch_batch.html">fetch_batch()</a></code> to retrieve results:</p>
-<div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Submit a batch and save the job handle to disk</span></span>
 <span><span class="fu">glue</span><span class="fu">::</span><span class="fu"><a href="https://glue.tidyverse.org/reference/glue.html" class="external-link">glue</a></span><span class="op">(</span><span class="st">"Write a poem about {x}"</span>, x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cats"</span>, <span class="st">"dogs"</span>, <span class="st">"hamsters"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">purrr</span><span class="fu">::</span><span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="va">llm_message</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/send_batch.html">send_batch</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="st">"claude_batch.rds"</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb48"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Check status</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"claude_batch.rds"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/check_batch.html">check_batch</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
@@ -689,12 +699,17 @@ calls. Use <code><a href="../reference/send_batch.html">send_batch()</a></code> 
 <span><span class="co">##   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dttm&gt;</span>              <span style="color: #949494; font-style: italic;">&lt;dttm&gt;</span>                      <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
 <span><span class="co">## <span style="color: #BCBCBC;">1</span> msgbatch_02A1B2C… ended  2025-11-01 <span style="color: #949494;">10:30:00</span> 2025-11-02 <span style="color: #949494;">10:30:00</span>             3</span></span>
 <span><span class="co">## <span style="color: #949494;"># ℹ 3 more variables: req_errored &lt;int&gt;, req_expired &lt;int&gt;, req_canceled &lt;int&gt;</span></span></span></code></pre>
-<div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb50"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Fetch completed results</span></span>
 <span><span class="va">conversations</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"claude_batch.rds"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/fetch_batch.html">fetch_batch</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">poems</span> <span class="op">&lt;-</span> <span class="fu">purrr</span><span class="fu">::</span><span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map_chr</a></span><span class="op">(</span><span class="va">conversations</span>, <span class="va">get_reply</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">poems</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_reply.html">get_reply</a></span><span class="op">(</span><span class="va">conversations</span><span class="op">)</span></span></code></pre></div>
+<p><code><a href="../reference/get_reply.html">get_reply()</a></code>, <code><a href="../reference/get_reply_data.html">get_reply_data()</a></code> and
+<code><a href="../reference/get_metadata.html">get_metadata()</a></code> read the whole list at once. With a schema,
+<code>get_reply_data(conversations)</code> returns a tibble with one row
+per reply; a request that failed keeps its row, with the message in the
+<code>error</code> column.</p>
 <p><code><a href="../reference/check_job.html">check_job()</a></code> and <code><a href="../reference/fetch_job.html">fetch_job()</a></code> are
 type-dispatching aliases; they work on both batch objects and background
 research jobs (see <code><a href="../reference/deep_research.html">deep_research()</a></code> below).</p>
@@ -706,13 +721,13 @@ research jobs (see <code><a href="../reference/deep_research.html">deep_research
 extended web search and synthesis. It is available for
 <code><a href="../reference/openai.html">openai()</a></code>, which runs the research with web search in the
 background and returns the finished report:</p>
-<div class="sourceCode" id="cb50"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb51"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Blocking: waits for completion, returns an LLMMessage</span></span>
 <span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Compare Rust and Go for systems programming in 2026."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/deep_research.html">deep_research</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/get_reply.html">get_reply</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb51"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb52"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Background mode: returns a job handle immediately</span></span>
 <span><span class="va">job</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Summarise recent EU AI Act developments."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/deep_research.html">deep_research</a></span><span class="op">(</span><span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span><span class="op">)</span>, .background <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
@@ -725,7 +740,7 @@ background and returns the finished report:</p>
 </h3>
 <p>Stream reply tokens to the console as they are generated with
 <code>.stream = TRUE</code>:</p>
-<div class="sourceCode" id="cb52"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb53"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Write a short poem about R."</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span>, .stream <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p>Streaming is useful for monitoring long responses interactively. For
@@ -782,39 +797,31 @@ embeddings; batch</td>
 <code>.json_schema</code>; batch</td>
 </tr>
 <tr class="even">
-<td>
-<code><a href="../reference/perplexity.html">perplexity()</a></code> (deprecated since 0.7.0, removed in 0.8.0;
-use <code>openrouter(.model = "perplexity/sonar")</code>)</td>
-<td>Real-time web search with citations in metadata;
-<code><a href="../reference/deep_research.html">deep_research()</a></code> for long-horizon research; search domain
-filter</td>
-</tr>
-<tr class="odd">
 <td><code><a href="../reference/deepseek.html">deepseek()</a></code></td>
 <td>Top math and reasoning benchmarks at very low cost;
 <code>.thinking = TRUE</code> turns on thinking mode and returns the
 reasoning trace in metadata</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code><a href="../reference/voyage.html">voyage()</a></code></td>
 <td>State-of-the-art retrieval embeddings; <code><a href="../reference/voyage_rerank.html">voyage_rerank()</a></code>;
 multimodal embeddings (text + images);
 <code>.output_dimension</code>
 </td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code><a href="../reference/openrouter.html">openrouter()</a></code></td>
 <td>500+ models via one API key; audio and video support on Gemini, Qwen
 3.6, and other multimodal routes; automatic fallback routing</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code><a href="../reference/claude_cli.html">claude_cli()</a></code></td>
 <td>Runs your own installed and signed-in <code>claude</code> command
 line tool; no API key, usage counts against the CLI’s plan; CLI tools
 are off unless you allow them with <code>.cli_tools</code>
 </td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code><a href="../reference/codex_cli.html">codex_cli()</a></code></td>
 <td>Runs your own installed <code>codex</code> command line tool, signed
 in or with <code>OPENAI_API_KEY</code>; token counts,
@@ -822,7 +829,7 @@ in or with <code>OPENAI_API_KEY</code>; token counts,
 browser tools are off unless <code>.cli_tools = TRUE</code>
 </td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code><a href="../reference/vibe_cli.html">vibe_cli()</a></code></td>
 <td>Runs your own installed Mistral <code>vibe</code> command line tool
 with <code>MISTRAL_API_KEY</code>; any Mistral model via
@@ -830,14 +837,19 @@ with <code>MISTRAL_API_KEY</code>; any Mistral model via
 <code>.cli_tools = TRUE</code>
 </td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code><a href="../reference/ellmer.html">ellmer()</a></code></td>
 <td>Use any ellmer chat object as a tidyllm provider</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code><a href="../reference/ollama.html">ollama()</a></code></td>
 <td>Local models with full data privacy; no API costs;
 <code><a href="../reference/ollama_download_model.html">ollama_download_model()</a></code> for model management</td>
+</tr>
+<tr class="even">
+<td><code><a href="../reference/jev.html">jev()</a></code></td>
+<td>Decision models from TypeSafe AI for <code><a href="../reference/decide.html">decide()</a></code> only:
+yes/no, choice and score questions with probabilities; reads images</td>
 </tr>
 <tr class="odd">
 <td><code><a href="../reference/llamacpp.html">llamacpp()</a></code></td>
@@ -862,7 +874,7 @@ that?” without reading each help page. With a provider call it lists
 every verb the provider implements, each verb’s arguments, the default
 of each argument as R code, and the function (<code>fn</code>) whose
 help page documents it:</p>
-<div class="sourceCode" id="cb53"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/provider_capabilities.html">provider_capabilities</a></span><span class="op">(</span><span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span>, .verb <span class="op">=</span> <span class="st">"chat"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Which providers accept .thinking, and for which verbs?</span></span>
@@ -888,7 +900,7 @@ lists no audio support fails before any request is made.</p>
 <h3 id="setting-a-default-provider">Setting a Default Provider<a class="anchor" aria-label="anchor" href="#setting-a-default-provider"></a>
 </h3>
 <p>Avoid specifying a provider on every call by setting options:</p>
-<div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb55"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>tidyllm_chat_default   <span class="op">=</span> <span class="fu"><a href="../reference/openai.html">openai</a></span><span class="op">(</span>.model <span class="op">=</span> <span class="st">"gpt-6-luna"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>tidyllm_embed_default  <span class="op">=</span> <span class="fu"><a href="../reference/ollama.html">ollama</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>tidyllm_sbatch_default <span class="op">=</span> <span class="fu"><a href="../reference/claude.html">claude</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
@@ -900,6 +912,38 @@ lists no audio support fails before any request is made.</p>
 <span><span class="fu"><a href="../reference/llm_message.html">llm_message</a></span><span class="op">(</span><span class="st">"Hello!"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/chat.html">chat</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"text one"</span>, <span class="st">"text two"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/embed.html">embed</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="where-to-go-next">Where to Go Next<a class="anchor" aria-label="anchor" href="#where-to-go-next"></a>
+</h3>
+<p>Pick the article that matches your task:</p>
+<ul>
+<li>
+<a href="https://edubruell.github.io/tidyllm/articles/tidyllm_video.html">Working
+with Files and Media</a>: Ask a model about an image, a recording, a
+video or a PDF page.</li>
+<li>
+<a href="https://edubruell.github.io/tidyllm/articles/tidyllm_classifiers.html">Classifying
+Texts with tidyllm</a>: Label thousands of free-text answers with a
+codebook, and check the labels against a sample coded by people.</li>
+<li>
+<a href="https://edubruell.github.io/tidyllm/articles/tidyllm_decide.html">Decision
+Models with tidyllm</a>: Not a chat model: a cheap model that answers
+fixed yes/no, choice or score questions about a text or image and
+returns a probability for each answer. Use it to code many texts
+quickly.</li>
+<li>
+<a href="https://edubruell.github.io/tidyllm/articles/tidyllm_embed.html">Embedding
+Models in tidyllm</a>: Models that translate texts into numbers, which
+you can use to find similar texts, group them or search them.</li>
+<li>
+<a href="https://edubruell.github.io/tidyllm/articles/tidyllm-pdfquestions.html">Structured
+Question Answering from PDFs</a>: Ask the same questions of a folder of
+papers and get a table with one row per paper.</li>
+</ul>
+<p>The <a href="https://edubruell.github.io/tidyllm/articles/index.html">articles
+overview</a> lists more under “Go deeper”: local models, command line
+providers, tools and Shiny apps.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

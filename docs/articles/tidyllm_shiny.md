@@ -72,12 +72,10 @@ the job does not.
 The article follows a complete app that ships with the package. You can
 start it with:
 
-``` r
-
-library(tidyllm)
-
-tidyllm_example_app("model_explainer")
-```
+\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`tidyllm`](https://edubruell.github.io/tidyllm/)`)`\
+\
+[`tidyllm_example_app`](https://edubruell.github.io/tidyllm/reference/tidyllm_example_app.md)`(``"model_explainer"``)`
 
 ![Screenshot of the model explainer app: a coefficient table and
 precision plot on top, with two panels below streaming an explanation
@@ -117,40 +115,38 @@ So the whole trick is: every time a delta arrives, glue it onto the end
 of a `reactiveVal`. Writing to a `reactiveVal` is all Shiny needs in
 order to redraw the output, so the text appears on screen word by word.
 
-``` r
-
-library(shiny)
-library(tidyllm)
-
-ui <- fluidPage(
-  textInput("prompt", "Ask something", width = "100%"),
-  actionButton("go", "Send"),
-  tags$div(style = "white-space: pre-wrap;", textOutput("reply"))
-)
-
-server <- function(input, output, session) {
-  reply <- reactiveVal("")   # the text on screen
-  job   <- NULL              # the ticket for the running request
-
-  observeEvent(input$go, {
-    reply("")
-    job <<- llm_message(input$prompt) |>
-      send_chat(
-        ollama(),
-        .stream   = TRUE,
-        .on_chunk = function(delta) reply(paste0(isolate(reply()), delta))
-      )
-  })
-
-  session$onSessionEnded(function() {
-    if (!is.null(job) && check_job(job) == "running") cancel_job(job)
-  })
-
-  output$reply <- renderText(reply())
-}
-
-shinyApp(ui, server)
-```
+\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`shiny`](https://shiny.posit.co/)`)`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`tidyllm`](https://edubruell.github.io/tidyllm/)`)`\
+\
+`ui`` ``<-`` `[`fluidPage`](https://rdrr.io/pkg/shiny/man/fluidPage.html)`(`\
+`  `[`textInput`](https://rdrr.io/pkg/shiny/man/textInput.html)`(``"prompt"``, ``"Ask something"``, width ``=`` ``"100%"``)``,`\
+`  `[`actionButton`](https://rdrr.io/pkg/shiny/man/actionButton.html)`(``"go"``, ``"Send"``)``,`\
+`  ``tags``$``div``(``style ``=`` ``"white-space: pre-wrap;"``, `[`textOutput`](https://rdrr.io/pkg/shiny/man/textOutput.html)`(``"reply"``)``)`\
+`)`\
+\
+`server`` ``<-`` ``function``(``input``, ``output``, ``session``)`` ``{`\
+`  ``reply`` ``<-`` `[`reactiveVal`](https://rdrr.io/pkg/shiny/man/reactiveVal.html)`(``""``)``   ``# the text on screen`\
+`  ``job``   ``<-`` ``NULL``              ``# the ticket for the running request`\
+\
+`  `[`observeEvent`](https://rdrr.io/pkg/shiny/man/observeEvent.html)`(``input``$``go``, ``{`\
+`    ``reply``(``""``)`\
+`    ``job`` ``<<-`` `[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``input``$``prompt``)`` ``|>`\
+`      `[`send_chat`](https://edubruell.github.io/tidyllm/reference/send_chat.md)`(`\
+`        `[`ollama`](https://edubruell.github.io/tidyllm/reference/ollama.md)`(``)``,`\
+`        .stream   ``=`` ``TRUE``,`\
+`        .on_chunk ``=`` ``function``(``delta``)`` ``reply``(`[`paste0`](https://rdrr.io/r/base/paste.html)`(`[`isolate`](https://rdrr.io/pkg/shiny/man/isolate.html)`(``reply``(``)``)``, ``delta``)``)`\
+`      ``)`\
+`  ``}``)`\
+\
+`  ``session``$``onSessionEnded``(``function``(``)`` ``{`\
+`    ``if`` ``(``!`[`is.null`](https://rdrr.io/r/base/NULL.html)`(``job``)`` ``&&`` `[`check_job`](https://edubruell.github.io/tidyllm/reference/check_job.md)`(``job``)`` ``==`` ``"running"``)`` `[`cancel_job`](https://edubruell.github.io/tidyllm/reference/cancel_job.md)`(``job``)`\
+`  ``}``)`\
+\
+`  ``output``$``reply`` ``<-`` `[`renderText`](https://rdrr.io/pkg/shiny/man/renderPrint.html)`(``reply``(``)``)`\
+`}`\
+\
+[`shinyApp`](https://rdrr.io/pkg/shiny/man/shinyApp.html)`(``ui``, ``server``)`
 
 Four small things in there deserve a sentence each, because they are the
 kind of detail that is easy to copy without understanding and hard to
@@ -195,17 +191,15 @@ With one job you can use a plain variable, as the app above does. With
 two or more it is tidier to keep them together, and the example app uses
 an environment for that:
 
-``` r
-
-server <- function(input, output, session) {
-  jobs <- new.env(parent = emptyenv())
-  jobs$plain <- NULL           # the plain-English job
-  jobs$referee <- NULL         # the sceptical-referee job
-
-  plain_text <- reactiveVal("")
-  # ...
-}
-```
+\
+`server`` ``<-`` ``function``(``input``, ``output``, ``session``)`` ``{`\
+`  ``jobs`` ``<-`` `[`new.env`](https://rdrr.io/r/base/environment.html)`(``parent ``=`` `[`emptyenv`](https://rdrr.io/r/base/environment.html)`(``)``)`\
+`  ``jobs``$``plain`` ``<-`` ``NULL``           ``# the plain-English job`\
+`  ``jobs``$``referee`` ``<-`` ``NULL``         ``# the sceptical-referee job`\
+\
+`  ``plain_text`` ``<-`` `[`reactiveVal`](https://rdrr.io/pkg/shiny/man/reactiveVal.html)`(``""``)`\
+`  ``# ...`\
+`}`
 
 Why does it use an environment rather than a list? Because when you pass
 an ordinary R object such as a list into a function, R hands over a
@@ -231,23 +225,21 @@ is the Shiny function that schedules that repetition, and
 [`check_job()`](https://edubruell.github.io/tidyllm/reference/check_job.md)
 is cheap enough to call several times a second:
 
-``` r
-
-status_text <- reactiveVal("")   # drives a status line somewhere in the UI
-
-observe({
-  invalidateLater(400, session)
-  if (is.null(jobs$plain)) return()
-
-  switch(
-    check_job(jobs$plain),
-    running   = status_text(paste0(nchar(isolate(plain_text())), " characters so far")),
-    done      = status_text("Done."),
-    error     = status_text("The request failed. See the R console."),
-    cancelled = status_text("Cancelled.")
-  )
-})
-```
+\
+`status_text`` ``<-`` `[`reactiveVal`](https://rdrr.io/pkg/shiny/man/reactiveVal.html)`(``""``)``   ``# drives a status line somewhere in the UI`\
+\
+[`observe`](https://rdrr.io/pkg/shiny/man/observe.html)`(``{`\
+`  `[`invalidateLater`](https://rdrr.io/pkg/shiny/man/invalidateLater.html)`(``400``, ``session``)`\
+`  ``if`` ``(`[`is.null`](https://rdrr.io/r/base/NULL.html)`(``jobs``$``plain``)``)`` `[`return`](https://rdrr.io/r/base/function.html)`(``)`\
+\
+`  `[`switch`](https://rdrr.io/r/base/switch.html)`(`\
+`    `[`check_job`](https://edubruell.github.io/tidyllm/reference/check_job.md)`(``jobs``$``plain``)``,`\
+`    running   ``=`` ``status_text``(`[`paste0`](https://rdrr.io/r/base/paste.html)`(`[`nchar`](https://rdrr.io/r/base/nchar.html)`(`[`isolate`](https://rdrr.io/pkg/shiny/man/isolate.html)`(``plain_text``(``)``)``)``, ``" characters so far"``)``)``,`\
+`    done      ``=`` ``status_text``(``"Done."``)``,`\
+`    error     ``=`` ``status_text``(``"The request failed. See the R console."``)``,`\
+`    cancelled ``=`` ``status_text``(``"Cancelled."``)`\
+`  ``)`\
+`}``)`
 
 This observer has a second, less obvious job. Each of
 [`check_job()`](https://edubruell.github.io/tidyllm/reference/check_job.md),
@@ -267,22 +259,20 @@ time to the end of the session, because a user who simply closes the
 browser tab halfway through leaves a connection open and, on a paid
 provider, tokens being billed for text nobody will ever read.
 
-``` r
-
-stop_jobs <- function() {
-  for (nm in c("plain", "referee")) {
-    job <- jobs[[nm]]
-    if (!is.null(job) && check_job(job) == "running") cancel_job(job)
-  }
-}
-
-observeEvent(input$cancel, {
-  stop_jobs()
-  status_text("Cancelled.")
-})
-
-session$onSessionEnded(stop_jobs)
-```
+\
+`stop_jobs`` ``<-`` ``function``(``)`` ``{`\
+`  ``for`` ``(``nm`` ``in`` `[`c`](https://rdrr.io/r/base/c.html)`(``"plain"``, ``"referee"``)``)`` ``{`\
+`    ``job`` ``<-`` ``jobs``[[``nm``]``]`\
+`    ``if`` ``(``!`[`is.null`](https://rdrr.io/r/base/NULL.html)`(``job``)`` ``&&`` `[`check_job`](https://edubruell.github.io/tidyllm/reference/check_job.md)`(``job``)`` ``==`` ``"running"``)`` `[`cancel_job`](https://edubruell.github.io/tidyllm/reference/cancel_job.md)`(``job``)`\
+`  ``}`\
+`}`\
+\
+[`observeEvent`](https://rdrr.io/pkg/shiny/man/observeEvent.html)`(``input``$``cancel``, ``{`\
+`  ``stop_jobs``(``)`\
+`  ``status_text``(``"Cancelled."``)`\
+`}``)`\
+\
+`session``$``onSessionEnded``(``stop_jobs``)`
 
 > ⚠️ **Note:** A cancelled job cannot be fetched afterwards. Calling
 > [`fetch_job()`](https://edubruell.github.io/tidyllm/reference/fetch_job.md)
@@ -311,20 +301,18 @@ which is how every earlier example used it. Given an existing
 `LLMMessage`, as below, it returns a *new* message consisting of that
 conversation plus your text as the next turn.
 
-``` r
-
-observeEvent(input$ask, {
-  req(nzchar(input$followup), !is.null(jobs$plain))
-  if (check_job(jobs$plain) != "done") return()
-
-  conversation <- fetch_job(jobs$plain) |> llm_message(input$followup)
-
-  jobs$plain <- send_chat(
-    conversation, claude(), .stream = TRUE,
-    .on_chunk = function(delta) plain_text(paste0(isolate(plain_text()), delta))
-  )
-})
-```
+\
+[`observeEvent`](https://rdrr.io/pkg/shiny/man/observeEvent.html)`(``input``$``ask``, ``{`\
+`  `[`req`](https://rdrr.io/pkg/shiny/man/req.html)`(`[`nzchar`](https://rdrr.io/r/base/nchar.html)`(``input``$``followup``)``, ``!`[`is.null`](https://rdrr.io/r/base/NULL.html)`(``jobs``$``plain``)``)`\
+`  ``if`` ``(`[`check_job`](https://edubruell.github.io/tidyllm/reference/check_job.md)`(``jobs``$``plain``)`` ``!=`` ``"done"``)`` `[`return`](https://rdrr.io/r/base/function.html)`(``)`\
+\
+`  ``conversation`` ``<-`` `[`fetch_job`](https://edubruell.github.io/tidyllm/reference/fetch_job.md)`(``jobs``$``plain``)`` ``|>`` `[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``input``$``followup``)`\
+\
+`  ``jobs``$``plain`` ``<-`` `[`send_chat`](https://edubruell.github.io/tidyllm/reference/send_chat.md)`(`\
+`    ``conversation``, `[`claude`](https://edubruell.github.io/tidyllm/reference/claude.md)`(``)``, .stream ``=`` ``TRUE``,`\
+`    .on_chunk ``=`` ``function``(``delta``)`` ``plain_text``(`[`paste0`](https://rdrr.io/r/base/paste.html)`(`[`isolate`](https://rdrr.io/pkg/shiny/man/isolate.html)`(``plain_text``(``)``)``, ``delta``)``)`\
+`  ``)`\
+`}``)`
 
 ([`req()`](https://rdrr.io/pkg/shiny/man/req.html) in there is Shiny’s
 quiet guard: it abandons the observer unless every condition given to it
@@ -359,26 +347,24 @@ rather than the result of calling it.
 Each entry also carries a `concurrent` flag, which the next section
 explains:
 
-``` r
-
-PROVIDERS <- list(
-  "Ollama (local, no API key)" = list(call = quote(ollama(.model = "qwen3.5:4b")),
-                                      concurrent = FALSE),
-  "Claude"                     = list(call = quote(claude()),
-                                      concurrent = TRUE),
-  "OpenAI"                     = list(call = quote(openai(.model = "gpt-6-luna")),
-                                      concurrent = TRUE),
-  "Gemini"                     = list(call = quote(gemini()),
-                                      concurrent = TRUE)
-)
-
-# in the UI
-selectInput("provider", "Provider", names(PROVIDERS))
-
-# in the server
-provider <- PROVIDERS[[input$provider]]
-job <- send_chat(conversation, eval(provider$call), .stream = TRUE)
-```
+\
+`PROVIDERS`` ``<-`` `[`list`](https://rdrr.io/r/base/list.html)`(`\
+`  ``"Ollama (local, no API key)"`` ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``call ``=`` `[`quote`](https://rdrr.io/r/base/substitute.html)`(`[`ollama`](https://edubruell.github.io/tidyllm/reference/ollama.md)`(``.model ``=`` ``"qwen3.5:4b"``)``)``,`\
+`                                      concurrent ``=`` ``FALSE``)``,`\
+`  ``"Claude"``                     ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``call ``=`` `[`quote`](https://rdrr.io/r/base/substitute.html)`(`[`claude`](https://edubruell.github.io/tidyllm/reference/claude.md)`(``)``)``,`\
+`                                      concurrent ``=`` ``TRUE``)``,`\
+`  ``"OpenAI"``                     ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``call ``=`` `[`quote`](https://rdrr.io/r/base/substitute.html)`(`[`openai`](https://edubruell.github.io/tidyllm/reference/openai.md)`(``.model ``=`` ``"gpt-6-luna"``)``)``,`\
+`                                      concurrent ``=`` ``TRUE``)``,`\
+`  ``"Gemini"``                     ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(``call ``=`` `[`quote`](https://rdrr.io/r/base/substitute.html)`(`[`gemini`](https://edubruell.github.io/tidyllm/reference/gemini.md)`(``)``)``,`\
+`                                      concurrent ``=`` ``TRUE``)`\
+`)`\
+\
+`# in the UI`\
+[`selectInput`](https://rdrr.io/pkg/shiny/man/selectInput.html)`(``"provider"``, ``"Provider"``, `[`names`](https://rdrr.io/r/base/names.html)`(``PROVIDERS``)``)`\
+\
+`# in the server`\
+`provider`` ``<-`` ``PROVIDERS``[[``input``$``provider``]``]`\
+`job`` ``<-`` `[`send_chat`](https://edubruell.github.io/tidyllm/reference/send_chat.md)`(``conversation``, `[`eval`](https://rdrr.io/r/base/eval.html)`(``provider``$``call``)``, .stream ``=`` ``TRUE``)`
 
 ## Pattern: Two Jobs at Once, With One Limitation
 
@@ -410,14 +396,12 @@ the provider can take both requests, the app sends both immediately;
 when it cannot, it stores the second prompt and lets the status observer
 start it once the first job is done:
 
-``` r
-
-if (isTRUE(provider$concurrent)) {
-  start_referee()                       # a helper in the app, not a tidyllm verb
-} else {
-  jobs$referee_prompt <- referee_prompt # the status observer starts it later
-}
-```
+\
+`if`` ``(`[`isTRUE`](https://rdrr.io/r/base/Logic.html)`(``provider``$``concurrent``)``)`` ``{`\
+`  ``start_referee``(``)``                       ``# a helper in the app, not a tidyllm verb`\
+`}`` ``else`` ``{`\
+`  ``jobs``$``referee_prompt`` ``<-`` ``referee_prompt`` ``# the status observer starts it later`\
+`}`
 
 You can also fix the local case at the source. Ollama reads an
 environment variable that tells it how many requests to serve at once,
@@ -434,24 +418,22 @@ anything. Every number the model sees has been computed by R and pasted
 into the prompt verbatim, together with an instruction never to state a
 number that is not in the table:
 
-``` r
-
-model_as_markdown <- function(fit) {
-  tab <- coef_table(fit)   # from summary(fit)$coefficients
-  # ... markdown table, observations, R-squared ...
-}
-
-prompt_plain <- function(fit, context) {
-  llm_message(paste(
-    "You explain regression output to someone who knows a little statistics.",
-    "\n\nData:", context,
-    "\n\n", model_as_markdown(fit),
-    "\n\nUse only the numbers in the table above. Never state a number that is",
-    "not there, and never describe a coefficient as an effect of one variable",
-    "on another; these are associations."
-  ))
-}
-```
+\
+`model_as_markdown`` ``<-`` ``function``(``fit``)`` ``{`\
+`  ``tab`` ``<-`` ``coef_table``(``fit``)``   ``# from summary(fit)$coefficients`\
+`  ``# ... markdown table, observations, R-squared ...`\
+`}`\
+\
+`prompt_plain`` ``<-`` ``function``(``fit``, ``context``)`` ``{`\
+`  `[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(`[`paste`](https://rdrr.io/r/base/paste.html)`(`\
+`    ``"You explain regression output to someone who knows a little statistics."``,`\
+`    ``"\n\nData:"``, ``context``,`\
+`    ``"\n\n"``, ``model_as_markdown``(``fit``)``,`\
+`    ``"\n\nUse only the numbers in the table above. Never state a number that is"``,`\
+`    ``"not there, and never describe a coefficient as an effect of one variable"``,`\
+`    ``"on another; these are associations."`\
+`  ``)``)`\
+`}`
 
 The model is left doing the part it is genuinely good at, turning a
 table into readable sentences, and none of the part it is bad at.
@@ -501,22 +483,18 @@ turns a job into a stream of deltas of the kind that
 `shinychat::chat_append()` knows how to consume, so a chat UI is two
 lines:
 
-``` r
-
-job <- llm_message(input$prompt) |> send_chat(claude(), .stream = TRUE)
-shinychat::chat_append("chat", get_stream(job))
-```
+\
+`job`` ``<-`` `[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``input``$``prompt``)`` ``|>`` `[`send_chat`](https://edubruell.github.io/tidyllm/reference/send_chat.md)`(`[`claude`](https://edubruell.github.io/tidyllm/reference/claude.md)`(``)``, .stream ``=`` ``TRUE``)`\
+`shinychat``::``chat_append``(``"chat"``, `[`get_stream`](https://edubruell.github.io/tidyllm/reference/get_stream.md)`(``job``)``)`
 
 A job can also be converted into a *promise*, the standard R object
 representing a value that will exist later. That is what Shiny’s
 `ExtendedTask` expects, so non-streaming work drops straight in:
 
-``` r
-
-task <- ExtendedTask$new(function(prompt) {
-  promises::as.promise(send_chat(llm_message(prompt), openai(), .stream = FALSE))
-})
-```
+\
+`task`` ``<-`` `[`ExtendedTask`](https://rdrr.io/pkg/shiny/man/ExtendedTask.html)`$``new``(``function``(``prompt``)`` ``{`\
+`  ``promises``::`[`as.promise`](https://rstudio.github.io/promises/reference/is.promise.html)`(`[`send_chat`](https://edubruell.github.io/tidyllm/reference/send_chat.md)`(`[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``prompt``)``, `[`openai`](https://edubruell.github.io/tidyllm/reference/openai.md)`(``)``, .stream ``=`` ``FALSE``)``)`\
+`}``)`
 
 Both routes are optional conveniences. `.on_chunk` writing into a
 `reactiveVal` needs neither package.
@@ -537,22 +515,23 @@ waits for the finished `LLMMessage`. Note that
 waits by running the event loop rather than by sleeping, so anything
 else you have in flight keeps making progress while it waits.
 
-``` r
-
-job <- llm_message("Summarise this 400-page report") |>
-  send_chat(claude(), .stream = TRUE)
-
-other_work()                      # runs while the reply arrives
-
-reply <- fetch_job(job)           # the LLMMessage chat() would have returned
-```
+\
+`job`` ``<-`` `[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Summarise this 400-page report"``)`` ``|>`\
+`  `[`send_chat`](https://edubruell.github.io/tidyllm/reference/send_chat.md)`(`[`claude`](https://edubruell.github.io/tidyllm/reference/claude.md)`(``)``, .stream ``=`` ``TRUE``)`\
+\
+`other_work``(``)``                      ``# runs while the reply arrives`\
+\
+`reply`` ``<-`` `[`fetch_job`](https://edubruell.github.io/tidyllm/reference/fetch_job.md)`(``job``)``           ``# the LLMMessage chat() would have returned`
 
 If your problem is many prompts rather than one slow prompt,
 [`parallel_chat()`](https://edubruell.github.io/tidyllm/reference/parallel_chat.md)
 is the better verb. It takes a list of messages, runs them against one
-provider with a cap on how many go at once, and returns a tibble
-alongside the replies, which is the shape the rest of a data pipeline
-wants. And when the answers can wait overnight,
+provider with a cap on how many go at once, and returns the replies as a
+list.
+[`get_reply_data()`](https://edubruell.github.io/tidyllm/reference/get_reply_data.md)
+turns that list into a tibble with one row per reply, which is the shape
+the rest of a data pipeline wants. And when the answers can wait
+overnight,
 [`send_batch()`](https://edubruell.github.io/tidyllm/reference/send_batch.md)
 remains the cheapest option of all.
 

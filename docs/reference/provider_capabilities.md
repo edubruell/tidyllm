@@ -12,7 +12,7 @@ provider_capabilities(
   .provider = NULL,
   .verb = NULL,
   .argument = NULL,
-  .what = c("arguments", "media", "embed_media"),
+  .what = c("arguments", "media", "embed_media", "decide_media"),
   .internal = FALSE
 )
 ```
@@ -42,7 +42,12 @@ provider_capabilities(
   per provider and media type a message can carry, or `"embed_media"`
   for one row per provider and media type
   [`embed()`](https://edubruell.github.io/tidyllm/reference/embed.md)
-  accepts (`image`, `audio`, `video`).
+  accepts (`image`, `audio`, `video`), or `"decide_media"` for one row
+  per provider that implements
+  [`decide()`](https://edubruell.github.io/tidyllm/reference/decide.md)
+  and media type it reads in a
+  [`decide()`](https://edubruell.github.io/tidyllm/reference/decide.md)
+  state (`image`, `audio`, `video`, `pdf`).
 
 - .internal:
 
@@ -58,7 +63,11 @@ A tibble. For `.what = "arguments"`: `provider`, `verb`, `argument`,
 `default`, `fn`. For `.what = "media"`: `provider`, `media` (`image`,
 `pdf`, `audio`, `video`, `files`) and `supported`. For
 `.what = "embed_media"` the same columns with `media` limited to
-`image`, `audio` and `video`.
+`image`, `audio` and `video`. For `.what = "decide_media"` the same
+columns with `media` limited to `image`, `audio`, `video` and `pdf`, for
+providers with a
+[`decide()`](https://edubruell.github.io/tidyllm/reference/decide.md)
+method.
 
 ## Details
 

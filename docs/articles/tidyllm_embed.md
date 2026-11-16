@@ -19,32 +19,30 @@ on a dataset of **22,960 economics paper abstracts published between
 embeddings to find papers with similar topics based on their underlying
 meaning.
 
-``` r
-
-library(tidyverse)
-library(tidyllm)
-library(here)
-
-abstracts <- read_rds("abstracts_data.rds")
-print(abstracts, width = 60)
-## # A tibble: 22,960 × 8
-##    year  journal  authors volume firstpage lastpage abstract
-##    <chr> <chr>    <chr>   <chr>  <chr>     <chr>    <chr>   
-##  1 2024  Journal… Bauer,… 22     2075      2107     This pa…
-##  2 2019  The Rev… Karlan… 86     1704      1746     We use …
-##  3 2022  Journal… Corset… 20     513       548      We stud…
-##  4 2018  The Rev… Anagol… 85     1971      2004     We stud…
-##  5 2024  America… Thores… 16     447       79       This pa…
-##  6 2024  Journal… Ren, Y… 238    NA        NA       The rap…
-##  7 2013  The Rev… Adhvar… 95     725       740      A key p…
-##  8 2022  Econome… Brooks… 90     2187      2214     If expe…
-##  9 2011  Health … Fletch… 20     553       570      We exam…
-## 10 2010  Journal… Rohwed… 24     119       38       Early r…
-## # ℹ 22,950 more rows
-## # ℹ 1 more variable: pdf_link <chr>
-
-target_abstract <- "We use the expansion of the high-speed rail network in Germany as a natural experiment to examine the causal effect of reductions in commuting time between regions on the commuting decisions of workers and their choices regarding where to live and where to work. We exploit three key features in this setting: i) investment in high-speed rail has, in some cases dramatically, reduced travel times between regions, ii) several small towns were connected to the high-speed rail network only for political reasons, and iii) high-speed trains have left the transportation of goods unaffected. Combining novel information on train schedules and the opening of high-speed rail stations with panel data on all workers in Germany, we show that a reduction in travel time by one percent raises the number of commuters between regions by 0.25 percent. This effect is mainly driven by workers changing jobs to smaller cities while keeping their place of residence in larger ones. Our findings support the notion that benefits from infrastructure investments accrue in particular to peripheral regions, which gain access to a large pool of qualified workers with a preference for urban life. We find that the introduction of high-speed trains led to a modal shift towards rail transportation in particular on medium distances between 150 and 400 kilometers."
-```
+\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`tidyverse`](https://tidyverse.tidyverse.org)`)`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`tidyllm`](https://edubruell.github.io/tidyllm/)`)`\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`here`](https://here.r-lib.org/)`)`\
+\
+`abstracts`` ``<-`` `[`read_rds`](https://readr.tidyverse.org/reference/read_rds.html)`(``"abstracts_data.rds"``)`\
+[`print`](https://rdrr.io/r/base/print.html)`(``abstracts``, width ``=`` ``60``)`\
+`## ``# A tibble: 22,960 × 8`\
+`##    year  journal  authors volume firstpage lastpage abstract`\
+`##    ``<chr>`` ``<chr>``    ``<chr>``   ``<chr>``  ``<chr>``     ``<chr>``    ``<chr>``   `\
+`## `` 1`` 2024  Journal… Bauer,… 22     2075      2107     This pa…`\
+`## `` 2`` 2019  The Rev… Karlan… 86     1704      1746     We use …`\
+`## `` 3`` 2022  Journal… Corset… 20     513       548      We stud…`\
+`## `` 4`` 2018  The Rev… Anagol… 85     1971      2004     We stud…`\
+`## `` 5`` 2024  America… Thores… 16     447       79       This pa…`\
+`## `` 6`` 2024  Journal… Ren, Y… 238    ``NA``        ``NA``       The rap…`\
+`## `` 7`` 2013  The Rev… Adhvar… 95     725       740      A key p…`\
+`## `` 8`` 2022  Econome… Brooks… 90     2187      2214     If expe…`\
+`## `` 9`` 2011  Health … Fletch… 20     553       570      We exam…`\
+`## ``10`` 2010  Journal… Rohwed… 24     119       38       Early r…`\
+`## ``# ℹ 22,950 more rows`\
+`## ``# ℹ 1 more variable: pdf_link <chr>`\
+\
+`target_abstract`` ``<-`` ``"We use the expansion of the high-speed rail network in Germany as a natural experiment to examine the causal effect of reductions in commuting time between regions on the commuting decisions of workers and their choices regarding where to live and where to work. We exploit three key features in this setting: i) investment in high-speed rail has, in some cases dramatically, reduced travel times between regions, ii) several small towns were connected to the high-speed rail network only for political reasons, and iii) high-speed trains have left the transportation of goods unaffected. Combining novel information on train schedules and the opening of high-speed rail stations with panel data on all workers in Germany, we show that a reduction in travel time by one percent raises the number of commuters between regions by 0.25 percent. This effect is mainly driven by workers changing jobs to smaller cities while keeping their place of residence in larger ones. Our findings support the notion that benefits from infrastructure investments accrue in particular to peripheral regions, which gain access to a large pool of qualified workers with a preference for urban life. We find that the introduction of high-speed trains led to a modal shift towards rail transportation in particular on medium distances between 150 and 400 kilometers."`
 
 With the dataset ready, we use tidyllm to generate embeddings and
 perform a semantic search to find papers similar to the
@@ -72,14 +70,12 @@ To compute an embedding of the target abstract we use
 [`ollama()`](https://edubruell.github.io/tidyllm/reference/ollama.md) as
 the provider:
 
-``` r
-
-target_tbl <- target_abstract |>
-  embed(ollama(.model = "mxbai-embed-large:latest"))
-
-target_tbl
-str(target_tbl)
-```
+\
+`target_tbl`` ``<-`` ``target_abstract`` ``|>`\
+`  `[`embed`](https://edubruell.github.io/tidyllm/reference/embed.md)`(`[`ollama`](https://edubruell.github.io/tidyllm/reference/ollama.md)`(``.model ``=`` ``"mxbai-embed-large:latest"``)``)`\
+\
+`target_tbl`\
+[`str`](https://rdrr.io/r/utils/str.html)`(``target_tbl``)`
 
     ## # A tibble: 1 × 2
     ##   input                                           embeddings
@@ -96,12 +92,10 @@ function returns a tibble with two columns:
 In our case we have a single input and the embeddings column contains a
 1,024-dimensional vector:
 
-``` r
-
-str(target_tbl$embeddings)
-## List of 1
-##  $ : num [1:1024] -0.838 0.669 0.202 -0.686 -0.985 ...
-```
+\
+[`str`](https://rdrr.io/r/utils/str.html)`(``target_tbl``$``embeddings``)`\
+`## List of 1`\
+`##  $ : num [1:1024] -0.838 0.669 0.202 -0.686 -0.985 ...`
 
 ### Step 2: Computing Embeddings for the Entire Abstract Corpus
 
@@ -115,31 +109,29 @@ On a MacBook Pro M1 Pro this completes in approximately 25 minutes and
 writes 207 MB of data. To compare multiple target abstracts against the
 collection, we only need to embed the corpus once.
 
-``` r
-
-generate_abstract_embeddings <- function(abstracts) {
-  embedding_batches <- tibble(abstract = abstracts) |>
-    group_by(batch = floor(1:n() / 200) + 1) |>
-    group_split()
-
-  n_batches <- length(embedding_batches)
-  glue("Processing {n_batches} batches of 200 abstracts") |> cat("\n")
-
-  embedding_batches |>
-    walk(\(batch) {
-      batch_number <- pull(batch, batch) |> unique()
-      glue("Generate Text Embeddings for Abstract Batch: {batch_number}/{n_batches}") |> cat("\n")
-
-      batch$abstract |>
-        embed(ollama(.model = "mxbai-embed-large:latest")) |>
-        write_rds(here("embedded_abstracts", paste0(batch_number, ".rds")))
-    })
-}
-
-abstracts |>
-  pull(abstract) |>
-  generate_abstract_embeddings()
-```
+\
+`generate_abstract_embeddings`` ``<-`` ``function``(``abstracts``)`` ``{`\
+`  ``embedding_batches`` ``<-`` `[`tibble`](https://tibble.tidyverse.org/reference/tibble.html)`(``abstract ``=`` ``abstracts``)`` ``|>`\
+`    `[`group_by`](https://dplyr.tidyverse.org/reference/group_by.html)`(``batch ``=`` `[`floor`](https://rdrr.io/r/base/Round.html)`(``1``:`[`n`](https://dplyr.tidyverse.org/reference/context.html)`(``)`` ``/`` ``200``)`` ``+`` ``1``)`` ``|>`\
+`    `[`group_split`](https://dplyr.tidyverse.org/reference/group_split.html)`(``)`\
+\
+`  ``n_batches`` ``<-`` `[`length`](https://rdrr.io/r/base/length.html)`(``embedding_batches``)`\
+`  `[`glue`](https://glue.tidyverse.org/reference/glue.html)`(``"Processing {n_batches} batches of 200 abstracts"``)`` ``|>`` `[`cat`](https://rdrr.io/r/base/cat.html)`(``"\n"``)`\
+\
+`  ``embedding_batches`` ``|>`\
+`    `[`walk`](https://purrr.tidyverse.org/reference/map.html)`(``\``(``batch``)`` ``{`\
+`      ``batch_number`` ``<-`` `[`pull`](https://dplyr.tidyverse.org/reference/pull.html)`(``batch``, ``batch``)`` ``|>`` `[`unique`](https://rdrr.io/r/base/unique.html)`(``)`\
+`      `[`glue`](https://glue.tidyverse.org/reference/glue.html)`(``"Generate Text Embeddings for Abstract Batch: {batch_number}/{n_batches}"``)`` ``|>`` `[`cat`](https://rdrr.io/r/base/cat.html)`(``"\n"``)`\
+\
+`      ``batch``$``abstract`` ``|>`\
+`        `[`embed`](https://edubruell.github.io/tidyllm/reference/embed.md)`(`[`ollama`](https://edubruell.github.io/tidyllm/reference/ollama.md)`(``.model ``=`` ``"mxbai-embed-large:latest"``)``)`` ``|>`\
+`        `[`write_rds`](https://readr.tidyverse.org/reference/read_rds.html)`(`[`here`](https://here.r-lib.org/reference/here.html)`(``"embedded_abstracts"``, `[`paste0`](https://rdrr.io/r/base/paste.html)`(``batch_number``, ``".rds"``)``)``)`\
+`    ``}``)`\
+`}`\
+\
+`abstracts`` ``|>`\
+`  `[`pull`](https://dplyr.tidyverse.org/reference/pull.html)`(``abstract``)`` ``|>`\
+`  ``generate_abstract_embeddings``(``)`
 
     ## Processing 115 batches of 200 abstracts
     ## Generate Text Embeddings for Abstract Batch: 1/115
@@ -149,12 +141,10 @@ abstracts |>
 
 After the function finishes, load the precomputed embeddings:
 
-``` r
-
-embedded_abstracts <- here("embedded_abstracts") |>
-  dir() |>
-  map_dfr(\(f) read_rds(here("embedded_abstracts", f)))
-```
+\
+`embedded_abstracts`` ``<-`` `[`here`](https://here.r-lib.org/reference/here.html)`(``"embedded_abstracts"``)`` ``|>`\
+`  `[`dir`](https://rdrr.io/r/base/list.files.html)`(``)`` ``|>`\
+`  `[`map_dfr`](https://purrr.tidyverse.org/reference/map_dfr.html)`(``\``(``f``)`` `[`read_rds`](https://readr.tidyverse.org/reference/read_rds.html)`(`[`here`](https://here.r-lib.org/reference/here.html)`(``"embedded_abstracts"``, ``f``)``)``)`
 
 ### Step 3: Performing the Semantic Search
 
@@ -171,26 +161,22 @@ Vectors at 90 degrees (orthogonal, no semantic overlap) have cosine
 similarity of 0; vectors pointing in the same direction have similarity
 close to 1. We express this as a simple function:
 
-``` r
-
-cosine_similarity <- function(a, b) {
-  sum(a * b) / (sqrt(sum(a^2)) * sqrt(sum(b^2)))
-}
-```
+\
+`cosine_similarity`` ``<-`` ``function``(``a``, ``b``)`` ``{`\
+`  `[`sum`](https://rdrr.io/r/base/sum.html)`(``a`` ``*`` ``b``)`` ``/`` ``(`[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(`[`sum`](https://rdrr.io/r/base/sum.html)`(``a``^``2``)``)`` ``*`` `[`sqrt`](https://rdrr.io/r/base/MathFun.html)`(`[`sum`](https://rdrr.io/r/base/sum.html)`(``b``^``2``)``)``)`\
+`}`
 
 We apply it to find the 10 most similar abstracts in the corpus:
 
-``` r
-
-top10_similar <- embedded_abstracts |>
-  mutate(cosine_sim = map_dbl(embeddings,
-                              \(e) cosine_similarity(e, target_tbl$embeddings[[1]]))) |>
-  arrange(desc(cosine_sim)) |>
-  slice(1:10) |>
-  rename(abstract = input) |>
-  left_join(abstracts |> select(year, authors, journal, abstract), by = "abstract") |>
-  select(-embeddings)
-```
+\
+`top10_similar`` ``<-`` ``embedded_abstracts`` ``|>`\
+`  `[`mutate`](https://dplyr.tidyverse.org/reference/mutate.html)`(``cosine_sim ``=`` `[`map_dbl`](https://purrr.tidyverse.org/reference/map.html)`(``embeddings``,`\
+`                              \``(``e``)`` ``cosine_similarity``(``e``, ``target_tbl``$``embeddings``[[``1``]``]``)``)``)`` ``|>`\
+`  `[`arrange`](https://dplyr.tidyverse.org/reference/arrange.html)`(`[`desc`](https://dplyr.tidyverse.org/reference/desc.html)`(``cosine_sim``)``)`` ``|>`\
+`  `[`slice`](https://dplyr.tidyverse.org/reference/slice.html)`(``1``:``10``)`` ``|>`\
+`  `[`rename`](https://dplyr.tidyverse.org/reference/rename.html)`(``abstract ``=`` ``input``)`` ``|>`\
+`  `[`left_join`](https://dplyr.tidyverse.org/reference/mutate-joins.html)`(``abstracts`` ``|>`` `[`select`](https://dplyr.tidyverse.org/reference/select.html)`(``year``, ``authors``, ``journal``, ``abstract``)``, by ``=`` ``"abstract"``)`` ``|>`\
+`  `[`select`](https://dplyr.tidyverse.org/reference/select.html)`(``-``embeddings``)`
 
 The ten most similar articles in the corpus:
 
@@ -232,11 +218,9 @@ and
 [`video_file()`](https://edubruell.github.io/tidyllm/reference/video_file.md)
 into one list, and each element becomes one row.
 
-``` r
-
-list("a sausage in a bun", img(here("hotdog.jpg"))) |>
-  embed(gemini())
-```
+\
+[`list`](https://rdrr.io/r/base/list.html)`(``"a sausage in a bun"``, `[`img`](https://edubruell.github.io/tidyllm/reference/img.md)`(`[`here`](https://here.r-lib.org/reference/here.html)`(``"hotdog.jpg"``)``)``)`` ``|>`\
+`  `[`embed`](https://edubruell.github.io/tidyllm/reference/embed.md)`(`[`gemini`](https://edubruell.github.io/tidyllm/reference/gemini.md)`(``)``)`
 
     ## # A tibble: 2 × 2
     ##   input              embeddings   
@@ -252,11 +236,9 @@ Set `.media_columns = TRUE` to add a `modality` column (`text`, `image`,
 `audio` or `video`, and `text + image` for a mixed item) and a `path`
 column with the file path.
 
-``` r
-
-list("a sausage in a bun", img(here("hotdog.jpg"))) |>
-  embed(gemini(), .media_columns = TRUE)
-```
+\
+[`list`](https://rdrr.io/r/base/list.html)`(``"a sausage in a bun"``, `[`img`](https://edubruell.github.io/tidyllm/reference/img.md)`(`[`here`](https://here.r-lib.org/reference/here.html)`(``"hotdog.jpg"``)``)``)`` ``|>`\
+`  `[`embed`](https://edubruell.github.io/tidyllm/reference/embed.md)`(`[`gemini`](https://edubruell.github.io/tidyllm/reference/gemini.md)`(``)``, .media_columns ``=`` ``TRUE``)`
 
     ## # A tibble: 2 × 4
     ##   input              modality path       embeddings   
@@ -268,16 +250,14 @@ To see which picture matches a sentence, use the `cosine_similarity()`
 function from above to compare the vectors. Embed the sentence and the
 pictures in one call, so that they come from the same model.
 
-``` r
-
-items <- list("a sausage in a bun", img(here("hotdog.jpg")), img(here("pizza.jpg"))) |>
-  embed(gemini())
-
-items |>
-  slice(-1) |>
-  mutate(similarity = map_dbl(embeddings, \(e) cosine_similarity(e, items$embeddings[[1]]))) |>
-  select(input, similarity)
-```
+\
+`items`` ``<-`` `[`list`](https://rdrr.io/r/base/list.html)`(``"a sausage in a bun"``, `[`img`](https://edubruell.github.io/tidyllm/reference/img.md)`(`[`here`](https://here.r-lib.org/reference/here.html)`(``"hotdog.jpg"``)``)``, `[`img`](https://edubruell.github.io/tidyllm/reference/img.md)`(`[`here`](https://here.r-lib.org/reference/here.html)`(``"pizza.jpg"``)``)``)`` ``|>`\
+`  `[`embed`](https://edubruell.github.io/tidyllm/reference/embed.md)`(`[`gemini`](https://edubruell.github.io/tidyllm/reference/gemini.md)`(``)``)`\
+\
+`items`` ``|>`\
+`  `[`slice`](https://dplyr.tidyverse.org/reference/slice.html)`(``-``1``)`` ``|>`\
+`  `[`mutate`](https://dplyr.tidyverse.org/reference/mutate.html)`(``similarity ``=`` `[`map_dbl`](https://purrr.tidyverse.org/reference/map.html)`(``embeddings``, \``(``e``)`` ``cosine_similarity``(``e``, ``items``$``embeddings``[[``1``]``]``)``)``)`` ``|>`\
+`  `[`select`](https://dplyr.tidyverse.org/reference/select.html)`(``input``, ``similarity``)`
 
 The picture with the highest similarity is the best match.
 
@@ -287,21 +267,17 @@ support each type. If you pass a type the provider does not support,
 [`embed()`](https://edubruell.github.io/tidyllm/reference/embed.md)
 stops with an error before sending anything.
 
-``` r
-
-provider_capabilities(.what = "embed_media")
-```
+\
+[`provider_capabilities`](https://edubruell.github.io/tidyllm/reference/provider_capabilities.md)`(``.what ``=`` ``"embed_media"``)`
 
 ### Mixed items
 
 A nested list contains one item with a single vector, such as a caption
 together with its photo.
 
-``` r
-
-list(list("A cat drinking from a puddle", img(here("cat.jpg")))) |>
-  embed(gemini())
-```
+\
+[`list`](https://rdrr.io/r/base/list.html)`(`[`list`](https://rdrr.io/r/base/list.html)`(``"A cat drinking from a puddle"``, `[`img`](https://edubruell.github.io/tidyllm/reference/img.md)`(`[`here`](https://here.r-lib.org/reference/here.html)`(``"cat.jpg"``)``)``)``)`` ``|>`\
+`  `[`embed`](https://edubruell.github.io/tidyllm/reference/embed.md)`(`[`gemini`](https://edubruell.github.io/tidyllm/reference/gemini.md)`(``)``)`
 
 ### Running EmbeddingGemma 2 locally
 
@@ -320,11 +296,9 @@ llama-server -m embeddinggemma-2-Q8_0.gguf --mmproj mmproj-embeddinggemma-2-Q8_0
 Video needs a large context because nine seconds use about 3,000 tokens,
 so the server runs with 16,384. Then embed as before:
 
-``` r
-
-list("A cat", img(here("cat.jpg")), audio_file(here("cat.wav")), video_file(here("cat.mp4"))) |>
-  embed(llamacpp())
-```
+\
+[`list`](https://rdrr.io/r/base/list.html)`(``"A cat"``, `[`img`](https://edubruell.github.io/tidyllm/reference/img.md)`(`[`here`](https://here.r-lib.org/reference/here.html)`(``"cat.jpg"``)``)``, `[`audio_file`](https://edubruell.github.io/tidyllm/reference/audio_file.md)`(`[`here`](https://here.r-lib.org/reference/here.html)`(``"cat.wav"``)``)``, `[`video_file`](https://edubruell.github.io/tidyllm/reference/video_file.md)`(`[`here`](https://here.r-lib.org/reference/here.html)`(``"cat.mp4"``)``)``)`` ``|>`\
+`  `[`embed`](https://edubruell.github.io/tidyllm/reference/embed.md)`(`[`llamacpp`](https://edubruell.github.io/tidyllm/reference/llamacpp.md)`(``)``)`
 
 ### Queries, documents and shorter vectors
 
@@ -348,17 +322,15 @@ the query with a more powerful cross-attention model.
 wraps Voyage’s `/v1/rerank` endpoint and returns a tibble sorted by
 relevance score:
 
-``` r
-
-candidates <- top10_similar$abstract
-
-voyage_rerank(
-  .query     = target_abstract,
-  .documents = candidates,
-  .model     = "rerank-3",
-  .top_k     = 5
-)
-```
+\
+`candidates`` ``<-`` ``top10_similar``$``abstract`\
+\
+[`voyage_rerank`](https://edubruell.github.io/tidyllm/reference/voyage_rerank.md)`(`\
+`  .query     ``=`` ``target_abstract``,`\
+`  .documents ``=`` ``candidates``,`\
+`  .model     ``=`` ``"rerank-3"``,`\
+`  .top_k     ``=`` ``5`\
+`)`
 
     ## # A tibble: 5 × 3
     ##   index relevance_score document                                                

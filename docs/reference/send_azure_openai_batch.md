@@ -9,7 +9,7 @@ OpenAI Batch API for asynchronous processing.
 send_azure_openai_batch(
   .llms,
   .endpoint_url = Sys.getenv("AZURE_ENDPOINT_URL"),
-  .deployment = "gpt-4o-mini",
+  .deployment = "gpt-6-luna",
   .api_version = "2024-10-01-preview",
   .max_completion_tokens = NULL,
   .reasoning_effort = NULL,
@@ -44,7 +44,7 @@ send_azure_openai_batch(
 
 - .deployment:
 
-  The identifier of the model that is deployed (default: "gpt-4o-mini").
+  The identifier of the model that is deployed (default: "gpt-6-luna").
 
 - .api_version:
 

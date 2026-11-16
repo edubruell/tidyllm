@@ -99,7 +99,7 @@ send_mistral_batch(
   How much reasoning models think before answering; one of `"none"`,
   `"low"`, `"medium"`, or `"high"` (default: `NULL`, meaning the API
   default). Supported values vary by model: `mistral-large-4` accepts
-  only `"high"` and `"none"`.
+  `"low"`, `"medium"` and `"high"`.
 
 - .dry_run:
 

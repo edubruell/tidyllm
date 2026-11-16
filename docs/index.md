@@ -8,8 +8,9 @@ Status](https://www.r-pkg.org/badges/version/tidyllm)](https://cran.r-project.or
 **tidyllm** is an R package for working with large language model APIs
 in data analysis workflows. It supports **Anthropic Claude**,
 **OpenAI**, **Google Gemini**, **Mistral**, **Groq**, **DeepSeek**,
-**OpenRouter**, local models via **Ollama** and **llama.cpp**, and more,
-all through a single consistent interface.
+**OpenRouter**, **TypeSafe** (decision models), local models via
+**Ollama** and **llama.cpp**, and more, all through a single consistent
+interface.
 
 ## Features
 
@@ -19,6 +20,16 @@ all through a single consistent interface.
   provider that supports them via `.media`. Upload files to provider
   servers for reuse via `.files` and
   [`upload_file()`](https://edubruell.github.io/tidyllm/reference/upload_file.md).
+- **Closed questions with probabilities**:
+  [`decide()`](https://edubruell.github.io/tidyllm/reference/decide.md)
+  puts yes/no, choice and score questions to a text or an image and
+  returns a tibble with one row per question and the probability of each
+  answer. It works with
+  [`jev()`](https://edubruell.github.io/tidyllm/reference/jev.md),
+  [`openai()`](https://edubruell.github.io/tidyllm/reference/openai.md),
+  [`gemini()`](https://edubruell.github.io/tidyllm/reference/gemini.md)
+  and
+  [`ollama()`](https://edubruell.github.io/tidyllm/reference/ollama.md).
 - **Interactive message history**: Manage multi-turn conversations with
   structured history automatically formatted for each API.
 - **Batch processing**: Handle large workloads with Anthropic, OpenAI,
@@ -30,33 +41,27 @@ all through a single consistent interface.
 
 To install **tidyllm** from CRAN, use:
 
-``` r
-
-install.packages("tidyllm")
-```
+\
+[`install.packages`](https://rdrr.io/r/utils/install.packages.html)`(``"tidyllm"``)`
 
 Or for the development version from GitHub:
 
-``` r
-
-devtools::install_github("edubruell/tidyllm")
-```
+\
+`devtools``::`[`install_github`](https://devtools.r-lib.org/reference/install-deprecated.html)`(``"edubruell/tidyllm"``)`
 
 ## Basic Example
 
-``` r
-
-library(tidyllm)
-
-# Describe an image with Claude, continue with a local model
-conversation <- llm_message("Describe this image.",
-                             .media = img("photo.jpg")) |>
-  chat(claude())
-
-conversation |>
-  llm_message("Based on that description, what research topic could this figure relate to?") |>
-  chat(ollama(.model = "qwen3.5:4b"))
-```
+\
+[`library`](https://rdrr.io/r/base/library.html)`(`[`tidyllm`](https://edubruell.github.io/tidyllm/)`)`\
+\
+`# Describe an image with Claude, continue with a local model`\
+`conversation`` ``<-`` `[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Describe this image."``,`\
+`                             .media ``=`` `[`img`](https://edubruell.github.io/tidyllm/reference/img.md)`(``"photo.jpg"``)``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`claude`](https://edubruell.github.io/tidyllm/reference/claude.md)`(``)``)`\
+\
+`conversation`` ``|>`\
+`  `[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Based on that description, what research topic could this figure relate to?"``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`ollama`](https://edubruell.github.io/tidyllm/reference/ollama.md)`(``.model ``=`` ``"qwen3.5:4b"``)``)`
 
 For more examples and advanced usage, see the [Get Started
 vignette](https://edubruell.github.io/tidyllm/articles/tidyllm.html).
@@ -67,71 +72,118 @@ cloud providers. See the [Get Started
 vignette](https://edubruell.github.io/tidyllm/articles/tidyllm.html) for
 setup instructions.
 
-## What’s new in 0.7.1
+## What’s new in 0.8.0
 
-**Use your coding agent from R.**
-[`codex_cli()`](https://edubruell.github.io/tidyllm/reference/codex_cli.md)
-runs OpenAI’s Codex CLI and
-[`vibe_cli()`](https://edubruell.github.io/tidyllm/reference/vibe_cli.md)
-runs Mistral’s Vibe CLI, both on your own machine, the same way
-[`claude_cli()`](https://edubruell.github.io/tidyllm/reference/claude_cli.md)
-runs Claude Code:
-
-``` r
-
-llm_message("Explain what a tibble is in one sentence.") |>
-  chat(codex_cli())
-
-llm_message("Explain what a tibble is in one sentence.") |>
-  chat(vibe_cli(.model = "mistral-large-4"))
-```
-
-**Control Gemini reasoning by level.**
+**Closed questions with probabilities.**
+[`decide()`](https://edubruell.github.io/tidyllm/reference/decide.md)
+puts yes/no, choice and score questions to a text, an image, a recording
+or a PDF. It returns a tibble with one row per question, the answer and
+its probability. You write the questions once as a
+[`tidyllm_schema()`](https://edubruell.github.io/tidyllm/reference/tidyllm_schema.md)
+and switch between
+[`jev()`](https://edubruell.github.io/tidyllm/reference/jev.md),
+[`openai()`](https://edubruell.github.io/tidyllm/reference/openai.md),
 [`gemini()`](https://edubruell.github.io/tidyllm/reference/gemini.md)
-takes `.thinking_level` (`"minimal"`, `"low"`, `"medium"` or `"high"`).
-Google is replacing token budgets with these levels, so
-`.thinking_budget` now warns that it is deprecated.
+and
+[`ollama()`](https://edubruell.github.io/tidyllm/reference/ollama.md).
 
-``` r
+\
+`questions`` ``<-`` `[`tidyllm_schema`](https://edubruell.github.io/tidyllm/reference/tidyllm_schema.md)`(`\
+`  late ``=`` `[`field_lgl`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(``"Was the payment late?"``)``,`\
+`  tone ``=`` `[`field_fct`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(``"Tone of the message"``, .levels ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"polite"``, ``"angry"``)``)`\
+`)`\
+\
+[`decide`](https://edubruell.github.io/tidyllm/reference/decide.md)`(``"Your invoice is two weeks overdue and I am furious."``, ``questions``, `[`jev`](https://edubruell.github.io/tidyllm/reference/jev.md)`(``)``)`
 
-llm_message("What is 17 * 23?") |>
-  chat(gemini(.thinking_level = "high"))
-```
+Pass a character vector to code many texts in parallel.
+[`field_box()`](https://edubruell.github.io/tidyllm/reference/field_box.md)
+asks where something is in a picture (experimental,
+[`jev()`](https://edubruell.github.io/tidyllm/reference/jev.md) only).
+The [decision models
+article](https://edubruell.github.io/tidyllm/articles/tidyllm_decide.html)
+walks through it.
 
-**Mistral Large 4.**
+**Read many replies at once.**
+[`get_reply()`](https://edubruell.github.io/tidyllm/reference/get_reply.md),
+[`get_reply_data()`](https://edubruell.github.io/tidyllm/reference/get_reply_data.md)
+and
+[`get_metadata()`](https://edubruell.github.io/tidyllm/reference/get_metadata.md)
+accept the list that
+[`parallel_chat()`](https://edubruell.github.io/tidyllm/reference/parallel_chat.md)
+and
+[`fetch_batch()`](https://edubruell.github.io/tidyllm/reference/fetch_batch.md)
+return.
+
+**Current provider defaults.**
 [`mistral()`](https://edubruell.github.io/tidyllm/reference/mistral.md)
-works with `mistral-large-4`, a reasoning model with a 512K-token
-context. Set `.reasoning_effort = "none"` to turn its reasoning off.
+defaults to `mistral-large-4`, which always reasons (`.reasoning_effort`
+of `"low"`, `"medium"` or `"high"`).
+[`openai()`](https://edubruell.github.io/tidyllm/reference/openai.md)
+accepts every reasoning effort the API names, and
+[`gemini()`](https://edubruell.github.io/tidyllm/reference/gemini.md)
+accepts `.thinking_level = "xhigh"`.
+[`llamacpp()`](https://edubruell.github.io/tidyllm/reference/llamacpp.md)
+looks for the server on port 9931.
 
-**Fix for
-[`claude_cli()`](https://edubruell.github.io/tidyllm/reference/claude_cli.md).**
-With its tools off,
-[`claude_cli()`](https://edubruell.github.io/tidyllm/reference/claude_cli.md)
-could still read files. It no longer does. The 0.7.0 release on CRAN has
-the same leak.
+**Perplexity removed.**
+[`perplexity()`](https://edubruell.github.io/tidyllm/reference/perplexity.md)
+is gone. Use Perplexity models through
+[`openrouter()`](https://edubruell.github.io/tidyllm/reference/openrouter.md)
+and web search through
+[`websearch_tool()`](https://edubruell.github.io/tidyllm/reference/websearch_tool.md).
 
 Read the [Changelog](https://edubruell.github.io/tidyllm/news/) for the
 full list of changes.
 
 ## Learn More
 
-- [Get Started with
-  tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm.html)
-- [Changelog](https://edubruell.github.io/tidyllm/news/)
-- [Documentation](https://edubruell.github.io/tidyllm/)
-- Use-case oriented articles:
-  - [Classifying Texts with
-    tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_classifiers.html)
-  - [Structured Question Answering from
-    PDFs](https://edubruell.github.io/tidyllm/articles/tidyllm-pdfquestions.html)
-  - [Embedding Models in
-    tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_embed.html)
-  - [Working with Files and
-    Media](https://edubruell.github.io/tidyllm/articles/tidyllm_video.html)
-  - [Local Models with
-    tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_local_models.html)
-  - [Command Line
-    Providers](https://edubruell.github.io/tidyllm/articles/tidyllm_cli.html)
+[Get Started with
+tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm.html)
+covers setup, your first chat and the basic verbs. Read it first, then
+pick the article that matches your task. The
+[Changelog](https://edubruell.github.io/tidyllm/news/) lists every
+change, and the [documentation](https://edubruell.github.io/tidyllm/)
+holds the function reference.
+
+**Start here: the common research tasks, simplest first**
+
+- [Working with Files and
+  Media](https://edubruell.github.io/tidyllm/articles/tidyllm_video.html):
+  Ask a model about an image, a recording, a video or a PDF page.
+- [Classifying Texts with
+  tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_classifiers.html):
+  Label thousands of free-text answers with a codebook, and check the
+  labels against a sample coded by people.
+- [Decision Models with
+  tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_decide.html):
+  Not a chat model: a cheap model that answers fixed yes/no, choice or
+  score questions about a text or image and returns a probability for
+  each answer. Use it to code many texts quickly.
+- [Embedding Models in
+  tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_embed.html):
+  Models that translate texts into numbers, which you can use to find
+  similar texts, group them or search them.
+- [Structured Question Answering from
+  PDFs](https://edubruell.github.io/tidyllm/articles/tidyllm-pdfquestions.html):
+  Ask the same questions of a folder of papers and get a table with one
+  row per paper.
+
+**Go deeper: setup choices and larger builds**
+
+- [Local Models with
+  tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_local_models.html):
+  Run models on your own computer, for confidential data.
+- [Command Line
+  Providers](https://edubruell.github.io/tidyllm/articles/tidyllm_cli.html):
+  Chat through a coding agent you already pay for, such as Claude Code,
+  Codex or Vibe, without an API key.
+- [Using Tools with
+  tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_tools.html):
+  Let a model call your own R functions or search the web while it
+  answers.
+- [Using tidyllm in
+  Shiny](https://edubruell.github.io/tidyllm/articles/tidyllm_shiny.html):
+  Build an app in which many users call models without freezing it.
 
 ## Similar packages
 

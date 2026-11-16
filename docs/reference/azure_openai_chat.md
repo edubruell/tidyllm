@@ -9,7 +9,7 @@ Completions API and returns the assistant's reply.
 azure_openai_chat(
   .llm,
   .endpoint_url = Sys.getenv("AZURE_ENDPOINT_URL"),
-  .deployment = "gpt-4o-mini",
+  .deployment = "gpt-6-luna",
   .api_version = "2024-08-01-preview",
   .max_completion_tokens = NULL,
   .reasoning_effort = NULL,
@@ -46,7 +46,7 @@ azure_openai_chat(
 
 - .deployment:
 
-  The identifier of the model that is deployed (default: "gpt-4o-mini").
+  The identifier of the model that is deployed (default: "gpt-6-luna").
 
 - .api_version:
 

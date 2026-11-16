@@ -104,9 +104,10 @@ gemini_chat(
 - .thinking_level:
 
   How much the model reasons before answering: `"minimal"`, `"low"`,
-  `"medium"` or `"high"` (default: NULL, the model's own default).
-  Supported levels vary by model; `gemini-3.8-flash` accepts `"low"`,
-  `"medium"` and `"high"`.
+  `"medium"`, `"high"` or `"xhigh"` (default: NULL, the model's own
+  default). Supported levels vary by model; `gemini-3.8-flash` and the
+  Gemini 4 models accept `"low"`, `"medium"` and `"high"`, and
+  `gemini-4-hydrogen` also `"xhigh"`.
 
 - .thinking_budget:
 

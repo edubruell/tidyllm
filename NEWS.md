@@ -1,4 +1,4 @@
-# tidyllm 0.8.0 (development version)
+# tidyllm 0.8.0
 
 This release adds `decide()`, a verb for decision models that answer fixed questions with a probability, and `jev()`, a provider for them. It also moves defaults to current provider APIs and removes Perplexity as a provider. It includes the changes of 0.7.2, which reached GitHub only.
 

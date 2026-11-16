@@ -1,6 +1,161 @@
 # Changelog
 
-## tidyllm 0.7.2
+## tidyllm 0.8.0
+
+This release adds
+[`decide()`](https://edubruell.github.io/tidyllm/reference/decide.md), a
+verb for decision models that answer fixed questions with a probability,
+and [`jev()`](https://edubruell.github.io/tidyllm/reference/jev.md), a
+provider for them. It also moves defaults to current provider APIs and
+removes Perplexity as a provider. It includes the changes of 0.7.2,
+which reached GitHub only.
+
+### `decide()`: closed questions with probabilities
+
+Decision models answer fixed yes/no, choice or score questions about a
+text and report how likely each answer is. Use them to classify, screen
+or score many texts quickly. The questions are the fields of a
+[`tidyllm_schema()`](https://edubruell.github.io/tidyllm/reference/tidyllm_schema.md):
+[`field_lgl()`](https://edubruell.github.io/tidyllm/reference/field_chr.md)
+asks yes/no,
+[`field_fct()`](https://edubruell.github.io/tidyllm/reference/field_chr.md)
+asks a choice, and `field_fct(.ordered = TRUE)` asks a score over
+ordered levels.
+
+\
+`questions`` ``<-`` `[`tidyllm_schema`](https://edubruell.github.io/tidyllm/reference/tidyllm_schema.md)`(`\
+`  late ``=`` `[`field_lgl`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(``"Was the payment late?"``)``,`\
+`  tone ``=`` `[`field_fct`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(``"Tone of the message"``, .levels ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"polite"``, ``"angry"``)``)``,`\
+`  severity ``=`` `[`field_fct`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(``"How severe is the complaint?"``,`\
+`    .levels ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"low"``, ``"medium"``, ``"high"``)``, .ordered ``=`` ``TRUE``)`\
+`)`\
+\
+[`decide`](https://edubruell.github.io/tidyllm/reference/decide.md)`(``"The invoice arrived three weeks late and nobody answers my mails."``,`\
+`       ``questions``, `[`jev`](https://edubruell.github.io/tidyllm/reference/jev.md)`(``)``)`
+
+The result is a tibble with one row per question: `question`, `type`,
+`answer`, `probability`, `confidence` and `probabilities`. The
+attributes `usage`, `latency` and `model` describe the call, and
+`.dry_run = TRUE` returns the request without sending it.
+
+- **Providers:** the new
+  [`jev()`](https://edubruell.github.io/tidyllm/reference/jev.md) covers
+  TypeSafe AI’s Jev models and any server with the same System One API
+  (key in `TYPESAFE_API_KEY`, `.server` for another URL).
+  [`openai()`](https://edubruell.github.io/tidyllm/reference/openai.md),
+  [`gemini()`](https://edubruell.github.io/tidyllm/reference/gemini.md)
+  and
+  [`ollama()`](https://edubruell.github.io/tidyllm/reference/ollama.md)
+  also work with
+  [`decide()`](https://edubruell.github.io/tidyllm/reference/decide.md).
+  [`ollama()`](https://edubruell.github.io/tidyllm/reference/ollama.md)
+  uses the local `clef-flash` model and has not been tested against a
+  running model yet.
+- **Many texts:** pass a character vector or a list. Each element is one
+  item and gets one request, sent in parallel (`.max_active`, default
+  5). The result gains a leading `state` label and an integer
+  `state_id`. An item that fails gives `NA` rows and a warning; the
+  other items keep their results.
+- **Images, audio and PDFs:** `.state` can hold
+  [`img()`](https://edubruell.github.io/tidyllm/reference/img.md),
+  [`audio_file()`](https://edubruell.github.io/tidyllm/reference/audio_file.md),
+  [`video_file()`](https://edubruell.github.io/tidyllm/reference/video_file.md)
+  and
+  [`pdf_file()`](https://edubruell.github.io/tidyllm/reference/pdf_file.md)
+  objects, or a named list of parts that belong together.
+  `provider_capabilities(.what = "decide_media")` shows what each
+  provider reads. Limits are checked before anything is sent, and
+  [`decide()`](https://edubruell.github.io/tidyllm/reference/decide.md)
+  never resizes an image. A PDF sent to a provider that cannot read PDFs
+  goes as extracted text, with one notice.
+- **Question helpers:**
+  [`field_fct()`](https://edubruell.github.io/tidyllm/reference/field_chr.md)
+  gains `.ordered` and `.level_descriptions`, and
+  [`field_lgl()`](https://edubruell.github.io/tidyllm/reference/field_chr.md)
+  gains `.true` and `.false`. Only
+  [`decide()`](https://edubruell.github.io/tidyllm/reference/decide.md)
+  uses them.
+
+### Find things in images with `field_box()` (experimental)
+
+`field_box("The cat in`photo`")` asks
+[`decide()`](https://edubruell.github.io/tidyllm/reference/decide.md)
+for one box around a thing in a picture. The result gets a row of type
+`"box"` with `top`, `bottom`, `left` and `right` as fractions of the
+image, and
+[`box_to_pixels()`](https://edubruell.github.io/tidyllm/reference/box_to_pixels.md)
+converts them to pixels. A box question always returns a box, so pair it
+with a yes/no question. This works with
+[`jev()`](https://edubruell.github.io/tidyllm/reference/jev.md) only,
+and the format may change.
+
+### Read many replies at once
+
+[`get_reply()`](https://edubruell.github.io/tidyllm/reference/get_reply.md),
+[`get_reply_data()`](https://edubruell.github.io/tidyllm/reference/get_reply_data.md)
+and
+[`get_metadata()`](https://edubruell.github.io/tidyllm/reference/get_metadata.md)
+now accept the list that
+[`parallel_chat()`](https://edubruell.github.io/tidyllm/reference/parallel_chat.md)
+and
+[`fetch_batch()`](https://edubruell.github.io/tidyllm/reference/fetch_batch.md)
+return.
+[`get_reply()`](https://edubruell.github.io/tidyllm/reference/get_reply.md)
+gives one string per reply; the other two give a tibble with one row per
+reply (`reply_id`, `error`, then the schema fields or metadata). A
+failed request keeps its row, with the message in `error`.
+
+\
+`replies`` ``<-`` `[`parallel_chat`](https://edubruell.github.io/tidyllm/reference/parallel_chat.md)`(``prompts``, `[`claude`](https://edubruell.github.io/tidyllm/reference/claude.md)`(``.json_schema ``=`` ``schema``)``)`\
+[`get_reply_data`](https://edubruell.github.io/tidyllm/reference/get_reply_data.md)`(``replies``)`
+
+### Updated for current provider APIs
+
+- [`mistral()`](https://edubruell.github.io/tidyllm/reference/mistral.md)
+  defaults to `mistral-large-4`, which always reasons;
+  `.reasoning_effort` takes `"low"`, `"medium"` or `"high"`. Pass
+  `.model = "zai-glm-5-3"` for the previous default.
+- [`openai()`](https://edubruell.github.io/tidyllm/reference/openai.md)
+  accepts every reasoning effort the API names, from `"none"` to
+  `"max"`; each model takes a subset. `.temperature` works only at
+  effort `"none"`.
+  [`openai_websearch()`](https://edubruell.github.io/tidyllm/reference/openai_websearch.md)
+  and
+  [`openai_deep_research()`](https://edubruell.github.io/tidyllm/reference/openai_deep_research.md)
+  use the `web_search` tool type.
+- [`gemini()`](https://edubruell.github.io/tidyllm/reference/gemini.md)
+  accepts `.thinking_level = "xhigh"` (supported by
+  `gemini-4-hydrogen`). `gemini-3.8-flash` and the Gemini 4 models
+  reject `"minimal"`.
+- [`llamacpp()`](https://edubruell.github.io/tidyllm/reference/llamacpp.md)
+  looks for the server on port 9931, the default of current
+  `llama-server` builds. Set `LLAMACPP_SERVER` for an older address.
+- [`azure_openai()`](https://edubruell.github.io/tidyllm/reference/azure_openai.md)
+  defaults to a deployment named `gpt-6-luna`; pass `.deployment` if
+  yours differs. This path has no live test.
+- tidyllm requires httr2 1.2.3 or later.
+  [`decide()`](https://edubruell.github.io/tidyllm/reference/decide.md)
+  now also retries HTTP 529 (overloaded), like 429 and 503.
+
+### Perplexity removed
+
+[`perplexity()`](https://edubruell.github.io/tidyllm/reference/perplexity.md)
+and the `perplexity_*()` functions, deprecated since 0.7.0, are gone.
+Use Perplexity models through `openrouter(.model = "perplexity/sonar")`
+and web search through
+[`websearch_tool()`](https://edubruell.github.io/tidyllm/reference/websearch_tool.md).
+[`deep_research()`](https://edubruell.github.io/tidyllm/reference/deep_research.md)
+supports
+[`openai()`](https://edubruell.github.io/tidyllm/reference/openai.md)
+only, so start research jobs again with
+`deep_research(.provider = openai())`.
+[`perplexity()`](https://edubruell.github.io/tidyllm/reference/perplexity.md)
+stays as a stub that stops with a pointer to the replacements.
+
+## tidyllm 0.7.2: GitHub-only release, never on CRAN
+
+Version 0.7.2 was released on GitHub only. Its changes reach CRAN with
+0.8.0.
 
 ### Embed images, audio and video
 
@@ -21,11 +176,9 @@ and images and audio with
 and
 [`video_file()`](https://edubruell.github.io/tidyllm/reference/video_file.md):
 
-``` r
-
-list("A cat", img("cat.jpg"), audio_file("cat.wav")) |>
-  embed(llamacpp())
-```
+\
+[`list`](https://rdrr.io/r/base/list.html)`(``"A cat"``, `[`img`](https://edubruell.github.io/tidyllm/reference/img.md)`(``"cat.jpg"``)``, `[`audio_file`](https://edubruell.github.io/tidyllm/reference/audio_file.md)`(``"cat.wav"``)``)`` ``|>`\
+`  `[`embed`](https://edubruell.github.io/tidyllm/reference/embed.md)`(`[`llamacpp`](https://edubruell.github.io/tidyllm/reference/llamacpp.md)`(``)``)`
 
 Each element becomes one row. Put several items in a nested list to get
 one combined vector for them.
@@ -90,11 +243,9 @@ with
 now take `.thinking_level`, one of `"minimal"`, `"low"`, `"medium"` or
 `"high"`:
 
-``` r
-
-llm_message("What is 17 * 23?") |>
-  chat(gemini(.thinking_level = "high"))
-```
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"What is 17 * 23?"``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`gemini`](https://edubruell.github.io/tidyllm/reference/gemini.md)`(``.thinking_level ``=`` ``"high"``)``)`
 
 Leave it unset to use the model’s default. Supported levels vary by
 model; `gemini-3.8-flash` accepts `"low"`, `"medium"` and `"high"`, and
@@ -120,11 +271,9 @@ context, image input and tool calls. It reasons by default;
 off. Large 4 supports only `"high"` and `"none"`. Batches sent with
 `send_batch(mistral())` take `.reasoning_effort` too.
 
-``` r
-
-llm_message("Summarise this contract clause.") |>
-  chat(mistral(.model = "mistral-large-4", .reasoning_effort = "none"))
-```
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Summarise this contract clause."``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`mistral`](https://edubruell.github.io/tidyllm/reference/mistral.md)`(``.model ``=`` ``"mistral-large-4"``, .reasoning_effort ``=`` ``"none"``)``)`
 
 The default Mistral model does not change, and `mistral-large-latest`
 still points to the previous Large model.
@@ -140,14 +289,12 @@ runs OpenAI’s Codex CLI and
 [`vibe_cli()`](https://edubruell.github.io/tidyllm/reference/vibe_cli.md)
 runs Mistral’s Vibe CLI:
 
-``` r
-
-llm_message("Explain what a tibble is in one sentence.") |>
-  chat(codex_cli())
-
-llm_message("Explain what a tibble is in one sentence.") |>
-  chat(vibe_cli(.model = "mistral-large-4"))
-```
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Explain what a tibble is in one sentence."``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`codex_cli`](https://edubruell.github.io/tidyllm/reference/codex_cli.md)`(``)``)`\
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Explain what a tibble is in one sentence."``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`vibe_cli`](https://edubruell.github.io/tidyllm/reference/vibe_cli.md)`(``.model ``=`` ``"mistral-large-4"``)``)`
 
 [`codex_cli()`](https://edubruell.github.io/tidyllm/reference/codex_cli.md)
 uses the login Codex already has. With `.use_api_key = TRUE` it uses
@@ -268,11 +415,9 @@ JSON output back, using the login that tool already has. There is no API
 key to set, and the usage counts against whatever plan the CLI is signed
 in to.
 
-``` r
-
-llm_message("Explain R's S7 classes in three sentences.") |>
-  chat(claude_cli())
-```
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Explain R's S7 classes in three sentences."``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`claude_cli`](https://edubruell.github.io/tidyllm/reference/claude_cli.md)`(``)``)`
 
 Everything the CLI reports comes back through the usual accessors:
 [`get_metadata()`](https://edubruell.github.io/tidyllm/reference/get_metadata.md)
@@ -293,11 +438,9 @@ quietly edits files in your working directory is not what the rest of
 the package does. Pass `.cli_tools` to allow specific tools back, or
 `.cli_tools = TRUE` to hand over to the CLI’s own configuration.
 
-``` r
-
-llm_message("Summarise the DESCRIPTION file here.") |>
-  chat(claude_cli(.cli_tools = c("Read", "Glob")))
-```
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Summarise the DESCRIPTION file here."``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`claude_cli`](https://edubruell.github.io/tidyllm/reference/claude_cli.md)`(``.cli_tools ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(``"Read"``, ``"Glob"``)``)``)`
 
 `.stateful = TRUE` leaves the conversation on the CLI’s side: the first
 call records a session id, and later calls resume it instead of
@@ -319,10 +462,8 @@ installers write to. A GUI R session does not inherit the PATH from your
 shell profile, so RStudio in particular can miss a perfectly good
 install in `~/.local/bin`. To point at it yourself, set
 
-``` r
-
-options(tidyllm_claude_cli_path = "/path/to/claude")
-```
+\
+[`options`](https://rdrr.io/r/base/options.html)`(``tidyllm_claude_cli_path ``=`` ``"/path/to/claude"``)`
 
 in your `.Rprofile`, or the `TIDYLLM_CLAUDE_CLI` environment variable,
 or pass `claude_cli(.binary = "/path/to/claude")` for a single call.
@@ -341,11 +482,9 @@ local models through
 and
 [`llamacpp()`](https://edubruell.github.io/tidyllm/reference/llamacpp.md):
 
-``` r
-
-llm_message("Which central banks changed interest rates this week?") |>
-  chat(ollama(), .tools = websearch_tool())
-```
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Which central banks changed interest rates this week?"``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`ollama`](https://edubruell.github.io/tidyllm/reference/ollama.md)`(``)``, .tools ``=`` `[`websearch_tool`](https://edubruell.github.io/tidyllm/reference/websearch_tool.md)`(``)``)`
 
 The model decides when to search and chooses the query; nothing else is
 up to it. The number of results, whether full page text is included and
@@ -378,12 +517,10 @@ the page text. It takes the same arguments as
 so you can check what a model would see, or collect search results as
 data:
 
-``` r
-
-c("ZEW Mannheim", "ifo Institut") |>
-  purrr::map(websearch, .max_results = 3) |>
-  purrr::list_rbind()
-```
+\
+[`c`](https://rdrr.io/r/base/c.html)`(``"ZEW Mannheim"``, ``"ifo Institut"``)`` ``|>`\
+`  ``purrr``::`[`map`](https://purrr.tidyverse.org/reference/map.html)`(``websearch``, .max_results ``=`` ``3``)`` ``|>`\
+`  ``purrr``::`[`list_rbind`](https://purrr.tidyverse.org/reference/list_c.html)`(``)`
 
 ### Tool results reach Claude and Gemini as plain text
 
@@ -555,18 +692,16 @@ using. All three end in an `LLMMessage`, and the last two share the same
 [`fetch_job()`](https://edubruell.github.io/tidyllm/reference/fetch_job.md)
 vocabulary.
 
-``` r
-
-job <- llm_message("Summarise this 400-page report") |>
-  send_chat(claude(), .stream = TRUE)
-
-while (check_job(job) == "running") {
-  do_something_else()
-  cat("\r", nchar(get_partial(job)), "characters so far")
-}
-
-reply <- fetch_job(job)          # the LLMMessage chat() would have returned
-```
+\
+`job`` ``<-`` `[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Summarise this 400-page report"``)`` ``|>`\
+`  `[`send_chat`](https://edubruell.github.io/tidyllm/reference/send_chat.md)`(`[`claude`](https://edubruell.github.io/tidyllm/reference/claude.md)`(``)``, .stream ``=`` ``TRUE``)`\
+\
+`while`` ``(`[`check_job`](https://edubruell.github.io/tidyllm/reference/check_job.md)`(``job``)`` ``==`` ``"running"``)`` ``{`\
+`  ``do_something_else``(``)`\
+`  `[`cat`](https://rdrr.io/r/base/cat.html)`(``"\r"``, `[`nchar`](https://rdrr.io/r/base/nchar.html)`(`[`get_partial`](https://edubruell.github.io/tidyllm/reference/get_partial.md)`(``job``)``)``, ``"characters so far"``)`\
+`}`\
+\
+`reply`` ``<-`` `[`fetch_job`](https://edubruell.github.io/tidyllm/reference/fetch_job.md)`(``job``)``          ``# the LLMMessage chat() would have returned`
 
 [`get_partial()`](https://edubruell.github.io/tidyllm/reference/get_partial.md)
 is the text so far and
@@ -601,12 +736,10 @@ mechanism.
 
 ### `parallel_chat()`: many prompts at once
 
-``` r
-
-answers <- parallel_chat(list(physics = llm_message("What is a photon?"),
-                              biology = llm_message("What is a ribosome?")),
-                         claude())
-```
+\
+`answers`` ``<-`` `[`parallel_chat`](https://edubruell.github.io/tidyllm/reference/parallel_chat.md)`(`[`list`](https://rdrr.io/r/base/list.html)`(``physics ``=`` `[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"What is a photon?"``)``,`\
+`                              biology ``=`` `[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"What is a ribosome?"``)``)``,`\
+`                         `[`claude`](https://edubruell.github.io/tidyllm/reference/claude.md)`(``)``)`
 
 Performs a list of messages concurrently against one provider and
 returns their replies in the same order under the same names. Measured
@@ -679,11 +812,9 @@ and
 The reply streams to the console, the tool calls run when the stream
 ends, and each follow-up round streams too.
 
-``` r
-
-llm_message("What is the weather in Berlin and Reykjavik?") |>
-  chat(claude(), .tools = weather_tool, .stream = TRUE)
-```
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"What is the weather in Berlin and Reykjavik?"``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`claude`](https://edubruell.github.io/tidyllm/reference/claude.md)`(``)``, .tools ``=`` ``weather_tool``, .stream ``=`` ``TRUE``)`
 
 The reason it was blocked is that the tool loop reads tool calls out of
 a complete response body, which a stream never produced; it produced a
@@ -1110,24 +1241,22 @@ All non-text content now attaches to messages through a single `.media`
 argument that accepts any combination of media types. Pass a single
 object or a list:
 
-``` r
-
-# Single image
-llm_message("What is in this image?",
-            .media = img("photo.jpg")) |>
-  chat(claude())
-
-# Multiple images in one message
-llm_message("Describe the difference between these two images.",
-            .media = list(img("before.jpg"), img("after.jpg"))) |>
-  chat(openai())
-
-# Mixed types: image + PDF together
-llm_message("Does this figure match what is reported in Table 2?",
-            .media = list(img("figure_3.png"),
-                          pdf_file("paper.pdf", pages = 1:8))) |>
-  chat(gemini())
-```
+\
+`# Single image`\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"What is in this image?"``,`\
+`            .media ``=`` `[`img`](https://edubruell.github.io/tidyllm/reference/img.md)`(``"photo.jpg"``)``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`claude`](https://edubruell.github.io/tidyllm/reference/claude.md)`(``)``)`\
+\
+`# Multiple images in one message`\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Describe the difference between these two images."``,`\
+`            .media ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`img`](https://edubruell.github.io/tidyllm/reference/img.md)`(``"before.jpg"``)``, `[`img`](https://edubruell.github.io/tidyllm/reference/img.md)`(``"after.jpg"``)``)``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`openai`](https://edubruell.github.io/tidyllm/reference/openai.md)`(``)``)`\
+\
+`# Mixed types: image + PDF together`\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Does this figure match what is reported in Table 2?"``,`\
+`            .media ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`img`](https://edubruell.github.io/tidyllm/reference/img.md)`(``"figure_3.png"``)``,`\
+`                          `[`pdf_file`](https://edubruell.github.io/tidyllm/reference/pdf_file.md)`(``"paper.pdf"``, pages ``=`` ``1``:``8``)``)``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`gemini`](https://edubruell.github.io/tidyllm/reference/gemini.md)`(``)``)`
 
 #### New media constructors
 
@@ -1148,34 +1277,32 @@ Three new constructors join
   Gemini receive the binary file (preserving layout, tables, and scanned
   content); all other providers receive extracted text automatically
 
-``` r
-
-# Transcribe a recording
-llm_message("Summarise what is discussed in this interview.",
-            .media = audio_file("bosch_interview.mp3")) |>
-  chat(gemini())
-
-# Analyse a video clip with a JSON schema
-video_schema <- tidyllm_schema(
-  title      = field_chr("Title or subject of the clip"),
-  era        = field_chr("Approximate decade or period depicted"),
-  key_people = field_chr("Names mentioned, semicolon-separated")
-)
-
-llm_message("Analyse this video clip.",
-            .media = video_file("documentary.mp4")) |>
-  chat(gemini(), .json_schema = video_schema)
-
-# Extract references from a scanned PDF (binary path, no OCR needed)
-llm_message("Extract all references in APA format.",
-            .media = pdf_file("1995_Neal_Industry_Specific.pdf")) |>
-  chat(claude(), .json_schema = ref_schema)
-
-# Force text extraction for any provider
-llm_message("Summarise this report.",
-            .media = pdf_file("annual_report.pdf", .text_extract = TRUE)) |>
-  chat(openai())
-```
+\
+`# Transcribe a recording`\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Summarise what is discussed in this interview."``,`\
+`            .media ``=`` `[`audio_file`](https://edubruell.github.io/tidyllm/reference/audio_file.md)`(``"bosch_interview.mp3"``)``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`gemini`](https://edubruell.github.io/tidyllm/reference/gemini.md)`(``)``)`\
+\
+`# Analyse a video clip with a JSON schema`\
+`video_schema`` ``<-`` `[`tidyllm_schema`](https://edubruell.github.io/tidyllm/reference/tidyllm_schema.md)`(`\
+`  title      ``=`` `[`field_chr`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(``"Title or subject of the clip"``)``,`\
+`  era        ``=`` `[`field_chr`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(``"Approximate decade or period depicted"``)``,`\
+`  key_people ``=`` `[`field_chr`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(``"Names mentioned, semicolon-separated"``)`\
+`)`\
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Analyse this video clip."``,`\
+`            .media ``=`` `[`video_file`](https://edubruell.github.io/tidyllm/reference/video_file.md)`(``"documentary.mp4"``)``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`gemini`](https://edubruell.github.io/tidyllm/reference/gemini.md)`(``)``, .json_schema ``=`` ``video_schema``)`\
+\
+`# Extract references from a scanned PDF (binary path, no OCR needed)`\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Extract all references in APA format."``,`\
+`            .media ``=`` `[`pdf_file`](https://edubruell.github.io/tidyllm/reference/pdf_file.md)`(``"1995_Neal_Industry_Specific.pdf"``)``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`claude`](https://edubruell.github.io/tidyllm/reference/claude.md)`(``)``, .json_schema ``=`` ``ref_schema``)`\
+\
+`# Force text extraction for any provider`\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Summarise this report."``,`\
+`            .media ``=`` `[`pdf_file`](https://edubruell.github.io/tidyllm/reference/pdf_file.md)`(``"annual_report.pdf"``, .text_extract ``=`` ``TRUE``)``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`openai`](https://edubruell.github.io/tidyllm/reference/openai.md)`(``)``)`
 
 #### Multi-image support
 
@@ -1188,25 +1315,23 @@ per message; Gemini up to 3,600.
 A unified set of verbs manages files stored on provider servers. Upload
 once, reuse across many requests:
 
-``` r
-
-# Upload; returns a tidyllm_file handle
-report <- upload_file(gemini(), .path = "quarterly_report.pdf")
-
-# Attach the handle to any message via .files
-llm_message("What were the key results this quarter?",
-            .files = report) |>
-  chat(gemini())
-
-llm_message("List the top three risks in the document.",
-            .files = report) |>
-  chat(gemini())
-
-# Inspect and manage uploaded files
-list_files(gemini())
-file_info(gemini(), report)      # accepts a tidyllm_file or a plain ID string
-delete_file(gemini(), report)
-```
+\
+`# Upload; returns a tidyllm_file handle`\
+`report`` ``<-`` `[`upload_file`](https://edubruell.github.io/tidyllm/reference/upload_file.md)`(`[`gemini`](https://edubruell.github.io/tidyllm/reference/gemini.md)`(``)``, .path ``=`` ``"quarterly_report.pdf"``)`\
+\
+`# Attach the handle to any message via .files`\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"What were the key results this quarter?"``,`\
+`            .files ``=`` ``report``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`gemini`](https://edubruell.github.io/tidyllm/reference/gemini.md)`(``)``)`\
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"List the top three risks in the document."``,`\
+`            .files ``=`` ``report``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`gemini`](https://edubruell.github.io/tidyllm/reference/gemini.md)`(``)``)`\
+\
+`# Inspect and manage uploaded files`\
+[`list_files`](https://edubruell.github.io/tidyllm/reference/list_files.md)`(`[`gemini`](https://edubruell.github.io/tidyllm/reference/gemini.md)`(``)``)`\
+[`file_info`](https://edubruell.github.io/tidyllm/reference/file_info.md)`(`[`gemini`](https://edubruell.github.io/tidyllm/reference/gemini.md)`(``)``, ``report``)``      ``# accepts a tidyllm_file or a plain ID string`\
+[`delete_file`](https://edubruell.github.io/tidyllm/reference/delete_file.md)`(`[`gemini`](https://edubruell.github.io/tidyllm/reference/gemini.md)`(``)``, ``report``)`
 
 The same pattern works with
 [`claude()`](https://edubruell.github.io/tidyllm/reference/claude.md)
@@ -1238,51 +1363,45 @@ API](https://developers.openai.com/api/reference/resources/responses)
 (`POST /v1/responses`). All existing workflows continue to work
 unchanged. New capabilities unlocked by the rewrite:
 
-``` r
-
-# Reasoning effort for o-series models
-llm_message("Prove that there are infinitely many primes.") |>
-  chat(openai(.model = "o4-mini"), .reasoning_effort = "high")
-
-# Stateful multi-turn conversations (server retains context by ID)
-first  <- llm_message("My name is Alex.") |>
-  chat(openai(), .stateful = TRUE)
-
-second <- llm_message("What is my name?") |>
-  chat(openai(), .previous_response_id = first)
-```
+\
+`# Reasoning effort for o-series models`\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Prove that there are infinitely many primes."``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`openai`](https://edubruell.github.io/tidyllm/reference/openai.md)`(``.model ``=`` ``"o4-mini"``)``, .reasoning_effort ``=`` ``"high"``)`\
+\
+`# Stateful multi-turn conversations (server retains context by ID)`\
+`first``  ``<-`` `[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"My name is Alex."``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`openai`](https://edubruell.github.io/tidyllm/reference/openai.md)`(``)``, .stateful ``=`` ``TRUE``)`\
+\
+`second`` ``<-`` `[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"What is my name?"``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`openai`](https://edubruell.github.io/tidyllm/reference/openai.md)`(``)``, .previous_response_id ``=`` ``first``)`
 
 Batch processing (`send_batch(openai())`) continues to use the Chat
 Completions endpoint internally.
 
 #### Built-in server-executed tools
 
-``` r
-
-# Web search: the server runs the search, results appear in the reply
-llm_message("What happened in AI research this week?") |>
-  chat(openai(), .tools = openai_websearch())
-
-# Code interpreter
-llm_message("Plot a histogram of 1,000 standard-normal samples.") |>
-  chat(openai(), .tools = openai_code_interpreter())
-
-# Mix built-in and custom tools in one call
-llm_message("Find today's EUR/USD rate and convert 500 EUR.") |>
-  chat(openai(), .tools = list(openai_websearch(), my_converter_tool))
-```
+\
+`# Web search: the server runs the search, results appear in the reply`\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"What happened in AI research this week?"``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`openai`](https://edubruell.github.io/tidyllm/reference/openai.md)`(``)``, .tools ``=`` `[`openai_websearch`](https://edubruell.github.io/tidyllm/reference/openai_websearch.md)`(``)``)`\
+\
+`# Code interpreter`\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Plot a histogram of 1,000 standard-normal samples."``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`openai`](https://edubruell.github.io/tidyllm/reference/openai.md)`(``)``, .tools ``=`` `[`openai_code_interpreter`](https://edubruell.github.io/tidyllm/reference/openai_code_interpreter.md)`(``)``)`\
+\
+`# Mix built-in and custom tools in one call`\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Find today's EUR/USD rate and convert 500 EUR."``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`openai`](https://edubruell.github.io/tidyllm/reference/openai.md)`(``)``, .tools ``=`` `[`list`](https://rdrr.io/r/base/list.html)`(`[`openai_websearch`](https://edubruell.github.io/tidyllm/reference/openai_websearch.md)`(``)``, ``my_converter_tool``)``)`
 
 #### OpenAI deep research
 
-``` r
-
-# Background research job (slow; typically 5 to 30 minutes)
-job <- llm_message("Survey the literature on causal inference with LLMs.") |>
-  deep_research(openai(.model = "o4-mini-deep-research"), .background = TRUE)
-
-check_job(job)
-result <- fetch_job(job)
-```
+\
+`# Background research job (slow; typically 5 to 30 minutes)`\
+`job`` ``<-`` `[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Survey the literature on causal inference with LLMs."``)`` ``|>`\
+`  `[`deep_research`](https://edubruell.github.io/tidyllm/reference/deep_research.md)`(`[`openai`](https://edubruell.github.io/tidyllm/reference/openai.md)`(``.model ``=`` ``"o4-mini-deep-research"``)``, .background ``=`` ``TRUE``)`\
+\
+[`check_job`](https://edubruell.github.io/tidyllm/reference/check_job.md)`(``job``)`\
+`result`` ``<-`` `[`fetch_job`](https://edubruell.github.io/tidyllm/reference/fetch_job.md)`(``job``)`
 
 ### New Provider: `chat_completions()`
 
@@ -1292,15 +1411,13 @@ provider for any OpenAI-compatible endpoint (vLLM, LiteLLM, Together AI,
 Anyscale, and others), without having to repurpose
 [`openai()`](https://edubruell.github.io/tidyllm/reference/openai.md):
 
-``` r
-
-llm_message("Hello!") |>
-  chat(chat_completions(
-    .api_url        = "https://api.together.xyz/v1/",
-    .api_key_env_var = "TOGETHER_API_KEY",
-    .model          = "meta-llama/Llama-3-8b-chat-hf"
-  ))
-```
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Hello!"``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`chat_completions`](https://edubruell.github.io/tidyllm/reference/chat_completions_chat.md)`(`\
+`    .api_url        ``=`` ``"https://api.together.xyz/v1/"``,`\
+`    .api_key_env_var ``=`` ``"TOGETHER_API_KEY"``,`\
+`    .model          ``=`` ``"meta-llama/Llama-3-8b-chat-hf"`\
+`  ``)``)`
 
 ### Provider Enhancements
 
@@ -1309,11 +1426,9 @@ llm_message("Hello!") |>
 - New `.reasoning_effort` parameter for Magistral thinking models
   (`"low"`, `"medium"`, `"high"`):
 
-  ``` r
-
-  llm_message("Is this argument valid?", .media = pdf_file("proof.pdf")) |>
-    chat(mistral(.model = "magistral-medium-latest"), .reasoning_effort = "high")
-  ```
+  \
+  [`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Is this argument valid?"``, .media ``=`` `[`pdf_file`](https://edubruell.github.io/tidyllm/reference/pdf_file.md)`(``"proof.pdf"``)``)`` ``|>`\
+  `  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`mistral`](https://edubruell.github.io/tidyllm/reference/mistral.md)`(``.model ``=`` ``"magistral-medium-latest"``)``, .reasoning_effort ``=`` ``"high"``)`
 
 #### OpenRouter
 
@@ -1399,21 +1514,19 @@ CRAN release: 2026-03-17
 Access to 300+ models from a single API key via OpenRouter. Supports
 chat, embeddings, model listing, and fallback routing across providers:
 
-``` r
-
-# Chat with any model on OpenRouter
-llm_message("What is the capital of France?") |>
-  chat(openrouter(.model = "anthropic/claude-3.5-sonnet"))
-
-# List available models
-list_models(openrouter())
-
-# Check account credits
-openrouter_credits()
-
-# Retrieve generation metadata (tokens, cost) for a completed request
-openrouter_generation(generation_id)
-```
+\
+`# Chat with any model on OpenRouter`\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"What is the capital of France?"``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`openrouter`](https://edubruell.github.io/tidyllm/reference/openrouter.md)`(``.model ``=`` ``"anthropic/claude-3.5-sonnet"``)``)`\
+\
+`# List available models`\
+[`list_models`](https://edubruell.github.io/tidyllm/reference/list_models.md)`(`[`openrouter`](https://edubruell.github.io/tidyllm/reference/openrouter.md)`(``)``)`\
+\
+`# Check account credits`\
+[`openrouter_credits`](https://edubruell.github.io/tidyllm/reference/openrouter_credits.md)`(``)`\
+\
+`# Retrieve generation metadata (tokens, cost) for a completed request`\
+[`openrouter_generation`](https://edubruell.github.io/tidyllm/reference/openrouter_generation.md)`(``generation_id``)`
 
 OpenRouter also supports **provider fallback routing** — specify a list
 of fallback providers to use if the primary model is unavailable.
@@ -1424,25 +1537,23 @@ Full support for local
 [llama.cpp](https://github.com/ggml-org/llama.cpp) servers, including
 chat, embeddings, reranking, and model management:
 
-``` r
-
-# Chat with a local llama.cpp server
-llm_message("Explain R to a Python developer") |>
-  chat(llamacpp())
-
-# Generate embeddings
-c("text one", "text two") |> embed(llamacpp())
-
-# Rerank documents by relevance
-llamacpp_rerank("best R package for LLMs", c("tidyllm", "ellmer", "httr2"))
-
-# Model management
-llamacpp_list_local_models()          # list models in the model directory
-list_hf_gguf_files("Qwen/Qwen2.5-7B-Instruct-GGUF")  # browse HuggingFace GGUF files
-llamacpp_download_model("Qwen/Qwen2.5-7B-Instruct-GGUF", "qwen2.5-7b-instruct-q4_k_m.gguf")
-llamacpp_delete_model("path/to/model.gguf")
-llamacpp_health()                     # check server status
-```
+\
+`# Chat with a local llama.cpp server`\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Explain R to a Python developer"``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`llamacpp`](https://edubruell.github.io/tidyllm/reference/llamacpp.md)`(``)``)`\
+\
+`# Generate embeddings`\
+[`c`](https://rdrr.io/r/base/c.html)`(``"text one"``, ``"text two"``)`` ``|>`` `[`embed`](https://edubruell.github.io/tidyllm/reference/embed.md)`(`[`llamacpp`](https://edubruell.github.io/tidyllm/reference/llamacpp.md)`(``)``)`\
+\
+`# Rerank documents by relevance`\
+[`llamacpp_rerank`](https://edubruell.github.io/tidyllm/reference/llamacpp_rerank.md)`(``"best R package for LLMs"``, `[`c`](https://rdrr.io/r/base/c.html)`(``"tidyllm"``, ``"ellmer"``, ``"httr2"``)``)`\
+\
+`# Model management`\
+[`llamacpp_list_local_models`](https://edubruell.github.io/tidyllm/reference/llamacpp_list_local_models.md)`(``)``          ``# list models in the model directory`\
+[`list_hf_gguf_files`](https://edubruell.github.io/tidyllm/reference/list_hf_gguf_files.md)`(``"Qwen/Qwen2.5-7B-Instruct-GGUF"``)``  ``# browse HuggingFace GGUF files`\
+[`llamacpp_download_model`](https://edubruell.github.io/tidyllm/reference/llamacpp_download_model.md)`(``"Qwen/Qwen2.5-7B-Instruct-GGUF"``, ``"qwen2.5-7b-instruct-q4_k_m.gguf"``)`\
+[`llamacpp_delete_model`](https://edubruell.github.io/tidyllm/reference/llamacpp_delete_model.md)`(``"path/to/model.gguf"``)`\
+[`llamacpp_health`](https://edubruell.github.io/tidyllm/reference/llamacpp_health.md)`(``)``                     ``# check server status`
 
 ### New Verbs
 
@@ -1454,22 +1565,20 @@ verb for running long-horizon research tasks. Currently supported by
 [`perplexity()`](https://edubruell.github.io/tidyllm/reference/perplexity.md)
 via the `sonar-deep-research` model:
 
-``` r
-
-# Blocking — waits for completion and returns an LLMMessage
-result <- llm_message("Compare Rust and Go for systems programming") |>
-  deep_research(perplexity())
-
-get_reply(result)
-get_metadata(result)$api_specific[[1]]$citations
-
-# Background — returns immediately, poll with check_job() / fetch_job()
-job <- llm_message("Summarize the latest EU AI Act developments") |>
-  deep_research(perplexity(), .background = TRUE)
-
-check_job(job)   # poll status
-result <- fetch_job(job)  # retrieve when complete
-```
+\
+`# Blocking — waits for completion and returns an LLMMessage`\
+`result`` ``<-`` `[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Compare Rust and Go for systems programming"``)`` ``|>`\
+`  `[`deep_research`](https://edubruell.github.io/tidyllm/reference/deep_research.md)`(`[`perplexity`](https://edubruell.github.io/tidyllm/reference/perplexity.md)`(``)``)`\
+\
+[`get_reply`](https://edubruell.github.io/tidyllm/reference/get_reply.md)`(``result``)`\
+[`get_metadata`](https://edubruell.github.io/tidyllm/reference/get_metadata.md)`(``result``)``$``api_specific``[[``1``]``]``$``citations`\
+\
+`# Background — returns immediately, poll with check_job() / fetch_job()`\
+`job`` ``<-`` `[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Summarize the latest EU AI Act developments"``)`` ``|>`\
+`  `[`deep_research`](https://edubruell.github.io/tidyllm/reference/deep_research.md)`(`[`perplexity`](https://edubruell.github.io/tidyllm/reference/perplexity.md)`(``)``, .background ``=`` ``TRUE``)`\
+\
+[`check_job`](https://edubruell.github.io/tidyllm/reference/check_job.md)`(``job``)``   ``# poll status`\
+`result`` ``<-`` `[`fetch_job`](https://edubruell.github.io/tidyllm/reference/fetch_job.md)`(``job``)``  ``# retrieve when complete`
 
 [`check_job()`](https://edubruell.github.io/tidyllm/reference/check_job.md)
 and
@@ -1477,26 +1586,21 @@ and
 are type-dispatching aliases — they delegate to
 [`check_batch()`](https://edubruell.github.io/tidyllm/reference/check_batch.md)/[`fetch_batch()`](https://edubruell.github.io/tidyllm/reference/fetch_batch.md)
 for batch objects, or to
-[`perplexity_check_research()`](https://edubruell.github.io/tidyllm/reference/perplexity_check_research.md)/[`perplexity_fetch_research()`](https://edubruell.github.io/tidyllm/reference/perplexity_fetch_research.md)
-for research jobs.
+`perplexity_check_research()`/`perplexity_fetch_research()` for research
+jobs.
 
 ### Provider Enhancements
 
 #### Perplexity
 
-- New
-  [`perplexity_deep_research()`](https://edubruell.github.io/tidyllm/reference/perplexity_deep_research.md),
-  [`perplexity_check_research()`](https://edubruell.github.io/tidyllm/reference/perplexity_check_research.md),
-  [`perplexity_fetch_research()`](https://edubruell.github.io/tidyllm/reference/perplexity_fetch_research.md)
-  functions for async deep research via the `sonar-deep-research` model
-- `.json_schema` structured output support for both
-  [`perplexity_chat()`](https://edubruell.github.io/tidyllm/reference/perplexity_chat.md)
-  and
-  [`perplexity_deep_research()`](https://edubruell.github.io/tidyllm/reference/perplexity_deep_research.md)
+- New `perplexity_deep_research()`, `perplexity_check_research()`,
+  `perplexity_fetch_research()` functions for async deep research via
+  the `sonar-deep-research` model
+- `.json_schema` structured output support for both `perplexity_chat()`
+  and `perplexity_deep_research()`
 - New `.search_domain_filter` parameter to restrict or exclude domains
   (up to 10, prefix `-` to exclude)
-- New `.reasoning_effort` parameter for
-  [`perplexity_deep_research()`](https://edubruell.github.io/tidyllm/reference/perplexity_deep_research.md)
+- New `.reasoning_effort` parameter for `perplexity_deep_research()`
   (`"low"`, `"medium"`, `"high"`)
 
 #### Thinking modes
@@ -1532,23 +1636,19 @@ Extended thinking is now available for two additional providers:
   tools defined in ellmer (and packages like `btw`) to be used directly
   with tidyllm:
 
-  ``` r
-
-  btw_tool <- ellmer_tool(btw::btw_tool_files_list_files)
-  llm_message("List files in the R/ folder") |>
-    chat(claude(), .tools = btw_tool)
-  ```
+  \
+  `btw_tool`` ``<-`` `[`ellmer_tool`](https://edubruell.github.io/tidyllm/reference/ellmer_tool.md)`(``btw``::`[`btw_tool_files_list_files`](https://posit-dev.github.io/btw/reference/deprecated.html)`)`\
+  [`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"List files in the R/ folder"``)`` ``|>`\
+  `  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`claude`](https://edubruell.github.io/tidyllm/reference/claude.md)`(``)``, .tools ``=`` ``btw_tool``)`
 
 - [`ellmer_tool()`](https://edubruell.github.io/tidyllm/reference/ellmer_tool.md)
   also supports provider-native **builtin tools** such as
   [`ellmer::claude_tool_web_search()`](https://ellmer.tidyverse.org/reference/claude_tool_web_search.html):
 
-  ``` r
-
-  web_search <- ellmer_tool(ellmer::claude_tool_web_search())
-  llm_message("Latest AI safety news?") |>
-    chat(claude(), .tools = web_search)
-  ```
+  \
+  `web_search`` ``<-`` `[`ellmer_tool`](https://edubruell.github.io/tidyllm/reference/ellmer_tool.md)`(``ellmer``::`[`claude_tool_web_search`](https://ellmer.tidyverse.org/reference/claude_tool_web_search.html)`(``)``)`\
+  [`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Latest AI safety news?"``)`` ``|>`\
+  `  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`claude`](https://edubruell.github.io/tidyllm/reference/claude.md)`(``)``, .tools ``=`` ``web_search``)`
 
 - [`chat_ellmer()`](https://edubruell.github.io/tidyllm/reference/chat_ellmer.md)
   lets you use any ellmer `Chat` object as a tidyllm provider, bridging
@@ -1614,9 +1714,8 @@ Extended thinking is now available for two additional providers:
   [`send_groq_batch()`](https://edubruell.github.io/tidyllm/reference/send_groq_batch.md)
   to their respective fetch functions, causing structured-output batch
   results to be returned as raw text
-- Fixed
-  [`perplexity_deep_research()`](https://edubruell.github.io/tidyllm/reference/perplexity_deep_research.md)
-  API request format for the async endpoint
+- Fixed `perplexity_deep_research()` API request format for the async
+  endpoint
 
 ## Version 0.3.5
 
@@ -1629,41 +1728,39 @@ CRAN release: 2025-08-22
   At the moment only implemented for the
   [`chat()`](https://edubruell.github.io/tidyllm/reference/chat.md) verb
 
-``` r
-
-example_file <- here::here("vignettes","die_verwandlung.pdf") |> 
-  claude_upload_file()
-
-llm_message("Summarize the document in 100 words") |>
-  chat(claude(.file_ids = example_file$file_id)) 
-  
-#> Message History:
-#> system:
-#> You are a helpful assistant
-#> --------------------------------------------------------------
-#> user:
-#> Summarize the document in 100 words
-#> --------------------------------------------------------------
-#> assistant:
-#> This document is the German text of Franz Kafka's novella
-#> "Die Verwandlung" (The Metamorphosis), published through
-#> Project Gutenberg. The story follows Gregor Samsa, a
-#> traveling salesman who wakes up one morning transformed into
-#> a monstrous insect-like creature. Unable to work and support
-#> his family, Gregor becomes isolated in his room while his
-#> family struggles with the burden of his transformation.
-#> His sister Grete initially cares for him, bringing food
-#> and cleaning his room, but over time the family's situation
-#> deteriorates financially and emotionally. The story explores
-#> themes of alienation, family duty, and dehumanization as
-#> Gregor gradually loses his human identity and connection to
-#> his family. Eventually, Gregor dies, and his family, though
-#> initially grief-stricken, ultimately feels relieved and
-#> optimistic about their future without the burden of caring
-#> for him. The text includes the complete three-part novella
-#> along with Project Gutenberg licensing information.
-#> --------------------------------------------------------------  
-```
+\
+`example_file`` ``<-`` ``here``::`[`here`](https://here.r-lib.org/reference/here.html)`(``"vignettes"``,``"die_verwandlung.pdf"``)`` ``|>`` `\
+`  `[`claude_upload_file`](https://edubruell.github.io/tidyllm/reference/claude_upload_file.md)`(``)`\
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Summarize the document in 100 words"``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`claude`](https://edubruell.github.io/tidyllm/reference/claude.md)`(``.file_ids ``=`` ``example_file``$``file_id``)``)`` `\
+`  `\
+`#> Message History:`\
+`#> system:`\
+`#> You are a helpful assistant`\
+`#> --------------------------------------------------------------`\
+`#> user:`\
+`#> Summarize the document in 100 words`\
+`#> --------------------------------------------------------------`\
+`#> assistant:`\
+`#> This document is the German text of Franz Kafka's novella`\
+`#> "Die Verwandlung" (The Metamorphosis), published through`\
+`#> Project Gutenberg. The story follows Gregor Samsa, a`\
+`#> traveling salesman who wakes up one morning transformed into`\
+`#> a monstrous insect-like creature. Unable to work and support`\
+`#> his family, Gregor becomes isolated in his room while his`\
+`#> family struggles with the burden of his transformation.`\
+`#> His sister Grete initially cares for him, bringing food`\
+`#> and cleaning his room, but over time the family's situation`\
+`#> deteriorates financially and emotionally. The story explores`\
+`#> themes of alienation, family duty, and dehumanization as`\
+`#> Gregor gradually loses his human identity and connection to`\
+`#> his family. Eventually, Gregor dies, and his family, though`\
+`#> initially grief-stricken, ultimately feels relieved and`\
+`#> optimistic about their future without the burden of caring`\
+`#> for him. The text includes the complete three-part novella`\
+`#> along with Project Gutenberg licensing information.`\
+`#> --------------------------------------------------------------  `
 
 - **Expanded Perplexity Support:** The
   [`perplexity()`](https://edubruell.github.io/tidyllm/reference/perplexity.md)
@@ -1835,35 +1932,33 @@ been introduced to tidyllm. At the moment tool use is available for
 [`gemini()`](https://edubruell.github.io/tidyllm/reference/gemini.md)
 and [`groq()`](https://edubruell.github.io/tidyllm/reference/groq.md):
 
-``` r
-
-get_current_time <- function(tz, format = "%Y-%m-%d %H:%M:%S") {
-  format(Sys.time(), tz = tz, format = format, usetz = TRUE)
-}
-
-time_tool <- tidyllm_tool(
-  .f = get_current_time,
-  .description = "Returns the current time in a specified timezone. Use this to determine the current time in any location.",
-  tz = field_chr("The time zone identifier (e.g., 'Europe/Berlin', 'America/New_York', 'Asia/Tokyo', 'UTC'). Required."),
-  format = field_chr("Format string for the time output. Default is '%Y-%m-%d %H:%M:%S'.")
-)
-
-
-llm_message("What's the exact time in Stuttgart?") |>
-  chat(openai,.tools=time_tool)
-  
-#> Message History:
-#> system:
-#> You are a helpful assistant
-#> --------------------------------------------------------------
-#> user:
-#> What's the exact time in Stuttgart?
-#> --------------------------------------------------------------
-#> assistant:
-#> The current time in Stuttgart (Europe/Berlin timezone) is
-#> 2025-03-03 09:51:22 CET.
-#> --------------------------------------------------------------  
-```
+\
+`get_current_time`` ``<-`` ``function``(``tz``, ``format`` ``=`` ``"%Y-%m-%d %H:%M:%S"``)`` ``{`\
+`  `[`format`](https://rdrr.io/r/base/format.html)`(`[`Sys.time`](https://rdrr.io/r/base/Sys.time.html)`(``)``, tz ``=`` ``tz``, format ``=`` ``format``, usetz ``=`` ``TRUE``)`\
+`}`\
+\
+`time_tool`` ``<-`` `[`tidyllm_tool`](https://edubruell.github.io/tidyllm/reference/tidyllm_tool.md)`(`\
+`  .f ``=`` ``get_current_time``,`\
+`  .description ``=`` ``"Returns the current time in a specified timezone. Use this to determine the current time in any location."``,`\
+`  tz ``=`` `[`field_chr`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(``"The time zone identifier (e.g., 'Europe/Berlin', 'America/New_York', 'Asia/Tokyo', 'UTC'). Required."``)``,`\
+`  format ``=`` `[`field_chr`](https://edubruell.github.io/tidyllm/reference/field_chr.md)`(``"Format string for the time output. Default is '%Y-%m-%d %H:%M:%S'."``)`\
+`)`\
+\
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"What's the exact time in Stuttgart?"``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(``openai``,.tools``=``time_tool``)`\
+`  `\
+`#> Message History:`\
+`#> system:`\
+`#> You are a helpful assistant`\
+`#> --------------------------------------------------------------`\
+`#> user:`\
+`#> What's the exact time in Stuttgart?`\
+`#> --------------------------------------------------------------`\
+`#> assistant:`\
+`#> The current time in Stuttgart (Europe/Berlin timezone) is`\
+`#> 2025-03-03 09:51:22 CET.`\
+`#> --------------------------------------------------------------  `
 
 You can use the
 [`tidyllm_tool()`](https://edubruell.github.io/tidyllm/reference/tidyllm_tool.md)
@@ -1899,16 +1994,14 @@ function lets you create image objects for embedding. You can mix text
 and [`img()`](https://edubruell.github.io/tidyllm/reference/img.md)
 objects in a list and send them to Voyage AI for multimodal embeddings:
 
-``` r
-
-list("tidyllm", img(here::here("docs", "logo.png"))) |>
-  embed(voyage)
-#> # A tibble: 2 × 2
-#>   input          embeddings   
-#>   <chr>          <list>       
-#> 1 tidyllm        <dbl [1,024]>
-#> 2 [IMG] logo.png <dbl [1,024]>
-```
+\
+[`list`](https://rdrr.io/r/base/list.html)`(``"tidyllm"``, `[`img`](https://edubruell.github.io/tidyllm/reference/img.md)`(``here``::`[`here`](https://here.r-lib.org/reference/here.html)`(``"docs"``, ``"logo.png"``)``)``)`` ``|>`\
+`  `[`embed`](https://edubruell.github.io/tidyllm/reference/embed.md)`(``voyage``)`\
+`#> # A tibble: 2 × 2`\
+`#>   input          embeddings   `\
+`#>   <chr>          <list>       `\
+`#> 1 tidyllm        <dbl [1,024]>`\
+`#> 2 [IMG] logo.png <dbl [1,024]>`
 
 In this example, both text (`"tidyllm"`) and an image (`logo.png`) are
 embedded together. The function returns a tibble where the `input`
@@ -1982,21 +2075,19 @@ person_message  <- llm_message("imagine a person profile") |>
   [`get_logprobs()`](https://edubruell.github.io/tidyllm/reference/get_logprobs.md)
   function:
 
-``` r
-
-badger_poem <- llm_message("Write a haiku about badgers") |>
-    chat(openai(.logprobs=TRUE,.top_logprobs=5))
-
- badger_poem |> get_logprobs()
-#> # A tibble: 19 × 5
-#>   reply_index token          logprob bytes     top_logprobs
-#>          <int> <chr>            <dbl> <list>    <list>      
-#>  1           1 "In"       -0.491      <int [2]> <list [5]>  
-#>  2           1 " moon"    -1.12       <int [5]> <list [5]>  
-#>  3           1 "lit"      -0.00489    <int [3]> <list [5]>  
-#>  4           1 " forest"  -1.18       <int [7]> <list [5]>  
-#>  5           1 ","        -0.00532    <int [1]> <list [5]>  
-```
+\
+`badger_poem`` ``<-`` `[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Write a haiku about badgers"``)`` ``|>`\
+`    `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`openai`](https://edubruell.github.io/tidyllm/reference/openai.md)`(``.logprobs``=``TRUE``,.top_logprobs``=``5``)``)`\
+\
+` ``badger_poem`` ``|>`` `[`get_logprobs`](https://edubruell.github.io/tidyllm/reference/get_logprobs.md)`(``)`\
+`#> # A tibble: 19 × 5`\
+`#>   reply_index token          logprob bytes     top_logprobs`\
+`#>          <int> <chr>            <dbl> <list>    <list>      `\
+`#>  1           1 "In"       -0.491      <int [2]> <list [5]>  `\
+`#>  2           1 " moon"    -1.12       <int [5]> <list [5]>  `\
+`#>  3           1 "lit"      -0.00489    <int [3]> <list [5]>  `\
+`#>  4           1 " forest"  -1.18       <int [7]> <list [5]>  `\
+`#>  5           1 ","        -0.00532    <int [1]> <list [5]>  `
 
 - Bugfix in OpenAI metadata extraction
 - New
@@ -2005,17 +2096,15 @@ badger_poem <- llm_message("Write a haiku about badgers") |>
 - [`list_models()`](https://edubruell.github.io/tidyllm/reference/list_models.md)
   is now a verb supporting most providers.
 
-``` r
-
-list_models(openai)
-#> # A tibble: 52 × 3
-#>    id                                   created             owned_by
-#>    <chr>                                <chr>               <chr>   
-#>  1 gpt-4o-mini-audio-preview-2024-12-17 2024-12-13 18:52:00 system  
-#>  2 gpt-4-turbo-2024-04-09               2024-04-08 18:41:17 system  
-#>  3 dall-e-3                             2023-10-31 20:46:29 system  
-#>  4 dall-e-2                             2023-11-01 00:22:57 system  
-```
+\
+[`list_models`](https://edubruell.github.io/tidyllm/reference/list_models.md)`(``openai``)`\
+`#> # A tibble: 52 × 3`\
+`#>    id                                   created             owned_by`\
+`#>    <chr>                                <chr>               <chr>   `\
+`#>  1 gpt-4o-mini-audio-preview-2024-12-17 2024-12-13 18:52:00 system  `\
+`#>  2 gpt-4-turbo-2024-04-09               2024-04-08 18:41:17 system  `\
+`#>  3 dall-e-3                             2023-10-31 20:46:29 system  `\
+`#>  4 dall-e-2                             2023-11-01 00:22:57 system  `
 
 - New synchronous
   [`send_ollama_batch()`](https://edubruell.github.io/tidyllm/reference/send_ollama_batch.md)
@@ -2072,32 +2161,28 @@ directly as an alternative more verbose and provider-specific interface.
 
 #### Old Usage:
 
-``` r
-
-llm_message("Hello World") |>
-  openai(.model = "gpt-4o")
-```
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Hello World"``)`` ``|>`\
+`  `[`openai`](https://edubruell.github.io/tidyllm/reference/openai.md)`(``.model ``=`` ``"gpt-4o"``)`
 
 #### New Usage:
 
-``` r
-
-# Recommended Verb-Based Approach
-llm_message("Hello World") |>
-  chat(openai(.model = "gpt-4o"))
-  
-# Or even configuring a provider outside
-my_ollama <- ollama(.model = "llama3.2-vision:90B",
-       .ollama_server = "https://ollama.example-server.de",
-       .temperature = 0)
-
-llm_message("Hello World") |>
-  chat(my_ollama)
-
-# Alternative Approach is to use more verbose specific functions:
-llm_message("Hello World") |>
-  openai_chat(.model = "gpt-4o")
-```
+\
+`# Recommended Verb-Based Approach`\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Hello World"``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`openai`](https://edubruell.github.io/tidyllm/reference/openai.md)`(``.model ``=`` ``"gpt-4o"``)``)`\
+`  `\
+`# Or even configuring a provider outside`\
+`my_ollama`` ``<-`` `[`ollama`](https://edubruell.github.io/tidyllm/reference/ollama.md)`(``.model ``=`` ``"llama3.2-vision:90B"``,`\
+`       .ollama_server ``=`` ``"https://ollama.example-server.de"``,`\
+`       .temperature ``=`` ``0``)`\
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Hello World"``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(``my_ollama``)`\
+\
+`# Alternative Approach is to use more verbose specific functions:`\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Hello World"``)`` ``|>`\
+`  `[`openai_chat`](https://edubruell.github.io/tidyllm/reference/openai_chat.md)`(``.model ``=`` ``"gpt-4o"``)`
 
 #### Backward Compatibility:
 
@@ -2154,17 +2239,14 @@ llm_message("Hello World") |>
   maintainer of an obscure R package works with grounding but does only
   lead to a hallucination without:
 
-``` r
-
-llm_message("What is tidyllm and who maintains this package?") |>
-  gemini_chat(.grounding_threshold = 0.3)
-```
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"What is tidyllm and who maintains this package?"``)`` ``|>`\
+`  `[`gemini_chat`](https://edubruell.github.io/tidyllm/reference/gemini_chat.md)`(``.grounding_threshold ``=`` ``0.3``)`
 
 - Perplexity as additional API provider available through
-  [`perplexity_chat()`](https://edubruell.github.io/tidyllm/reference/perplexity_chat.md).
-  The neat feature of perplexity is the up-to-date web search it does
-  with detailed citations. Cited sources are available in the
-  `api_specific`-list column of
+  `perplexity_chat()`. The neat feature of perplexity is the up-to-date
+  web search it does with detailed citations. Cited sources are
+  available in the `api_specific`-list column of
   [`get_metadata()`](https://edubruell.github.io/tidyllm/reference/get_metadata.md)
 - `.json_schema` support for
   [`ollama()`](https://edubruell.github.io/tidyllm/reference/ollama.md)
@@ -2212,16 +2294,14 @@ llm_message("What is tidyllm and who maintains this package?") |>
 - Google Gemini now supports working with multiple files in one message
   for the file upload functionality
 
-``` r
-
-here::here("local_wip","example.mp3") |> gemini_upload_file()
-here::here("local_wip","legrille.mp4") |> gemini_upload_file()
-
-file_tibble <- gemini_list_files()
-
-llm_message("What are these two files about?") |>
-  gemini_chat(.fileid=file_tibble$name)
-```
+\
+`here``::`[`here`](https://here.r-lib.org/reference/here.html)`(``"local_wip"``,``"example.mp3"``)`` ``|>`` `[`gemini_upload_file`](https://edubruell.github.io/tidyllm/reference/gemini_upload_file.md)`(``)`\
+`here``::`[`here`](https://here.r-lib.org/reference/here.html)`(``"local_wip"``,``"legrille.mp4"``)`` ``|>`` `[`gemini_upload_file`](https://edubruell.github.io/tidyllm/reference/gemini_upload_file.md)`(``)`\
+\
+`file_tibble`` ``<-`` `[`gemini_list_files`](https://edubruell.github.io/tidyllm/reference/gemini_list_files.md)`(``)`\
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"What are these two files about?"``)`` ``|>`\
+`  `[`gemini_chat`](https://edubruell.github.io/tidyllm/reference/gemini_chat.md)`(``.fileid``=``file_tibble``$``name``)`
 
 ## Version 0.2.5
 
@@ -2309,32 +2389,28 @@ directly as an alternative more verbose and provider-specific interface.
 
 #### Old Usage:
 
-``` r
-
-llm_message("Hello World") |>
-  openai(.model = "gpt-4o")
-```
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Hello World"``)`` ``|>`\
+`  `[`openai`](https://edubruell.github.io/tidyllm/reference/openai.md)`(``.model ``=`` ``"gpt-4o"``)`
 
 #### New Usage:
 
-``` r
-
-# Recommended Verb-Based Approach
-llm_message("Hello World") |>
-  chat(openai(.model = "gpt-4o"))
-  
-# Or even configuring a provider outside
-my_ollama <- ollama(.model = "llama3.2-vision:90B",
-       .ollama_server = "https://ollama.example-server.de",
-       .temperature = 0)
-
-llm_message("Hello World") |>
-  chat(my_ollama)
-
-# Alternative Approach is to use more verbose specific functions:
-llm_message("Hello World") |>
-  openai_chat(.model = "gpt-4o")
-```
+\
+`# Recommended Verb-Based Approach`\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Hello World"``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`openai`](https://edubruell.github.io/tidyllm/reference/openai.md)`(``.model ``=`` ``"gpt-4o"``)``)`\
+`  `\
+`# Or even configuring a provider outside`\
+`my_ollama`` ``<-`` `[`ollama`](https://edubruell.github.io/tidyllm/reference/ollama.md)`(``.model ``=`` ``"llama3.2-vision:90B"``,`\
+`       .ollama_server ``=`` ``"https://ollama.example-server.de"``,`\
+`       .temperature ``=`` ``0``)`\
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Hello World"``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(``my_ollama``)`\
+\
+`# Alternative Approach is to use more verbose specific functions:`\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Hello World"``)`` ``|>`\
+`  `[`openai_chat`](https://edubruell.github.io/tidyllm/reference/openai_chat.md)`(``.model ``=`` ``"gpt-4o"``)`
 
 - **Backward Compatibility**:
   - The old functions
@@ -2355,18 +2431,16 @@ llm_message("Hello World") |>
   main API-function
 - Support for the file upload workflows for Gemini:
 
-``` r
-
-#Upload a file for use with gemini
-upload_info <- gemini_upload_file("example.mp3")
-
-#Make the file available during a Gemini API call
-llm_message("Summarize this speech") |>
-  gemini(.fileid = upload_info$name)
-  
-#Delte the file from the Google servers
-gemini_delete_file(upload_info$name)
-```
+\
+`#Upload a file for use with gemini`\
+`upload_info`` ``<-`` `[`gemini_upload_file`](https://edubruell.github.io/tidyllm/reference/gemini_upload_file.md)`(``"example.mp3"``)`\
+\
+`#Make the file available during a Gemini API call`\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Summarize this speech"``)`` ``|>`\
+`  `[`gemini`](https://edubruell.github.io/tidyllm/reference/gemini.md)`(``.fileid ``=`` ``upload_info``$``name``)`\
+`  `\
+`#Delte the file from the Google servers`\
+[`gemini_delete_file`](https://edubruell.github.io/tidyllm/reference/gemini_delete_file.md)`(``upload_info``$``name``)`
 
 - Brings video and audio support to tidyllm
 - Google Gemini is the second API to fully support
@@ -2431,20 +2505,18 @@ gemini_delete_file(upload_info$name)
   metadata, controlled via the new `tidyllm_print_metadata` option or a
   new `.meta`-arguement for the print method.
 
-``` r
-
-conversation <- llm_message("Write a short poem about software development") |>
-  claude()
-  
-#Get metdata on token usage and model as tibble  
-get_metadata(conversation)
-
-#or print it with the message
-print(conversation,.meta=TRUE)
-
-#Or allways print it
-options(tidyllm_print_metadata=TRUE)
-```
+\
+`conversation`` ``<-`` `[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Write a short poem about software development"``)`` ``|>`\
+`  `[`claude`](https://edubruell.github.io/tidyllm/reference/claude.md)`(``)`\
+`  `\
+`#Get metdata on token usage and model as tibble  `\
+[`get_metadata`](https://edubruell.github.io/tidyllm/reference/get_metadata.md)`(``conversation``)`\
+\
+`#or print it with the message`\
+[`print`](https://rdrr.io/r/base/print.html)`(``conversation``,.meta``=``TRUE``)`\
+\
+`#Or allways print it`\
+[`options`](https://rdrr.io/r/base/options.html)`(``tidyllm_print_metadata``=``TRUE``)`
 
 ### Bug-fixes:
 

@@ -11,7 +11,7 @@ do something before you write code that depends on it."><meta property="og:image
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.7.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.8.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -23,14 +23,18 @@ do something before you write code that depends on it."><meta property="og:image
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/tidyllm_classifiers.html">Classifying Texts with tidyllm</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm_cli.html">Command Line Providers</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm_embed.html">Embedding Models in tidyllm</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm_local_models.html">Local Models with tidyllm</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm_shiny.html">Using tidyllm in Shiny</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm_tools.html">Using Tools with tidyllm</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><h6 class="dropdown-header" data-toc-skip>Start here</h6></li>
     <li><a class="dropdown-item" href="../articles/tidyllm_video.html">Working with Files and Media</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_classifiers.html">Classifying Texts with tidyllm</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_decide.html">Decision Models with tidyllm</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_embed.html">Embedding Models in tidyllm</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm-pdfquestions.html">Structured Question Answering from PDFs</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Go deeper</h6></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_local_models.html">Local Models with tidyllm</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_cli.html">Command Line Providers</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_tools.html">Using Tools with tidyllm</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_shiny.html">Using tidyllm in Shiny</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -60,7 +64,7 @@ do something before you write code that depends on it.</p>
 <span>  .provider <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .verb <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  .argument <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  .what <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"arguments"</span>, <span class="st">"media"</span>, <span class="st">"embed_media"</span><span class="op">)</span>,</span>
+<span>  .what <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"arguments"</span>, <span class="st">"media"</span>, <span class="st">"embed_media"</span>, <span class="st">"decide_media"</span><span class="op">)</span>,</span>
 <span>  .internal <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -87,7 +91,9 @@ keep. <code>NULL</code> keeps all arguments.</p></dd>
 <dt id="arg--what">.what<a class="anchor" aria-label="anchor" href="#arg--what"></a></dt>
 <dd><p><code>"arguments"</code> (default) for verbs and arguments, <code>"media"</code> for
 one row per provider and media type a message can carry, or <code>"embed_media"</code> for
-one row per provider and media type <code><a href="embed.html">embed()</a></code> accepts (<code>image</code>, <code>audio</code>, <code>video</code>).</p></dd>
+one row per provider and media type <code><a href="embed.html">embed()</a></code> accepts (<code>image</code>, <code>audio</code>, <code>video</code>),
+or <code>"decide_media"</code> for one row per provider that implements <code><a href="decide.html">decide()</a></code> and
+media type it reads in a <code><a href="decide.html">decide()</a></code> state (<code>image</code>, <code>audio</code>, <code>video</code>, <code>pdf</code>).</p></dd>
 
 
 <dt id="arg--internal">.internal<a class="anchor" aria-label="anchor" href="#arg--internal"></a></dt>
@@ -100,7 +106,9 @@ one row per provider and media type <code><a href="embed.html">embed()</a></code
     <p>A tibble. For <code>.what = "arguments"</code>: <code>provider</code>, <code>verb</code>, <code>argument</code>,
 <code>default</code>, <code>fn</code>. For <code>.what = "media"</code>: <code>provider</code>, <code>media</code> (<code>image</code>, <code>pdf</code>,
 <code>audio</code>, <code>video</code>, <code>files</code>) and <code>supported</code>. For <code>.what = "embed_media"</code> the same
-columns with <code>media</code> limited to <code>image</code>, <code>audio</code> and <code>video</code>.</p>
+columns with <code>media</code> limited to <code>image</code>, <code>audio</code> and <code>video</code>. For
+<code>.what = "decide_media"</code> the same columns with <code>media</code> limited to <code>image</code>,
+<code>audio</code>, <code>video</code> and <code>pdf</code>, for providers with a <code><a href="decide.html">decide()</a></code> method.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>

@@ -25,7 +25,7 @@ llamacpp_chat(
   .seed = NULL,
   .thinking = NULL,
   .thinking_budget = NULL,
-  .server = Sys.getenv("LLAMACPP_SERVER", "http://localhost:8080"),
+  .server = Sys.getenv("LLAMACPP_SERVER", "http://localhost:9931"),
   .api_key = Sys.getenv("LLAMACPP_API_KEY", ""),
   .timeout = 120,
   .verbose = FALSE,
@@ -116,7 +116,7 @@ llamacpp_chat(
 - .server:
 
   Base URL of the llama.cpp server. Defaults to the `LLAMACPP_SERVER`
-  environment variable, falling back to `"http://localhost:8080"`.
+  environment variable, falling back to `"http://localhost:9931"`.
 
 - .api_key:
 

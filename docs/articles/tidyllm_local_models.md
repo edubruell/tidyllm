@@ -45,10 +45,8 @@ tidyllm exposes the full Ollama model lifecycle from R. The
 [`list_models()`](https://edubruell.github.io/tidyllm/reference/list_models.md)
 verb shows what is already available on the machine:
 
-``` r
-
-list_models(ollama())
-```
+\
+[`list_models`](https://edubruell.github.io/tidyllm/reference/list_models.md)`(`[`ollama`](https://edubruell.github.io/tidyllm/reference/ollama.md)`(``)``)`
 
     ## # A tibble: 4 × 6
     ##   name                 size   format family  parameter_size quantization_level
@@ -61,10 +59,8 @@ list_models(ollama())
 [`ollama_download_model()`](https://edubruell.github.io/tidyllm/reference/ollama_download_model.md)
 pulls a model by name from the Ollama registry and shows a progress bar:
 
-``` r
-
-ollama_download_model("qwen3.5:4b")
-```
+\
+[`ollama_download_model`](https://edubruell.github.io/tidyllm/reference/ollama_download_model.md)`(``"qwen3.5:4b"``)`
 
     ## Pulling qwen3.5:4b...
     ## ✓ Downloaded qwen3.5:4b (2.6 GB)
@@ -74,33 +70,27 @@ for distributing local models, and HuggingFace hosts thousands of them.
 Any GGUF-based model there can be installed directly into Ollama without
 leaving R:
 
-``` r
-
-ollama_download_model("https://huggingface.co/nsatya/SmolLM2-1.7B-Instruct")
-```
+\
+[`ollama_download_model`](https://edubruell.github.io/tidyllm/reference/ollama_download_model.md)`(``"https://huggingface.co/nsatya/SmolLM2-1.7B-Instruct"``)`
 
     ## Pulling from https://huggingface.co/nsatya/SmolLM2-1.7B-Instruct...
     ## ✓ Downloaded smollm2:1.7b (1.0 GB)
 
 To remove a model when you no longer need it:
 
-``` r
-
-ollama_delete_model("smollm2:1.7b")
-```
+\
+[`ollama_delete_model`](https://edubruell.github.io/tidyllm/reference/ollama_delete_model.md)`(``"smollm2:1.7b"``)`
 
 ### Chatting and embeddings
 
 Chat with the default model (`qwen3.5:4b`) using the standard tidyllm
 verb pattern:
 
-``` r
-
-reply <- llm_message("What is the difference between a tibble and a data frame in R?") |>
-  chat(ollama())
-
-get_reply(reply)
-```
+\
+`reply`` ``<-`` `[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"What is the difference between a tibble and a data frame in R?"``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`ollama`](https://edubruell.github.io/tidyllm/reference/ollama.md)`(``)``)`\
+\
+[`get_reply`](https://edubruell.github.io/tidyllm/reference/get_reply.md)`(``reply``)`
 
     ## [1] "A tibble is a modern reimagining of the data frame from the tidyverse. The main
     ## differences are that tibbles never convert strings to factors, never change column
@@ -115,12 +105,10 @@ are roughly three-quarters of a word each. The function default is
 support in principle, but a sane starting point on typical laptop
 hardware. For longer documents, increase it further to fit your input:
 
-``` r
-
-long_document |>
-  llm_message() |>
-  chat(ollama(.num_ctx = 131072))
-```
+\
+`long_document`` ``|>`\
+`  `[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`ollama`](https://edubruell.github.io/tidyllm/reference/ollama.md)`(``.num_ctx ``=`` ``131072``)``)`
 
 For embeddings, use the
 [`embed()`](https://edubruell.github.io/tidyllm/reference/embed.md)
@@ -129,11 +117,9 @@ making them useful for similarity search and clustering. The default
 embedding model is `qwen3-embedding:0.6b`, a purpose-built model for
 this task:
 
-``` r
-
-c("neural networks", "deep learning", "baking bread") |>
-  embed(ollama())
-```
+\
+[`c`](https://rdrr.io/r/base/c.html)`(``"neural networks"``, ``"deep learning"``, ``"baking bread"``)`` ``|>`\
+`  `[`embed`](https://edubruell.github.io/tidyllm/reference/embed.md)`(`[`ollama`](https://edubruell.github.io/tidyllm/reference/ollama.md)`(``)``)`
 
     ## # A tibble: 3 × 2
     ##   input           embeddings   
@@ -200,14 +186,14 @@ upgrading to Q8_0 on the 7B.
 
 Model size is measured in *parameters*, the numerical weights learned
 during training. More parameters generally means more capable, but also
-more memory required and slower inference. As of September 2026, strong
+more memory required and slower inference. As of November 2026, strong
 open-weight families come from a range of labs:
 
 | Family | Lab | Sizes | Notes |
 |----|----|----|----|
-| **Qwen3.8** | Alibaba | 27B dense | Apache 2.0; newest Qwen open weight (August 2026); `qwen3.8:27b` needs about 18 GB |
+| **Qwen3.8** | Alibaba | 27B dense | Apache 2.0; newest Qwen open weight (August 2026) with a 256K context; `qwen3.8:27b` needs about 18 GB |
 | **Qwen3.6** | Alibaba | 27B dense, 35B-A3B (MoE) | Apache 2.0; no small sizes, so Qwen3.5 (0.8B to 9B) remains tidyllm’s Ollama default line |
-| **Gemma 4** | Google | E2B, E4B, 12B, 26B-A4B (MoE), 31B dense | 140+ languages, native audio/video input; the 12B (June 2026) has a 256K context and fits a 16 GB laptop; Apache 2.0 |
+| **Gemma 4** | Google | E2B, E4B, 12B, 26B-A4B (MoE), 31B dense | 140+ languages, native audio/video input; the 12B (June 2026) has a 256K context and fits a 16 GB laptop, and `gemma4:e4b` is a smaller option; Apache 2.0 |
 | **GLM-5.3** | Z.ai | about 753B total (MoE); Flash: 320B total / 18B active | Successor to GLM-5.2 (August 2026); GLM-5.3 uses a custom license, GLM-5.3-Flash is MIT with a 1M context |
 | **Muse Glimmer** | Meta | 30B dense | Apache 2.0; multimodal (text and image), 131K context, runs on a single 24 GB GPU (August 2026); Meta’s larger Muse Spark models are closed |
 | **Kimi K3** | Moonshot AI | 2.8T total / 104B active (MoE) | Largest open-weight model; weights released July 26, 2026 under a custom Kimi K3 License that requires a deal for hosted services above \$20M a year |
@@ -238,19 +224,17 @@ MiniMax families. Because tidyllm uses the same verb-and-provider
 pattern for every provider, switching between candidates requires only
 changing the `.model` argument:
 
-``` r
-
-prompt <- llm_message("Classify this job description into a one-sentence occupation label:
-                        'I oversee a team of data engineers building our company data platform'")
-
-result_qwen    <- prompt |> chat(openrouter(.model = "qwen/qwen3.6-35b-a3b"))
-result_mistral <- prompt |> chat(openrouter(.model = "mistralai/mistral-medium-3-5"))
-result_kimi    <- prompt |> chat(openrouter(.model = "moonshotai/kimi-k3"))
-
-get_reply(result_qwen)
-get_reply(result_mistral)
-get_reply(result_kimi)
-```
+\
+`prompt`` ``<-`` `[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Classify this job description into a one-sentence occupation label:`\
+`                        'I oversee a team of data engineers building our company data platform'"``)`\
+\
+`result_qwen``    ``<-`` ``prompt`` ``|>`` `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`openrouter`](https://edubruell.github.io/tidyllm/reference/openrouter.md)`(``.model ``=`` ``"qwen/qwen3.6-35b-a3b"``)``)`\
+`result_mistral`` ``<-`` ``prompt`` ``|>`` `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`openrouter`](https://edubruell.github.io/tidyllm/reference/openrouter.md)`(``.model ``=`` ``"mistralai/mistral-medium-3-5"``)``)`\
+`result_kimi``    ``<-`` ``prompt`` ``|>`` `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`openrouter`](https://edubruell.github.io/tidyllm/reference/openrouter.md)`(``.model ``=`` ``"moonshotai/kimi-k3"``)``)`\
+\
+[`get_reply`](https://edubruell.github.io/tidyllm/reference/get_reply.md)`(``result_qwen``)`\
+[`get_reply`](https://edubruell.github.io/tidyllm/reference/get_reply.md)`(``result_mistral``)`\
+[`get_reply`](https://edubruell.github.io/tidyllm/reference/get_reply.md)`(``result_kimi``)`
 
     ## [1] "Data Engineering Manager: oversees a team responsible for building and maintaining the company data platform."
     ## [1] "Data Engineering Manager: leads engineers developing the organisation's core data infrastructure."
@@ -261,13 +245,11 @@ returns a table of all available models with pricing. You can filter it
 by context length (how much text the model can process at once) and sort
 by cost to shortlist candidates:
 
-``` r
-
-openrouter_list_models() |>
-  filter(context_length >= 32000) |>
-  arrange(prompt_price_per_million) |>
-  select(id, name, context_length, prompt_price_per_million, completion_price_per_million)
-```
+\
+[`openrouter_list_models`](https://edubruell.github.io/tidyllm/reference/openrouter_list_models.md)`(``)`` ``|>`\
+`  `[`filter`](https://dplyr.tidyverse.org/reference/filter.html)`(``context_length`` ``>=`` ``32000``)`` ``|>`\
+`  `[`arrange`](https://dplyr.tidyverse.org/reference/arrange.html)`(``prompt_price_per_million``)`` ``|>`\
+`  `[`select`](https://dplyr.tidyverse.org/reference/select.html)`(``id``, ``name``, ``context_length``, ``prompt_price_per_million``, ``completion_price_per_million``)`
 
     ## # A tibble: 8 × 5
     ##   id          name  context_length prompt_price_per_mil…¹ completion_price_per…²
@@ -288,10 +270,8 @@ locally for free.
 [`openrouter_credits()`](https://edubruell.github.io/tidyllm/reference/openrouter_credits.md)
 tracks how much of your balance the pilot has consumed:
 
-``` r
-
-openrouter_credits()
-```
+\
+[`openrouter_credits`](https://edubruell.github.io/tidyllm/reference/openrouter_credits.md)`(``)`
 
     ## # A tibble: 1 × 3
     ##   total_credits total_usage remaining
@@ -332,7 +312,7 @@ llama-server -m ~/models/Qwen3.5-8B-Q4_K_M.gguf -c 32768
 
 The `-c` flag sets the context window size in tokens (32768 is a good
 default for most tasks). Once started, the server listens on
-`http://localhost:8080` by default.
+`http://localhost:9931` by default.
 
 **Embeddings require a separate process.** The embedding endpoint uses a
 dedicated embedding model and must run on a different port:
@@ -352,7 +332,7 @@ file (run
 [`usethis::edit_r_environ()`](https://usethis.r-lib.org/reference/edit.html)
 to open it, then restart R):
 
-    LLAMACPP_SERVER=http://localhost:8080
+    LLAMACPP_SERVER=http://localhost:9931
     LLAMACPP_MODEL_DIR=~/models
 
 `LLAMACPP_SERVER` is the address tidyllm uses to reach the chat server.
@@ -368,10 +348,8 @@ functions to browse and download directly from R.
 shows all the quantization variants available for a given model
 repository:
 
-``` r
-
-list_hf_gguf_files("Qwen/Qwen3.5-8B-GGUF")
-```
+\
+[`list_hf_gguf_files`](https://edubruell.github.io/tidyllm/reference/list_hf_gguf_files.md)`(``"Qwen/Qwen3.5-8B-GGUF"``)`
 
     ## # A tibble: 5 × 3
     ##   filename               size_gb url                                            
@@ -385,13 +363,11 @@ list_hf_gguf_files("Qwen/Qwen3.5-8B-GGUF")
 [`llamacpp_download_model()`](https://edubruell.github.io/tidyllm/reference/llamacpp_download_model.md)
 downloads a specific file with a progress bar:
 
-``` r
-
-llamacpp_download_model(
-  .repo     = "Qwen/Qwen3.5-8B-GGUF",
-  .filename = "Qwen3.5-8B-Q4_K_M.gguf"
-)
-```
+\
+[`llamacpp_download_model`](https://edubruell.github.io/tidyllm/reference/llamacpp_download_model.md)`(`\
+`  .repo     ``=`` ``"Qwen/Qwen3.5-8B-GGUF"``,`\
+`  .filename ``=`` ``"Qwen3.5-8B-Q4_K_M.gguf"`\
+`)`
 
     ## Downloading Qwen3.5-8B-Q4_K_M.gguf from Qwen/Qwen3.5-8B-GGUF...
     ## [==============================] 5.16 GB / 5.16 GB
@@ -401,10 +377,8 @@ llamacpp_download_model(
 shows what GGUF files are already in your model directory, without
 needing a running server:
 
-``` r
-
-llamacpp_list_local_models()
-```
+\
+[`llamacpp_list_local_models`](https://edubruell.github.io/tidyllm/reference/llamacpp_list_local_models.md)`(``)`
 
     ## # A tibble: 2 × 4
     ##   filename                       size_gb modified            path               
@@ -414,11 +388,9 @@ llamacpp_list_local_models()
 
 To verify the server is running and see which model is loaded:
 
-``` r
-
-llamacpp_health()
-list_models(llamacpp())
-```
+\
+[`llamacpp_health`](https://edubruell.github.io/tidyllm/reference/llamacpp_health.md)`(``)`\
+[`list_models`](https://edubruell.github.io/tidyllm/reference/list_models.md)`(`[`llamacpp`](https://edubruell.github.io/tidyllm/reference/llamacpp.md)`(``)``)`
 
     ## $status
     ## [1] "ok"
@@ -437,13 +409,11 @@ list_models(llamacpp())
 
 Basic chat works through the same verb pattern as all other providers:
 
-``` r
-
-reply <- llm_message("Explain in one sentence what a mixture-of-experts model is.") |>
-  chat(llamacpp())
-
-get_reply(reply)
-```
+\
+`reply`` ``<-`` `[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Explain in one sentence what a mixture-of-experts model is."``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`llamacpp`](https://edubruell.github.io/tidyllm/reference/llamacpp.md)`(``)``)`\
+\
+[`get_reply`](https://edubruell.github.io/tidyllm/reference/get_reply.md)`(``reply``)`
 
     ## [1] "A mixture-of-experts model routes each token through only a subset of specialised
     ## networks called experts, keeping inference cost low while maintaining the capacity
@@ -461,17 +431,15 @@ Passing `.logprobs = TRUE` stores these scores alongside the reply;
 [`get_logprobs()`](https://edubruell.github.io/tidyllm/reference/get_logprobs.md)
 extracts them into a tidy tibble:
 
-``` r
-
-result <- llm_message(
-    "Reply with exactly one word. Classify the sentiment of this review:
-     'The delivery was two days late but the product itself is solid.'"
-  ) |>
-  chat(llamacpp(.logprobs = TRUE, .top_logprobs = 3))
-
-get_reply(result)
-get_logprobs(result)
-```
+\
+`result`` ``<-`` `[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(`\
+`    ``"Reply with exactly one word. Classify the sentiment of this review:`\
+`     'The delivery was two days late but the product itself is solid.'"`\
+`  ``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`llamacpp`](https://edubruell.github.io/tidyllm/reference/llamacpp.md)`(``.logprobs ``=`` ``TRUE``, .top_logprobs ``=`` ``3``)``)`\
+\
+[`get_reply`](https://edubruell.github.io/tidyllm/reference/get_reply.md)`(``result``)`\
+[`get_logprobs`](https://edubruell.github.io/tidyllm/reference/get_logprobs.md)`(``result``)`
 
     ## [1] "neutral"
     ## # A tibble: 1 × 4
@@ -502,18 +470,16 @@ valid JSON when you pass a `.json_schema`. The `.grammar` parameter goes
 further: it accepts a grammar definition that can constrain output to
 any pattern, not just JSON:
 
-``` r
-
-sentiment_grammar <- r"(root ::= ("positive" | "negative" | "neutral"))"
-
-result <- llm_message(
-    "Classify the sentiment of this review. Reply with one word only:
-     'Fast shipping, exactly as described, would buy again.'"
-  ) |>
-  chat(llamacpp(.grammar = sentiment_grammar))
-
-get_reply(result)
-```
+\
+`sentiment_grammar`` ``<-`` ``r"(root ::= ("positive" | "negative" | "neutral"))"`\
+\
+`result`` ``<-`` `[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(`\
+`    ``"Classify the sentiment of this review. Reply with one word only:`\
+`     'Fast shipping, exactly as described, would buy again.'"`\
+`  ``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`llamacpp`](https://edubruell.github.io/tidyllm/reference/llamacpp.md)`(``.grammar ``=`` ``sentiment_grammar``)``)`\
+\
+[`get_reply`](https://edubruell.github.io/tidyllm/reference/get_reply.md)`(``result``)`
 
     ## [1] "positive"
 
@@ -524,11 +490,9 @@ and clustering. Point the
 [`llamacpp()`](https://edubruell.github.io/tidyllm/reference/llamacpp.md)
 provider at it via the `.server` argument:
 
-``` r
-
-c("transformer architecture", "attention mechanism", "baking sourdough") |>
-  embed(llamacpp(.server = "http://localhost:8081"))
-```
+\
+[`c`](https://rdrr.io/r/base/c.html)`(``"transformer architecture"``, ``"attention mechanism"``, ``"baking sourdough"``)`` ``|>`\
+`  `[`embed`](https://edubruell.github.io/tidyllm/reference/embed.md)`(`[`llamacpp`](https://edubruell.github.io/tidyllm/reference/llamacpp.md)`(``.server ``=`` ``"http://localhost:8081"``)``)`
 
     ## # A tibble: 3 × 2
     ##   input                    embeddings   
@@ -543,18 +507,16 @@ can re-order a set of candidate documents by how relevant they are to a
 query. This is more accurate than sorting by raw embedding similarity
 alone, and runs on the same local server with no additional model:
 
-``` r
-
-llamacpp_rerank(
-  .query     = "how does self-attention work",
-  .documents = c(
-    "Attention is All You Need introduced the transformer architecture.",
-    "Sourdough bread uses a wild yeast starter for leavening.",
-    "Self-attention computes a weighted sum of all positions in a sequence.",
-    "BERT uses bidirectional transformers pre-trained on masked language modelling."
-  )
-)
-```
+\
+[`llamacpp_rerank`](https://edubruell.github.io/tidyllm/reference/llamacpp_rerank.md)`(`\
+`  .query     ``=`` ``"how does self-attention work"``,`\
+`  .documents ``=`` `[`c`](https://rdrr.io/r/base/c.html)`(`\
+`    ``"Attention is All You Need introduced the transformer architecture."``,`\
+`    ``"Sourdough bread uses a wild yeast starter for leavening."``,`\
+`    ``"Self-attention computes a weighted sum of all positions in a sequence."``,`\
+`    ``"BERT uses bidirectional transformers pre-trained on masked language modelling."`\
+`  ``)`\
+`)`
 
     ## # A tibble: 4 × 3
     ##   index document                                                 relevance_score
@@ -582,28 +544,24 @@ OpenAI. The
 provider connects to any such endpoint; point it at the server’s base
 URL and name the model the server hosts:
 
-``` r
-
-llm_message("Summarise this paragraph in one sentence.") |>
-  chat(chat_completions(
-    .api_url = "http://my-internal-server:8000",
-    .model   = "llama-4-scout"
-  ))
-```
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Summarise this paragraph in one sentence."``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`chat_completions`](https://edubruell.github.io/tidyllm/reference/chat_completions_chat.md)`(`\
+`    .api_url ``=`` ``"http://my-internal-server:8000"``,`\
+`    .model   ``=`` ``"llama-4-scout"`\
+`  ``)``)`
 
 By default no API key is sent, which suits local and internal servers.
 If the endpoint requires authentication, pass the name of the
 environment variable holding the key via `.api_key_env_var`:
 
-``` r
-
-llm_message("Summarise this paragraph in one sentence.") |>
-  chat(chat_completions(
-    .api_url         = "https://llm.my-university.edu",
-    .model           = "qwen3.6-35b-a3b",
-    .api_key_env_var = "MY_UNIVERSITY_API_KEY"
-  ))
-```
+\
+[`llm_message`](https://edubruell.github.io/tidyllm/reference/llm_message.md)`(``"Summarise this paragraph in one sentence."``)`` ``|>`\
+`  `[`chat`](https://edubruell.github.io/tidyllm/reference/chat.md)`(`[`chat_completions`](https://edubruell.github.io/tidyllm/reference/chat_completions_chat.md)`(`\
+`    .api_url         ``=`` ``"https://llm.my-university.edu"``,`\
+`    .model           ``=`` ``"qwen3.6-35b-a3b"``,`\
+`    .api_key_env_var ``=`` ``"MY_UNIVERSITY_API_KEY"`\
+`  ``)``)`
 
 For llama.cpp specifically, using
 [`llamacpp()`](https://edubruell.github.io/tidyllm/reference/llamacpp.md)

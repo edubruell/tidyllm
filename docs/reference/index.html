@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidyllm</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.7.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.8.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -19,14 +19,18 @@
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/tidyllm_classifiers.html">Classifying Texts with tidyllm</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm_cli.html">Command Line Providers</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm_embed.html">Embedding Models in tidyllm</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm_local_models.html">Local Models with tidyllm</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm_shiny.html">Using tidyllm in Shiny</a></li>
-    <li><a class="dropdown-item" href="../articles/tidyllm_tools.html">Using Tools with tidyllm</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><h6 class="dropdown-header" data-toc-skip>Start here</h6></li>
     <li><a class="dropdown-item" href="../articles/tidyllm_video.html">Working with Files and Media</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_classifiers.html">Classifying Texts with tidyllm</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_decide.html">Decision Models with tidyllm</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_embed.html">Embedding Models in tidyllm</a></li>
     <li><a class="dropdown-item" href="../articles/tidyllm-pdfquestions.html">Structured Question Answering from PDFs</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Go deeper</h6></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_local_models.html">Local Models with tidyllm</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_cli.html">Command Line Providers</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_tools.html">Using Tools with tidyllm</a></li>
+    <li><a class="dropdown-item" href="../articles/tidyllm_shiny.html">Using tidyllm in Shiny</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -144,6 +148,20 @@
 
         </dt>
         <dd>Generate text embeddings</dd>
+
+        <dt>
+
+          <code><a href="decide.html">decide()</a></code>
+
+        </dt>
+        <dd>Answer questions about a text, an image or a recording with a decision model</dd>
+
+        <dt>
+
+          <code><a href="box_to_pixels.html">box_to_pixels()</a></code>
+
+        </dt>
+        <dd>Turn the fractions of box answers into pixel positions</dd>
 
         <dt>
 
@@ -274,6 +292,13 @@
 
         </dt>
         <dd>Create a JSON Schema for Structured Outputs</dd>
+
+        <dt>
+
+          <code><a href="field_box.html">field_box()</a></code>
+
+        </dt>
+        <dd>Ask <code><a href="../reference/decide.html">decide()</a></code> to find something in an image (experimental)</dd>
 
         <dt>
 
@@ -419,13 +444,6 @@
 
         <dt>
 
-          <code><a href="perplexity.html">perplexity()</a></code>
-
-        </dt>
-        <dd>Perplexity Provider Function</dd>
-
-        <dt>
-
           <code><a href="deepseek.html">deepseek()</a></code>
 
         </dt>
@@ -444,6 +462,13 @@
 
         </dt>
         <dd>OpenRouter Provider Function</dd>
+
+        <dt>
+
+          <code><a href="jev.html">jev()</a></code>
+
+        </dt>
+        <dd>Jev and System One compatible servers</dd>
 
         <dt>
 
@@ -966,43 +991,6 @@
 
         </dt>
         <dd>What each provider supports</dd>
-      </dl></div><div class="section level2">
-      <h2 id="perplexity-specific-functions-deprecated-">Perplexity-Specific Functions (deprecated)<a class="anchor" aria-label="anchor" href="#perplexity-specific-functions-deprecated-"></a></h2>
-
-      <div class="section-desc"><p>Functions for Perplexity AI chat and asynchronous deep research.</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="perplexity_chat.html">perplexity_chat()</a></code>
-
-        </dt>
-        <dd>Send LLM Messages to the Perplexity Chat API</dd>
-
-        <dt>
-
-          <code><a href="perplexity_deep_research.html">perplexity_deep_research()</a></code>
-
-        </dt>
-        <dd>Submit a Deep Research Request to Perplexity</dd>
-
-        <dt>
-
-          <code><a href="perplexity_check_research.html">perplexity_check_research()</a></code>
-
-        </dt>
-        <dd>Check the Status of a Perplexity Deep Research Job</dd>
-
-        <dt>
-
-          <code><a href="perplexity_fetch_research.html">perplexity_fetch_research()</a></code>
-
-        </dt>
-        <dd>Fetch Results from a Completed Perplexity Deep Research Job</dd>
       </dl></div><div class="section level2">
       <h2 id="deepseek-specific-functions">DeepSeek-Specific Functions<a class="anchor" aria-label="anchor" href="#deepseek-specific-functions"></a></h2>
 

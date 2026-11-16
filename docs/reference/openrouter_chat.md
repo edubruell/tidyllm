@@ -41,8 +41,9 @@ openrouter_chat(
 
 - .model:
 
-  The model identifier to use (default: `"google/gemini-3.6-flash"`).
-  Any model available on OpenRouter can be used.
+  The model identifier to use (default:
+  `"anthropic/claude-sonnet-5.5"`). Any model available on OpenRouter
+  can be used.
 
 - .max_tokens:
 
