@@ -21,7 +21,6 @@ To demonstrate embeddings in action, we implement a **semantic search** on a dat
 ```{r abstracts_file, message = FALSE}
 library(tidyverse)
 library(tidyllm)
-library(here)
 
 abstracts <- read_rds("abstracts_data.rds")
 print(abstracts, width = 60)
@@ -71,6 +70,8 @@ When working with a large corpus like our 22,960 abstracts, embedding all entrie
 We batch the data into groups of 200 and write results to disk as we go. On a MacBook Pro M1 Pro this completes in approximately 25 minutes and writes 207 MB of data. To compare multiple target abstracts against the collection, we only need to embed the corpus once.
 
 ```{r, eval = FALSE}
+library(here)
+
 generate_abstract_embeddings <- function(abstracts) {
   embedding_batches <- tibble(abstract = abstracts) |>
     group_by(batch = floor(1:n() / 200) + 1) |>
