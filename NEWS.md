@@ -20,7 +20,7 @@ decide("The invoice arrived three weeks late and nobody answers my mails.",
 
 The result is a tibble with one row per question: `question`, `type`, `answer`, `probability`, `confidence` and `probabilities`. The attributes `usage`, `latency` and `model` describe the call, and `.dry_run = TRUE` returns the request without sending it.
 
-* **Providers:** the new `jev()` covers TypeSafe AI's Jev models and any server with the same System One API (key in `TYPESAFE_API_KEY`, `.server` for another URL). `openai()`, `gemini()` and `ollama()` also work with `decide()`. `ollama()` uses the local `clef-flash` model and has not been tested against a running model yet.
+* **Providers:** the new `jev()` covers TypeSafe AI's Jev models and any server with the same System One API (key in `TYPESAFE_API_KEY`, `.server` for another URL). `openai()`, `gemini()` and `ollama()` also work with `decide()`.
 * **Many texts:** pass a character vector or a list. Each element is one item and gets one request, sent in parallel (`.max_active`, default 5). The result gains a leading `state` label and an integer `state_id`. An item that fails gives `NA` rows and a warning; the other items keep their results.
 * **Images, audio and PDFs:** `.state` can hold `img()`, `audio_file()`, `video_file()` and `pdf_file()` objects, or a named list of parts that belong together. `provider_capabilities(.what = "decide_media")` shows what each provider reads. Limits are checked before anything is sent, and `decide()` never resizes an image. A PDF sent to a provider that cannot read PDFs goes as extracted text, with one notice.
 * **Question helpers:** `field_fct()` gains `.ordered` and `.level_descriptions`, and `field_lgl()` gains `.true` and `.false`. Only `decide()` uses them.

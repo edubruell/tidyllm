@@ -48,9 +48,6 @@ attributes `usage`, `latency` and `model` describe the call, and
   [`ollama()`](https://edubruell.github.io/tidyllm/reference/ollama.md)
   also work with
   [`decide()`](https://edubruell.github.io/tidyllm/reference/decide.md).
-  [`ollama()`](https://edubruell.github.io/tidyllm/reference/ollama.md)
-  uses the local `clef-flash` model and has not been tested against a
-  running model yet.
 - **Many texts:** pass a character vector or a list. Each element is one
   item and gets one request, sent in parallel (`.max_active`, default
   5). The result gains a leading `state` label and an integer
