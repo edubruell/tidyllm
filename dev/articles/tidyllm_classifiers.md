@@ -1,0 +1,1045 @@
+# Classifying Texts with tidyllm
+
+You have thousands of short free-text answers and a fixed list of
+categories. A language model can sort them in minutes, but the result is
+less solid than it looks. The model decides what a label means from your
+instructions, and a vague instruction gets a different reading from case
+to case. Most current frontier models also no longer let you set
+`temperature`, so asking the same question twice does not guarantee the
+same answer. And a label that the model gives every time can still be
+wrong.
+
+This article builds a workflow that treats these as things to measure: a
+codebook the model can follow, labels the model cannot misspell,
+repeated runs to see where it disagrees with itself, a second pass for
+the disagreements, and a human-labelled sample to check the whole thing
+against. The central point is that agreement is not accuracy. Repeated
+runs tell you how stable the model is; only a comparison with human
+labels tells you whether it is right.
+
+Every call that needs an API key is shown in a chunk that is not
+evaluated. Right after it, a second chunk loads the saved results of
+that call and computes the numbers and tables, so you can follow the
+article without a key and see what the real run produced.
+
+## The task
+
+Seven thousand survey respondents described their job in their own
+words. We want each answer in one of the 22 two-digit SOC occupation
+groups, or in code 99 when the answer names no occupation.
+
+``` r
+
+library(tidyllm)
+library(tidyverse)
+library(glue)
+
+occ_data  <- read_rds("occupation_data.rds")
+occ_codes <- read_rds("occ_codes_2digits.rds")
+
+distinct_occupations <- occ_data |>
+  distinct(occupation = occupation_open) |>
+  mutate(id = row_number())
+
+print(distinct_occupations, n = 5)
+## # A tibble: 2,209 × 2
+##   occupation                     id
+##   <chr>                       <int>
+## 1 Ops oversight and strategy      1
+## 2 Coordinating operations         2
+## 3 Making sure everything runs     3
+## 4 Building and demolition         4
+## 5 Help lawyers with cases         5
+## # ℹ 2,204 more rows
+```
+
+Classifying each distinct answer once is enough; the labels are joined
+back to the respondents at the end.
+
+## Why a single answer is not enough
+
+Earlier versions of this article set `.temperature = 0` and treated the
+reply as fixed, which no longer holds. Claude 5 models, recent Gemini
+models and several OpenAI models reject or ignore sampling parameters,
+and `chat(openai(), .temperature = 0)` stops with an error for them.
+[`provider_capabilities()`](https://edubruell.github.io/tidyllm/dev/reference/provider_capabilities.md)
+shows which providers still accept the argument.
+
+Even where `temperature` is accepted, the literature on LLM annotation
+reports that repeated runs of the same prompt on the same text can
+return different labels, and that the instability is largest on
+borderline texts (Barrie, Palaiologou and Törnberg, 2024; Haldar and
+Hockenmaier, 2025). The practical answer in applied work is the one
+social scientists already use for human coders: label more than once,
+measure agreement, and look closely at the disagreements. Separately, an
+LLM label is only as good as its agreement with humans on your task, so
+the workflow always ends with a validation sample (Pangakis, Wolken and
+Fasching, 2023).
+
+We use `claude(.model = "claude-sonnet-5-5")` throughout and set no
+temperature.
+
+## Step 1: Write a codebook, not a list
+
+A bare list of codes leaves the model to guess what “Management” or
+“Missing” means. A codebook gives each label a definition, a decision
+rule for overlaps, and one or two examples. A human coder would need the
+same thing.
+
+``` r
+
+codebook <- read_file("classifier_codebook.txt") |> trimws()
+cat(codebook)
+## 11 Management: directs people, budgets or operations; the job is mainly deciding and supervising, not doing the trade itself. Example: "Ops oversight".
+## 13 Business and Financial Operations: analysis, accounting, HR, purchasing, consulting. Example: "Handle construction budgets".
+## 15 Computer and Mathematical: software, IT systems, data analysis, statistics. Example: "Systems administrator".
+## 17 Architecture and Engineering: design and engineering of structures, machines and systems, and drafting.
+## 19 Life, Physical, and Social Science: research in natural or social science, lab work.
+## 21 Community and Social Service: counselling, social work, clergy.
+## 23 Legal: lawyers, paralegals, judges.
+## 25 Educational Instruction and Library: teachers, tutors, librarians, trainers.
+## 27 Arts, Design, Entertainment, Sports, and Media: artists, designers, performers, athletes, journalists.
+## 29 Healthcare Practitioners and Technical: doctors, nurses, therapists, technicians who diagnose or treat.
+## 31 Healthcare Support: aides, assistants and orderlies who support practitioners.
+## 33 Protective Service: police, fire, security, military guards.
+## 35 Food Preparation and Serving: cooks, servers, bartenders.
+## 37 Building and Grounds Cleaning and Maintenance: janitors, groundskeepers, cleaners. Example: "Oversee all cleaning operations" is still 37 unless the answer says managing a business.
+## 39 Personal Care and Service: hair, beauty, child care, fitness, funeral service. Example: "Hair dresser".
+## 41 Sales and Related: selling goods or services, cashiers, brokers.
+## 43 Office and Administrative Support: clerks, secretaries, mail handling, data entry. Example: "Sort and deliver mail".
+## 45 Farming, Fishing, and Forestry: crops, livestock, fishing, logging.
+## 47 Construction and Extraction: building trades, mining. Example: "Fine Carpentry", "Layin' down shingles".
+## 49 Installation, Maintenance, and Repair: fixing and installing equipment and vehicles. Example: "Bodyshop guy".
+## 51 Production: manufacturing, assembly, machine operation, craft production. Example: "Eyeglass makin'".
+## 53 Transportation and Material Moving: drivers, pilots, warehouse movers.
+## 99 Missing: the answer names no occupation, or is too vague to place (for example "Doin' the numbers", "stuff"). Prefer 99 over a guess.
+```
+
+Keep the codebook in a file under version control. When you change it,
+you have changed the measurement, and the validation in step 6 has to be
+run again. The last section of this article shows what happens when you
+edit the codebook to fix the errors you found.
+
+## Step 2: Constrain the answer with a schema
+
+Asking for “only the code” and parsing the reply with
+[`parse_number()`](https://readr.tidyverse.org/reference/parse_number.html)
+breaks when the model adds a word. A schema removes the problem:
+[`field_fct()`](https://edubruell.github.io/tidyllm/dev/reference/field_chr.md)
+makes the label an enum, so the provider only accepts one of the listed
+codes. We add two more fields. A short rationale gives you something to
+read when you audit a row, and a three-level confidence gives a coarse
+signal to sort by. Do not treat the self-reported confidence as a
+probability; step 4 shows how much it is worth.
+
+``` r
+
+label_levels <- as.character(c(occ_codes$occ2, 99)) |> unique()
+
+occ_schema <- tidyllm_schema(
+  name       = "occupation_label",
+  rationale  = field_chr("One sentence: which words in the answer decide the group."),
+  occ2       = field_fct("The SOC two-digit group from the codebook.", .levels = label_levels),
+  confidence = field_fct("How clear the answer is.", .levels = c("low", "medium", "high"))
+)
+```
+
+``` r
+
+make_prompt <- function(occupation) {
+  llm_message(glue(
+    'You code survey answers into occupation groups.
+     Use only the codebook below. Choose the single best group.
+     If the answer names no occupation, use 99.
+
+     Codebook:
+     {codebook}
+
+     Survey answer: "{occupation}"'
+  ))
+}
+```
+
+Look at the request before spending anything on it. `.dry_run = TRUE`
+returns the request object that would be sent.
+
+``` r
+
+make_prompt(distinct_occupations$occupation[1]) |>
+  chat(claude(.model = "claude-sonnet-5-5", .json_schema = occ_schema, .dry_run = TRUE))
+```
+
+Enum-constrained output guarantees a valid label, not a correct one.
+Some work reports that heavy output constraints can cost accuracy on
+hard cases (Tam et al., 2024, on format restrictions and reasoning),
+which is why the rationale field exists and why step 6 measures
+accuracy.
+
+One call looks like this:
+
+``` r
+
+make_prompt("Doin' the numbers") |>
+  chat(claude(.model = "claude-sonnet-5-5", .json_schema = occ_schema)) |>
+  get_reply_data()
+```
+
+[`get_reply_data()`](https://edubruell.github.io/tidyllm/dev/reference/get_reply_data.md)
+returns a plain named list with one element per schema field. The label
+stays a character string, because “99” and “11” are labels and not
+numbers.
+
+## Step 3: Label every answer several times
+
+Because replies can differ between runs, we ask for each answer `k`
+times and keep every run. Three runs is the smallest number that gives a
+majority; five gives a finer agreement score at a higher price. We
+validate on a random sample of 150 distinct answers, so the full dataset
+is never sent while we are still learning how well the method works.
+[`parallel_chat()`](https://edubruell.github.io/tidyllm/dev/reference/parallel_chat.md)
+runs the requests concurrently and returns the replies in input order,
+with the names of the input list kept, so we name each task `id__run`
+and split the name afterwards.
+
+``` r
+
+k <- 3
+
+sample_df <- distinct_occupations |>
+  slice_sample(n = 150)
+
+tasks <- sample_df |>
+  cross_join(tibble(run = seq_len(k))) |>
+  mutate(task_id = paste(id, run, sep = "__"))
+
+llms <- tasks$occupation |>
+  map(make_prompt) |>
+  set_names(tasks$task_id)
+```
+
+``` r
+
+replies <- parallel_chat(
+  llms,
+  claude(.model = "claude-sonnet-5-5", .json_schema = occ_schema),
+  .max_active = 4
+)
+write_rds(replies, "runs_claude.rds")
+```
+
+Failed requests do not stop the call.
+[`parallel_chat()`](https://edubruell.github.io/tidyllm/dev/reference/parallel_chat.md)
+warns how many failed, and the failed elements of the list hold the
+error condition instead of a message. The extraction below turns those
+into missing values, so no row disappears silently.
+
+``` r
+
+extract_run <- function(reply) {
+  if (!inherits(reply, "tidyllm::LLMMessage")) {
+    return(tibble(rationale = NA_character_, occ2 = NA_character_, confidence = NA_character_))
+  }
+  as_tibble(get_reply_data(reply))
+}
+
+runs <- map(replies, extract_run) |>
+  bind_rows(.id = "task_id") |>
+  separate(task_id, c("id", "run"), sep = "__", convert = TRUE) |>
+  rename(label = occ2)
+```
+
+The saved results of this run hold three labels for each of the 150
+sampled answers.
+
+``` r
+
+sample_df <- read_rds("classifier_sample.rds")
+runs      <- read_rds("classifier_runs.rds")
+run_meta  <- read_rds("classifier_runs_meta.rds")
+
+runs |>
+  left_join(sample_df, by = "id") |>
+  select(id, occupation, run, label, confidence) |>
+  print(n = 6)
+## # A tibble: 450 × 5
+##      id occupation   run label confidence
+##   <int> <chr>      <int> <chr> <chr>     
+## 1    43 Server         1 35    medium    
+## 2    43 Server         2 35    medium    
+## 3    43 Server         3 35    medium    
+## 4    53 Jailer         1 33    high      
+## 5    53 Jailer         2 33    high      
+## 6    53 Jailer         3 33    high      
+## # ℹ 444 more rows
+```
+
+The token counts of the 450 calls come from the response metadata of
+each call. The codebook is part of every request, so the prompt is much
+longer than the answer it labels.
+
+``` r
+
+tibble(
+  calls                = nrow(run_meta$tokens),
+  prompt_tokens        = sum(run_meta$tokens$input_tokens),
+  completion_tokens    = sum(run_meta$tokens$output_tokens),
+  prompt_per_call      = round(mean(run_meta$tokens$input_tokens)),
+  completion_per_call  = round(mean(run_meta$tokens$output_tokens))
+)
+## # A tibble: 1 × 5
+##   calls prompt_tokens completion_tokens prompt_per_call completion_per_call
+##   <int>         <int>             <int>           <dbl>               <dbl>
+## 1   450        626166             34518            1391                  77
+```
+
+### The same job as a batch
+
+For a full dataset where a result an hour later is acceptable, the same
+list goes through
+[`send_batch()`](https://edubruell.github.io/tidyllm/dev/reference/send_batch.md)
+at half the price.
+[`check_batch()`](https://edubruell.github.io/tidyllm/dev/reference/check_batch.md)
+reports the status, and
+[`fetch_batch()`](https://edubruell.github.io/tidyllm/dev/reference/fetch_batch.md)
+returns the replies once the batch has ended. The names of the list
+survive the round trip, so the extraction code is nearly unchanged. We
+sent the first 20 requests of the sample as a batch to test it.
+
+``` r
+
+job <- send_batch(llms[1:20], claude(.model = "claude-sonnet-5-5", .json_schema = occ_schema))
+write_rds(job, "runs_batch_job.rds")
+
+job <- read_rds("runs_batch_job.rds")
+check_batch(job, claude())
+
+replies <- fetch_batch(job, claude())
+
+runs <- map(replies, get_reply_data) |>
+  bind_rows(.id = "task_id") |>
+  separate(task_id, c("id", "run"), sep = "__", convert = TRUE) |>
+  left_join(distinct_occupations, by = "id")
+```
+
+Here are the two
+[`check_batch()`](https://edubruell.github.io/tidyllm/dev/reference/check_batch.md)
+outputs of that batch, the first right after submission and the second
+three minutes later:
+
+    # A tibble: 1 x 8
+      batch_id          status      created_at          expires_at          req_succeeded
+      <chr>             <chr>       <dttm>              <dttm>                      <int>
+    1 msgbatch_017iBx1… in_progress 2026-10-02 13:22:40 2026-10-03 13:22:40             0
+    # i 3 more variables: req_errored <int>, req_expired <int>, req_canceled <int>
+
+    # A tibble: 1 x 8
+      batch_id          status created_at          expires_at          req_succeeded
+      <chr>             <chr>  <dttm>              <dttm>                      <int>
+    1 msgbatch_017iBx1… ended  2026-10-02 13:22:40 2026-10-03 13:22:40            20
+    # i 3 more variables: req_errored <int>, req_expired <int>, req_canceled <int>
+
+The batch reported 27,823 prompt tokens for its 20 requests, about 1,390
+per request. That matches the live calls above, because the codebook
+dominates the prompt. The saved batch results can be compared with the
+first live run of the same answers:
+
+``` r
+
+batch_runs <- read_rds("classifier_batch_results.rds")
+
+batch_runs |>
+  select(id, occupation, label = occ2, confidence) |>
+  inner_join(
+    runs |> filter(run == 1) |> select(id, live_label = label),
+    by = "id"
+  ) |>
+  summarise(answers = n(), same_label_as_live_run = sum(label == live_label))
+## # A tibble: 1 × 2
+##   answers same_label_as_live_run
+##     <int>                  <int>
+## 1      20                     20
+```
+
+### Using more than one model
+
+Repeating one model measures how stable it is with itself. A different
+model measures something else: whether two independent systems read the
+codebook the same way. Run the same `llms` through a second provider and
+add its labels as extra runs. Agreement across models is a stronger
+signal than agreement within one, because the failures of two unrelated
+models are less correlated (Ziems et al., 2024, report model-dependent
+results across tasks). We did not run this here.
+
+``` r
+
+replies_gemini <- parallel_chat(llms, gemini(.json_schema = occ_schema), .max_active = 4)
+```
+
+## Step 4: Summarise agreement and flag disagreements
+
+For each answer we take the majority label, the share of runs that voted
+for it, and a flag for rows where the runs did not all agree.
+
+``` r
+
+vote <- runs |>
+  filter(!is.na(label)) |>
+  count(id, label, name = "votes") |>
+  group_by(id) |>
+  arrange(desc(votes), .by_group = TRUE) |>
+  summarise(
+    n_runs     = sum(votes),
+    majority   = first(label),
+    agreement  = first(votes) / sum(votes),
+    candidates = paste(label, collapse = "/"),
+    .groups    = "drop"
+  ) |>
+  left_join(sample_df, by = "id") |>
+  mutate(unstable = agreement < 1)
+
+vote |>
+  count(unstable) |>
+  mutate(share = n / sum(n))
+## # A tibble: 2 × 3
+##   unstable     n share
+##   <lgl>    <int> <dbl>
+## 1 FALSE      147  0.98
+## 2 TRUE         3  0.02
+```
+
+Almost every answer gets the same label in all three runs. Three runs of
+the same prompt barely change the label, so on this task the repetition
+buys little by itself. Its value is the short list of rows where the
+runs differ, and step 6 shows that this list catches only part of the
+errors.
+
+Two points about reading this table. A tie, such as one vote each for
+three labels, has no majority;
+[`first()`](https://dplyr.tidyverse.org/reference/nth.html) picks one
+arbitrarily, so treat every row with `agreement < 0.5` as unresolved.
+And a unanimous label can still be wrong: agreement shows where the
+model is unsure of itself and says nothing about the codebook.
+
+The overall agreement across runs can be summarised with Krippendorff’s
+alpha, which handles missing values and works for any number of runs.
+Here the raters are the `k` runs and the units are the answers. The
+function below implements alpha for nominal labels in base R, so no
+extra package is needed.
+
+``` r
+
+kripp_nominal <- function(m) {
+  m  <- m[, colSums(!is.na(m)) >= 2, drop = FALSE]
+  lv <- sort(unique(as.vector(m)))
+  o  <- matrix(0, length(lv), length(lv))
+  for (j in seq_len(ncol(m))) {
+    v   <- m[, j]
+    v   <- v[!is.na(v)]
+    tab <- table(factor(v, lv))
+    o   <- o + (tab %o% tab - diag(tab)) / (length(v) - 1)
+  }
+  n <- sum(o)
+  1 - (n - 1) * (n - sum(diag(o))) / (n^2 - sum(rowSums(o)^2))
+}
+
+runs |>
+  select(run, id, label) |>
+  pivot_wider(names_from = id, values_from = label) |>
+  select(-run) |>
+  as.matrix() |>
+  kripp_nominal() |>
+  round(3)
+## [1] 0.983
+```
+
+Alpha near 1 means the runs agree beyond chance. Common rules of thumb
+call 0.8 reliable and 0.667 the lowest value worth drawing tentative
+conclusions from (Krippendorff, 2004), but the right bar depends on what
+you will do with the labels. A high alpha here says the model is
+consistent with itself. It says nothing yet about the humans.
+
+### Self-reported confidence
+
+The confidence field is cheap, so it is worth checking whether it
+carries any signal. We can only do that once we have human labels, so
+here we load the maintainer’s hand-checked labels for the 150 sampled
+answers. They were produced AI-assisted and then checked by hand; step 6
+explains how they were made.
+
+``` r
+
+gold <- read_rds("classifier_gold.rds")
+
+scored <- vote |>
+  left_join(gold, by = "id") |>
+  mutate(match = majority == gold)
+
+runs |>
+  left_join(select(scored, id, match), by = "id") |>
+  group_by(majority_matches_gold = match) |>
+  summarise(runs = n(), share_low_confidence = mean(confidence == "low"))
+## # A tibble: 2 × 3
+##   majority_matches_gold  runs share_low_confidence
+##   <lgl>                 <int>                <dbl>
+## 1 FALSE                    75                0.413
+## 2 TRUE                    375                0.032
+```
+
+Runs on rows where the majority label disagrees with the human label are
+much more often marked “low”. That makes the field useful for ranking
+rows to read. It does not make it a probability: many mismatched rows
+still carry “medium” or “high”.
+
+### Token probabilities, where the provider offers them
+
+For models that return token log probabilities, the probability of the
+label token is a continuous confidence score that costs nothing extra.
+In tidyllm,
+[`openai()`](https://edubruell.github.io/tidyllm/dev/reference/openai.md)
+and the Chat Completions based providers accept `.logprobs` and
+`.top_logprobs`;
+[`claude()`](https://edubruell.github.io/tidyllm/dev/reference/claude.md)
+has no such argument, so check
+[`provider_capabilities()`](https://edubruell.github.io/tidyllm/dev/reference/provider_capabilities.md)
+for your provider first. Log probabilities describe one run of one
+model, so they complement agreement across runs and do not replace it.
+They are also less informative with structured output, where the label
+token sits inside a JSON string.
+
+## Step 5: Reclassify the disagreements
+
+The rows that need a second look are the ones where the runs disagreed
+or where any run said “low”. That is a small, concentrated set, which
+makes a second pass affordable. Instead of voting again with the same
+prompt, change the task: show the model the answer, the labels the first
+runs produced and their rationales, and ask for a decision with a
+stronger setting. Here we use a more capable model with reasoning turned
+on.
+
+``` r
+
+make_review_prompt <- function(occupation, rationales) {
+  llm_message(glue(
+    'Earlier independent attempts coded this survey answer; they disagreed or were unsure.
+     Decide using the codebook. If the answer is genuinely too vague to place, use 99.
+
+     Codebook:
+     {codebook}
+
+     Survey answer: "{occupation}"
+
+     Earlier labels and reasons:
+     {rationales}'
+  ))
+}
+```
+
+``` r
+
+any_low <- runs |>
+  group_by(id) |>
+  summarise(any_low = any(confidence == "low"))
+
+to_review <- vote |>
+  left_join(any_low, by = "id") |>
+  filter(unstable | any_low) |>
+  left_join(
+    runs |>
+      group_by(id) |>
+      summarise(rationales = paste0("- ", label, ": ", rationale, collapse = "\n")),
+    by = "id"
+  )
+
+review_llms <- map2(to_review$occupation, to_review$rationales, make_review_prompt) |>
+  set_names(to_review$id)
+
+review_replies <- parallel_chat(
+  review_llms,
+  claude(
+    .model      = "claude-opus-5-5",
+    .json_schema = occ_schema,
+    .thinking   = TRUE,
+    .max_tokens = 4000
+  ),
+  .max_active = 4
+)
+
+reviewed <- map(review_replies, extract_run) |>
+  bind_rows(.id = "id") |>
+  transmute(
+    id                = as.integer(id),
+    review_label      = occ2,
+    review_rationale  = rationale,
+    review_confidence = confidence
+  )
+```
+
+Keep `.max_tokens` generous when reasoning is on; the thinking tokens
+count against it.
+
+``` r
+
+reviewed <- read_rds("classifier_reviewed.rds")
+
+any_low <- runs |>
+  group_by(id) |>
+  summarise(any_low = any(confidence == "low"))
+
+to_review <- vote |>
+  left_join(any_low, by = "id") |>
+  filter(unstable | any_low)
+
+tibble(
+  flagged_rows       = nrow(to_review),
+  runs_disagreed     = sum(to_review$unstable),
+  only_low_confidence = sum(!to_review$unstable),
+  reviewed_rows      = nrow(reviewed),
+  same_ids           = setequal(to_review$id, reviewed$id)
+)
+## # A tibble: 1 × 5
+##   flagged_rows runs_disagreed only_low_confidence reviewed_rows same_ids
+##          <int>          <int>               <int>         <int> <lgl>   
+## 1           18              3                  15            18 TRUE
+```
+
+``` r
+
+final <- vote |>
+  left_join(reviewed, by = "id") |>
+  left_join(gold, by = "id") |>
+  mutate(
+    occ2   = coalesce(review_label, majority),
+    source = case_when(
+      !is.na(review_label) & review_confidence == "low" ~ "human_queue",
+      !is.na(review_label)                              ~ "reviewed",
+      TRUE                                              ~ "unanimous"
+    )
+  )
+
+final |> count(source)
+## # A tibble: 3 × 2
+##   source          n
+##   <chr>       <int>
+## 1 human_queue     5
+## 2 reviewed       13
+## 3 unanimous     132
+```
+
+The review changed the label of a few rows:
+
+``` r
+
+final |>
+  filter(!is.na(review_label), review_label != majority) |>
+  select(occupation, majority, review_label, gold, review_confidence)
+## # A tibble: 3 × 5
+##   occupation                majority review_label gold  review_confidence
+##   <chr>                     <chr>    <chr>        <chr> <chr>            
+## 1 Massage practitioner      29       31           39    medium           
+## 2 Electrical stuff, up high 47       49           49    low              
+## 3 Saftey tech               99       19           33    low
+
+tibble(
+  changed       = sum(final$review_label != final$majority, na.rm = TRUE),
+  reviewed_rows = sum(!is.na(final$review_label))
+)
+## # A tibble: 1 × 2
+##   changed reviewed_rows
+##     <int>         <int>
+## 1       3            18
+```
+
+The review is a second opinion from the same family of models, so it can
+repeat a shared misreading. Rows that the reviewer itself marks as low
+confidence go to a human queue; that is a short list to read by hand.
+
+``` r
+
+final |>
+  filter(source == "human_queue") |>
+  select(occupation, candidates, review_label, gold)
+## # A tibble: 5 × 4
+##   occupation                     candidates review_label gold 
+##   <chr>                          <chr>      <chr>        <chr>
+## 1 Assisting families and schools 21/99      21           21   
+## 2 Electrical stuff, up high      47         49           49   
+## 3 Saftey tech                    99         19           33   
+## 4 Network & stuff                15/99      15           15   
+## 5 Shippin' stuff                 43         43           53
+```
+
+## Step 6: Validate against human labels
+
+None of the above tells you whether the labels are right. Only a
+comparison with human coding does. Draw a random sample of answers, have
+one or two people code them from the same codebook without seeing the
+model labels, and resolve their differences. Two rules keep the check
+honest. The sample must be held out: do not take the codebook examples
+from it, and do not tune the codebook on it and then report the same
+sample as your accuracy. And draw it at random across all answers, not
+only from the flagged ones, or the estimate will be too pessimistic.
+
+For this article the 150 sampled answers were coded in a first pass with
+AI assistance and then checked by hand by the maintainer. Code 98 in the
+original file, used for answers that name no occupation, was recoded to
+99 to match the codebook. Comparing the model with these labels turned
+up four labels where the model was right and the first hand label was
+wrong; they were corrected before the numbers below. That is a useful
+result in itself: a validation sample is a measurement too, and it has
+errors that the comparison can surface.
+
+Accuracy and Cohen’s kappa come next, computed in base R. Kappa corrects
+for chance agreement, which matters with 22 groups of very different
+sizes, where accuracy is dominated by the frequent classes.
+
+``` r
+
+cohen_kappa <- function(truth, estimate) {
+  lv <- sort(unique(c(truth, estimate)))
+  tb <- table(factor(truth, lv), factor(estimate, lv))
+  po <- sum(diag(tb)) / sum(tb)
+  pe <- sum(rowSums(tb) * colSums(tb)) / sum(tb)^2
+  (po - pe) / (1 - pe)
+}
+
+first_run <- runs |>
+  filter(run == 1) |>
+  select(id, first_run = label) |>
+  inner_join(gold, by = "id")
+
+bind_rows(
+  tibble(
+    pipeline = "first run only",
+    accuracy = mean(first_run$first_run == first_run$gold),
+    kappa    = cohen_kappa(first_run$gold, first_run$first_run)
+  ),
+  tibble(
+    pipeline = "majority of 3 runs",
+    accuracy = mean(final$majority == final$gold),
+    kappa    = cohen_kappa(final$gold, final$majority)
+  ),
+  tibble(
+    pipeline = "majority plus review",
+    accuracy = mean(final$occ2 == final$gold),
+    kappa    = cohen_kappa(final$gold, final$occ2)
+  )
+) |>
+  mutate(across(where(is.double), \(x) round(x, 3)))
+## # A tibble: 3 × 3
+##   pipeline             accuracy kappa
+##   <chr>                   <dbl> <dbl>
+## 1 first run only          0.833 0.821
+## 2 majority of 3 runs      0.833 0.821
+## 3 majority plus review    0.84  0.829
+```
+
+The three rows are close. Voting over three runs and the review pass
+move the accuracy only slightly, because the model gave the same label
+in nearly all runs to begin with. The review only touches the flagged
+rows, and those are the hardest answers, so the gain there starts from a
+low base:
+
+``` r
+
+final |>
+  filter(!is.na(review_label)) |>
+  summarise(rows = n(), before_review = mean(majority == gold), after_review = mean(occ2 == gold))
+## # A tibble: 1 × 3
+##    rows before_review after_review
+##   <int>         <dbl>        <dbl>
+## 1    18         0.278        0.333
+```
+
+About one answer in six does not match the human label. Part of the
+errors sit in the flagged rows and part in rows where the model was
+unanimous:
+
+``` r
+
+final |>
+  group_by(source) |>
+  summarise(answers = n(), mismatches = sum(occ2 != gold), accuracy = mean(occ2 == gold))
+## # A tibble: 3 × 4
+##   source      answers mismatches accuracy
+##   <chr>         <int>      <int>    <dbl>
+## 1 human_queue       5          2    0.6  
+## 2 reviewed         13         10    0.231
+## 3 unanimous       132         12    0.909
+```
+
+Where do the mismatches come from?
+
+``` r
+
+final |>
+  filter(occ2 != gold) |>
+  arrange(gold) |>
+  select(occupation, model = occ2, human = gold, candidates) |>
+  print(n = 30)
+## # A tibble: 24 × 4
+##    occupation                       model human candidates
+##    <chr>                            <chr> <chr> <chr>     
+##  1 Coach and mentor salespeople     25    11    25        
+##  2 Lead mechanic supervisor         49    11    49        
+##  3 manage donations                 99    11    99        
+##  4 Workforce Optimization           99    13    99        
+##  5 Day-to-day operations, logistics 11    13    11        
+##  6 Work on operations projects      99    13    99        
+##  7 Computer Aided Manufacturing     51    17    51        
+##  8 Manufacturing Efficiency         99    17    99        
+##  9 Temporary school staff           99    25    99        
+## 10 Educational support, basically.  99    25    99        
+## 11 Sewing and altering costumes     51    27    51        
+## 12 Prophy tech                      29    31    29        
+## 13 Saftey tech                      19    33    99        
+## 14 I make food batches.             51    35    51        
+## 15 Bakery worker                    51    35    51        
+## 16 Massage practitioner             31    39    29/31/39  
+## 17 Keep things organized            99    43    99        
+## 18 Buildin and fixin things         99    47    99        
+## 19 Civil works, ya know?            99    47    99        
+## 20 Work with mechanical systems     99    49    99        
+## 21 Shippin' stuff                   43    53    43        
+## 22 Private dick                     33    99    33        
+## 23 I haul                           53    99    53        
+## 24 Barster                          35    99    35
+```
+
+Two groups dominate. The first is vague answers such as “Keep things
+organized”, “Workforce Optimization” or “Buildin and fixin things”,
+where the model chose 99 because the codebook says to prefer 99 over a
+guess, while the human coder placed the answer in a group from context.
+The second is the opposite: slang or terse answers such as “Private
+dick”, “I haul” and “Barster”, where the model guessed a group and the
+human coded 99. Between them sit real codebook ambiguities: whether
+bakery work is production (51) or food service (35), where “Lead
+mechanic supervisor” belongs, and whether massage is healthcare or
+personal care.
+
+None of these is random noise that more runs would average away. Most of
+the mismatches are rows where the model gave the same label every time,
+which is why the repetition in step 3 cannot find them. They are a mix
+of questions about what the codebook should say and answers that no
+coder could place with confidence.
+
+When you compare a model with human coders, compare it with the
+agreement between two humans on the same sample. If two careful coders
+only agree 0.85 with each other, a model at 0.85 is not failing; the
+categories are fuzzy. The model is one more coder whose reliability you
+estimate, and the evidence so far is that its quality depends on the
+task, the codebook and the data, so it has to be checked each time
+(Gilardi, Alizadeh and Kubli, 2023; Pangakis, Wolken and Fasching,
+2023). Here only one human checked the labels, so that comparison is not
+possible, and the 83% should be read with that limit in mind.
+
+Check also whether errors are spread evenly. If one group, one kind of
+respondent or one phrasing carries most of them, a downstream estimate
+that uses these labels can be biased even when overall accuracy looks
+high. Where the labels feed a regression or a share estimate, the
+validation sample can also be used to correct for misclassification
+instead of only reporting it.
+
+``` r
+
+final |>
+  group_by(human_group = gold) |>
+  summarise(answers = n(), accuracy = mean(occ2 == gold)) |>
+  arrange(accuracy, desc(answers)) |>
+  slice_head(n = 8)
+## # A tibble: 8 × 3
+##   human_group answers accuracy
+##   <chr>         <int>    <dbl>
+## 1 17                3    0.333
+## 2 31                2    0.5  
+## 3 99                8    0.625
+## 4 47                6    0.667
+## 5 25                9    0.778
+## 6 13               14    0.786
+## 7 49                5    0.8  
+## 8 35               11    0.818
+```
+
+## Step 7: Do not tune the codebook on your validation sample
+
+The mismatch table invites an obvious next step: edit the codebook so
+that these answers come out right. We tried it. Based on the mismatches
+above, version 2 of the codebook adds a rule for bakery and food batch
+work (51 unless it is retail counter work), puts massage under personal
+care (39), says that lead and supervisor titles and general operations
+work count as management (11), and counts electrical and mechanical
+upkeep as installation and repair (49). The 150 answers were labelled
+again three times with the new codebook.
+
+``` r
+
+codebook_v2 <- read_file("classifier_codebook_v2.txt") |> trimws()
+
+make_prompt_v2 <- function(occupation) {
+  llm_message(glue(
+    'You code survey answers into occupation groups.
+     Use only the codebook below. Choose the single best group.
+     If the answer names no occupation, use 99.
+
+     Codebook:
+     {codebook_v2}
+
+     Survey answer: "{occupation}"'
+  ))
+}
+
+replies_v2 <- tasks$occupation |>
+  map(make_prompt_v2) |>
+  set_names(tasks$task_id) |>
+  parallel_chat(
+    claude(.model = "claude-sonnet-5-5", .json_schema = occ_schema),
+    .max_active = 4
+  )
+```
+
+On the sample the edit was written from, version 2 looks better:
+
+``` r
+
+majority_label <- function(x) names(which.max(table(x)))
+
+runs_v2 <- read_rds("classifier_runs_v2.rds")
+
+sample_comparison <- bind_rows(
+  runs    |> group_by(id) |> summarise(label = majority_label(label)) |> mutate(codebook = "v1"),
+  runs_v2 |> group_by(id) |> summarise(label = majority_label(label)) |> mutate(codebook = "v2")
+) |>
+  inner_join(gold, by = "id") |>
+  group_by(codebook) |>
+  summarise(answers = n(), accuracy = mean(label == gold))
+
+sample_comparison
+## # A tibble: 2 × 3
+##   codebook answers accuracy
+##   <chr>      <int>    <dbl>
+## 1 v1           150    0.833
+## 2 v2           150    0.86
+```
+
+That gain is not evidence that the new codebook is better, because we
+wrote the edit while looking at these very errors. To find out, we took
+292 further distinct answers with human labels that were not in the
+sample and labelled each once with each codebook.
+
+``` r
+
+heldout_tasks <- heldout |>
+  cross_join(tibble(codebook = c("v1", "v2"))) |>
+  mutate(task_id = paste(id, codebook, sep = "__"))
+```
+
+``` r
+
+heldout_runs <- read_rds("classifier_heldout_runs.rds")
+heldout_gold <- read_rds("classifier_heldout_gold.rds") |>
+  mutate(gold = ifelse(gold == "98", "99", gold))
+
+heldout_comparison <- heldout_runs |>
+  inner_join(select(heldout_gold, id, gold), by = "id") |>
+  group_by(codebook) |>
+  summarise(answers = n(), accuracy = mean(label == gold))
+
+heldout_comparison
+## # A tibble: 2 × 3
+##   codebook answers accuracy
+##   <chr>      <int>    <dbl>
+## 1 v1           292    0.866
+## 2 v2           292    0.860
+```
+
+On the held-out answers version 2 is no better than version 1; it is
+slightly worse. The edits fitted the quirks of the 150 answers we looked
+at. This is the same problem as overfitting a model to a validation set:
+the sample you tune on stops being a measurement. If you want to improve
+the codebook, split the human-labelled answers first, tune on one part
+and report on the other, or label a fresh sample after every round of
+edits.
+
+## Cost and size
+
+The token table in step 3 gives the numbers for one prompt. A request
+with this codebook uses roughly 1,400 prompt tokens and about 75
+completion tokens, depending on how long the rationale runs. At that
+size the full dataset would look like this:
+
+``` r
+
+per_call <- run_meta$tokens |>
+  summarise(prompt = mean(input_tokens), completion = mean(output_tokens))
+
+price <- c(input = 2, output = 10)
+
+tibble(
+  distinct_answers  = nrow(distinct_occupations),
+  runs              = 3,
+  requests          = distinct_answers * runs,
+  prompt_tokens     = round(requests * per_call$prompt),
+  completion_tokens = round(requests * per_call$completion),
+  usd_standard      = round((prompt_tokens * price[["input"]] + completion_tokens * price[["output"]]) / 1e6, 2),
+  usd_batch         = usd_standard / 2
+)
+## # A tibble: 1 × 7
+##   distinct_answers  runs requests prompt_tokens completion_tokens usd_standard usd_batch
+##              <int> <dbl>    <dbl>         <dbl>             <dbl>        <dbl>     <dbl>
+## 1             2209     3     6627       9221338            508335         23.5      11.8
+```
+
+The prices are those of `claude-sonnet-5-5` on 2026-10-02: 2 USD per
+million input tokens and 10 USD per million output tokens, half of that
+through the batch API ([Anthropic
+pricing](https://platform.claude.com/docs/en/about-claude/pricing)).
+Prices change, so replace `price` with your provider’s current rates. At
+these rates the 450 calls behind this article’s three runs cost about
+1.60 USD, the second pass with `claude-opus-5-5` (4 and 20 USD) about
+0.20 USD, and the codebook experiment in step 7 about 3.90 USD. Check
+your own numbers with
+[`get_metadata()`](https://edubruell.github.io/tidyllm/dev/reference/get_metadata.md)
+on one reply before scaling up. Because the codebook is identical in
+every request, providers that cache a shared prompt prefix will charge
+less for most of it; put the codebook before the survey answer, as the
+prompt above does.
+
+## What to take away
+
+- A single reply is a sample. Without `temperature` you cannot pin it
+  down, so estimate its stability instead.
+- Agreement is not accuracy. On this task three runs gave the same label
+  for nearly every answer, and about one in six of those labels still
+  differed from the human label.
+- A codebook with definitions and decision rules does more for agreement
+  than any prompt wording trick, and it is also where most of the
+  remaining errors sit.
+- [`field_fct()`](https://edubruell.github.io/tidyllm/dev/reference/field_chr.md)
+  makes invalid labels impossible; it does not make wrong labels
+  impossible.
+- Repeat the call, vote, and read the rows where the runs disagree. Send
+  those through a stronger second pass and keep a human queue for what
+  is still unclear.
+- Validate on a random, held-out, human-coded sample, and report kappa
+  or alpha with the number of coders behind it. Treat the human labels
+  with the same suspicion: validation found four errors in ours.
+- Do not tune the codebook on the sample you validate with.
+
+## References
+
+- Gilardi, F., Alizadeh, M. and Kubli, M. (2023). ChatGPT outperforms
+  crowd workers for text-annotation tasks. *PNAS* 120(30).
+- Pangakis, N., Wolken, S. and Fasching, N. (2023). Automated annotation
+  with generative AI requires validation. arXiv:2306.00176.
+- Ziems, C. et al. (2024). Can large language models transform
+  computational social science? *Computational Linguistics* 50(1).
+- Barrie, C., Palaiologou, E. and Törnberg, P. (2024). Prompt stability
+  scoring for text annotation with large language models.
+  arXiv:2407.02039.
+- Haldar, R. and Hockenmaier, J. (2025). Rating Roulette:
+  Self-inconsistency in LLM-as-a-judge frameworks. *Findings of EMNLP
+  2025*; arXiv:2510.27106.
+- Tam, Z. R. et al. (2024). Let me speak freely? A study on the impact
+  of format restrictions on performance of large language models.
+  arXiv:2408.02442.
+- Krippendorff, K. (2004). *Content Analysis: An Introduction to Its
+  Methodology*. 2nd ed. Sage.

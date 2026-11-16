@@ -1,0 +1,830 @@
+# Get Started
+
+## Introduction to tidyllm
+
+**tidyllm** is an R package providing a unified interface for
+interacting with various large language model APIs. This vignette guides
+you through the basic setup and usage of **tidyllm**.
+
+### Installation
+
+To install **tidyllm** from CRAN:
+
+``` r
+
+install.packages("tidyllm")
+```
+
+Or install the development version from GitHub:
+
+``` r
+
+devtools::install_github("edubruell/tidyllm")
+```
+
+#### Setting up API Keys
+
+Set API keys as environment variables. The easiest way is to add them to
+your `.Renviron` file (run
+[`usethis::edit_r_environ()`](https://usethis.r-lib.org/reference/edit.html))
+and restart R:
+
+    ANTHROPIC_API_KEY="your-key-here"
+    OPENAI_API_KEY="your-key-here"
+
+Or set them temporarily in your session:
+
+``` r
+
+Sys.setenv(OPENAI_API_KEY = "your-key-here")
+```
+
+| Provider | Environment Variable | Where to get a key |
+|----|----|----|
+| **Claude** (Anthropic) | `ANTHROPIC_API_KEY` | [Anthropic Console](https://platform.claude.com/settings/keys) |
+| **OpenAI** | `OPENAI_API_KEY` | [OpenAI API Keys](https://platform.openai.com/account/api-keys) |
+| **Google Gemini** | `GOOGLE_API_KEY` | [Google AI Studio](https://aistudio.google.com/app/apikey) |
+| **Mistral** | `MISTRAL_API_KEY` | [Mistral Console](https://console.mistral.ai/api-keys/) |
+| **Groq** | `GROQ_API_KEY` | [Groq Console](https://console.groq.com/playground) |
+| **Perplexity** (deprecated) | `PERPLEXITY_API_KEY` | [Perplexity API Settings](https://www.perplexity.ai/settings/api) |
+| **DeepSeek** | `DEEPSEEK_API_KEY` | [DeepSeek Platform](https://platform.deepseek.com/api_keys) |
+| **Voyage AI** | `VOYAGE_API_KEY` | [Voyage AI Dashboard](https://dashboard.voyageai.com/api-keys) |
+| **OpenRouter** | `OPENROUTER_API_KEY` | [OpenRouter Dashboard](https://openrouter.ai/keys) |
+| **Azure OpenAI** | `AZURE_OPENAI_API_KEY` | [Azure Portal](https://portal.azure.com/) |
+| **Tavily** (web search for [`websearch()`](https://edubruell.github.io/tidyllm/dev/reference/websearch.md) and [`websearch_tool()`](https://edubruell.github.io/tidyllm/dev/reference/websearch_tool.md)) | `TAVILY_API_KEY` | [Tavily](https://app.tavily.com) |
+| **SearXNG** (self-hosted web search for [`websearch()`](https://edubruell.github.io/tidyllm/dev/reference/websearch.md) and [`websearch_tool()`](https://edubruell.github.io/tidyllm/dev/reference/websearch_tool.md)) | `SEARXNG_SERVER` (the server address, not a key) | [SearXNG](https://docs.searxng.org) |
+
+[`claude_cli()`](https://edubruell.github.io/tidyllm/dev/reference/claude_cli.md)
+needs no key: it runs the `claude` command line tool that is already
+installed and signed in on your machine.
+
+#### Running Local Models
+
+**tidyllm** supports local inference via [Ollama](https://ollama.com/)
+and [llama.cpp](https://github.com/ggml-org/llama.cpp). Both run
+entirely on your machine; no API key required.
+
+For Ollama, install from [ollama.com](https://ollama.com/) and pull a
+model:
+
+``` r
+
+ollama_download_model("qwen3.5:4b")
+```
+
+For llama.cpp, see the Local Models article on the tidyllm website for a
+step-by-step setup guide.
+
+### Basic Usage
+
+**tidyllm** is built around a **message-centric** interface.
+Interactions work through a message history created by
+[`llm_message()`](https://edubruell.github.io/tidyllm/dev/reference/llm_message.md)
+and passed to verbs like
+[`chat()`](https://edubruell.github.io/tidyllm/dev/reference/chat.md):
+
+``` r
+
+library(tidyllm)
+
+conversation <- llm_message("What is the capital of France?") |>
+  chat(claude())
+
+conversation
+```
+
+    ## Message History:
+    ## system:
+    ## You are a helpful assistant
+    ## --------------------------------------------------------------
+    ## user:
+    ## What is the capital of France?
+    ## --------------------------------------------------------------
+    ## assistant:
+    ## The capital of France is Paris.
+    ## --------------------------------------------------------------
+
+``` r
+
+# Continue the conversation with a different provider
+conversation <- conversation |>
+  llm_message("What's a famous landmark in this city?") |>
+  chat(openai())
+
+get_reply(conversation)
+```
+
+    ## [1] "A famous landmark in Paris is the Eiffel Tower."
+
+All API interactions follow the **verb + provider** pattern:
+
+- **Verbs** define the action:
+  [`chat()`](https://edubruell.github.io/tidyllm/dev/reference/chat.md),
+  [`embed()`](https://edubruell.github.io/tidyllm/dev/reference/embed.md),
+  [`send_batch()`](https://edubruell.github.io/tidyllm/dev/reference/send_batch.md),
+  [`check_batch()`](https://edubruell.github.io/tidyllm/dev/reference/check_batch.md),
+  [`fetch_batch()`](https://edubruell.github.io/tidyllm/dev/reference/fetch_batch.md),
+  [`list_batches()`](https://edubruell.github.io/tidyllm/dev/reference/list_batches.md),
+  [`list_models()`](https://edubruell.github.io/tidyllm/dev/reference/list_models.md),
+  [`deep_research()`](https://edubruell.github.io/tidyllm/dev/reference/deep_research.md),
+  [`check_job()`](https://edubruell.github.io/tidyllm/dev/reference/check_job.md),
+  [`fetch_job()`](https://edubruell.github.io/tidyllm/dev/reference/fetch_job.md),
+  [`upload_file()`](https://edubruell.github.io/tidyllm/dev/reference/upload_file.md),
+  [`list_files()`](https://edubruell.github.io/tidyllm/dev/reference/list_files.md),
+  [`file_info()`](https://edubruell.github.io/tidyllm/dev/reference/file_info.md),
+  [`delete_file()`](https://edubruell.github.io/tidyllm/dev/reference/delete_file.md)
+- **Providers** specify the API:
+  [`openai()`](https://edubruell.github.io/tidyllm/dev/reference/openai.md),
+  [`claude()`](https://edubruell.github.io/tidyllm/dev/reference/claude.md),
+  [`claude_cli()`](https://edubruell.github.io/tidyllm/dev/reference/claude_cli.md),
+  [`gemini()`](https://edubruell.github.io/tidyllm/dev/reference/gemini.md),
+  [`ollama()`](https://edubruell.github.io/tidyllm/dev/reference/ollama.md),
+  [`mistral()`](https://edubruell.github.io/tidyllm/dev/reference/mistral.md),
+  [`groq()`](https://edubruell.github.io/tidyllm/dev/reference/groq.md),
+  [`deepseek()`](https://edubruell.github.io/tidyllm/dev/reference/deepseek.md),
+  [`voyage()`](https://edubruell.github.io/tidyllm/dev/reference/voyage.md),
+  [`openrouter()`](https://edubruell.github.io/tidyllm/dev/reference/openrouter.md),
+  [`llamacpp()`](https://edubruell.github.io/tidyllm/dev/reference/llamacpp.md),
+  [`azure_openai()`](https://edubruell.github.io/tidyllm/dev/reference/azure_openai.md),
+  [`ellmer()`](https://edubruell.github.io/tidyllm/dev/reference/ellmer.md)
+
+Provider-specific functions like
+[`openai_chat()`](https://edubruell.github.io/tidyllm/dev/reference/openai_chat.md)
+or
+[`claude_chat()`](https://edubruell.github.io/tidyllm/dev/reference/claude_chat.md)
+also work directly and expose the full range of parameters for each API.
+
+#### Sending Images and Media
+
+Attach images, PDFs, audio, or video to a message using the `.media`
+argument of
+[`llm_message()`](https://edubruell.github.io/tidyllm/dev/reference/llm_message.md).
+Pass a single media object or a list of them:
+
+![A photograph showing lake Garda and the scenery near Torbole,
+Italy.](picture.jpeg)
+
+``` r
+
+# Single image
+image_description <- llm_message("Describe this picture. Can you guess where it was taken?",
+                                  .media = img("picture.jpeg")) |>
+  chat(openai(.model = "gpt-6-luna"))
+
+get_reply(image_description)
+```
+
+    ## [1] "The picture shows a beautiful landscape with a lake, mountains, and a town nestled below. The area appears lush and green, with agricultural fields visible. This scenery is reminiscent of northern Italy, particularly around Lake Garda."
+
+Send multiple images in one message by passing a list. The list can also
+mix different media types; for example, an image alongside a PDF or an
+audio file alongside a chart. Gemini handles mixed-type lists most
+flexibly:
+
+``` r
+
+llm_message("Compare these two charts.",
+            .media = list(img("chart_a.png"), img("chart_b.png"))) |>
+  chat(claude())
+
+# Mixed types in one message
+llm_message("Does this figure match the results described in the paper?",
+            .media = list(img("figure.png"), pdf_file("paper.pdf", pages = 1:5))) |>
+  chat(gemini())
+```
+
+For audio and video, use
+[`audio_file()`](https://edubruell.github.io/tidyllm/dev/reference/audio_file.md)
+and
+[`video_file()`](https://edubruell.github.io/tidyllm/dev/reference/video_file.md).
+Gemini supports both natively; llama.cpp supports audio with compatible
+models (Ultravox, Qwen2.5-Omni, Qwen3-Omni); OpenRouter routes audio and
+video to underlying models that accept them:
+
+``` r
+
+# Audio transcription or analysis
+llm_message("Transcribe and summarise this recording.",
+            .media = audio_file("interview.mp3")) |>
+  chat(gemini())
+
+# Video understanding
+llm_message("Describe what happens in this clip.",
+            .media = video_file("demo.mp4")) |>
+  chat(gemini())
+```
+
+#### Adding PDFs to Messages
+
+Pass a PDF to
+[`pdf_file()`](https://edubruell.github.io/tidyllm/dev/reference/pdf_file.md)
+and attach it with `.media`. By default the file is sent as binary to
+providers that support native PDF rendering (Claude, Gemini), and the
+text is automatically extracted as a fallback for others:
+
+``` r
+
+llm_message("Summarize the key points from this document.",
+            .media = pdf_file("die_verwandlung.pdf")) |>
+  chat(claude())
+```
+
+    ## Message History:
+    ## system:
+    ## You are a helpful assistant
+    ## --------------------------------------------------------------
+    ## user:
+    ## Summarize the key points from this document.
+    ##  -> [pdf: die_verwandlung.pdf] 
+    ## --------------------------------------------------------------
+    ## assistant:
+    ## The story centres on Gregor Samsa, who wakes up transformed
+    ## into a giant insect. Unable to work, he becomes isolated
+    ## while his family struggles. Eventually Gregor dies, and his
+    ## relieved family looks ahead to a better future.
+    ## --------------------------------------------------------------
+
+Restrict to specific pages with the `pages` argument:
+
+``` r
+
+pdf_file("report.pdf", pages = 1:5)
+```
+
+For large or frequently reused documents, upload them once to the
+provider’s Files API and reference the handle in any message:
+
+``` r
+
+report <- upload_file(claude(), .path = "annual_report.pdf")
+
+llm_message("What are the key risks mentioned?", .files = report) |>
+  chat(claude())
+
+# Manage uploaded files
+list_files(claude())
+file_info(claude(), report)
+delete_file(claude(), report)
+```
+
+File management verbs are currently only supported by Claude, Gemini,
+and OpenAI. Files are uploaded to and stored on the specific provider’s
+servers; a file uploaded to Claude cannot be used with Gemini or OpenAI.
+Supported file types vary by provider: Gemini accepts a wide range
+including video, audio, images, PDFs, and various document formats.
+OpenAI accepts 80+ formats including Office documents (PPTX, DOCX,
+XLSX), source code, ZIP archives, and more. Claude focuses on PDFs and
+images. Always check the provider’s current documentation for the full
+list.
+
+#### Sending R Outputs to Models
+
+Use `.f` to capture console output from a function and `.capture_plot`
+to include the last plot:
+
+``` r
+
+library(tidyverse)
+
+ggplot(mtcars, aes(wt, mpg)) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = "y ~ x") +
+  labs(x = "Weight", y = "Miles per gallon")
+```
+
+![Scatter plot of car weight (x-axis) versus miles per gallon (y-axis)
+from the mtcars dataset, with a fitted linear regression line showing a
+negative relationship between weight and fuel
+efficiency.](tidyllm_files/figure-html/routputs_base-1.png)
+
+``` r
+
+llm_message("Analyze this plot and data summary:",
+            .capture_plot = TRUE,
+            .f = ~{summary(mtcars)}) |>
+  chat(claude())
+```
+
+    ## Message History:
+    ## system:
+    ## You are a helpful assistant
+    ## --------------------------------------------------------------
+    ## user:
+    ## Analyze this plot and data summary:
+    ##  -> [image: file1568f6c1b4565.png] [rconsole: RConsole.txt] 
+    ## --------------------------------------------------------------
+    ## assistant:
+    ## The scatter plot shows a clear negative correlation between
+    ## weight and fuel efficiency. Heavier cars consistently
+    ## achieve lower mpg, with the linear trend confirming this
+    ## relationship. Variability around the line suggests other
+    ## factors, engine size and transmission, also play a role.
+    ## --------------------------------------------------------------
+
+### Getting Replies from the API
+
+[`get_reply()`](https://edubruell.github.io/tidyllm/dev/reference/get_reply.md)
+retrieves assistant text from a message history. Use an index to access
+a specific reply, or omit it to get the last:
+
+``` r
+
+conversation <- llm_message("Imagine a German address.") |>
+  chat(groq()) |>
+  llm_message("Imagine another address.") |>
+  chat(claude())
+
+conversation
+```
+
+    ## Message History:
+    ## system:
+    ## You are a helpful assistant
+    ## --------------------------------------------------------------
+    ## user:
+    ## Imagine a German address.
+    ## --------------------------------------------------------------
+    ## assistant:
+    ## Herr Müller
+    ## Musterstraße 12
+    ## 53111 Bonn
+    ## --------------------------------------------------------------
+    ## user:
+    ## Imagine another address.
+    ## --------------------------------------------------------------
+    ## assistant:
+    ## Frau Schmidt
+    ## Fichtenweg 78
+    ## 42103 Wuppertal
+    ## --------------------------------------------------------------
+
+``` r
+
+conversation |> get_reply(1)   # first reply
+```
+
+    ## [1] "Herr Müller\nMusterstraße 12\n53111 Bonn"
+
+``` r
+
+conversation |> get_reply()    # last reply (default)
+```
+
+    ## [1] "Frau Schmidt\nFichtenweg 78\n42103 Wuppertal"
+
+Convert the message history (without attachments) to a tibble with
+[`as_tibble()`](https://tibble.tidyverse.org/reference/as_tibble.html):
+
+``` r
+
+conversation |> as_tibble()
+```
+
+    ## # A tibble: 5 × 2
+    ##   role      content                                       
+    ##   <chr>     <chr>                                         
+    ## 1 system    "You are a helpful assistant"                 
+    ## 2 user      "Imagine a German address."                   
+    ## 3 assistant "Herr Müller\nMusterstraße 12\n53111 Bonn"    
+    ## 4 user      "Imagine another address."                    
+    ## 5 assistant "Frau Schmidt\nFichtenweg 78\n42103 Wuppertal"
+
+[`get_metadata()`](https://edubruell.github.io/tidyllm/dev/reference/get_metadata.md)
+returns token counts, model names, and API-specific metadata for all
+assistant replies:
+
+``` r
+
+conversation |> get_metadata()
+```
+
+    ## # A tibble: 2 × 6
+    ##   model  timestamp           prompt_tokens completion_tokens
+    ##   <chr>  <dttm>                      <int>             <int>
+    ## 1 groq-… 2026-07-08 14:25:43            20                45
+    ## 2 claud… 2026-07-08 14:26:02            80                40
+    ## # ℹ 2 more variables: total_tokens <int>,
+    ## #   api_specific <list>
+
+The `api_specific` list column holds provider-only metadata such as
+citations (Perplexity), thinking traces (Claude, Gemini, DeepSeek), or
+grounding information (Gemini).
+
+#### Listing Available Models
+
+Use
+[`list_models()`](https://edubruell.github.io/tidyllm/dev/reference/list_models.md)
+to query which models a provider offers:
+
+``` r
+
+list_models(openai())
+list_models(openrouter())   # 300+ models across providers
+list_models(ollama())       # models installed locally
+```
+
+### Working with Structured Outputs
+
+**tidyllm** supports JSON schema enforcement so models return
+structured, machine-readable data. Use
+[`tidyllm_schema()`](https://edubruell.github.io/tidyllm/dev/reference/tidyllm_schema.md)
+with field helpers to define your schema:
+
+- [`field_chr()`](https://edubruell.github.io/tidyllm/dev/reference/field_chr.md):
+  text
+- [`field_dbl()`](https://edubruell.github.io/tidyllm/dev/reference/field_chr.md):
+  numeric
+- [`field_lgl()`](https://edubruell.github.io/tidyllm/dev/reference/field_chr.md):
+  boolean
+- `field_fct(.levels = ...)`: enumeration
+- `field_object(...)`: nested object (supports `.vector = TRUE` for
+  arrays)
+
+``` r
+
+person_schema <- tidyllm_schema(
+  first_name = field_chr("A male first name"),
+  last_name  = field_chr("A common last name"),
+  occupation = field_chr("A quirky occupation"),
+  address    = field_object(
+    "The person's home address",
+    street  = field_chr("Street name"),
+    number  = field_dbl("House number"),
+    city    = field_chr("A large city"),
+    zip     = field_dbl("Postal code"),
+    country = field_fct("Country", .levels = c("Germany", "France"))
+  )
+)
+
+profile <- llm_message("Imagine a person profile matching the schema.") |>
+  chat(openai(), .json_schema = person_schema)
+
+profile
+```
+
+    ## Message History:
+    ## system:
+    ## You are a helpful assistant
+    ## --------------------------------------------------------------
+    ## user:
+    ## Imagine a person profile matching the schema.
+    ## --------------------------------------------------------------
+    ## assistant:
+    ## {"first_name":"Julien","last_name":"Martin","occupation":"Gondola
+    ## Repair Specialist","address":{"street":"Rue de
+    ## Rivoli","number":112,"city":"Paris","zip":75001,"country":"France"}}
+    ## --------------------------------------------------------------
+
+Extract the parsed result as an R list with
+[`get_reply_data()`](https://edubruell.github.io/tidyllm/dev/reference/get_reply_data.md):
+
+``` r
+
+profile |> get_reply_data() |> str()
+```
+
+    ## List of 4
+    ##  $ first_name: chr "Julien"
+    ##  $ last_name : chr "Martin"
+    ##  $ occupation: chr "Gondola Repair Specialist"
+    ##  $ address   :List of 5
+    ##   ..$ street : chr "Rue de Rivoli"
+    ##   ..$ number : int 112
+    ##   ..$ city   : chr "Paris"
+    ##   ..$ zip    : int 75001
+    ##   ..$ country: chr "France"
+
+Set `.vector = TRUE` on
+[`field_object()`](https://edubruell.github.io/tidyllm/dev/reference/field_object.md)
+to get outputs that unpack directly into a data frame:
+
+``` r
+
+llm_message("Imagine five people.") |>
+  chat(openai(),
+       .json_schema = tidyllm_schema(
+         person = field_object(
+           first_name = field_chr(),
+           last_name  = field_chr(),
+           occupation = field_chr(),
+           .vector    = TRUE
+         )
+       )) |>
+  get_reply_data() |>
+  bind_rows()
+```
+
+    ##   first_name last_name          occupation
+    ## 1      Alice   Johnson  Software Developer
+    ## 2     Robert  Anderson    Graphic Designer
+    ## 3      Maria  Gonzalez      Data Scientist
+    ## 4       Liam  O'Connor Mechanical Engineer
+    ## 5     Sophia       Lee      Content Writer
+
+If the **ellmer** package is installed, you can use ellmer type objects
+([`ellmer::type_string()`](https://ellmer.tidyverse.org/reference/type_boolean.html),
+[`ellmer::type_object()`](https://ellmer.tidyverse.org/reference/type_boolean.html),
+etc.) directly as field definitions in
+[`tidyllm_schema()`](https://edubruell.github.io/tidyllm/dev/reference/tidyllm_schema.md)
+or as the `.json_schema` argument.
+
+### API Parameters
+
+Common arguments like `.model`, `.temperature`, and `.json_schema` can
+be set directly in verbs like
+[`chat()`](https://edubruell.github.io/tidyllm/dev/reference/chat.md).
+Provider-specific arguments go in the provider function:
+
+``` r
+
+# Common args in the verb
+llm_message("Write a haiku about tidyllm.") |>
+  chat(ollama(), .temperature = 0)
+
+# Provider-specific args in the provider
+llm_message("Hello") |>
+  chat(ollama(.ollama_server = "http://my-server:11434"), .temperature = 0)
+```
+
+When an argument appears in both
+[`chat()`](https://edubruell.github.io/tidyllm/dev/reference/chat.md)
+and the provider function,
+[`chat()`](https://edubruell.github.io/tidyllm/dev/reference/chat.md)
+takes precedence. If a common argument is not supported by the chosen
+provider,
+[`chat()`](https://edubruell.github.io/tidyllm/dev/reference/chat.md)
+raises an error rather than silently ignoring it.
+[`provider_capabilities()`](https://edubruell.github.io/tidyllm/dev/reference/provider_capabilities.md)
+(see “Checking What a Provider Supports” below) lists which arguments
+each provider accepts.
+
+### Tool Use
+
+Define R functions that the model can call during a conversation. Wrap
+them with
+[`tidyllm_tool()`](https://edubruell.github.io/tidyllm/dev/reference/tidyllm_tool.md):
+
+``` r
+
+get_current_time <- function(tz, format = "%Y-%m-%d %H:%M:%S") {
+  format(Sys.time(), tz = tz, format = format, usetz = TRUE)
+}
+
+time_tool <- tidyllm_tool(
+  .f          = get_current_time,
+  .description = "Returns the current time in a specified timezone.",
+  tz     = field_chr("The timezone identifier, e.g. 'Europe/Berlin'."),
+  format = field_chr("strftime format string. Default: '%Y-%m-%d %H:%M:%S'.")
+)
+
+llm_message("What time is it in Stuttgart right now?") |>
+  chat(openai(), .tools = time_tool)
+```
+
+    ## Message History:
+    ## system:
+    ## You are a helpful assistant
+    ## --------------------------------------------------------------
+    ## user:
+    ## What time is it in Stuttgart right now?
+    ## --------------------------------------------------------------
+    ## assistant:
+    ## The current time in Stuttgart (Europe/Berlin) is 2025-03-03
+    ## 09:51:22 CET.
+    ## --------------------------------------------------------------
+
+When a tool is provided, the model can request its execution, tidyllm
+runs it in your R session, and the result is fed back automatically.
+Multi-turn tool loops (where the model makes several tool calls) are
+handled transparently.
+
+For provider-independent web search with
+[`websearch_tool()`](https://edubruell.github.io/tidyllm/dev/reference/websearch_tool.md)
+and tools served over MCP, see the [tools
+article](https://edubruell.github.io/tidyllm/articles/tidyllm_tools.html).
+
+If you use **ellmer**, convert existing ellmer tool definitions with
+[`ellmer_tool()`](https://edubruell.github.io/tidyllm/dev/reference/ellmer_tool.md):
+
+``` r
+
+library(ellmer)
+btw_tool <- ellmer_tool(btw::btw_tool_files_list_files)
+llm_message("List files in the R/ folder.") |>
+  chat(claude(), .tools = btw_tool)
+```
+
+For a detailed guide, see the Tool Use article on the tidyllm website.
+
+### Embeddings
+
+Generate vector representations of text with
+[`embed()`](https://edubruell.github.io/tidyllm/dev/reference/embed.md).
+The output is a tibble with one row per input:
+
+``` r
+
+c("What is the meaning of life?",
+  "How much wood would a woodchuck chuck?",
+  "How does the brain work?") |>
+  embed(ollama())
+```
+
+    ## # A tibble: 3 × 2
+    ##   input                                  embeddings 
+    ##   <chr>                                  <list>     
+    ## 1 What is the meaning of life?           <dbl [384]>
+    ## 2 How much wood would a woodchuck chuck? <dbl [384]>
+    ## 3 How does the brain work?               <dbl [384]>
+
+Voyage AI supports **multimodal embeddings**, meaning text and images
+share the same vector space:
+
+``` r
+
+list("tidyllm logo", img("docs/logo.png")) |>
+  embed(voyage())
+```
+
+[`voyage_rerank()`](https://edubruell.github.io/tidyllm/dev/reference/voyage_rerank.md)
+re-orders documents by relevance to a query:
+
+``` r
+
+voyage_rerank(
+  "best R package for LLMs",
+  c("tidyllm", "ellmer", "httr2", "rvest")
+)
+```
+
+### Batch Requests
+
+Batch APIs (Claude, OpenAI, Mistral, Groq, Gemini) process large numbers
+of requests overnight at roughly half the cost of standard calls. Use
+[`send_batch()`](https://edubruell.github.io/tidyllm/dev/reference/send_batch.md)
+to submit,
+[`check_batch()`](https://edubruell.github.io/tidyllm/dev/reference/check_batch.md)
+to poll status, and
+[`fetch_batch()`](https://edubruell.github.io/tidyllm/dev/reference/fetch_batch.md)
+to retrieve results:
+
+``` r
+
+# Submit a batch and save the job handle to disk
+glue::glue("Write a poem about {x}", x = c("cats", "dogs", "hamsters")) |>
+  purrr::map(llm_message) |>
+  send_batch(claude()) |>
+  saveRDS("claude_batch.rds")
+```
+
+``` r
+
+# Check status
+readRDS("claude_batch.rds") |>
+  check_batch(claude())
+```
+
+    ## # A tibble: 1 × 8
+    ##   batch_id          status created_at          expires_at          req_succeeded
+    ##   <chr>             <chr>  <dttm>              <dttm>                      <int>
+    ## 1 msgbatch_02A1B2C… ended  2025-11-01 10:30:00 2025-11-02 10:30:00             3
+    ## # ℹ 3 more variables: req_errored <int>, req_expired <int>, req_canceled <int>
+
+``` r
+
+# Fetch completed results
+conversations <- readRDS("claude_batch.rds") |>
+  fetch_batch(claude())
+
+poems <- purrr::map_chr(conversations, get_reply)
+```
+
+[`check_job()`](https://edubruell.github.io/tidyllm/dev/reference/check_job.md)
+and
+[`fetch_job()`](https://edubruell.github.io/tidyllm/dev/reference/fetch_job.md)
+are type-dispatching aliases; they work on both batch objects and
+background research jobs (see
+[`deep_research()`](https://edubruell.github.io/tidyllm/dev/reference/deep_research.md)
+below).
+
+### Deep Research
+
+For long-horizon research tasks,
+[`deep_research()`](https://edubruell.github.io/tidyllm/dev/reference/deep_research.md)
+runs an extended web search and synthesis. It is available for
+[`openai()`](https://edubruell.github.io/tidyllm/dev/reference/openai.md),
+which runs the research with web search in the background and returns
+the finished report:
+
+``` r
+
+# Blocking: waits for completion, returns an LLMMessage
+result <- llm_message("Compare Rust and Go for systems programming in 2026.") |>
+  deep_research(openai())
+
+get_reply(result)
+```
+
+``` r
+
+# Background mode: returns a job handle immediately
+job <- llm_message("Summarise recent EU AI Act developments.") |>
+  deep_research(openai(), .background = TRUE)
+
+check_job(job)           # poll status
+result <- fetch_job(job) # retrieve when complete
+```
+
+### Streaming
+
+Stream reply tokens to the console as they are generated with
+`.stream = TRUE`:
+
+``` r
+
+llm_message("Write a short poem about R.") |>
+  chat(claude(), .stream = TRUE)
+```
+
+Streaming is useful for monitoring long responses interactively. For
+production data-analysis workflows the non-streaming mode is preferred
+because it provides complete metadata and is more reliable.
+
+To stream into a user interface rather than the console, use
+[`send_chat()`](https://edubruell.github.io/tidyllm/dev/reference/send_chat.md),
+which dispatches a request without blocking the session and reports each
+delta through `.on_chunk`. See the article on [using tidyllm in
+Shiny](https://edubruell.github.io/tidyllm/articles/tidyllm_shiny.html),
+and the example app it walks through:
+`tidyllm_example_app("model_explainer")`.
+
+### Choosing the Right Provider
+
+| Provider | Strengths and tidyllm-specific features |
+|----|----|
+| [`openai()`](https://edubruell.github.io/tidyllm/dev/reference/openai.md) | GPT-6 model line with `.thinking` effort levels; [`deep_research()`](https://edubruell.github.io/tidyllm/dev/reference/deep_research.md); built-in web search via [`openai_websearch()`](https://edubruell.github.io/tidyllm/dev/reference/openai_websearch.md); Files API |
+| [`claude()`](https://edubruell.github.io/tidyllm/dev/reference/claude.md) | Strong at coding and long documents; `.thinking = TRUE` for extended reasoning; Files API for document workflows; batch |
+| [`gemini()`](https://edubruell.github.io/tidyllm/dev/reference/gemini.md) | 1M-token context window; native image, audio, and video via `.media`; search grounding; `.thinking_budget` for reasoning; Files API; batch |
+| [`mistral()`](https://edubruell.github.io/tidyllm/dev/reference/mistral.md) | EU-hosted, GDPR-friendly; Magistral reasoning models; Voxtral audio models (`.media = audio_file()`); embeddings; batch |
+| [`groq()`](https://edubruell.github.io/tidyllm/dev/reference/groq.md) | Fastest available inference (300-1200 tokens/s); [`groq_transcribe()`](https://edubruell.github.io/tidyllm/dev/reference/groq_transcribe.md) for Whisper audio; `.json_schema`; batch |
+| [`perplexity()`](https://edubruell.github.io/tidyllm/dev/reference/perplexity.md) (deprecated since 0.7.0, removed in 0.8.0; use `openrouter(.model = "perplexity/sonar")`) | Real-time web search with citations in metadata; [`deep_research()`](https://edubruell.github.io/tidyllm/dev/reference/deep_research.md) for long-horizon research; search domain filter |
+| [`deepseek()`](https://edubruell.github.io/tidyllm/dev/reference/deepseek.md) | Top math and reasoning benchmarks at very low cost; `.thinking = TRUE` turns on thinking mode and returns the reasoning trace in metadata |
+| [`voyage()`](https://edubruell.github.io/tidyllm/dev/reference/voyage.md) | State-of-the-art retrieval embeddings; [`voyage_rerank()`](https://edubruell.github.io/tidyllm/dev/reference/voyage_rerank.md); multimodal embeddings (text + images); `.output_dimension` |
+| [`openrouter()`](https://edubruell.github.io/tidyllm/dev/reference/openrouter.md) | 500+ models via one API key; audio and video support on Gemini, Qwen 3.6, and other multimodal routes; automatic fallback routing |
+| [`claude_cli()`](https://edubruell.github.io/tidyllm/dev/reference/claude_cli.md) | Runs your own installed and signed-in `claude` command line tool; no API key, usage counts against the CLI’s plan; CLI tools are off unless you allow them with `.cli_tools` |
+| [`ellmer()`](https://edubruell.github.io/tidyllm/dev/reference/ellmer.md) | Use any ellmer chat object as a tidyllm provider |
+| [`ollama()`](https://edubruell.github.io/tidyllm/dev/reference/ollama.md) | Local models with full data privacy; no API costs; [`ollama_download_model()`](https://edubruell.github.io/tidyllm/dev/reference/ollama_download_model.md) for model management |
+| [`llamacpp()`](https://edubruell.github.io/tidyllm/dev/reference/llamacpp.md) | Often the most performant local inference stack; audio input with Ultravox, Qwen2.5-Omni, Qwen3-Omni, and Gemma 4 models; BNF grammar constraints; logprobs; [`llamacpp_rerank()`](https://edubruell.github.io/tidyllm/dev/reference/llamacpp_rerank.md) |
+| [`azure_openai()`](https://edubruell.github.io/tidyllm/dev/reference/azure_openai.md) | Enterprise Azure deployments of OpenAI models; batch support |
+
+For getting started with local models (Ollama and llama.cpp), see the
+Local Models article on the tidyllm website.
+
+#### Checking What a Provider Supports
+
+[`provider_capabilities()`](https://edubruell.github.io/tidyllm/dev/reference/provider_capabilities.md)
+answers “can this provider do that?” without reading each help page.
+With a provider call it lists every verb the provider implements, each
+verb’s arguments, the default of each argument as R code, and the
+function (`fn`) whose help page documents it:
+
+``` r
+
+provider_capabilities(claude(), .verb = "chat")
+
+# Which providers accept .thinking, and for which verbs?
+provider_capabilities(.argument = ".thinking")
+
+# Default chat model of every provider
+provider_capabilities(.verb = "chat", .argument = ".model")
+
+# Which media types each provider takes in a message
+provider_capabilities(.what = "media")
+```
+
+The result is an ordinary tibble, so filter and reshape it as usual. An
+argument in the table means the provider’s function accepts it; an
+individual model can still reject a value, for example some reasoning
+effort levels. The attachment check in
+[`chat()`](https://edubruell.github.io/tidyllm/dev/reference/chat.md)
+reads the same media table, so a message with audio sent to a provider
+that lists no audio support fails before any request is made.
+
+### Setting a Default Provider
+
+Avoid specifying a provider on every call by setting options:
+
+``` r
+
+options(tidyllm_chat_default   = openai(.model = "gpt-6-luna"))
+options(tidyllm_embed_default  = ollama())
+options(tidyllm_sbatch_default = claude())
+options(tidyllm_cbatch_default = claude())
+options(tidyllm_fbatch_default = claude())
+options(tidyllm_lbatch_default = claude())
+
+# Now the provider argument can be omitted
+llm_message("Hello!") |> chat()
+
+c("text one", "text two") |> embed()
+```

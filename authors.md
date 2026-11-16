@@ -1,0 +1,23 @@
+# Authors and Citation
+
+## Authors
+
+- **Eduard Brüll**. Author, maintainer.
+
+- **Jia Zhang**. Contributor.
+
+## Citation
+
+Source:
+[`DESCRIPTION`](https://github.com/edubruell/tidyllm/blob/main/DESCRIPTION)
+
+Brüll E (2026). *tidyllm: Tidy Integration of Large Language Models*. R
+package version 0.8.0, <https://edubruell.github.io/tidyllm/>.
+
+    @Manual{,
+      title = {tidyllm: Tidy Integration of Large Language Models},
+      author = {Eduard Brüll},
+      year = {2026},
+      note = {R package version 0.8.0},
+      url = {https://edubruell.github.io/tidyllm/},
+    }
