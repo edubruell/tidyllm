@@ -23,6 +23,7 @@ Seven thousand survey respondents described their job in their own words, which 
 library(tidyllm)
 library(tidyverse)
 library(glue)
+library(irr)
 
 occ_data  <- read_rds("occupation_data.rds")
 occ_codes <- read_rds("occ_codes_2digits.rds")
@@ -265,47 +266,25 @@ Almost every answer gets the same label in all three runs. The rows where the ru
 
 A tie, such as one vote each for three labels, has no majority and `first()` picks one arbitrarily, so treat rows with `agreement < 0.5` as unresolved. A unanimous label can still be wrong.
 
-Krippendorff's alpha scores agreement beyond chance, with 1 as full agreement. Here the raters are the runs and the units the answers. The helper `kripp_nominal()` computes it for nominal labels and returns one number; its code sits in a hidden chunk in the source of this page.
+Coders who pick from 22 categories agree sometimes by luck alone, more often when a few categories are very frequent. Agreement statistics that correct for this luck use a scale where 0 means no better than chance and 1 means perfect agreement. The `irr` package computes both statistics we use in this article:
 
-```{r helpers, echo = FALSE}
-kripp_nominal <- function(runs) {
-  m <- runs |>
-    select(run, id, label) |>
-    pivot_wider(names_from = id, values_from = label) |>
-    select(-run) |>
-    as.matrix()
-  m  <- m[, colSums(!is.na(m)) >= 2, drop = FALSE]
-  lv <- sort(unique(as.vector(m)))
-  o  <- matrix(0, length(lv), length(lv))
-  for (j in seq_len(ncol(m))) {
-    v   <- m[, j]
-    v   <- v[!is.na(v)]
-    tab <- table(factor(v, lv))
-    o   <- o + (tab %o% tab - diag(tab)) / (length(v) - 1)
-  }
-  n <- sum(o)
-  1 - (n - 1) * (n - sum(diag(o))) / (n^2 - sum(rowSums(o)^2))
-}
+- **Krippendorff's alpha** measures how much several coders agree. Here the coders are the three runs and the units are the answers. Rules of thumb call 0.8 reliable and 0.667 the lowest value for tentative conclusions (Krippendorff, 2004).
+- **Cohen's kappa** measures how much two coders agree. We use it in step 6 for the model and the human coder.
 
-cohen_kappa <- function(truth, estimate) {
-  lv <- sort(unique(c(truth, estimate)))
-  tb <- table(factor(truth, lv), factor(estimate, lv))
-  po <- sum(diag(tb)) / sum(tb)
-  pe <- sum(rowSums(tb) * colSums(tb)) / sum(tb)^2
-  (po - pe) / (1 - pe)
-}
-```
+`kripp.alpha()` wants one row per coder and one column per answer, so we reshape the runs first. Alpha measures agreement between runs only; human labels come in step 6.
 
 ```{r alpha}
-kripp_nominal(runs) |>
-  round(3)
+runs |>
+  select(run, id, label) |>
+  pivot_wider(names_from = id, values_from = label) |>
+  select(-run) |>
+  as.matrix() |>
+  kripp.alpha(method = "nominal")
 ```
-
-Rules of thumb call 0.8 reliable and 0.667 the lowest value for tentative conclusions (Krippendorff, 2004). Alpha measures agreement between runs only; human labels come in step 6.
 
 ### Self-reported confidence
 
-Does the confidence field carry a signal? We check against the maintainer's labels for the 150 answers, made with AI assistance and checked by hand (step 6). We call them gold labels: the labels a person assigned, which we treat as the truth to compare against.
+Does the confidence field carry a signal? We check against the labels for the 150 answers, made with AI assistance and checked by a human coder (step 6). We call them gold labels: the labels a person assigned, which we treat as the truth to compare against.
 
 ```{r load_gold}
 gold <- read_rds("classifier_gold.rds")
@@ -365,7 +344,7 @@ decide(frame_answer("Residential roofer"), occ_questions, gemini()) |>
 1 occ2     choice 47           0.998
 ```
 
-Code 47 is Construction and Extraction, which fits a roofer. A list of texts in `.state` returns one row per text and question. We run the 150 human-labelled answers of step 4 through `jev()` (the provider of the Jev decision model), `openai()` and `gemini()`; the three runs took 6.9, 10.5 and 7.7 seconds. In the next chunk, `label_all()` runs one provider over all 150 answers and joins the human labels; the `list()` call does this for the three providers.
+Code 47 is Construction and Extraction, which fits a roofer. A list of texts in `.state` returns one row per text and question. We run the same 150 human-labelled answers through `jev()` (the provider of the Jev decision model), `openai()` and `gemini()`; the three runs took 6.9, 10.5 and 7.7 seconds. In the next chunk, `label_all()` runs one provider over all 150 answers and joins the human labels; the `list()` call does this for the three providers.
 
 ```{r decide_run, eval = FALSE}
 label_all <- function(provider) {
@@ -407,7 +386,7 @@ decide_all |>
   pivot_wider(names_from = provider, values_from = cell, values_fill = "0 rows")
 ```
 
-Above 0.95, 96 to 100 percent of the labels match the human label; below 0.5, fewer than half do. At a cut-off of 0.8, rows at or above it are right 93 to 96 percent of the time and rows below it 51 to 62 percent. Send the rows below the cut-off to a person or to step 5.
+Above 0.95, 96 to 100 per cent of the labels match the human label; below 0.5, fewer than half do. At a cut-off of 0.8, rows at or above it are right 93 to 96 per cent of the time and rows below it 51 to 62 per cent. Send the rows below the cut-off to a person or to step 5.
 
 ```{r decide_flagged}
 decide_all |>
@@ -416,7 +395,7 @@ decide_all |>
   summarise(answers = n(), correct = sum(label == gold), accuracy = round(mean(label == gold), 2), .groups = "drop")
 ```
 
-The three providers are independent readers of the codebook, so the agreement logic of step 4 applies. `openai()` and `gemini()` choose the same code for 88 percent of the answers, `gemini()` and `jev()` for 87 and `openai()` and `jev()` for 82. All three agree on 119 of the 150 answers, and 92 percent of those match the human label. The 31 others are a short list to read by hand.
+The three providers are independent readers of the codebook, so the agreement logic of step 4 applies. `openai()` and `gemini()` choose the same code for 88 per cent of the answers, `gemini()` and `jev()` for 87 and `openai()` and `jev()` for 82. All three agree on 119 of the 150 answers, and 92 per cent of those match the human label. The 31 others are a short list to read by hand.
 
 A decision model returns no reason; use the `chat()` pass of step 5 for rows that need one. Its labels are only as good as the codebook, so steps 6 and 7 apply here too.
 
@@ -556,9 +535,9 @@ final |>
 
 Only human coding shows whether labels are right. Draw a random sample across all answers, since flagged rows alone make the estimate too pessimistic. One or two people code it from the same codebook without seeing the model labels and resolve their differences. Do not tune the codebook on this sample and then report it as your accuracy.
 
-The 150 answers here were coded with AI assistance and checked by hand by the maintainer. Code 98 in the original file, for answers that name no occupation, was recoded to 99 to match the codebook. The comparison turned up four labels where the model was right and the first hand label was wrong; we corrected them before the numbers below.
+These 150 answers were coded with AI assistance and each one was checked by a human coder.
 
-We compute accuracy and Cohen's kappa, the agreement with the human labels beyond what chance gives, in base R. Kappa helps with 22 groups of very different sizes, where frequent classes dominate accuracy. The helper `cohen_kappa()` is in the same hidden chunk; the table compares the first run, the majority and the majority plus review.
+We measure accuracy, the share of answers whose label equals the human label, and Cohen's kappa from step 4. Kappa adds information because the 22 groups differ a lot in size: a coder who always picks the frequent groups gets a high accuracy but a low kappa. The table compares the first run, the majority of the three runs and the majority plus review.
 
 ```{r metrics}
 first_run <- runs |>
@@ -568,11 +547,11 @@ first_run <- runs |>
 
 bind_rows(
   first_run |>
-    summarise(pipeline = "first run only", accuracy = mean(first_run == gold), kappa = cohen_kappa(gold, first_run)),
+    summarise(pipeline = "first run only", accuracy = mean(first_run == gold), kappa = kappa2(cbind(gold, first_run))$value),
   final |>
-    summarise(pipeline = "majority of 3 runs", accuracy = mean(majority == gold), kappa = cohen_kappa(gold, majority)),
+    summarise(pipeline = "majority of 3 runs", accuracy = mean(majority == gold), kappa = kappa2(cbind(gold, majority))$value),
   final |>
-    summarise(pipeline = "majority plus review", accuracy = mean(occ2 == gold), kappa = cohen_kappa(gold, occ2))
+    summarise(pipeline = "majority plus review", accuracy = mean(occ2 == gold), kappa = kappa2(cbind(gold, occ2))$value)
 ) |>
   mutate(accuracy = round(accuracy, 3), kappa = round(kappa, 3))
 ```
@@ -607,7 +586,7 @@ Two groups dominate. The model gave vague answers such as "Keep things organized
 
 More runs would not average these errors away. Most are rows where the model gave the same label every time, so step 3 cannot find them.
 
-Compare the model with the agreement between two humans on the same sample: if two careful coders agree 0.85 with each other, a model at 0.85 matches them. A model's quality depends on the task, codebook and data, so check it each time (Gilardi, Alizadeh and Kubli, 2023; Pangakis, Wolken and Fasching, 2023). Only one human checked the labels here, so the 83% comes with that limit.
+Compare the model with the agreement between two humans on the same sample: if two careful coders give the same label for 85 per cent of the answers, a model with an accuracy of 85 per cent matches them. A model's quality depends on the task, codebook and data, so check it each time (Gilardi, Alizadeh and Kubli, 2023; Pangakis, Wolken and Fasching, 2023). Only one human checked the labels here, so the 83 per cent comes with that limit.
 
 Check also whether errors are spread evenly: if one group or phrasing carries most of them, a downstream estimate can be biased even when overall accuracy looks high. The validation sample can also correct for misclassification.
 
@@ -678,8 +657,7 @@ heldout_runs <- heldout_prompts |>
 
 ```{r codebook_heldout}
 heldout_runs <- read_rds("classifier_heldout_runs.rds")
-heldout_gold <- read_rds("classifier_heldout_gold.rds") |>
-  mutate(gold = ifelse(gold == "98", "99", gold))
+heldout_gold <- read_rds("classifier_heldout_gold.rds")
 
 heldout_comparison <- heldout_runs |>
   inner_join(select(heldout_gold, id, gold), by = "id") |>
@@ -725,7 +703,7 @@ A decision model sends a shorter request: about 675 prompt tokens per answer wit
 - Use `field_fct()` to restrict labels to the codebook, and check accuracy in step 6.
 - Use a decision model as the quick alternative: one call per answer, a probability for every code, and on this sample the accuracy of three Claude runs. Use the probability to pick rows to review.
 - Repeat the call, vote and read the rows where runs disagree. Send those through a stronger second pass and keep a human queue for the rest.
-- Validate on a random, held-out, human-coded sample, and report agreement with the number of coders behind it. Check the human labels as carefully: validation found four errors in ours.
+- Validate on a random, held-out, human-coded sample, and report agreement with the number of coders behind it.
 - Tune the codebook on one set of answers and validate on another.
 
 ## References

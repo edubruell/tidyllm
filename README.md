@@ -4,7 +4,7 @@
 [![CRAN Status](https://www.r-pkg.org/badges/version/tidyllm)](https://cran.r-project.org/package=tidyllm)
 
 
-**tidyllm** is an R package for working with large language model APIs in data analysis workflows. It supports **Anthropic Claude**, **OpenAI**, **Google Gemini**, **Mistral**, **Groq**, **DeepSeek**, **OpenRouter**, local models via **Ollama** and **llama.cpp**, and more, all through a single consistent interface.
+**tidyllm** is an R package for working with large language model APIs in data analysis workflows. It supports **Anthropic Claude**, **OpenAI**, **Google Gemini**, **Mistral**, **Groq**, **DeepSeek**, **OpenRouter**, **TypeSafe** (decision models), local models via **Ollama** and **llama.cpp**, and more, all through a single consistent interface.
 
 ## Features
 
@@ -48,28 +48,26 @@ For more examples and advanced usage, see the [Get Started vignette](https://edu
 
 Please note: To use **tidyllm** you need either a local Ollama or llama.cpp installation, or an active API key for one of the supported cloud providers. See the [Get Started vignette](https://edubruell.github.io/tidyllm/articles/tidyllm.html) for setup instructions.
 
-## What's new in 0.7.1
+## What's new in 0.8.0
 
-**Use your coding agent from R.** `codex_cli()` runs OpenAI's Codex CLI and `vibe_cli()` runs Mistral's Vibe CLI, both on your own machine, the same way `claude_cli()` runs Claude Code:
-
-```r
-llm_message("Explain what a tibble is in one sentence.") |>
-  chat(codex_cli())
-
-llm_message("Explain what a tibble is in one sentence.") |>
-  chat(vibe_cli(.model = "mistral-large-4"))
-```
-
-**Control Gemini reasoning by level.** `gemini()` takes `.thinking_level` (`"minimal"`, `"low"`, `"medium"`, `"high"` or `"xhigh"`; the model decides which it accepts). Google is replacing token budgets with these levels, so `.thinking_budget` now warns that it is deprecated.
+**Closed questions with probabilities.** `decide()` puts yes/no, choice and score questions to a text, an image, a recording or a PDF. It returns a tibble with one row per question, the answer and its probability. You write the questions once as a `tidyllm_schema()` and switch between `jev()`, `openai()`, `gemini()` and `ollama()`.
 
 ```r
-llm_message("What is 17 * 23?") |>
-  chat(gemini(.thinking_level = "high"))
+questions <- tidyllm_schema(
+  late = field_lgl("Was the payment late?"),
+  tone = field_fct("Tone of the message", .levels = c("polite", "angry"))
+)
+
+decide("Your invoice is two weeks overdue and I am furious.", questions, jev())
 ```
 
-**Mistral Large 4.** `mistral()` works with `mistral-large-4`, a reasoning model with a 1M-token context that always reasons. It is the default model of `mistral()`. Set `.reasoning_effort` to `"low"`, `"medium"` or `"high"` to trade speed against depth.
+Pass a character vector to code many texts in parallel. `field_box()` asks where something is in a picture (experimental, `jev()` only). The [decision models article](https://edubruell.github.io/tidyllm/articles/tidyllm_decide.html) walks through it.
 
-**Fix for `claude_cli()`.** With its tools off, `claude_cli()` could still read files. It no longer does. The 0.7.0 release on CRAN has the same leak.
+**Read many replies at once.** `get_reply()`, `get_reply_data()` and `get_metadata()` accept the list that `parallel_chat()` and `fetch_batch()` return.
+
+**Current provider defaults.** `mistral()` defaults to `mistral-large-4`, which always reasons (`.reasoning_effort` of `"low"`, `"medium"` or `"high"`). `openai()` accepts every reasoning effort the API names, and `gemini()` accepts `.thinking_level = "xhigh"`. `llamacpp()` looks for the server on port 9931.
+
+**Perplexity removed.** `perplexity()` is gone. Use Perplexity models through `openrouter()` and web search through `websearch_tool()`.
 
 Read the [Changelog](https://edubruell.github.io/tidyllm/news/) for the full list of changes.
 
@@ -86,6 +84,8 @@ Read the [Changelog](https://edubruell.github.io/tidyllm/news/) for the full lis
   - [Working with Files and Media](https://edubruell.github.io/tidyllm/articles/tidyllm_video.html)
   - [Local Models with tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_local_models.html)
   - [Command Line Providers](https://edubruell.github.io/tidyllm/articles/tidyllm_cli.html)
+  - [Using Tools with tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_tools.html)
+  - [Using tidyllm in Shiny](https://edubruell.github.io/tidyllm/articles/tidyllm_shiny.html)
 
 ## Similar packages
 

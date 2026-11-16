@@ -14,45 +14,17 @@ library(tidyllm)
 library(tidyverse)
 ```
 
-A chat model writes text. It composes a reply one word at a time, each word chosen given the words before it. A *decision model* works differently: it reads a text and a fixed list of questions, and answers each question without writing any text.
+A chat model writes text, one word at a time. A *decision model* reads a text and a fixed list of questions and answers each question without writing anything. Think of a trained coder filling in a coding form: one tick per question, either yes or no, one category, or a point on a scale. A decision model does the same job.
 
-Think of a trained coder filling in a coding form, next to an essay writer. The coder ticks one box per question: yes or no, one category, or a point on a scale. Survey researchers hire coders for exactly this job, and a decision model does the same.
+For each question you get one answer and a probability for it, between 0 and 1. A text with three questions gives three rows. Because the model writes no sentences, it is fast and cheap. Jev charges 0.042 US dollars per million input tokens (the pieces of text a model reads) and nothing for output tokens. A short survey answer plus our three questions is about 500 tokens, so coding 10,000 answers costs about 20 cents.
 
-Because the model writes no sentences, it has nothing to compose word by word. That makes it fast and cheap. Vendors list prices of roughly 4 to 10 US cents per million input tokens (tokens are the pieces of text a model counts, about three-quarters of a word).
+A decision model cannot explain itself. It gives no reasons, summaries or free text, and you must list every possible answer in advance. For explanations, quotes or labels you cannot list, use `chat()`.
 
-What comes back is, for each question, one answer and a probability for it, from 0 to 1. Coding a text with three questions gives three rows. You can sort by the probability and read the uncertain rows first.
-
-What a decision model cannot do is explain itself. It gives no reasons, no summaries and no free text, and every possible answer must be listed before you ask. For explanations, quotes or open labels you still need a chat model.
-
-Several vendors have launched decision models in 2026. Jev, from TypeSafe, came out on 2026-09-15. Clef, from Cloudflare, followed on 2026-10-01 and can run on your own computer through Ollama. OpenAI's Decisions API entered beta on 2026-10-06 and became generally available on 2026-10-22. Google's Gemini Decision 1 launched on 2026-11-11.
-
-**tidyllm** gives these models one interface, `decide()`: you write the questions once and change only the provider to switch between them.
-
-We code eight synthetic survey answers with three questions at once (economy, topic and writer dissatisfaction), then compare results from Jev, OpenAI, and Gemini. We use the returned probabilities to identify answers for a second look; all figures come from live calls on 2026-11-13.
-
-Every call that needs an API key is shown in a chunk that is not evaluated. Right after it, a second chunk loads the saved results of that call. A provider is the company whose server runs the model; an API key is your password for it; the [Get Started](https://edubruell.github.io/tidyllm/articles/tidyllm.html) page lists where to get one. Rerunning requires `TYPESAFE_API_KEY`, `OPENAI_API_KEY`, and `GOOGLE_API_KEY`.
-
-## How far to trust a probability
-
-A probability is *calibrated* when it matches how often the answer is right: of the answers given at 0.95, about 95 percent should be correct. Treat the number as a ranking first, and check its calibration on your own data.
-
-In the [classifier article](https://edubruell.github.io/tidyllm/articles/tidyllm_classifiers.html), 60 occupation answers were checked against human labels. Answers above 0.95 were right 92 to 100 percent of the time, and answers between 0.5 and 0.8 were right 60 to 69 percent of the time. Read the low rows first.
-
-## When to use it instead of `chat()`
-
-Use `decide()` when each text, image or recording needs an answer from a fixed set and you want a number to sort by. Use `chat()` when you need written text: an explanation, a summary, a quote, or a label you cannot list in advance.
-
-`chat()` can also return answers in a fixed format, but without a probability and more slowly; the timings are further down. Use the table to match your task to the verb.
-
-| What you need | Use |
-|---|---|
-| An explanation, a summary or a quote | `chat()` |
-| A closed answer and a number to sort by, about a text, an image, a recording or a PDF | `decide()` |
-| A free description of an image or a PDF | `chat()` |
+**tidyllm** gives these models one verb, `decide()`. You write the questions once and change only the provider (`jev()`, `openai()`, `gemini()` or `ollama()`) to switch models. `jev()` is the decision model of TypeSafe AI and reads its key from `TYPESAFE_API_KEY`. Here we code eight invented survey answers with three questions: whether the answer is about economic policy, which topic it addresses, and how dissatisfied the writer is. Calls that need an API key are shown but not run; the next chunk loads the saved result. The [Get Started](https://edubruell.github.io/tidyllm/articles/tidyllm.html) page explains API keys.
 
 ## Write your questions as a schema
 
-You tell the model what to answer by writing each question as one field of a schema, which is a named list of questions. The field description is the question text, and the field type fixes the kind of answer.
+You write each question as one field of a schema, a named list of questions. The field description is the question text, and the field type fixes the kind of answer.
 
 | Function | Question type | The answer is |
 |---|---|---|
@@ -60,49 +32,7 @@ You tell the model what to answer by writing each question as one field of a sch
 | `field_fct(.levels = )` | choice | one of your levels |
 | `field_fct(.levels = , .ordered = TRUE)` | score | one of your levels; the order of the levels is the scale |
 
-Only these two helpers define questions. Other field types, and free text, return an error. The [Working with Structured Outputs section](https://edubruell.github.io/tidyllm/articles/tidyllm.html) of Get Started explains schemas in general, and [the field helpers](https://edubruell.github.io/tidyllm/reference/field_chr.html) list every argument.
-
-Start with one yes/no question. Its description is the criterion: it says what counts as an answer about economic policy.
-
-```{r q_economy}
-questions <- tidyllm_schema(
-  about_economy = field_lgl("Does the answer mainly concern economic policy such as wages, taxes, rents or pensions?")
-)
-```
-
-For a yes/no question you can also say what yes and no mean, with `.true` and `.false`. Give both or neither.
-
-```{r q_defined}
-tidyllm_schema(
-  about_economy = field_lgl("Does the answer mainly concern economic policy?",
-    .true  = "Wages, taxes, rents, pensions or prices are the main subject",
-    .false = "Another subject, or no policy subject at all")
-)
-```
-
-A choice question lists its categories. The model must pick one of them, so add a `"none"` level for texts that fit no category.
-
-```{r q_topic}
-questions <- tidyllm_schema(
-  about_economy = field_lgl("Does the answer mainly concern economic policy such as wages, taxes, rents or pensions?"),
-  topic         = field_fct("Which topic does the answer mainly address?",
-    .levels = c("housing", "labour", "taxes", "pensions", "migration", "climate", "none"))
-)
-```
-
-A score question puts ordered levels on a scale, from lowest to highest. Here the scale runs from no dissatisfaction to strong dissatisfaction.
-
-```{r q_score}
-questions <- tidyllm_schema(
-  about_economy   = field_lgl("Does the answer mainly concern economic policy such as wages, taxes, rents or pensions?"),
-  topic           = field_fct("Which topic does the answer mainly address?",
-    .levels = c("housing", "labour", "taxes", "pensions", "migration", "climate", "none")),
-  dissatisfaction = field_fct("How strongly does the writer express dissatisfaction with current policy?",
-    .levels = c("none", "mild", "strong"), .ordered = TRUE)
-)
-```
-
-Models answer better when they know what each option means. `.level_descriptions` takes one short phrase per level. This is the schema the rest of the article uses.
+Only these helpers define questions for `decide()`; `field_box()` adds a third kind, described in the section on finding things in images. The [Get Started](https://edubruell.github.io/tidyllm/articles/tidyllm.html) page explains schemas in general.
 
 ```{r questions_full}
 questions <- tidyllm_schema(
@@ -118,11 +48,17 @@ questions <- tidyllm_schema(
 )
 ```
 
-For a score question, list the levels from lowest to highest. Very short texts need a framing line that says what the material is, such as "Survey question: What is your job? Answer: ...". The [classifier article](https://edubruell.github.io/tidyllm/articles/tidyllm_classifiers.html) shows what happens without it.
+Three things to note in this schema:
+
+- The model must pick one level, so add a `"none"` level for texts that fit no category.
+- `.ordered = TRUE` makes a score question. List its levels from lowest to highest.
+- `.level_descriptions` gives one short phrase per level. Models answer better when they know what each option means.
+
+Very short texts need a framing sentence in front of the text that says what the material is, such as "Survey question: What is your job? Answer: ...". The [classifier article](https://edubruell.github.io/tidyllm/articles/tidyllm_classifiers.html) shows what happens without it.
 
 ## Ask one text
 
-The eight synthetic survey answers are stored in `decide_answers.rds` beside this article. They cover rent, wages, pensions and other policy views.
+The eight invented survey answers are stored in `decide_answers.rds` beside this article.
 
 ```{r answers_load}
 answers <- read_rds("decide_answers.rds")
@@ -130,44 +66,34 @@ answers <- read_rds("decide_answers.rds")
 answers
 ```
 
-One call returns one row per question. The `type` column says whether the question was `yes_no`, `choice` or `score`. Run the first answer through Jev and look at the three rows.
+One call returns one row per question. Run the first answer through Jev.
 
 ```{r one_call, eval = FALSE}
 one <- decide(answers$text[1], questions, jev())
 ```
 
 ```{r one_call_saved, echo = FALSE}
-one <- read_rds("decide_one.rds") |> select(-any_of("score"))
-one
+one <- read_rds("decide_one.rds")
+one |> select(question, type, answer, probability)
 ```
 
-The model says yes to the economy question at 0.96, names housing as the topic at 1.00, and reports strong dissatisfaction at 1.00. For a score question, `answer` is the level with the highest probability, and `probabilities` holds the probability of every level.
-
-A current call returns two more columns that the saved result above predates, so run it yourself to see them. `confidence` is the model's own confidence in the answer. `probabilities` holds the probability of every option, so you can see the runner-up: a 0.55 answer with a 0.40 runner-up is a closer call than one with five options at 0.20 each.
-
-The tibble also carries three pieces of information that are not columns. R calls them attributes: `usage` (the tokens sent and returned), `latency` (the seconds the call took, from sending to reply) and `model` (the model that answered).
-
-```{r one_attrs}
-attributes(one)[c("usage", "latency", "model")]
-```
-
-This call used 503 input tokens and 107 output tokens, took 0.613 seconds and ran on `jev-1.14.0`. It was the first call of the run, so it was slower; later calls took about 0.2 seconds.
+Read the rows like this. `type` says what kind of question it was. The model says yes to the economy question with probability 0.96, names housing as the topic at 1.00, and reports strong dissatisfaction at 1.00.
 
 ## Many texts at once
 
-Pass a character vector and `decide()` codes every text. The calls run in parallel, five at a time by default, and come back as one tibble. A leading `state` column holds the text (cut to 60 characters) and `state_id` numbers the texts in the order you gave them.
+Pass a character vector and `decide()` codes every text. The calls run in parallel (at the same time) and come back as one tibble. A leading `state` column holds the text (cut to 60 characters) and `state_id` numbers the texts in the order you gave them.
 
 ```{r code_all, eval = FALSE}
 many <- decide(answers$text, questions, jev())
 ```
 
 ```{r code_all_saved, echo = FALSE}
-many <- read_rds("decide_many.rds") |> select(-any_of("score"))
+many <- read_rds("decide_many.rds")
 ```
 
-A list works too. Every element of `.state` is one item, and an item is a string, an image, a message built with `llm_message()`, or a list of parts that belong together. A named list uses its names as the `state` labels. One call with a single item, however you pass it, returns the plain tibble from the previous section, without `state` and `state_id`.
+Coding all eight answers with `jev()` took under a second in our run. Coding with the fastest OpenAI chat model was roughly ten times slower. A text that fails gives `NA` in `answer` and a warning that counts the failures, so you can filter on `is.na(answer)`, take the distinct `state_id` values and rerun only those texts.
 
-Join the results to your data by `state_id`. The `coded` table then has one row per answer and question, with `id` linking it to the respondent.
+Join the results to your data by `state_id`. The `coded` table has one row per answer and question, with `id` linking it to the respondent.
 
 ```{r join_ids}
 coded <- answers |>
@@ -179,9 +105,7 @@ coded |>
   slice_head(n = 6)
 ```
 
-A text that fails, because the provider is down or refuses the request, gives one row of `NA` per question and one warning. The other texts keep their results, so rerun only the failed `state_id` values. If you meet rate-limit errors, lower `.max_active`; a free Gemini key allows about 200 requests a minute.
-
-For regression you want one row per respondent. `pivot_wider()` puts each question in its own column; look for one row per answer, with `about_economy`, `topic` and `dissatisfaction` next to `id`.
+For a regression you want one row per respondent. `pivot_wider()` puts each question in its own column.
 
 ```{r wide_table}
 wide <- coded |>
@@ -191,22 +115,11 @@ wide <- coded |>
 wide
 ```
 
-Join `wide` to the respondent data by `id`. The probabilities stay in `coded`, which the next sections use.
-
-The long table also gives counts by question and answer.
-
-```{r answer_counts}
-coded |>
-  count(question, answer)
-```
-
-Economy answers split evenly, with four yes and four no. Dissatisfaction has three none, two mild and three strong answers; topic has two none answers and one in each other category.
-
-Speed is the reason to use a decision model for many texts. Coding the eight answers one call at a time with `decide(jev())` took 1.9 seconds; 40 answers took 8.0 and 8.7 seconds, about 0.2 seconds per text. The parallel call above took `r round(attr(many, "latency"), 2)` seconds for all eight. Eight `chat(openai())` calls one at a time took 18.9 and 21.7 seconds, or 2.4 to 2.7 seconds per text. All timings are from 2026-11-13 on one machine in Germany.
+Join `wide` to the respondent data by `id`. The probabilities stay in `coded`, which the next section uses.
 
 ## Read the uncertain rows first
 
-Four of the 24 answers have a probability below 0.8. That cut-off is a convenient round number, not a rule. Every other probability in this run is 0.85 or higher.
+Treat the probability as a ranking: low means look twice. Sorting by it shows where to read first. Here `r sum(coded$probability < 0.8)` of the 24 answers have a probability below 0.8. That cut-off is a round number, not a rule.
 
 ```{r low_prob}
 coded |>
@@ -215,21 +128,20 @@ coded |>
   arrange(probability)
 ```
 
-Two of these rows, ids 4 and 6, are where the three providers disagree later. Ids 5 and 7 are judgement calls on which they agree.
+A probability is *calibrated* when it matches how often the answer is right: of the answers given at 0.95, about 95 per cent should be correct. Check this on your own data with a hand-labelled sample. In the [classifier article](https://edubruell.github.io/tidyllm/articles/tidyllm_classifiers.html), 96 to 100 per cent of the answers above 0.95 matched the human label, against 51 to 62 per cent of the answers below 0.8.
 
 ## Images, audio and PDFs
 
-Many research materials are not text: photos in a survey, a recorded interview, a scanned letter. `decide()` reads them when the provider can, with the same questions and the same result tibble. Ask `provider_capabilities()` what each provider reads.
+`decide()` also reads photos, recordings and PDFs, with the same questions and the same result tibble. `provider_capabilities()` shows what each provider reads.
 
 ```{r media_capabilities}
 provider_capabilities(.what = "decide_media") |>
   filter(supported) |>
-  summarise(reads = paste(media, collapse = ", "), .by = provider)
+  group_by(provider) |>
+  summarise(reads = paste(media, collapse = ", "))
 ```
 
-Jev and OpenAI read images, and Gemini reads images, audio, video and PDFs. Ollama reads images through the same call; that route is new and has not run against a live server yet. A provider that cannot read a file type stops with a message before anything is sent. A PDF sent to a provider that does not read PDFs goes as its extracted text instead, and `decide()` tells you once per call that layout and figures are lost. A PDF without any text, such as a scan, stops the call.
-
-Wrap a file in `img()` to give `decide()` a picture. The question refers to "the picture" because the picture is the only thing the model sees.
+A provider that cannot read a file type stops with a message before anything is sent. Wrap a file in `img()` to give `decide()` a picture. The question says "the picture", because the picture is all the model sees.
 
 ```{r image_one, eval = FALSE}
 cat_question <- tidyllm_schema(
@@ -239,7 +151,15 @@ cat_question <- tidyllm_schema(
 decide(img("photos/cat.jpg"), cat_question, openai(.detail = "low"))
 ```
 
-Pictures cost more tokens than short texts. `.detail = "low"` tells OpenAI to read the picture at lower resolution; in our tests one photo cost about 1,500 input tokens by default and about 350 at low detail. Gemini has the same switch under the name `.resolution`.
+`.detail = "low"` makes OpenAI read the picture at lower resolution, which is cheaper. Gemini has the same switch under the name `.resolution`.
+
+To code many pictures, pass a list with one image per element; `map(files, img)` wraps each file in `img()`. Each element is its own item.
+
+```{r image_many, eval = FALSE}
+files <- list.files("photos", pattern = "jpg$", full.names = TRUE)
+
+decide(map(files, img), cat_question, gemini(.resolution = "low"))
+```
 
 To ask about several files together, put them into one item: a named list inside the outer `list()`. The names label the parts, so the questions can say "photo_a" and "photo_b".
 
@@ -252,23 +172,9 @@ pets <- tidyllm_schema(
 decide(list(list(photo_a = img("photos/cat.jpg"), photo_b = img("photos/dog.jpg"))), pets, jev())
 ```
 
-An item can mix text and media, for example a caption followed by its photo: `list(list("Caption: found in the garden", img("photos/cat.jpg")))`. Before sending anything, `decide()` checks image size, format and count against the provider's limits and tells you which item is out of range. It never resizes an image for you.
-
-To code many pictures, pass a list with one image per element; each element is its own item.
-
-```{r image_many, eval = FALSE}
-files <- list.files("photos", pattern = "jpg$", full.names = TRUE)
-
-decide(map(files, img), cat_question, gemini(.resolution = "low"))
-```
-
-The `state` column then names each file, such as `[IMG] cat.jpg`. Pictures and recordings leave your computer and go to the provider, so do not send restricted or personal data, such as survey photos with faces.
-
 ## Finding things in images (experimental)
 
-Sometimes the question is not "is there a cat" but "where is it". `field_box()` asks the model for one box around the thing, for example to crop a banner out of a protest photo or to find a stamp on a scanned page. This is experimental. Only Jev answers it, the vendor labels its image features as a preview, and the format may change in a later release. The other providers stop with a message before anything is sent, and so does a state that holds no image.
-
-A box question always returns a box, even when the thing is not in the picture. So pair it with a yes/no question and read the box only where the answer is yes. Name the image in a backticked key and in the question text, so the model knows which picture you mean; this also works to point at one of several images.
+Sometimes the question is "where is it", not "is there a cat". `field_box()` asks for one box around the thing. This is experimental: only `jev()` answers it, and the format may change in a later release. A box question always returns a box, even when the thing is not in the picture, so pair it with a yes/no question and read the box only where the answer is yes. Name the picture in a backticked key and in the question text.
 
 ```{r box_call, eval = FALSE}
 where_cat <- tidyllm_schema(
@@ -285,142 +191,25 @@ box_run <- readRDS("decide_box_result.rds")
 
 ```{r box_show}
 box_run$result |>
-  select(question, type, answer, probability, confidence, top, bottom, left, right)
+  select(question, type, answer, probability, top, bottom, left, right)
 ```
 
-The box row has type `box`, no answer and no probability. Its `confidence` is the model's own number and can be missing. The four new columns appear only when your questions hold a box question. They are fractions of the picture, measured from the top-left corner: here the cat starts at the very left edge (`left` is 0), reaches 79 per cent of the way to the right, and spans from 20 to 68 per cent of the height. The first row is the presence question, so its box columns are empty.
+The box row has type `box` and no answer. `top`, `bottom`, `left` and `right` are fractions of the picture, measured from the top-left corner. Here the cat starts at the left edge (`left` is 0) and reaches 79 per cent of the way to the right. The first row is the yes/no question, so its box columns are empty.
 
-To draw or crop, you need pixels. `box_to_pixels()` multiplies the fractions by the image size. Give it the width and height, or the path of the image file and it reads the size itself.
+To draw or crop, you need pixels. `box_to_pixels()` multiplies the fractions by the image size.
 
 ```{r box_pixels}
 box_to_pixels(box_run$result, .width = box_run$width, .height = box_run$height) |>
   select(question, x_min, x_max, y_min, y_max)
 ```
 
-Boxes are rough, particularly for small objects in large images, and nobody has measured their accuracy. Look at a sample by eye before you rely on them. The same warning about personal data applies: faces in photos should not go to a provider.
-
-## Choosing a provider
-
-Each provider has a default model and a key you store in an environment variable. The price is the list price per million input tokens (the tokens you send).
-
-| Provider call | Default model | Environment variable for your key | Reads | Price per million input tokens (USD) |
-|---|---|---|---|---|
-| `jev()` | `jev-latest` | `TYPESAFE_API_KEY` | text, images | 0.042 |
-| `openai()` | `gpt-6-luna` | `OPENAI_API_KEY` | text, images | 0.10 |
-| `gemini()` | `gemini-decision-1` | `GOOGLE_API_KEY` | text, images, audio, video, PDFs | 0.10 |
-| `ollama()` | `clef-flash` | none (runs on your computer) | text, images | free |
-
-These are list prices on 2026-11-13 multiplied by the input tokens measured for the eight answers, not invoice figures. The calls used 499 input tokens with Jev, 481 with OpenAI and 292 with Gemini. Coding 10,000 survey answers costs about 0.21 USD with `jev()`, 0.29 USD with `gemini()` and 0.48 USD with `openai()`. Token counts differ because each provider counts the text and the questions in its own way.
-
-Ollama is a free program that runs models on your own computer, so texts never leave it. The `clef-flash` model needs Ollama 0.35.0 or newer and about 11 to 12 GB of disk space. The [local models article](https://edubruell.github.io/tidyllm/articles/tidyllm_local_models.html) covers the setup. The call has the same shape as the others:
-
-```{r ollama_call, eval = FALSE}
-decide(answers$text[1], questions, ollama(.model = "clef-flash"))
-```
-
-To compare the three hosted providers, we ran the same eight answers through each and kept the answer, the latency (seconds per call), the input and output tokens and the model name.
-
-```{r providers_run, eval = FALSE}
-providers <- list(
-  jev    = jev(),
-  openai = openai(.model = "gpt-6-luna"),
-  gemini = gemini(.model = "gemini-decision-1")
-)
-
-decide_with <- function(text, id, provider, name) {
-  r <- decide(text, questions, provider)
-  r |> mutate(
-    id = id, provider = name,
-    latency = attr(r, "latency"),
-    input_tokens = attr(r, "usage")$input_tokens,
-    output_tokens = attr(r, "usage")$output_tokens,
-    model = attr(r, "model")
-  )
-}
-
-run_provider <- function(provider, name) {
-  map2(answers$text, answers$id, \(t, i) decide_with(t, i, provider, name)) |>
-    list_rbind()
-}
-
-providers_res <- imap(providers, run_provider) |> list_rbind()
-```
-
-```{r providers_run_saved, echo = FALSE}
-providers_res <- read_rds("decide_providers.rds") |> select(-any_of("score"))
-```
-
-The summary gives the number of texts, the median latency, the mean input tokens per call and the model name for each provider.
-
-```{r providers_summary}
-providers_res |>
-  group_by(provider) |>
-  summarise(
-    calls = n_distinct(id),
-    median_latency = median(latency),
-    input_tokens_per_call = mean(input_tokens),
-    model = first(model)
-  )
-```
-
-Median latency was 0.211 seconds for Jev, 0.215 seconds for Gemini and 0.231 seconds for OpenAI. The `model` is `NA` for Gemini because these results were recorded before `decide()` filled in `gemini-decision-1` when a reply names no model.
-
-Next, keep only the answers on which the providers differ, with Jev's probability for each. Look at where the three columns split.
-
-```{r providers_disagree}
-jev_probability <- providers_res |>
-  filter(provider == "jev") |>
-  select(id, question, jev_probability = probability)
-
-providers_res |>
-  select(id, provider, question, answer) |>
-  pivot_wider(names_from = provider, values_from = answer) |>
-  filter(!(jev == openai & openai == gemini)) |>
-  left_join(jev_probability, by = c("id", "question"))
-```
-
-All three providers agree on 22 of the 24 answers. Agreement between models is not accuracy: the [classifier article](https://edubruell.github.io/tidyllm/articles/tidyllm_classifiers.html) compares the answers with human labels.
-
-The only disagreements are between neighbouring levels of the score question. For text 4, Jev says strong while OpenAI and Gemini say mild. For text 6, Jev and Gemini say strong while OpenAI says mild. Jev's probabilities for these answers were 0.74 and 0.62.
-
-## When a call fails
-
-Some problems stop `decide()` before anything is sent. The first call below passes an empty text; the second asks a choice question with a single level. The last line of each message says what to fix.
-
-```{r errors, eval = FALSE}
-decide("", questions, jev())
-
-one_level <- tidyllm_schema(a = field_fct("pick", .levels = "only"))
-decide(answers$text[1], one_level, jev())
-```
-
-The first message ends with `` strings must be non-empty ``. The second ends with `` Question `a` needs field_fct(.levels = ) with at least two levels. `` With many texts, the message also names the position, such as "State 3 of 8", so you can find the bad entry.
-
-Other problems happen after sending: the provider is down, a request times out, or the model gives no answer to a question. Then `decide()` returns `NA` in `answer` and `probability` for what is missing, keeps everything else, and warns once.
-
-A *dry run* builds the request and stops before sending it. It needs no API key and costs nothing, so you can check what would be sent. With many texts it returns a list with one request per text.
-
-```{r dry_run}
-request <- decide(answers$text[1], questions, jev(), .dry_run = TRUE)
-
-request$url
-```
-
-## What `decide()` does not do
-
-- **It does not check itself.** Label a random sample by hand and compare it with the model's answers. The [classifier article](https://edubruell.github.io/tidyllm/articles/tidyllm_classifiers.html) shows this validation workflow.
-- **It is not perfectly repeatable.** Jev probabilities shifted by 0.01 to 0.04 between our runs without changing any answer. OpenAI and Gemini repeated identically in the classifier article's test.
-- **Not every provider reads every file type.** Check `provider_capabilities(.what = "decide_media")`, and expect a message instead of a result when the file type is not supported.
-- **It sends your data away.** Texts, images and recordings go to the provider you choose. Use `ollama()` for material that must stay on your machine.
+We have not measured how accurate boxes are. Look at a sample by eye before you rely on them.
 
 ## What to take away
 
-- **Use `decide()` for closed questions:** Choose it when each text, image or recording needs an answer from fixed options and you want a number to sort by.
-- **Treat each field as a question:** Set the levels in scale order for a score question, and add descriptions so the model knows what each level means.
-- **Pass many items at once:** A character vector or a list of items runs in parallel and returns one tibble with `state` and `state_id`.
-- **Give it pictures when the question is about a picture:** Wrap files in `img()`, name the parts when a question must tell them apart, and check `provider_capabilities()` for what each provider reads.
-- **Ask where, carefully:** `field_box()` finds a thing in an image with Jev only, is experimental, and always returns a box, so pair it with a yes/no question.
-- **Review uncertain answers first:** Read rows with low probabilities, then compare a human-labelled sample with the model's answers.
-- **Choose and inspect your provider:** Compare measured price and speed, and use `.dry_run = TRUE` to inspect the request before sending it.
+- **Use `decide()` for closed questions:** each text, image or recording gets an answer from fixed options and a probability to sort by.
+- **Write each question as a field:** `field_lgl()` for yes/no, `field_fct()` for a choice, with `.ordered = TRUE` for a score; add level descriptions.
+- **Pass many items at once:** a character vector or a list runs in parallel and returns one tibble with `state` and `state_id`.
+- **Read the low-probability rows first,** and compare a hand-labelled sample with the model's answers.
 
-For a full workflow with codebooks, a second decision model, a stronger review pass and a human-labelled sample, see [Classifying Texts with tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_classifiers.html); it checks `decide()` against human labels on 60 occupation answers.
+For a full workflow with codebooks, a second decision model and a human-labelled sample, see [Classifying Texts with tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_classifiers.html).

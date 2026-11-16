@@ -52,10 +52,10 @@ Sys.setenv(OPENAI_API_KEY = "your-key-here")
 | **OpenRouter** | `OPENROUTER_API_KEY` | [OpenRouter Dashboard](https://openrouter.ai/keys) |
 | **TypeSafe AI** (`jev()`, for `decide()`) | `TYPESAFE_API_KEY` | [TypeSafe AI](https://typesafe.ai) |
 | **Azure OpenAI** | `AZURE_OPENAI_API_KEY` | [Azure Portal](https://portal.azure.com/) |
-| **Tavily** (web search for `websearch()` and `websearch_tool()`) | `TAVILY_API_KEY` | [Tavily](https://app.tavily.com) |
-| **SearXNG** (self-hosted web search for `websearch()` and `websearch_tool()`) | `SEARXNG_SERVER` (the server address, not a key) | [SearXNG](https://docs.searxng.org) |
 
 Three providers run a command line tool installed on your machine instead of calling an API from R. `claude_cli()` uses the login of the `claude` tool and needs no key. `codex_cli()` uses Codex's own login, or `OPENAI_API_KEY` with `.use_api_key = TRUE`. `vibe_cli()` uses `MISTRAL_API_KEY`, or the key Vibe saved during its own setup.
+
+Hosted providers receive every text, image and file you send them. For restricted or personal data, use a local model through `ollama()` or `llamacpp()` (next section); the command line providers still pass your text on to their vendor.
 
 ### Running Local Models
 
@@ -393,7 +393,18 @@ llm_message("What time is it in Stuttgart right now?") |>
 
 When a tool is provided, the model can request its execution, tidyllm runs it in your R session, and the result is fed back automatically. Multi-turn tool loops (where the model makes several tool calls) are handled transparently.
 
-For provider-independent web search with `websearch_tool()` and tools served over MCP, see the [tools article](https://edubruell.github.io/tidyllm/articles/tidyllm_tools.html).
+### Web Search
+
+Models do not know about events after their training date. Some providers run a search for you: `claude_websearch()` and `openai_websearch()` are built-in tools that the provider's own server executes. tidyllm also ships a search tool that works with any provider that supports tools, `websearch_tool()`, and a plain `websearch()` function that returns results to R.
+
+```{r, eval=FALSE}
+llm_message("What is the latest R release, and when did it come out?") |>
+  chat(claude(), .tools = websearch_tool())
+```
+
+The provider-independent search needs its own setup. `websearch_tool()` and `websearch()` use [Tavily](https://app.tavily.com) by default, which reads your key from `TAVILY_API_KEY`. A self-hosted [SearXNG](https://docs.searxng.org) server is the alternative (`.backend = "searxng"`); its address goes in `SEARXNG_SERVER` and is not a key.
+
+For more on web search and on tools served over MCP, see the [tools article](https://edubruell.github.io/tidyllm/articles/tidyllm_tools.html).
 
 If you use **ellmer**, convert existing ellmer tool definitions with `ellmer_tool()`:
 
