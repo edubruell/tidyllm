@@ -151,9 +151,10 @@ method(start_async_request, api_codex_cli) <- function(.api, .job) {
 
 #' Chat with OpenAI models through your own installed Codex CLI
 #'
-#' `codex_cli()` runs the `codex` command line tool installed on your machine and
-#' reads its JSON output back. It uses the login Codex already has, for example
-#' a ChatGPT plan, or your OpenAI API key if you set `.use_api_key = TRUE`.
+#' `codex_cli()` hands the chat to the `codex` terminal program installed on your
+#' machine. That program handles the connection to OpenAI, not tidyllm, and
+#' tidyllm reads its JSON output back. It uses the login Codex already has, for
+#' example a ChatGPT plan, or your OpenAI API key if you set `.use_api_key = TRUE`.
 #'
 #' Codex is an agent, not a plain completion endpoint. By default it can run
 #' shell commands and use a browser. tidyllm turns those tools off unless you set

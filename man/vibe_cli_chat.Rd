@@ -71,9 +71,10 @@ A new \code{LLMMessage} object containing the original messages plus the
 reply from Vibe.
 }
 \description{
-\code{vibe_cli()} runs Mistral's \code{vibe} command line tool installed on your machine
-and reads its JSON output back. Vibe uses the API key stored by \code{vibe --setup},
-or your \code{MISTRAL_API_KEY}.
+\code{vibe_cli()} hands the chat to Mistral's \code{vibe} terminal program installed on
+your machine. That program handles the connection to Mistral, not tidyllm,
+and tidyllm reads its JSON output back. Vibe uses the API key stored by
+\code{vibe --setup}, or your \code{MISTRAL_API_KEY}.
 }
 \details{
 Vibe is a coding agent, not a plain completion endpoint. By default tidyllm

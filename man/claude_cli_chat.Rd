@@ -83,11 +83,11 @@ A new \code{LLMMessage} object containing the original messages plus the
 CLI's response.
 }
 \description{
-\code{claude_cli()}, like \code{codex_cli()} and \code{vibe_cli()}, sends nothing over the
-network itself. It runs the \code{claude} command line tool that is
-already installed and signed in on your machine, and reads its JSON output
-back. There is no API key to set, and usage counts against whatever plan the
-CLI is logged in to rather than against an Anthropic API key.
+\code{claude_cli()} hands the chat to the \code{claude} terminal program that is already
+installed and signed in on your machine. That program handles the connection
+to Claude, not tidyllm, and tidyllm reads its JSON output back. There is no
+API key to set, and usage counts against whatever plan the CLI is logged in
+to rather than against an Anthropic API key.
 }
 \details{
 \code{claude_cli()} finds the CLI on the PATH, and, failing that, in the directories

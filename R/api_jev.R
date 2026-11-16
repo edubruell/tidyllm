@@ -52,9 +52,10 @@ jev_decide <- function(.state, .questions, .server = NULL, .model = "jev-latest"
 #' with the key in `TYPESAFE_API_KEY`. Pass `.server` to reach any server that
 #' speaks the same API, such as a Clef or CLM deployment.
 #'
-#' @param .server Base URL of the server, without a path. `NULL` (default) is
-#'   `https://api.typesafe.ai`.
-#' @param .model Model name; default `"jev-latest"`.
+#' @param ... Provider settings: `.server`, the base URL of the server without
+#'   a path (`NULL`, the default, is `https://api.typesafe.ai`), and `.model`,
+#'   the model name (default `"jev-latest"`).
+#' @param .called_from Internal; the verb that dispatched here.
 #' @return A provider call to pass as `.provider` to `decide()`.
 #' @examples
 #' \dontrun{

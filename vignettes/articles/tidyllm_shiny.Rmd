@@ -1,5 +1,6 @@
 ---
 title: "Using tidyllm in Shiny"
+description: "Build an app in which many users call models without freezing it."
 ---
 
 ```{r, include = FALSE}

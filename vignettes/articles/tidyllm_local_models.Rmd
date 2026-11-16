@@ -1,5 +1,6 @@
 ---
 title: "Local Models with tidyllm"
+description: "Run models on your own computer, for confidential data."
 ---
 
 ```{r, include = FALSE}

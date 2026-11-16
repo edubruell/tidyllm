@@ -1,5 +1,6 @@
 ---
 title: "Embedding Models in tidyllm"
+description: "Turn texts, images or recordings into numbers, then find similar items, group them or search them."
 ---
 
 ```{r, include = FALSE}

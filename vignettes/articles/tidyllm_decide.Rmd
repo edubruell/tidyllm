@@ -1,5 +1,6 @@
 ---
 title: "Decision Models with tidyllm"
+description: "Code many texts or pictures with fixed yes/no, choice or score questions and get a probability for each answer, so you read the uncertain ones first."
 ---
 
 ```{r, include = FALSE}

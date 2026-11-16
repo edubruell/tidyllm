@@ -73,19 +73,22 @@ Read the [Changelog](https://edubruell.github.io/tidyllm/news/) for the full lis
 
 ## Learn More
 
-- [Get Started with tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm.html)
-- [Changelog](https://edubruell.github.io/tidyllm/news/)
-- [Documentation](https://edubruell.github.io/tidyllm/)
-- Use-case oriented articles:
-  - [Classifying Texts with tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_classifiers.html)
-  - [Decision Models with decide()](https://edubruell.github.io/tidyllm/articles/tidyllm_decide.html)
-  - [Structured Question Answering from PDFs](https://edubruell.github.io/tidyllm/articles/tidyllm-pdfquestions.html)
-  - [Embedding Models in tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_embed.html)
-  - [Working with Files and Media](https://edubruell.github.io/tidyllm/articles/tidyllm_video.html)
-  - [Local Models with tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_local_models.html)
-  - [Command Line Providers](https://edubruell.github.io/tidyllm/articles/tidyllm_cli.html)
-  - [Using Tools with tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_tools.html)
-  - [Using tidyllm in Shiny](https://edubruell.github.io/tidyllm/articles/tidyllm_shiny.html)
+[Get Started with tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm.html) covers setup, your first chat and the basic verbs. Read it first, then pick the article that matches your task. The [Changelog](https://edubruell.github.io/tidyllm/news/) lists every change, and the [documentation](https://edubruell.github.io/tidyllm/) holds the function reference.
+
+**Start here: the common research tasks, simplest first**
+
+- [Working with Files and Media](https://edubruell.github.io/tidyllm/articles/tidyllm_video.html): Ask a model about an image, a recording, a video or a PDF page.
+- [Classifying Texts with tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_classifiers.html): Label thousands of free-text answers with a codebook, and check the labels against a sample coded by people.
+- [Decision Models with tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_decide.html): Not a chat model: a cheap model that answers fixed yes/no, choice or score questions about a text or image and returns a probability for each answer. Use it to code many texts quickly.
+- [Embedding Models in tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_embed.html): Models that translate texts into numbers, which you can use to find similar texts, group them or search them.
+- [Structured Question Answering from PDFs](https://edubruell.github.io/tidyllm/articles/tidyllm-pdfquestions.html): Ask the same questions of a folder of papers and get a table with one row per paper.
+
+**Go deeper: setup choices and larger builds**
+
+- [Local Models with tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_local_models.html): Run models on your own computer, for confidential data.
+- [Command Line Providers](https://edubruell.github.io/tidyllm/articles/tidyllm_cli.html): Chat through a coding agent you already pay for, such as Claude Code, Codex or Vibe, without an API key.
+- [Using Tools with tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_tools.html): Let a model call your own R functions or search the web while it answers.
+- [Using tidyllm in Shiny](https://edubruell.github.io/tidyllm/articles/tidyllm_shiny.html): Build an app in which many users call models without freezing it.
 
 ## Similar packages
 

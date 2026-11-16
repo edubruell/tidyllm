@@ -160,11 +160,11 @@ method(start_async_request, api_claude_cli) <- function(.api, .job) {
 
 #' Chat with Claude through your own installed Claude CLI
 #'
-#' `claude_cli()`, like `codex_cli()` and `vibe_cli()`, sends nothing over the
-#' network itself. It runs the `claude` command line tool that is
-#' already installed and signed in on your machine, and reads its JSON output
-#' back. There is no API key to set, and usage counts against whatever plan the
-#' CLI is logged in to rather than against an Anthropic API key.
+#' `claude_cli()` hands the chat to the `claude` terminal program that is already
+#' installed and signed in on your machine. That program handles the connection
+#' to Claude, not tidyllm, and tidyllm reads its JSON output back. There is no
+#' API key to set, and usage counts against whatever plan the CLI is logged in
+#' to rather than against an Anthropic API key.
 #'
 #' `claude_cli()` finds the CLI on the PATH, and, failing that, in the directories
 #' the installers write to. RStudio and other GUI front ends do not inherit the

@@ -10,6 +10,52 @@ template:
     css: ["extra.scss"]
 
 
+navbar:
+  components:
+    articles:
+      text: Articles
+      menu:
+        - text: "Start here"
+        - text: "Working with Files and Media"
+          href: articles/tidyllm_video.html
+        - text: "Classifying Texts with tidyllm"
+          href: articles/tidyllm_classifiers.html
+        - text: "Decision Models with tidyllm"
+          href: articles/tidyllm_decide.html
+        - text: "Embedding Models in tidyllm"
+          href: articles/tidyllm_embed.html
+        - text: "Structured Question Answering from PDFs"
+          href: articles/tidyllm-pdfquestions.html
+        - text: "-------"
+        - text: "Go deeper"
+        - text: "Local Models with tidyllm"
+          href: articles/tidyllm_local_models.html
+        - text: "Command Line Providers"
+          href: articles/tidyllm_cli.html
+        - text: "Using Tools with tidyllm"
+          href: articles/tidyllm_tools.html
+        - text: "Using tidyllm in Shiny"
+          href: articles/tidyllm_shiny.html
+
+articles:
+  - title: "Start here"
+    desc: >
+      The common research tasks, simplest first.
+    contents:
+      - articles/tidyllm_video
+      - articles/tidyllm_classifiers
+      - articles/tidyllm_decide
+      - articles/tidyllm_embed
+      - articles/tidyllm-pdfquestions
+  - title: "Go deeper"
+    desc: >
+      Local models, command line providers, tools and Shiny apps.
+    contents:
+      - articles/tidyllm_local_models
+      - articles/tidyllm_cli
+      - articles/tidyllm_tools
+      - articles/tidyllm_shiny
+
 reference:
   - title: "LLM Message Handling"
     desc: >

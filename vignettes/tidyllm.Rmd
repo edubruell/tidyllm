@@ -581,3 +581,15 @@ llm_message("Hello!") |> chat()
 
 c("text one", "text two") |> embed()
 ```
+
+## Where to Go Next
+
+Pick the article that matches your task:
+
+- [Working with Files and Media](https://edubruell.github.io/tidyllm/articles/tidyllm_video.html): Ask a model about an image, a recording, a video or a PDF page.
+- [Classifying Texts with tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_classifiers.html): Label thousands of free-text answers with a codebook, and check the labels against a sample coded by people.
+- [Decision Models with tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_decide.html): Not a chat model: a cheap model that answers fixed yes/no, choice or score questions about a text or image and returns a probability for each answer. Use it to code many texts quickly.
+- [Embedding Models in tidyllm](https://edubruell.github.io/tidyllm/articles/tidyllm_embed.html): Models that translate texts into numbers, which you can use to find similar texts, group them or search them.
+- [Structured Question Answering from PDFs](https://edubruell.github.io/tidyllm/articles/tidyllm-pdfquestions.html): Ask the same questions of a folder of papers and get a table with one row per paper.
+
+The [articles overview](https://edubruell.github.io/tidyllm/articles/index.html) lists more under "Go deeper": local models, command line providers, tools and Shiny apps.

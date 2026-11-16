@@ -1,10 +1,10 @@
 # tidyllm 0.8.0 (development version)
 
-## Ask closed questions with `decide()`
+This release adds `decide()`, a verb for decision models that answer fixed questions with a probability, and `jev()`, a provider for them. It also moves defaults to current provider APIs and removes Perplexity as a provider. It includes the changes of 0.7.2, which reached GitHub only.
 
-Decision models answer fixed questions about a text and report how likely each answer is. `decide()` sends a text and a set of questions to such a model and returns one row per question. Use it to classify, screen or score texts when you want a probability rather than free text.
+## `decide()`: closed questions with probabilities
 
-The questions are the fields of a `tidyllm_schema()`: `field_lgl()` asks a yes/no question, `field_fct()` asks a choice question, and `field_fct(.ordered = TRUE)` asks a score question over ordered levels.
+Decision models answer fixed yes/no, choice or score questions about a text and report how likely each answer is. Use them to classify, screen or score many texts quickly. The questions are the fields of a `tidyllm_schema()`: `field_lgl()` asks yes/no, `field_fct()` asks a choice, and `field_fct(.ordered = TRUE)` asks a score over ordered levels.
 
 ```r
 questions <- tidyllm_schema(
@@ -18,27 +18,20 @@ decide("The invoice arrived three weeks late and nobody answers my mails.",
        questions, jev())
 ```
 
-The result is a tibble with the columns `question`, `type`, `answer`, `probability`, `confidence` and `probabilities` (a list-column with one named vector per question). The attributes `usage`, `latency` and `model` describe the call. The reply is not an LLM message, so `get_reply()` does not apply. `.dry_run = TRUE` returns the request without sending it. `confidence` is `NA` for choice and score questions when the backend reports none.
+The result is a tibble with one row per question: `question`, `type`, `answer`, `probability`, `confidence` and `probabilities`. The attributes `usage`, `latency` and `model` describe the call, and `.dry_run = TRUE` returns the request without sending it.
 
-`jev()` is a new provider for TypeSafe AI's Jev models and for any server that speaks the same System One API (key in `TYPESAFE_API_KEY`; pass `.server` for another URL). `decide()` also works with `openai()`, `gemini()` and `ollama()`. With `ollama()` it uses the local `clef-flash` model by default; this path follows the documented API and has not been tested against a running model yet.
-
-`decide()` also reads media. `.state` can be an `img()`, `audio_file()`, `video_file()` or `pdf_file()` object, an `LLMMessage`, or a list of parts that belong together (strings and media objects, one level only, names label the parts) wrapped as one element of the outer list, as in `list(list(photo_a = img("a.jpg"), photo_b = img("b.jpg")))`. `openai()` and `jev()` read images, `ollama()` passes images to a local Clef model (not tested live yet), and `gemini()` reads images, audio, video and PDFs. `provider_capabilities(.what = "decide_media")` lists what each provider reads. `openai(.detail = "low")` and `gemini(.resolution = "low")` cut the token cost of images; size and format limits are checked before any request, and a failed check is always an error; `decide()` never resizes an image. A PDF sent to a provider that cannot read PDFs, or made with `pdf_file(.text_extract = TRUE)`, goes as extracted text, and `decide()` tells you once per call that layout and figures are lost; a PDF without text stops the call.
-
-Many texts at once: every element of `.state` is one item, and an item is a string, a media object, an `LLMMessage`, or a list of parts that belong together. Pass one item, a character vector or a list of items (a named list uses its names as the `state` labels), and `decide()` sends one request per item, in parallel (`.max_active`, default 5; `.progress`), and returns one tibble with a leading `state` label and an integer `state_id`. A state that fails after its retries, or that the model refuses, gives `NA` rows and one warning; the other states keep their results. One item, however given, returns the same tibble as before, without the two new columns. With many states `usage` sums the states that succeeded and `latency` is the time of the whole run; `.dry_run = TRUE` returns a list of requests. To decide on many images, pass a list of `img()` objects: each element is its own item. Requests that get HTTP 529 (overloaded) are now retried like 429 and 503.
-
-`field_fct()` gains two arguments. `.ordered = TRUE` marks the levels as a scale, and `.level_descriptions` gives one description per level so the model knows what each option means. Both are only used by `decide()`; schemas for structured chat output are unchanged.
-
-`field_lgl()` gains `.true` and `.false`, which tell the model what yes and no mean. They are only used by `decide()`.
+* **Providers:** the new `jev()` covers TypeSafe AI's Jev models and any server with the same System One API (key in `TYPESAFE_API_KEY`, `.server` for another URL). `openai()`, `gemini()` and `ollama()` also work with `decide()`. `ollama()` uses the local `clef-flash` model and has not been tested against a running model yet.
+* **Many texts:** pass a character vector or a list. Each element is one item and gets one request, sent in parallel (`.max_active`, default 5). The result gains a leading `state` label and an integer `state_id`. An item that fails gives `NA` rows and a warning; the other items keep their results.
+* **Images, audio and PDFs:** `.state` can hold `img()`, `audio_file()`, `video_file()` and `pdf_file()` objects, or a named list of parts that belong together. `provider_capabilities(.what = "decide_media")` shows what each provider reads. Limits are checked before anything is sent, and `decide()` never resizes an image. A PDF sent to a provider that cannot read PDFs goes as extracted text, with one notice.
+* **Question helpers:** `field_fct()` gains `.ordered` and `.level_descriptions`, and `field_lgl()` gains `.true` and `.false`. Only `decide()` uses them.
 
 ## Find things in images with `field_box()` (experimental)
 
-`decide()` can now ask where something is in a picture. `field_box("The cat in `photo`")` is a question whose answer is one box around the thing, returned as four fractions of the image. The result gets one row of type `"box"` and the numeric columns `top`, `bottom`, `left` and `right`; these columns appear only when your questions hold a box question. A box question always returns a box, so pair it with a yes/no question that asks whether the thing is there. `box_to_pixels()` turns the fractions into pixel positions, given the image width and height or the path of the image file.
-
-This feature is experimental and works with `jev()` only; the vendor labels it a preview and its format may change. `openai()`, `gemini()` and `ollama()` stop with a message before any request, and so does a state without an image.
+`field_box("The cat in `photo`")` asks `decide()` for one box around a thing in a picture. The result gets a row of type `"box"` with `top`, `bottom`, `left` and `right` as fractions of the image, and `box_to_pixels()` converts them to pixels. A box question always returns a box, so pair it with a yes/no question. This works with `jev()` only, and the format may change.
 
 ## Read many replies at once
 
-`get_reply()`, `get_reply_data()` and `get_metadata()` now accept the list that `parallel_chat()` and `fetch_batch()` return. `get_reply()` gives one string per reply. `get_reply_data()` and `get_metadata()` give a tibble with one row per reply: `reply_id` (the position), `reply` (the names of the list, when it has names), `error`, then the schema fields or the metadata columns. A request that failed keeps its row, with the message in `error` and `NA` in the other columns, so the rows still match your inputs. One reply behaves as before, and a single failed element still stops `get_reply()`.
+`get_reply()`, `get_reply_data()` and `get_metadata()` now accept the list that `parallel_chat()` and `fetch_batch()` return. `get_reply()` gives one string per reply; the other two give a tibble with one row per reply (`reply_id`, `error`, then the schema fields or metadata). A failed request keeps its row, with the message in `error`.
 
 ```r
 replies <- parallel_chat(prompts, claude(.json_schema = schema))
@@ -47,17 +40,16 @@ get_reply_data(replies)
 
 ## Updated for current provider APIs
 
-- `mistral()` now defaults to `mistral-large-4`, which always reasons. It accepts `.reasoning_effort` values `"low"`, `"medium"` and `"high"` and rejects `"none"`. Pass `.model = "zai-glm-5-3"` for the previous default.
-- `openai()` accepts every reasoning effort the API names: `"none"`, `"minimal"`, `"low"`, `"medium"`, `"high"`, `"xhigh"` and `"max"`. Each model takes a subset, and the API error lists the allowed values. `.temperature` works only at effort `"none"` on current models.
-- `openai_websearch()` and `openai_deep_research()` use the `web_search` tool type; OpenAI keeps `web_search_preview` only as a legacy name.
-- `gemini()` accepts `.thinking_level = "xhigh"`, which `gemini-4-hydrogen` supports. `gemini-3.8-flash` and the Gemini 4 models reject `"minimal"`.
-- `llamacpp()` and the llama.cpp helpers fall back to `http://localhost:9931`, the port current `llama-server` builds listen on. Set `LLAMACPP_SERVER` to keep an older address.
-- `azure_openai()` and `send_azure_openai_batch()` default to a deployment named `gpt-6-luna`; the `gpt-4o` family retires on 2027-01-14. Deployment names are yours to choose, so pass `.deployment` if yours differs. The Azure path has no live test; the default `.api_version` is unchanged.
-- tidyllm requires httr2 1.2.3 or later.
+* `mistral()` defaults to `mistral-large-4`, which always reasons; `.reasoning_effort` takes `"low"`, `"medium"` or `"high"`. Pass `.model = "zai-glm-5-3"` for the previous default.
+* `openai()` accepts every reasoning effort the API names, from `"none"` to `"max"`; each model takes a subset. `.temperature` works only at effort `"none"`. `openai_websearch()` and `openai_deep_research()` use the `web_search` tool type.
+* `gemini()` accepts `.thinking_level = "xhigh"` (supported by `gemini-4-hydrogen`). `gemini-3.8-flash` and the Gemini 4 models reject `"minimal"`.
+* `llamacpp()` looks for the server on port 9931, the default of current `llama-server` builds. Set `LLAMACPP_SERVER` for an older address.
+* `azure_openai()` defaults to a deployment named `gpt-6-luna`; pass `.deployment` if yours differs. This path has no live test.
+* tidyllm requires httr2 1.2.3 or later. `decide()` now also retries HTTP 529 (overloaded), like 429 and 503.
 
 ## Perplexity removed
 
-`perplexity()` and the `perplexity_*()` functions, deprecated since 0.7.0, are gone. Perplexity models stay available through `openrouter()`, for example `openrouter(.model = "perplexity/sonar")`, and `websearch_tool()` gives any provider web search. `deep_research()` now supports `openai()` only. Research jobs started with `perplexity()` can no longer be checked or fetched; start them again with `deep_research(.provider = openai())`; `check_job()` and `fetch_job()` stop with a message that says so. `perplexity()` stays as a stub that stops with a pointer to `openai()`, `claude()`, `gemini()` and `openrouter()`, so old scripts fail with a clear message.
+`perplexity()` and the `perplexity_*()` functions, deprecated since 0.7.0, are gone. Use Perplexity models through `openrouter(.model = "perplexity/sonar")` and web search through `websearch_tool()`. `deep_research()` supports `openai()` only, so start research jobs again with `deep_research(.provider = openai())`. `perplexity()` stays as a stub that stops with a pointer to the replacements.
 
 # tidyllm 0.7.2: GitHub-only release, never on CRAN
 

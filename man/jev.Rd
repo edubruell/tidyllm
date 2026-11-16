@@ -7,10 +7,11 @@
 jev(..., .called_from = NULL)
 }
 \arguments{
-\item{.server}{Base URL of the server, without a path. \code{NULL} (default) is
-\verb{https://api.typesafe.ai}.}
+\item{...}{Provider settings: \code{.server}, the base URL of the server without
+a path (\code{NULL}, the default, is \verb{https://api.typesafe.ai}), and \code{.model},
+the model name (default \code{"jev-latest"}).}
 
-\item{.model}{Model name; default \code{"jev-latest"}.}
+\item{.called_from}{Internal; the verb that dispatched here.}
 }
 \value{
 A provider call to pass as \code{.provider} to \code{decide()}.

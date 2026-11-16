@@ -1,5 +1,6 @@
 ---
 title: "Using Tools with tidyllm"
+description: "Let a model call your R functions or search the web while it answers."
 ---
 
 ```{r, include = FALSE}

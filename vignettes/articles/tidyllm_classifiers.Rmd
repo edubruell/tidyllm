@@ -1,5 +1,6 @@
 ---
 title: "Classifying Texts with tidyllm"
+description: "Label thousands of free-text answers with a codebook and check the labels against a sample coded by people."
 ---
 
 ```{r, include = FALSE}

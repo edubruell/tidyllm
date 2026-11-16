@@ -1,5 +1,6 @@
 ---
 title: "Structured Question Answering from PDFs"
+description: "Ask the same questions of a folder of papers and get one table row per paper."
 ---
 
 ```{r, include = FALSE}

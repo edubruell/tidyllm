@@ -1,5 +1,6 @@
 ---
 title: "Command Line Providers"
+description: "Chat through a coding agent you already pay for, such as Claude Code, Codex or Vibe, without an API key."
 ---
 
 ```{r, include = FALSE}

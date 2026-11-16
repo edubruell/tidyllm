@@ -1,5 +1,6 @@
 ---
 title: "Working with Files and Media"
+description: "Ask a model about an image, a recording, a video or a PDF page."
 ---
 
 ```{r, include = FALSE}

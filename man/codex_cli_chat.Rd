@@ -84,9 +84,10 @@ A new \code{LLMMessage} object containing the original messages plus the
 reply from Codex.
 }
 \description{
-\code{codex_cli()} runs the \code{codex} command line tool installed on your machine and
-reads its JSON output back. It uses the login Codex already has, for example
-a ChatGPT plan, or your OpenAI API key if you set \code{.use_api_key = TRUE}.
+\code{codex_cli()} hands the chat to the \code{codex} terminal program installed on your
+machine. That program handles the connection to OpenAI, not tidyllm, and
+tidyllm reads its JSON output back. It uses the login Codex already has, for
+example a ChatGPT plan, or your OpenAI API key if you set \code{.use_api_key = TRUE}.
 }
 \details{
 Codex is an agent, not a plain completion endpoint. By default it can run
